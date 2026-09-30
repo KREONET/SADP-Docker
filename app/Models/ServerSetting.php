@@ -1,0 +1,409 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\ServerRole;
+use App\Services\ScheduleNextRunRecalculator;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    description: 'Server Settings model',
+    type: 'object',
+    properties: [
+        'id' => ['type' => 'integer'],
+        'concurrent_builds' => ['type' => 'integer'],
+        'deployment_queue_limit' => ['type' => 'integer'],
+        'backup_compression_cpu_percentage' => ['type' => 'integer'],
+        'dynamic_timeout' => ['type' => 'integer'],
+        'force_disabled' => ['type' => 'boolean'],
+        'force_server_cleanup' => ['type' => 'boolean'],
+        'server_role' => ['type' => 'string', 'enum' => ['deployment', 'build', 'both']],
+        'is_cloudflare_tunnel' => ['type' => 'boolean'],
+        'is_jump_server' => ['type' => 'boolean'],
+        'is_logdrain_axiom_enabled' => ['type' => 'boolean'],
+        'is_logdrain_custom_enabled' => ['type' => 'boolean'],
+        'is_logdrain_highlight_enabled' => ['type' => 'boolean'],
+        'is_logdrain_newrelic_enabled' => ['type' => 'boolean'],
+        'is_metrics_enabled' => ['type' => 'boolean'],
+        'is_traffic_analytics_enabled' => ['type' => 'boolean'],
+        'traffic_topn' => ['type' => 'integer'],
+        'traffic_sample_threshold' => ['type' => 'integer'],
+        'traffic_retention_1h_days' => ['type' => 'integer'],
+        'traffic_retention_1d_days' => ['type' => 'integer'],
+        'is_geoip_enabled' => ['type' => 'boolean'],
+        'geoip_refresh_days' => ['type' => 'integer'],
+        'is_reachable' => ['type' => 'boolean'],
+        'is_sentinel_enabled' => ['type' => 'boolean'],
+        'is_swarm_manager' => ['type' => 'boolean'],
+        'is_swarm_worker' => ['type' => 'boolean'],
+        'is_terminal_enabled' => ['type' => 'boolean'],
+        'is_usable' => ['type' => 'boolean'],
+        'logdrain_axiom_api_key' => ['type' => 'string'],
+        'logdrain_axiom_dataset_name' => ['type' => 'string'],
+        'logdrain_custom_config' => ['type' => 'string'],
+        'logdrain_custom_config_parser' => ['type' => 'string'],
+        'logdrain_highlight_project_id' => ['type' => 'string'],
+        'logdrain_newrelic_base_uri' => ['type' => 'string'],
+        'logdrain_newrelic_license_key' => ['type' => 'string'],
+        'sentinel_metrics_history_days' => ['type' => 'integer'],
+        'sentinel_metrics_refresh_rate_seconds' => ['type' => 'integer'],
+        'sentinel_token' => ['type' => 'string'],
+        'docker_cleanup_frequency' => ['type' => 'string'],
+        'docker_cleanup_threshold' => ['type' => 'integer'],
+        'server_id' => ['type' => 'integer'],
+        'wildcard_domain' => ['type' => 'string'],
+        'created_at' => ['type' => 'string'],
+        'updated_at' => ['type' => 'string'],
+        'delete_unused_volumes' => ['type' => 'boolean', 'description' => 'The flag to indicate if the unused volumes should be deleted.'],
+        'delete_unused_networks' => ['type' => 'boolean', 'description' => 'The flag to indicate if the unused networks should be deleted.'],
+        'connection_timeout' => ['type' => 'integer', 'description' => 'SSH connection timeout in seconds.'],
+        'docker_version' => ['type' => 'string', 'nullable' => true, 'description' => 'Detected Docker Engine version on the server.'],
+        'docker_version_checked_at' => ['type' => 'string', 'nullable' => true, 'description' => 'When Docker Engine version was last detected.'],
+        'compose_version' => ['type' => 'string', 'nullable' => true, 'description' => 'Detected Docker Compose plugin version on the server.'],
+        'compose_version_checked_at' => ['type' => 'string', 'nullable' => true, 'description' => 'When Docker Compose version was last detected.'],
+    ]
+)]
+class ServerSetting extends Model
+{
+    public const int DEFAULT_SENTINEL_METRICS_REFRESH_RATE_SECONDS = 10;
+
+    public const int DEFAULT_SENTINEL_METRICS_HISTORY_DAYS = 7;
+
+    public const int DEFAULT_SENTINEL_PUSH_INTERVAL_SECONDS = 60;
+
+    protected $fillable = [
+        'server_id',
+        'is_swarm_manager',
+        'is_jump_server',
+        'is_build_server',
+        'server_role',
+        'is_reachable',
+        'is_usable',
+        'wildcard_domain',
+        'is_cloudflare_tunnel',
+        'is_logdrain_newrelic_enabled',
+        'logdrain_newrelic_license_key',
+        'logdrain_newrelic_base_uri',
+        'is_logdrain_highlight_enabled',
+        'logdrain_highlight_project_id',
+        'is_logdrain_axiom_enabled',
+        'logdrain_axiom_dataset_name',
+        'logdrain_axiom_api_key',
+        'is_swarm_worker',
+        'is_logdrain_custom_enabled',
+        'logdrain_custom_config',
+        'logdrain_custom_config_parser',
+        'concurrent_builds',
+        'dynamic_timeout',
+        'force_disabled',
+        'is_metrics_enabled',
+        'generate_exact_labels',
+        'force_docker_cleanup',
+        'docker_cleanup_frequency',
+        'docker_cleanup_threshold',
+        'server_timezone',
+        'delete_unused_volumes',
+        'delete_unused_networks',
+        'is_sentinel_enabled',
+        'sentinel_token',
+        'sentinel_metrics_refresh_rate_seconds',
+        'sentinel_metrics_history_days',
+        'sentinel_push_interval_seconds',
+        'sentinel_custom_url',
+        'server_disk_usage_notification_threshold',
+        'is_sentinel_debug_enabled',
+        'server_disk_usage_check_frequency',
+        'server_disk_usage_notification_interval_hours',
+        'is_terminal_enabled',
+        'deployment_queue_limit',
+        'backup_compression_cpu_percentage',
+        'disable_application_image_retention',
+        'connection_timeout',
+        'is_traffic_analytics_enabled',
+        'traffic_topn',
+        'traffic_sample_threshold',
+        'traffic_retention_1h_days',
+        'traffic_retention_1d_days',
+        'is_geoip_enabled',
+        'geoip_refresh_days',
+        'geoip_maxmind_license_key',
+        'docker_version',
+        'docker_version_checked_at',
+        'compose_version',
+        'compose_version_checked_at',
+    ];
+
+    /**
+     * Model-level defaults that mirror database column defaults, so a freshly
+     * created instance exposes them without a refresh.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_traffic_analytics_enabled' => false,
+    ];
+
+    protected $casts = [
+        'force_disabled' => 'boolean',
+        'force_docker_cleanup' => 'boolean',
+        'docker_cleanup_threshold' => 'integer',
+        'sentinel_token' => 'encrypted',
+        'is_reachable' => 'boolean',
+        'is_usable' => 'boolean',
+        'is_build_server' => 'boolean',
+        'server_role' => ServerRole::class,
+        'is_terminal_enabled' => 'boolean',
+        'disable_application_image_retention' => 'boolean',
+        'connection_timeout' => 'integer',
+        'is_traffic_analytics_enabled' => 'boolean',
+        'traffic_topn' => 'integer',
+        'traffic_sample_threshold' => 'integer',
+        'traffic_retention_1h_days' => 'integer',
+        'traffic_retention_1d_days' => 'integer',
+        'is_geoip_enabled' => 'boolean',
+        'geoip_refresh_days' => 'integer',
+        'geoip_maxmind_license_key' => 'encrypted',
+        'docker_version_checked_at' => 'datetime',
+        'compose_version_checked_at' => 'datetime',
+        'backup_compression_cpu_percentage' => 'integer',
+        'docker_cleanup_next_run_at' => 'datetime',
+        'server_disk_usage_notification_interval_hours' => 'integer',
+    ];
+
+    /**
+     * Sensitive fields hidden by default in serialized output (toArray/toJson).
+     * API controllers should call makeVisible([...]) for callers with the
+     * `read:sensitive` or `root` token ability.
+     */
+    protected $hidden = [
+        'is_build_server',
+        'sentinel_token',
+        'sentinel_custom_url',
+        'logdrain_newrelic_license_key',
+        'logdrain_axiom_api_key',
+        'logdrain_custom_config',
+        'logdrain_custom_config_parser',
+        'geoip_maxmind_license_key',
+    ];
+
+    protected static function booted()
+    {
+        static::saving(function ($setting) {
+            if (! $setting->exists || $setting->isDirty(['docker_cleanup_frequency', 'server_timezone'])) {
+                // Without a frequency (a new row that uses the column default), the dispatcher calculates it.
+                $frequency = $setting->getAttributes()['docker_cleanup_frequency'] ?? null;
+                $setting->docker_cleanup_next_run_at = $frequency === null
+                    ? null
+                    : next_cron_run_at($frequency, $setting->server_timezone, now());
+            }
+        });
+        static::creating(function ($setting) {
+            try {
+                if (str($setting->sentinel_token)->isEmpty()) {
+                    $setting->generateSentinelToken(save: false, ignoreEvent: true);
+                }
+                if (str($setting->sentinel_custom_url)->isEmpty()) {
+                    $setting->generateSentinelUrl(save: false, ignoreEvent: true);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Error creating server setting: '.$e->getMessage());
+            }
+        });
+        static::updated(function ($settings) {
+            if ($settings->wasChanged('server_timezone') && $settings->server) {
+                // A failure must not fail the settings save: the schedules correct themselves after their next run.
+                rescue(fn () => app(ScheduleNextRunRecalculator::class)->forServer($settings->server));
+            }
+
+            if (
+                $settings->wasChanged('sentinel_token') ||
+                $settings->wasChanged('sentinel_custom_url') ||
+                $settings->wasChanged('sentinel_metrics_refresh_rate_seconds') ||
+                $settings->wasChanged('sentinel_metrics_history_days') ||
+                $settings->wasChanged('sentinel_push_interval_seconds') ||
+                $settings->wasChanged('traffic_topn') ||
+                $settings->wasChanged('traffic_sample_threshold') ||
+                $settings->wasChanged('traffic_retention_1h_days') ||
+                $settings->wasChanged('traffic_retention_1d_days') ||
+                $settings->wasChanged('is_geoip_enabled') ||
+                $settings->wasChanged('geoip_refresh_days') ||
+                $settings->wasChanged('geoip_maxmind_license_key')
+            ) {
+                // Only recreate Sentinel when it is already enabled. Otherwise a change to a
+                // traffic/geoip tuning knob would turn Sentinel on as a side effect, because
+                // StartSentinel unconditionally sets is_sentinel_enabled = true.
+                if ($settings->is_sentinel_enabled) {
+                    $settings->server->restartSentinel();
+                }
+            }
+        });
+    }
+
+    public function effectiveServerRole(): ServerRole
+    {
+        return $this->server_role ?? ($this->is_build_server ? ServerRole::BUILD : ServerRole::BOTH);
+    }
+
+    /**
+     * Validate that a sentinel token contains only safe characters.
+     * Prevents OS command injection when the token is interpolated into shell commands.
+     */
+    public static function isValidSentinelToken(?string $token): bool
+    {
+        if ($token === null) {
+            return false;
+        }
+
+        return (bool) preg_match('/\A[a-zA-Z0-9._\-+=\/]+\z/', $token);
+    }
+
+    /**
+     * Returns a valid sentinel token, regenerating it if the stored value is
+     * empty, undecryptable, or otherwise invalid. Throws only when regeneration
+     * still fails to produce a valid token.
+     */
+    public function ensureValidSentinelToken(): string
+    {
+        try {
+            $token = $this->sentinel_token;
+        } catch (DecryptException) {
+            $token = null;
+        }
+
+        if (! self::isValidSentinelToken($token)) {
+            // Clear undecryptable raw value so Eloquent's dirty-check won't try to
+            // decrypt the bad original during save().
+            $attrs = $this->getAttributes();
+            $attrs['sentinel_token'] = null;
+            $this->setRawAttributes($attrs, true);
+
+            $this->generateSentinelToken(save: true, ignoreEvent: true);
+            $this->refresh();
+            $token = $this->sentinel_token;
+        }
+
+        if (! self::isValidSentinelToken($token)) {
+            throw new \RuntimeException('Sentinel token invalid after regeneration. Allowed characters: a-z, A-Z, 0-9, dot, underscore, hyphen, plus, slash, equals.');
+        }
+
+        return $token;
+    }
+
+    public function generateSentinelToken(bool $save = true, bool $ignoreEvent = false): string
+    {
+        $data = [
+            'server_uuid' => $this->server->uuid,
+        ];
+        $token = encrypt(json_encode($data));
+        $this->sentinel_token = $token;
+        if ($save) {
+            if ($ignoreEvent) {
+                $this->saveQuietly();
+            } else {
+                $this->save();
+            }
+        }
+
+        return $token;
+    }
+
+    public function ensureSentinelUrl(): string
+    {
+        $url = $this->sentinel_custom_url;
+
+        if ($this->server->isLocalhost() && $url === 'http://host.docker.internal:8000') {
+            $url = null;
+        }
+
+        if (blank($url)) {
+            $url = $this->generateSentinelUrl(ignoreEvent: true);
+        }
+
+        if (blank($url)) {
+            throw new \RuntimeException('Set an instance FQDN, public IP, or reachable Coolify URL before enabling Sentinel.');
+        }
+
+        return $url;
+    }
+
+    public function restoreDefaultSentinelConfiguration(): void
+    {
+        $this->generateSentinelUrl(save: false, ignoreEvent: true);
+        $this->sentinel_metrics_refresh_rate_seconds = self::DEFAULT_SENTINEL_METRICS_REFRESH_RATE_SECONDS;
+        $this->sentinel_metrics_history_days = self::DEFAULT_SENTINEL_METRICS_HISTORY_DAYS;
+        $this->sentinel_push_interval_seconds = self::DEFAULT_SENTINEL_PUSH_INTERVAL_SECONDS;
+        $this->is_sentinel_debug_enabled = false;
+        $this->saveQuietly();
+    }
+
+    public function generateSentinelUrl(bool $save = true, bool $ignoreEvent = false): ?string
+    {
+        $domain = null;
+        $settings = InstanceSettings::get();
+        if ($this->server->isLocalhost()) {
+            $domain = 'http://coolify:8080';
+        } elseif ($settings->fqdn) {
+            $domain = $settings->fqdn;
+        } elseif ($settings->public_ipv4) {
+            $domain = 'http://'.$settings->public_ipv4.':8000';
+        } elseif ($settings->public_ipv6) {
+            $domain = 'http://'.$settings->public_ipv6.':8000';
+        } else {
+            $domain = $this->sentinelUrlFromCurrentRequest();
+        }
+        $this->sentinel_custom_url = $domain;
+        if ($save) {
+            if ($ignoreEvent) {
+                $this->saveQuietly();
+            } else {
+                $this->save();
+            }
+        }
+
+        return $domain;
+    }
+
+    private function sentinelUrlFromCurrentRequest(): ?string
+    {
+        if (! app()->bound('request')) {
+            return null;
+        }
+
+        $request = request();
+        $host = strtolower($request->getHost());
+
+        if (
+            $host === 'localhost' ||
+            str_ends_with($host, '.localhost') ||
+            $host === '::1' ||
+            $host === '::' ||
+            $host === '0.0.0.0' ||
+            str_starts_with($host, '127.')
+        ) {
+            return null;
+        }
+
+        return $request->getSchemeAndHttpHost();
+    }
+
+    public function server()
+    {
+        return $this->belongsTo(Server::class);
+    }
+
+    public function dockerCleanupFrequency(): Attribute
+    {
+        return Attribute::make(
+            set: function ($value) {
+                return translate_cron_expression($value);
+            },
+            get: function ($value) {
+                return translate_cron_expression($value);
+            }
+        );
+    }
+}

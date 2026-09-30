@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Providers;
+
+use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\ResetUserPassword;
+use App\Actions\Fortify\UpdateUserPassword;
+use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Models\OauthSetting;
+use App\Models\TeamInvitation;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Contracts\RegisterResponse;
+use Laravel\Fortify\Fortify;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        $this->app->instance(RegisterResponse::class, new class implements RegisterResponse
+        {
+            public function toResponse($request)
+            {
+                // First user (root) will be redirected to /settings instead of / on registration.
+                if ($request->user()->currentTeam()?->id === 0) {
+                    return redirect()->route('settings.index');
+                }
+
+                return redirect(RouteServiceProvider::HOME);
+            }
+        });
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::registerView(function () {
+            $isFirstUser = User::count() === 0;
+
+            $settings = instanceSettings();
+            if (! $settings->isPasswordRegistrationAllowed()) {
+                return redirect()->route('login');
+            }
+
+            return view('auth.register', [
+                'isFirstUser' => $isFirstUser,
+            ]);
+        });
+
+        Fortify::loginView(function () {
+            $settings = instanceSettings();
+            $enabled_oauth_providers = OauthSetting::where('enabled', true)->get();
+            $users = User::count();
+            if ($users == 0 && $settings->isPasswordRegistrationAllowed()) {
+                // If there are no users and password registration is allowed, redirect to registration.
+                return redirect()->route('register');
+            }
+
+            return view('auth.login', [
+                'is_registration_enabled' => $settings->isPasswordRegistrationAllowed(),
+                'enabled_oauth_providers' => $enabled_oauth_providers,
+                'is_sso_only' => $settings->isSsoOnlyLoginActive(),
+            ]);
+        });
+
+        Fortify::authenticateUsing(function (Request $request) {
+            $email = strtolower($request->email);
+            $user = User::where('email', $email)->with('teams')->first();
+            if (
+                $user &&
+                Hash::check($request->password, $user->password)
+            ) {
+                if (! instanceSettings()->isPasswordLoginAllowedFor($user)) {
+                    auditLog('auth.password_login.blocked_sso_only', ['user_id' => $user->id], 'warning');
+
+                    throw ValidationException::withMessages([
+                        Fortify::username() => __('auth.sso_only'),
+                    ]);
+                }
+                $user->updated_at = now();
+                $user->save();
+
+                // Check if user has a pending invitation they haven't accepted yet
+                $invitation = TeamInvitation::whereEmail($email)->first();
+                if ($invitation && $invitation->isValid()) {
+                    // User is logging in for the first time after being invited
+                    // Attach them to the invited team if not already attached
+                    if (! $user->teams()->where('team_id', $invitation->team->id)->exists()) {
+                        $user->teams()->attach($invitation->team->id, ['role' => $invitation->role]);
+                    }
+                    $team = $invitation->team;
+                    $invitation->delete();
+                    session(['currentTeam' => $team]);
+                } else {
+                    // Restore the last active team; only fall back when unambiguous.
+                    $team = $user->resolveStoredTeam();
+                    if (! $team && $user->teams->isEmpty()) {
+                        $team = $user->recreate_personal_team();
+                    }
+                    if ($team) {
+                        session(['currentTeam' => $team]);
+                    }
+                    // Otherwise (multiple teams, no stored choice) leave the session
+                    // team unset so the user is sent to the team-selection screen.
+                }
+
+                return $user;
+            }
+        });
+        Fortify::requestPasswordResetLinkView(function () {
+            return view('auth.forgot-password');
+        });
+        Fortify::resetPasswordView(function ($request) {
+            return view('auth.reset-password', ['request' => $request]);
+        });
+        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
+        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
+
+        Fortify::confirmPasswordView(function () {
+            return view('auth.confirm-password');
+        });
+
+        Fortify::twoFactorChallengeView(function () {
+            return view('auth.two-factor-challenge');
+        });
+    }
+}

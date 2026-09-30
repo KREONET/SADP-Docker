@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Livewire\Project\Shared\ScheduledTask;
+
+use App\Jobs\ScheduledTaskJob;
+use App\Models\Application;
+use App\Models\ScheduledTask;
+use App\Models\Service;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\Validate;
+use Livewire\Component;
+
+class Show extends Component
+{
+    use AuthorizesRequests;
+
+    #[Locked]
+    public Application|Service $resource;
+
+    #[Locked]
+    public ScheduledTask $task;
+
+    #[Locked]
+    public array $parameters;
+
+    #[Locked]
+    public string $type;
+
+    #[Validate(['boolean'])]
+    public bool $isEnabled = false;
+
+    #[Validate(['string', 'required'])]
+    public string $name;
+
+    #[Validate(['string', 'required'])]
+    public string $command;
+
+    #[Validate(['string', 'required'])]
+    public string $frequency;
+
+    #[Validate(['string', 'nullable'])]
+    public ?string $container = null;
+
+    #[Validate(['integer', 'required', 'min:60', 'max:36000'])]
+    public $timeout = 300;
+
+    #[Locked]
+    public ?string $application_uuid;
+
+    #[Locked]
+    public ?string $service_uuid;
+
+    #[Locked]
+    public string $task_uuid;
+
+    public function mount()
+    {
+        try {
+            $task_uuid = request()->route('task_uuid');
+            $project_uuid = request()->route('project_uuid');
+            $environment_uuid = request()->route('environment_uuid');
+            $application_uuid = request()->route('application_uuid');
+            $service_uuid = request()->route('service_uuid');
+
+            $this->task_uuid = $task_uuid;
+            if ($application_uuid) {
+                $this->type = 'application';
+                $this->application_uuid = $application_uuid;
+                $this->resource = Application::ownedByCurrentTeam()->where('uuid', $application_uuid)->firstOrFail();
+            } elseif ($service_uuid) {
+                $this->type = 'service';
+                $this->service_uuid = $service_uuid;
+                $this->resource = Service::ownedByCurrentTeamCached()->where('uuid', $service_uuid)->firstOrFail();
+            }
+            $this->parameters = [
+                'environment_uuid' => $environment_uuid,
+                'project_uuid' => $project_uuid,
+                'application_uuid' => $application_uuid,
+                'service_uuid' => $service_uuid,
+            ];
+
+            $this->task = $this->resource->scheduled_tasks()->where('uuid', $task_uuid)->firstOrFail();
+            $this->syncData();
+        } catch (\Exception $e) {
+            return handleError($e);
+        }
+    }
+
+    /**
+     * Timezone of the server the task runs on, used to display its next run.
+     */
+    #[Computed]
+    public function serverTimezone(): ?string
+    {
+        return $this->task->scheduleTimezone();
+    }
+
+    private function syncData(bool $toModel = false): void
+    {
+        if ($toModel) {
+            $this->validate();
+            $isValid = validate_cron_expression($this->frequency);
+            if (! $isValid) {
+                $this->frequency = $this->task->frequency;
+                throw new \Exception('Invalid Cron / Human expression.');
+            }
+            $this->task->enabled = $this->isEnabled;
+            $this->task->name = str($this->name)->trim()->value();
+            $this->task->command = str($this->command)->trim()->value();
+            $this->task->frequency = str($this->frequency)->trim()->value();
+            $this->task->container = str($this->container)->trim()->value();
+            $this->task->timeout = (int) $this->timeout;
+            $this->task->save();
+        } else {
+            $this->isEnabled = $this->task->enabled;
+            $this->name = $this->task->name;
+            $this->command = auth()->user()?->can('update', $this->resource) ? $this->task->command : 'Hidden (only admins can view)';
+            $this->frequency = $this->task->frequency;
+            $this->container = $this->task->container;
+            $this->timeout = $this->task->timeout ?? 300;
+        }
+    }
+
+    public function toggleEnabled()
+    {
+        try {
+            $this->authorize('update', $this->resource);
+            $this->authorize('update', $this->task);
+            $this->isEnabled = ! $this->isEnabled;
+            $this->task->enabled = $this->isEnabled;
+            $this->task->save();
+            $this->dispatch('success', $this->isEnabled ? 'Scheduled task enabled.' : 'Scheduled task disabled.');
+        } catch (\Exception $e) {
+            return handleError($e);
+        }
+    }
+
+    public function instantSave()
+    {
+        try {
+            $this->authorize('update', $this->resource);
+            $this->authorize('update', $this->task);
+            $this->syncData(true);
+            $this->dispatch('success', 'Scheduled task updated.');
+            $this->refreshTasks();
+        } catch (\Exception $e) {
+            return handleError($e);
+        }
+    }
+
+    public function submit()
+    {
+        try {
+            $this->authorize('update', $this->resource);
+            $this->authorize('update', $this->task);
+            $this->syncData(true);
+            $this->dispatch('success', 'Scheduled task updated.');
+        } catch (\Exception $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    public function refreshTasks()
+    {
+        try {
+            $this->task->refresh();
+        } catch (\Exception $e) {
+            return handleError($e);
+        }
+    }
+
+    public function delete()
+    {
+        try {
+            $this->authorize('update', $this->resource);
+            $this->authorize('delete', $this->task);
+            $this->task->delete();
+
+            if ($this->type === 'application') {
+                return redirectRoute($this, 'project.application.scheduled-tasks.show', $this->parameters);
+            } else {
+                return redirectRoute($this, 'project.service.scheduled-tasks.show', $this->parameters);
+            }
+        } catch (\Exception $e) {
+            return handleError($e);
+        }
+    }
+
+    public function executeNow()
+    {
+        try {
+            $this->authorize('update', $this->resource);
+            $this->authorize('update', $this->task);
+            ScheduledTaskJob::dispatch($this->task);
+            auditLog('ui.scheduled_task.executed', [
+                'team_id' => $this->resource->team()?->id,
+                'resource_uuid' => $this->resource->uuid,
+                'resource_name' => $this->resource->name,
+                'scheduled_task_uuid' => $this->task->uuid,
+                'scheduled_task_name' => $this->task->name,
+            ]);
+            $this->dispatch('success', 'Scheduled task executed.');
+        } catch (\Exception $e) {
+            return handleError($e);
+        }
+    }
+}

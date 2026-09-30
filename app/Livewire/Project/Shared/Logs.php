@@ -1,0 +1,186 @@
+<?php
+
+namespace App\Livewire\Project\Shared;
+
+use App\Models\Application;
+use App\Models\Service;
+use App\Models\StandaloneClickhouse;
+use App\Models\StandaloneDragonfly;
+use App\Models\StandaloneKeydb;
+use App\Models\StandaloneMariadb;
+use App\Models\StandaloneMongodb;
+use App\Models\StandaloneMysql;
+use App\Models\StandalonePostgresql;
+use App\Models\StandaloneRedis;
+use App\Models\StandaloneSqlite;
+use App\Traits\ListensToTeamChannel;
+use Illuminate\Support\Collection;
+use Livewire\Component;
+
+class Logs extends Component
+{
+    use ListensToTeamChannel;
+
+    public ?string $type = null;
+
+    public Application|Service|StandalonePostgresql|StandaloneRedis|StandaloneMongodb|StandaloneMysql|StandaloneMariadb|StandaloneKeydb|StandaloneDragonfly|StandaloneClickhouse|StandaloneSqlite $resource;
+
+    public Collection $servers;
+
+    public Collection $containers;
+
+    public array $serverContainers = [];
+
+    /** @var array<int, string> */
+    public array $serverErrors = [];
+
+    public $container = [];
+
+    public $parameters;
+
+    public $query;
+
+    public $status;
+
+    public $serviceSubType;
+
+    public $cpu;
+
+    public bool $containersLoaded = false;
+
+    public function getListeners()
+    {
+        return $this->teamChannelListeners([
+            'ServiceChecked' => 'loadAllContainers',
+        ]);
+    }
+
+    public function loadAllContainers()
+    {
+        try {
+            foreach ($this->servers as $server) {
+                unset($this->serverErrors[$server->id]);
+                $this->serverContainers[$server->id] = $this->getContainersForServer($server);
+            }
+            $this->containersLoaded = true;
+        } catch (\Exception $e) {
+            $this->containersLoaded = true; // Set to true to stop loading spinner
+
+            return handleError($e, $this);
+        }
+    }
+
+    private function getContainersForServer($server)
+    {
+        if (! $server->isFunctional()) {
+            return [];
+        }
+
+        try {
+            if ($server->isSwarm()) {
+                $containers = collect([
+                    [
+                        'ID' => $this->resource->uuid,
+                        'Names' => $this->resource->uuid.'_'.$this->resource->uuid,
+                    ],
+                ]);
+
+                return $containers->toArray();
+            }
+
+            // Docker labels differ by resource type:
+            // applications → coolify.applicationUuid, services → coolify.serviceUuid, databases → coolify.databaseUuid
+            $containers = match (true) {
+                $this->resource instanceof Application => getCurrentApplicationContainerStatus(
+                    $server,
+                    $this->resource,
+                    includePullrequests: true
+                ),
+                $this->resource instanceof Service => getCurrentServiceContainerStatus(
+                    $server,
+                    $this->resource
+                ),
+                default => getCurrentDatabaseContainerStatus(
+                    $server,
+                    $this->resource
+                ),
+            };
+
+            if ($containers && $containers->count() > 0) {
+                return $containers->sort()->toArray();
+            }
+
+            return [];
+        } catch (\Exception $e) {
+            // Keep the error for this server so the page does not report it as "no containers".
+            $this->serverErrors[$server->id] = $e->getMessage();
+
+            return [];
+        }
+    }
+
+    public function mount()
+    {
+        try {
+            $this->containers = collect();
+            $this->servers = collect();
+            $this->serverContainers = [];
+            $this->parameters = get_route_parameters();
+            $this->query = request()->query();
+            if (data_get($this->parameters, 'application_uuid')) {
+                $this->type = 'application';
+                $this->resource = Application::ownedByCurrentTeam()->where('uuid', $this->parameters['application_uuid'])->firstOrFail();
+                $this->status = $this->resource->status;
+                if ($this->resource->destination->server->isFunctional()) {
+                    $server = $this->resource->destination->server;
+                    $this->servers = $this->servers->push($server);
+                }
+                foreach ($this->resource->additional_servers as $server) {
+                    if ($server->isFunctional()) {
+                        $this->servers = $this->servers->push($server);
+                    }
+                }
+            } elseif (data_get($this->parameters, 'database_uuid')) {
+                $this->type = 'database';
+                $resource = getResourceByUuid($this->parameters['database_uuid'], data_get(auth()->user()->currentTeam(), 'id'));
+                if (is_null($resource)) {
+                    abort(404);
+                }
+                $this->resource = $resource;
+                $this->status = $this->resource->status;
+                if ($this->resource->destination->server->isFunctional()) {
+                    $server = $this->resource->destination->server;
+                    $this->servers = $this->servers->push($server);
+                }
+                $this->container = $this->resource->uuid;
+                $this->containers->push($this->container);
+            } elseif (data_get($this->parameters, 'service_uuid')) {
+                $this->type = 'service';
+                $this->resource = Service::ownedByCurrentTeam()->where('uuid', $this->parameters['service_uuid'])->firstOrFail();
+                $this->resource->applications()->get()->each(function ($application) {
+                    $this->containers->push(data_get($application, 'name').'-'.data_get($this->resource, 'uuid'));
+                });
+                $this->resource->databases()->get()->each(function ($database) {
+                    $this->containers->push(data_get($database, 'name').'-'.data_get($this->resource, 'uuid'));
+                });
+                if ($this->resource->server->isFunctional()) {
+                    $server = $this->resource->server;
+                    $this->servers = $this->servers->push($server);
+                }
+            }
+            $this->containers = $this->containers->sort();
+            if (data_get($this->query, 'pull_request_id')) {
+                $this->containers = $this->containers->filter(function ($container) {
+                    return str_contains($container, $this->query['pull_request_id']);
+                });
+            }
+        } catch (\Exception $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    public function render()
+    {
+        return view('livewire.project.shared.logs');
+    }
+}

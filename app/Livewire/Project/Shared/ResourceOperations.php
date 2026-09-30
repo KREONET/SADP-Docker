@@ -1,0 +1,503 @@
+<?php
+
+namespace App\Livewire\Project\Shared;
+
+use App\Actions\Database\StartDatabase;
+use App\Actions\Database\StopDatabase;
+use App\Actions\Service\StartService;
+use App\Actions\Service\StopService;
+use App\Actions\Shared\MigrateResourceToDestination;
+use App\Jobs\VolumeCloneJob;
+use App\Models\Application;
+use App\Models\Environment;
+use App\Models\Project;
+use App\Models\StandaloneClickhouse;
+use App\Models\StandaloneDragonfly;
+use App\Models\StandaloneKeydb;
+use App\Models\StandaloneMariadb;
+use App\Models\StandaloneMongodb;
+use App\Models\StandaloneMysql;
+use App\Models\StandalonePostgresql;
+use App\Models\StandaloneRedis;
+use App\Models\StandaloneSqlite;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\ValidationException;
+use Livewire\Component;
+
+class ResourceOperations extends Component
+{
+    use AuthorizesRequests;
+
+    public $resource;
+
+    public $projectUuid;
+
+    public $environmentUuid;
+
+    public $projects;
+
+    public $servers;
+
+    public $buildServers;
+
+    public bool $cloneVolumeData = false;
+
+    public bool $migrateVolumeData = true;
+
+    public function mount()
+    {
+        $parameters = get_route_parameters();
+        $this->projectUuid = data_get($parameters, 'project_uuid');
+        $this->environmentUuid = data_get($parameters, 'environment_uuid');
+        $this->projects = Project::ownedByCurrentTeamCached();
+        $servers = currentTeam()->servers()->get();
+        $this->servers = $servers->reject(fn ($server) => $server->isBuildServer());
+        $this->buildServers = $servers->filter(fn ($server) => $server->isBuildServer());
+    }
+
+    public function toggleVolumeCloning(bool $value)
+    {
+        $this->cloneVolumeData = $value;
+    }
+
+    public function toggleVolumeMigration(bool $value): void
+    {
+        $this->migrateVolumeData = $value;
+    }
+
+    public function cloneTo($destination_uuid, $environment_id = null)
+    {
+        try {
+            $this->authorize('update', $this->resource);
+
+            $new_environment = $this->resource->environment;
+            if ($environment_id !== null) {
+                $new_environment = Environment::ownedByCurrentTeam()->find($environment_id);
+                if (! $new_environment) {
+                    return $this->addError('environment_id', 'Environment not found.');
+                }
+            }
+
+            $new_destination = find_resource_destination_for_current_team($destination_uuid);
+            if (! $new_destination) {
+                return $this->addError('destination_id', 'Destination not found.');
+            }
+            $uuid = new_public_id();
+            $server = $new_destination->server;
+            if (! $server->canHostResources()) {
+                return $this->addError('destination_id', 'The selected server cannot host resources.');
+            }
+            auditLog('ui.resource.clone_started', [
+                'team_id' => $this->resource->team()?->id,
+                'resource_uuid' => $this->resource->uuid,
+                'resource_name' => $this->resource->name,
+                'resource_type' => class_basename($this->resource),
+                'destination_uuid' => $new_destination->uuid,
+                'environment_id' => $new_environment->id,
+            ]);
+
+            if ($this->resource->getMorphClass() === Application::class) {
+                $new_resource = clone_application($this->resource, $new_destination, [
+                    'uuid' => $uuid,
+                    'environment_id' => $new_environment->id,
+                ], $this->cloneVolumeData);
+
+                $route = route('project.application.configuration', [
+                    'project_uuid' => $new_environment->project->uuid,
+                    'environment_uuid' => $new_environment->uuid,
+                    'application_uuid' => $new_resource->uuid,
+                ]).'#resource-operations';
+
+                return redirect()->to($route);
+            } elseif (
+                $this->resource->getMorphClass() === StandalonePostgresql::class ||
+                $this->resource->getMorphClass() === StandaloneMongodb::class ||
+                $this->resource->getMorphClass() === StandaloneMysql::class ||
+                $this->resource->getMorphClass() === StandaloneMariadb::class ||
+                $this->resource->getMorphClass() === StandaloneRedis::class ||
+                $this->resource->getMorphClass() === StandaloneKeydb::class ||
+                $this->resource->getMorphClass() === StandaloneDragonfly::class ||
+                $this->resource->getMorphClass() === StandaloneClickhouse::class ||
+                $this->resource->getMorphClass() === StandaloneSqlite::class
+            ) {
+                $uuid = new_public_id();
+                $new_resource = $this->resource->replicate([
+                    'id',
+                    'created_at',
+                    'updated_at',
+                ])->fill([
+                    'uuid' => $uuid,
+                    'name' => $this->resource->name.'-clone-'.$uuid,
+                    'status' => 'exited',
+                    'started_at' => null,
+                    'environment_id' => $new_environment->id,
+                    'destination_id' => $new_destination->id,
+                    'destination_type' => $new_destination->getMorphClass(),
+                ]);
+                $new_resource->save();
+
+                $tags = $this->resource->tags;
+                foreach ($tags as $tag) {
+                    $new_resource->tags()->attach($tag->id);
+                }
+
+                $new_resource->persistentStorages()->delete();
+                $persistentVolumes = $this->resource->persistentStorages()->get();
+                foreach ($persistentVolumes as $volume) {
+                    $originalName = $volume->name;
+                    $newName = '';
+
+                    if (str_starts_with($originalName, 'postgres-data-')) {
+                        $newName = 'postgres-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'mysql-data-')) {
+                        $newName = 'mysql-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'redis-data-')) {
+                        $newName = 'redis-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'clickhouse-data-')) {
+                        $newName = 'clickhouse-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'mariadb-data-')) {
+                        $newName = 'mariadb-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'mongodb-data-')) {
+                        $newName = 'mongodb-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'keydb-data-')) {
+                        $newName = 'keydb-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'dragonfly-data-')) {
+                        $newName = 'dragonfly-data-'.$new_resource->uuid;
+                    } elseif (str_starts_with($originalName, 'sqlite-data-')) {
+                        $newName = 'sqlite-data-'.$new_resource->uuid;
+                    } else {
+                        if (str_starts_with($volume->name, $this->resource->uuid)) {
+                            $newName = str($volume->name)->replace($this->resource->uuid, $new_resource->uuid);
+                        } else {
+                            $newName = $new_resource->uuid.'-'.$volume->name;
+                        }
+                    }
+
+                    $newPersistentVolume = $volume->replicate([
+                        'id',
+                        'created_at',
+                        'updated_at',
+                        'uuid',
+                    ])->fill([
+                        'name' => $newName,
+                        'resource_id' => $new_resource->id,
+                    ]);
+                    $newPersistentVolume->save();
+
+                    if ($this->cloneVolumeData) {
+                        try {
+                            StopDatabase::dispatch($this->resource);
+                            $sourceVolume = $volume->name;
+                            $targetVolume = $newPersistentVolume->name;
+                            $sourceServer = $this->resource->destination->server;
+                            $targetServer = $new_resource->destination->server;
+
+                            VolumeCloneJob::dispatch($sourceVolume, $targetVolume, $sourceServer, $targetServer, $newPersistentVolume);
+
+                            StartDatabase::dispatch($this->resource);
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to copy volume data for '.$volume->name.': '.$e->getMessage());
+                        }
+                    }
+                }
+
+                $fileStorages = $this->resource->fileStorages()->get();
+                foreach ($fileStorages as $storage) {
+                    $newStorage = $storage->replicate([
+                        'id',
+                        'created_at',
+                        'updated_at',
+                    ])->fill([
+                        'resource_id' => $new_resource->id,
+                    ]);
+                    $newStorage->save();
+                }
+
+                $scheduledBackups = $this->resource->scheduledBackups()->get();
+                foreach ($scheduledBackups as $backup) {
+                    $uuid = new_public_id();
+                    $newBackup = $backup->replicate([
+                        'id',
+                        'created_at',
+                        'updated_at',
+                    ])->fill([
+                        'uuid' => $uuid,
+                        'database_id' => $new_resource->id,
+                        'database_type' => $new_resource->getMorphClass(),
+                        'team_id' => currentTeam()->id,
+                    ]);
+                    $newBackup->save();
+                }
+
+                $environmentVaribles = $this->resource->environment_variables()->get();
+                foreach ($environmentVaribles as $environmentVarible) {
+                    $payload = [
+                        'resourceable_id' => $new_resource->id,
+                        'resourceable_type' => $new_resource->getMorphClass(),
+                    ];
+                    $newEnvironmentVariable = $environmentVarible->replicate([
+                        'id',
+                        'created_at',
+                        'updated_at',
+                    ])->fill($payload);
+                    $newEnvironmentVariable->save();
+                }
+
+                $route = route('project.database.configuration', [
+                    'project_uuid' => $new_environment->project->uuid,
+                    'environment_uuid' => $new_environment->uuid,
+                    'database_uuid' => $new_resource->uuid,
+                ]).'#resource-operations';
+
+                return redirect()->to($route);
+            } elseif ($this->resource->type() === 'service') {
+                $uuid = new_public_id();
+                $new_resource = $this->resource->replicate([
+                    'id',
+                    'created_at',
+                    'updated_at',
+                ])->fill([
+                    'uuid' => $uuid,
+                    'name' => $this->resource->name.'-clone-'.$uuid,
+                    'environment_id' => $new_environment->id,
+                    'destination_id' => $new_destination->id,
+                    'destination_type' => $new_destination->getMorphClass(),
+                    'server_id' => $new_destination->server_id,
+                ]);
+
+                $new_resource->save();
+
+                $tags = $this->resource->tags;
+                foreach ($tags as $tag) {
+                    $new_resource->tags()->attach($tag->id);
+                }
+
+                $scheduledTasks = $this->resource->scheduled_tasks()->get();
+                foreach ($scheduledTasks as $task) {
+                    $newTask = $task->replicate([
+                        'id',
+                        'created_at',
+                        'updated_at',
+                    ])->fill([
+                        'uuid' => new_public_id(),
+                        'service_id' => $new_resource->id,
+                        'team_id' => currentTeam()->id,
+                    ]);
+                    $newTask->save();
+                }
+
+                $environmentVariables = $this->resource->environment_variables()->get();
+                foreach ($environmentVariables as $environmentVariable) {
+                    $newEnvironmentVariable = $environmentVariable->replicate([
+                        'id',
+                        'created_at',
+                        'updated_at',
+                    ])->fill([
+                        'resourceable_id' => $new_resource->id,
+                        'resourceable_type' => $new_resource->getMorphClass(),
+                    ]);
+                    $newEnvironmentVariable->save();
+                }
+
+                foreach ($new_resource->applications() as $application) {
+                    $application->fill([
+                        'status' => 'exited',
+                    ])->save();
+
+                    $persistentVolumes = $application->persistentStorages()->get();
+                    foreach ($persistentVolumes as $volume) {
+                        $newName = '';
+                        if (str_starts_with($volume->name, $volume->resource->uuid)) {
+                            $newName = str($volume->name)->replace($volume->resource->uuid, $application->uuid);
+                        } else {
+                            $newName = $application->uuid.'-'.str($volume->name)->afterLast('-');
+                        }
+
+                        $newPersistentVolume = $volume->replicate([
+                            'id',
+                            'created_at',
+                            'updated_at',
+                            'uuid',
+                        ])->fill([
+                            'name' => $newName,
+                            'resource_id' => $application->id,
+                        ]);
+                        $newPersistentVolume->save();
+
+                        if ($this->cloneVolumeData) {
+                            try {
+                                StopService::dispatch($application);
+                                $sourceVolume = $volume->name;
+                                $targetVolume = $newPersistentVolume->name;
+                                $sourceServer = $application->service->destination->server;
+                                $targetServer = $new_resource->destination->server;
+
+                                VolumeCloneJob::dispatch($sourceVolume, $targetVolume, $sourceServer, $targetServer, $newPersistentVolume);
+
+                                StartService::dispatch($application);
+                            } catch (\Exception $e) {
+                                \Log::error('Failed to copy volume data for '.$volume->name.': '.$e->getMessage());
+                            }
+                        }
+                    }
+                }
+
+                foreach ($new_resource->databases() as $database) {
+                    $database->fill([
+                        'status' => 'exited',
+                    ])->save();
+
+                    $persistentVolumes = $database->persistentStorages()->get();
+                    foreach ($persistentVolumes as $volume) {
+                        $newName = '';
+                        if (str_starts_with($volume->name, $volume->resource->uuid)) {
+                            $newName = str($volume->name)->replace($volume->resource->uuid, $database->uuid);
+                        } else {
+                            $newName = $database->uuid.'-'.str($volume->name)->afterLast('-');
+                        }
+
+                        $newPersistentVolume = $volume->replicate([
+                            'id',
+                            'created_at',
+                            'updated_at',
+                            'uuid',
+                        ])->fill([
+                            'name' => $newName,
+                            'resource_id' => $database->id,
+                        ]);
+                        $newPersistentVolume->save();
+
+                        if ($this->cloneVolumeData) {
+                            try {
+                                StopService::dispatch($database->service);
+                                $sourceVolume = $volume->name;
+                                $targetVolume = $newPersistentVolume->name;
+                                $sourceServer = $database->service->destination->server;
+                                $targetServer = $new_resource->destination->server;
+
+                                VolumeCloneJob::dispatch($sourceVolume, $targetVolume, $sourceServer, $targetServer, $newPersistentVolume);
+
+                                StartService::dispatch($database->service);
+                            } catch (\Exception $e) {
+                                \Log::error('Failed to copy volume data for '.$volume->name.': '.$e->getMessage());
+                            }
+                        }
+                    }
+                }
+
+                $new_resource->parse();
+
+                $route = route('project.service.configuration', [
+                    'project_uuid' => $new_environment->project->uuid,
+                    'environment_uuid' => $new_environment->uuid,
+                    'service_uuid' => $new_resource->uuid,
+                ]).'#resource-operations';
+
+                return redirect()->to($route);
+            }
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    public function moveTo($environment_id)
+    {
+        try {
+            $this->authorize('update', $this->resource);
+            $new_environment = Environment::ownedByCurrentTeam()->findOrFail($environment_id);
+            $this->resource->fill([
+                'environment_id' => $environment_id,
+            ])->save();
+            if ($this->resource->type() === 'application') {
+                $route = route('project.application.configuration', [
+                    'project_uuid' => $new_environment->project->uuid,
+                    'environment_uuid' => $new_environment->uuid,
+                    'application_uuid' => $this->resource->uuid,
+                ]).'#resource-operations';
+
+                return redirect()->to($route);
+            } elseif (str($this->resource->type())->startsWith('standalone-')) {
+                $route = route('project.database.configuration', [
+                    'project_uuid' => $new_environment->project->uuid,
+                    'environment_uuid' => $new_environment->uuid,
+                    'database_uuid' => $this->resource->uuid,
+                ]).'#resource-operations';
+
+                return redirect()->to($route);
+            } elseif ($this->resource->type() === 'service') {
+                $route = route('project.service.configuration', [
+                    'project_uuid' => $new_environment->project->uuid,
+                    'environment_uuid' => $new_environment->uuid,
+                    'service_uuid' => $this->resource->uuid,
+                ]).'#resource-operations';
+
+                return redirect()->to($route);
+            }
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    public function migrateTo(string $destination_uuid)
+    {
+        try {
+            $this->authorize('update', $this->resource);
+
+            $new_destination = find_resource_destination_for_current_team($destination_uuid);
+            if (! $new_destination) {
+                return $this->addError('destination_id', 'Destination not found.');
+            }
+
+            $result = MigrateResourceToDestination::run(
+                $this->resource,
+                $new_destination,
+                $this->migrateVolumeData,
+            );
+
+            $this->dispatch('success', $result['message']);
+
+            $this->resource->loadMissing('environment.project');
+            $projectUuid = $this->projectUuid ?? $this->resource->environment?->project?->uuid;
+            $environmentUuid = $this->environmentUuid ?? $this->resource->environment?->uuid;
+
+            if (! $projectUuid || ! $environmentUuid) {
+                return null;
+            }
+
+            if ($this->resource->type() === 'application') {
+                $route = route('project.application.configuration', [
+                    'project_uuid' => $projectUuid,
+                    'environment_uuid' => $environmentUuid,
+                    'application_uuid' => $this->resource->uuid,
+                ]).'#resource-operations';
+            } elseif (str($this->resource->type())->startsWith('standalone-')) {
+                $route = route('project.database.configuration', [
+                    'project_uuid' => $projectUuid,
+                    'environment_uuid' => $environmentUuid,
+                    'database_uuid' => $this->resource->uuid,
+                ]).'#resource-operations';
+            } elseif ($this->resource->type() === 'service') {
+                $route = route('project.service.configuration', [
+                    'project_uuid' => $projectUuid,
+                    'environment_uuid' => $environmentUuid,
+                    'service_uuid' => $this->resource->uuid,
+                ]).'#resource-operations';
+            } else {
+                return null;
+            }
+
+            return redirect()->to($route);
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+
+            return $this->addError('destination_id', $message);
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    public function render()
+    {
+        return view('livewire.project.shared.resource-operations');
+    }
+}

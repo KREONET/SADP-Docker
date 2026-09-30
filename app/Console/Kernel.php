@@ -1,0 +1,154 @@
+<?php
+
+namespace App\Console;
+
+use App\Jobs\ApiTokenExpirationWarningJob;
+use App\Jobs\CheckForUpdatesJob;
+use App\Jobs\CheckHelperImageJob;
+use App\Jobs\CheckMissingDatabaseBackupsJob;
+use App\Jobs\CleanupInstanceStuffsJob;
+use App\Jobs\CleanupOrphanedPreviewContainersJob;
+use App\Jobs\CleanupStaleMultiplexedConnections;
+use App\Jobs\PullChangelog;
+use App\Jobs\PullTemplatesFromCDN;
+use App\Jobs\RegenerateSslCertJob;
+use App\Jobs\RevalidateUnusableS3StoragesJob;
+use App\Jobs\ServerManagerJob;
+use App\Jobs\UpdateCoolifyJob;
+use App\Models\InstanceSettings;
+use App\Services\ScheduledJobDeliveryService;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+
+class Kernel extends ConsoleKernel
+{
+    private Schedule $scheduleInstance;
+
+    private InstanceSettings $settings;
+
+    private string $updateCheckFrequency;
+
+    private string $instanceTimezone;
+
+    protected function schedule(Schedule $schedule): void
+    {
+        $this->scheduleInstance = $schedule;
+        $this->settings = instanceSettings();
+        $this->updateCheckFrequency = $this->settings->update_check_frequency ?: '0 * * * *';
+
+        $this->instanceTimezone = $this->settings->instance_timezone ?: config('app.timezone');
+
+        if (validate_timezone($this->instanceTimezone) === false) {
+            $this->instanceTimezone = config('app.timezone');
+        }
+
+        $this->scheduleInstance->call(fn () => app(CleanupStaleMultiplexedConnections::class)->handle())
+            ->name('cleanup:ssh-mux')
+            ->hourly()
+            ->when(fn () => config('constants.ssh.mux_enabled') && ! config('constants.coolify.is_windows_docker_desktop'));
+        $this->scheduleInstance->command('cleanup:redis --clear-locks')->daily();
+        $this->scheduleInstance->call(fn () => app(ScheduledJobDeliveryService::class)->deleteOldOccurrences())
+            ->name('cleanup:scheduled-job-occurrences')
+            ->dailyAt('04:00')
+            ->onOneServer();
+        $this->scheduleInstance->command('cleanup:stucked-resources')
+            ->dailyAt('03:17')
+            ->onOneServer()
+            ->withoutOverlapping(60)
+            ->runInBackground();
+        $this->scheduleInstance->command('sanctum:prune-expired --hours=1')->hourly()->onOneServer();
+        $this->scheduleInstance->command('dns:release-orphaned-records')
+            ->hourly()
+            ->onOneServer()
+            ->withoutOverlapping(60)
+            ->runInBackground();
+        $this->scheduleInstance->job(new ApiTokenExpirationWarningJob)->hourly()->onOneServer();
+        $this->scheduleInstance->job(new CheckMissingDatabaseBackupsJob)->hourly()->onOneServer();
+        $this->scheduleInstance->job(new RevalidateUnusableS3StoragesJob)->hourly()->onOneServer();
+
+        if (isDev()) {
+            // Instance Jobs
+            $this->scheduleInstance->command('horizon:snapshot')->everyMinute();
+            $this->scheduleInstance->job(new CleanupInstanceStuffsJob)->everyMinute()->onOneServer();
+            $this->scheduleInstance->job(new CheckHelperImageJob)->everyTenMinutes()->onOneServer();
+
+            // Server Jobs
+            $this->scheduleInstance->job(new ServerManagerJob)->everyMinute()->onOneServer();
+
+            // Scheduled Jobs (Backups & Tasks)
+            $this->scheduleScheduledJobs();
+
+            $this->scheduleInstance->command('uploads:clear')->everyTwoMinutes();
+
+        } else {
+            // Instance Jobs
+            $this->scheduleInstance->command('horizon:snapshot')->everyFiveMinutes();
+            $this->scheduleInstance->command('cleanup:unreachable-servers')->daily()->onOneServer();
+
+            $this->scheduleInstance->job(new PullTemplatesFromCDN)->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
+            $this->scheduleInstance->job(new PullChangelog)->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
+
+            $this->scheduleInstance->job(new CleanupInstanceStuffsJob)->everyTwoMinutes()->onOneServer();
+            $this->scheduleUpdates();
+
+            // Server Jobs
+            $this->scheduleInstance->job(new ServerManagerJob)->everyMinute()->onOneServer();
+
+            $this->pullImages();
+
+            // Scheduled Jobs (Backups & Tasks)
+            $this->scheduleScheduledJobs();
+
+            $this->scheduleInstance->job(new RegenerateSslCertJob)->twiceDaily()->onOneServer();
+
+            $this->scheduleInstance->command('cleanup:database --yes')->daily();
+            $this->scheduleInstance->command('uploads:clear')->everyTwoMinutes();
+
+            // Cleanup orphaned PR preview containers daily
+            $this->scheduleInstance->job(new CleanupOrphanedPreviewContainersJob)->daily()->onOneServer();
+        }
+    }
+
+    private function pullImages(): void
+    {
+        $this->scheduleInstance->job(new CheckHelperImageJob)
+            ->cron($this->updateCheckFrequency)
+            ->timezone($this->instanceTimezone)
+            ->onOneServer();
+    }
+
+    /**
+     * Run the dispatcher in the scheduler process, so a busy queue cannot delay it. Parallel runs
+     * are safe because each occurrence is claimed with an atomic update of next_run_at.
+     */
+    private function scheduleScheduledJobs(): void
+    {
+        $this->scheduleInstance->command('scheduled:dispatch')
+            ->everyMinute()
+            ->onOneServer()
+            ->runInBackground();
+    }
+
+    private function scheduleUpdates(): void
+    {
+        $this->scheduleInstance->job(new CheckForUpdatesJob)
+            ->cron($this->updateCheckFrequency)
+            ->timezone($this->instanceTimezone)
+            ->onOneServer();
+
+        if ($this->settings->is_auto_update_enabled) {
+            $autoUpdateFrequency = $this->settings->auto_update_frequency;
+            $this->scheduleInstance->job(new UpdateCoolifyJob)
+                ->cron($autoUpdateFrequency)
+                ->timezone($this->instanceTimezone)
+                ->onOneServer();
+        }
+    }
+
+    protected function commands(): void
+    {
+        $this->load(__DIR__.'/Commands');
+
+        require base_path('routes/console.php');
+    }
+}
