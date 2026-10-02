@@ -6,7 +6,8 @@
 #   ./scripts/dev stop
 #
 # Env: <checkout>/.env, then <main checkout>/.dev-instances/<name>.env (generated).
-# Optional profiles: vite, mailpit, minio, testing-host (scripts/dev enables them).
+# Optional profiles: vite, mailpit, minio, testing-host (scripts/dev enables them), and
+# observability (Loki + Grafana, enabled by ./scripts/dev demo).
 
 services:
   coolify:
@@ -198,12 +199,43 @@ services:
     networks:
       - coolify
 
+  # Log demo: Coolify ships logs to http://loki:3100 (Platform Admin → Logs); Grafana shows them.
+  loki:
+    profiles: ["observability"]
+    image: grafana/loki:3.5.1
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    networks:
+      - coolify
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:12.2.0
+    depends_on:
+      - loki
+    ports:
+      - "${DEV_BIND_ADDRESS:-0.0.0.0}:${FORWARD_GRAFANA_PORT:-3000}:3000"
+    environment:
+      # Development only: open Grafana without a login.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/coolify-logs.json
+    volumes:
+      - ./docker/development/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - coolify
+
 volumes:
   backups_data:
   postgres_data:
   redis_data:
   coolify_data:
   minio_data:
+  loki_data:
+  grafana_data:
 
 networks:
   coolify:

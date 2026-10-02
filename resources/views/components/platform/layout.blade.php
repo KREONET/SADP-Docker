@@ -5,18 +5,19 @@
         ['label' => 'Groups', 'route' => 'platform.groups', 'icon' => 'teams'],
         ['label' => 'Sources', 'route' => 'platform.sources', 'icon' => 'globe'],
         ['label' => 'Security', 'route' => 'platform.security', 'icon' => 'keys'],
+        ['label' => 'Logs', 'route' => 'platform.logs', 'icon' => 'file-content'],
     ];
 @endphp
 
 <section class="application-settings-workspace w-full max-w-none">
     <header class="settings-mobile-header xl:hidden">
         <h1 class="settings-mobile-title">Platform Admin</h1>
-        <p class="settings-mobile-description">Manage every team, application, source and security policy.</p>
+        <p class="settings-mobile-description">Manage every team, application, source, security policy and log.</p>
     </header>
     <div class="grid min-w-0 gap-8 xl:grid-cols-[210px_minmax(0,1fr)] xl:gap-8">
         <aside class="application-settings-navigation min-w-0 xl:self-start">
             <nav aria-label="Platform admin"
-                class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
+                class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
                 <div class="nav-section col-span-full hidden xl:block">Platform Admin</div>
                 @foreach ($platformMenuItems as $menuItem)
                     <a wire:key="platform-menu-{{ str($menuItem['label'])->slug() }}"

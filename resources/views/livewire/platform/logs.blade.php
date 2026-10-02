@@ -1,0 +1,174 @@
+<div>
+    <x-slot:title>Logs | Platform Admin | Coolify</x-slot>
+
+    <x-platform.layout>
+        <div class="flex min-w-0 flex-col gap-6">
+            <form wire:submit="saveCollection">
+                <x-application.settings-section title="Log collection"
+                    description="Collect user activity, Coolify system logs (warning and above) and application container logs for every team. Turning the master switch off stops all collection and Loki shipping.">
+                    <div class="grid gap-4">
+                        <x-forms.checkbox id="isLogCollectionEnabled" label="Enable log collection (master switch)" />
+                        <div class="grid gap-1 lg:grid-cols-3">
+                            <x-forms.checkbox id="isAuditLogCollectionEnabled" label="User activity (audit events)"
+                                helper="Logins, failed logins and resource changes. Audit events are always kept for 90 days for team audit logs; this switch controls whether they are included here and in Loki." />
+                            <x-forms.checkbox id="isSystemLogCollectionEnabled" label="Coolify system logs"
+                                helper="Warnings and errors written by Coolify itself (web, queue workers, scheduler)." />
+                            <x-forms.checkbox id="isContainerLogCollectionEnabled" label="Application container logs"
+                                helper="Every 5 minutes, new lines (up to 500 per container) of running application and service containers are read over SSH. Swarm servers are skipped." />
+                        </div>
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <x-forms.input id="logRetentionDays" type="number" min="1" max="365" required
+                                label="Keep system and container logs (days)"
+                                helper="Older collected lines are deleted daily. Loki keeps its own retention." />
+                        </div>
+                        <div class="flex justify-end">
+                            <x-forms.button type="submit" isHighlighted>Save collection settings</x-forms.button>
+                        </div>
+                    </div>
+                </x-application.settings-section>
+            </form>
+
+            <form wire:submit="saveLoki">
+                <x-application.settings-section title="Loki / Grafana"
+                    description="Send collected logs to Grafana Loki with the push API. In Grafana, add Loki as a data source and query {service_name=`coolify`} | json in Explore.">
+                    <div class="grid gap-4">
+                        <x-forms.checkbox id="isLokiShippingEnabled" label="Ship logs to Loki" />
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <x-forms.input id="lokiUrl" label="Loki URL" placeholder="https://loki.example.com"
+                                helper="Base URL or full push URL. /loki/api/v1/push is added when missing." />
+                            <x-forms.input id="lokiTenantId" label="Tenant ID (X-Scope-OrgID)"
+                                helper="Only for multi-tenant Loki. Leave empty otherwise." />
+                            <x-forms.input id="lokiUsername" label="Basic auth username"
+                                helper="For Grafana Cloud, use the Loki user ID. Leave empty when Loki has no authentication." />
+                            <x-forms.input id="lokiPassword" type="password" allowToPeak label="Basic auth password or API token"
+                                helper="Leave empty to keep the stored value." />
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] text-neutral-600 dark:text-fg-dim">
+                            @if ($lokiActive)
+                                <x-status-badge status="Shipping" type="success" />
+                            @else
+                                <x-status-badge status="Not shipping" type="neutral" />
+                            @endif
+                            @if ($hasLokiPassword)
+                                <x-status-badge status="Password stored" type="success" />
+                                <x-forms.button type="button" wire:click="clearLokiPassword" isError>Remove password</x-forms.button>
+                            @endif
+                            @if ($lokiActive)
+                                <span>Waiting to send: {{ number_format($lokiPending) }}</span>
+                            @endif
+                            @if ($lokiLastPushedAt)
+                                <span title="{{ $lokiLastPushedAt->toDayDateTimeString() }}">· Last push {{ $lokiLastPushedAt->diffForHumans() }}</span>
+                            @endif
+                        </div>
+                        @if ($lokiLastError)
+                            <x-callout type="warning" title="Last Loki error">{{ $lokiLastError }}</x-callout>
+                        @endif
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <x-forms.button type="button" wire:click="testLokiConnection">Send test line</x-forms.button>
+                            <x-forms.button type="submit" isHighlighted>Save Loki settings</x-forms.button>
+                        </div>
+                    </div>
+                </x-application.settings-section>
+            </form>
+
+            <x-application.settings-section title="Log viewer" flush>
+                <x-slot:actions>
+                    <div class="flex flex-wrap gap-2">
+                        <x-forms.button type="button" wire:click="export('ndjson')">Export NDJSON</x-forms.button>
+                        <x-forms.button type="button" wire:click="export('csv')">Export CSV</x-forms.button>
+                    </div>
+                </x-slot:actions>
+
+                <div class="flex flex-col gap-2 border-b border-neutral-200 p-3 sm:flex-row sm:items-center dark:border-white/[0.08]">
+                    <div class="relative min-w-0 flex-1 sm:max-w-sm">
+                        <x-reicon name="search"
+                            class="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-fg-faint" />
+                        <input wire:model.live.debounce.300ms="search" type="search" placeholder="Search logs"
+                            aria-label="Search logs"
+                            class="h-8! w-full rounded-lg! border-neutral-200! bg-white! py-0! pr-8! pl-8! text-[12px]! shadow-none! placeholder:text-neutral-400 focus:border-accent! focus:ring-0! dark:border-white/[0.08]! dark:bg-white/[0.035]! dark:text-fg! dark:placeholder:text-fg-faint">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:flex">
+                        <select class="input sm:w-44" wire:model.live="source" aria-label="Log source">
+                            <option value="audit">User activity</option>
+                            <option value="system">Coolify system</option>
+                            <option value="container">Application containers</option>
+                        </select>
+                        <select class="input sm:w-32" wire:model.live="level" aria-label="Log level">
+                            <option value="all">All levels</option>
+                            @foreach ($levelOptions as $levelOption)
+                                <option wire:key="level-{{ $levelOption }}" value="{{ $levelOption }}">{{ Str::headline($levelOption) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                @unless ($sourceActive)
+                    <div class="border-b border-neutral-200 p-3 dark:border-white/[0.08]">
+                        <x-callout type="info" title="Collection is off for this source">
+                            Existing entries are shown. Turn on the master switch and this source above to collect new entries.
+                        </x-callout>
+                    </div>
+                @endunless
+
+                @if ($entries->isNotEmpty())
+                    <div class="overflow-x-auto">
+                        <div class="data-table transition-opacity" wire:loading.class="opacity-50 pointer-events-none"
+                            wire:target="search,source,level,setPage,previousPage,nextPage">
+                            <div class="grid min-w-[760px] grid-cols-[10rem_5rem_12rem_minmax(0,1fr)] gap-4 border-b border-neutral-200 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:border-white/[0.07] dark:text-fg-faint">
+                                <span>Time</span>
+                                <span>Level</span>
+                                <span>{{ $source === 'audit' ? 'Actor' : 'Resource' }}</span>
+                                <span>Message</span>
+                            </div>
+                            @foreach ($entries as $entry)
+                                @php
+                                    $time = $entry instanceof \App\Models\AuditEvent ? $entry->created_at : $entry->logged_at;
+                                @endphp
+                                <div wire:key="log-{{ $source }}-{{ $entry->id }}"
+                                    class="grid min-w-[760px] grid-cols-[10rem_5rem_12rem_minmax(0,1fr)] gap-4 border-b border-neutral-200 px-4 py-2.5 last:border-b-0 dark:border-white/[0.07]">
+                                    <time datetime="{{ $time?->toIso8601String() }}" title="{{ $time?->toDayDateTimeString() }}"
+                                        class="text-[11px] text-neutral-500 dark:text-fg-faint">
+                                        {{ $time?->format('Y-m-d H:i:s') }}
+                                    </time>
+                                    <div>
+                                        <x-status-badge :status="$entry->level" :type="match ($entry->level) {
+                                            'info', 'debug', 'notice' => 'neutral',
+                                            'warning' => 'warning',
+                                            default => 'error',
+                                        }" />
+                                    </div>
+                                    <div class="min-w-0 text-[12px]">
+                                        @if ($entry instanceof \App\Models\AuditEvent)
+                                            <div class="truncate font-medium text-black dark:text-fg">{{ $entry->actor_name ?: Str::headline($entry->actor_type) }}</div>
+                                            <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">{{ $entry->actor_email ?: $entry->ip_address }}</div>
+                                        @else
+                                            <div class="truncate font-medium text-black dark:text-fg">{{ $entry->resource_name ?: 'Coolify' }}</div>
+                                            @if ($entry->container_name)
+                                                <div class="truncate font-mono text-[11px] text-neutral-500 dark:text-fg-faint">{{ $entry->container_name }}</div>
+                                            @endif
+                                        @endif
+                                    </div>
+                                    <div class="min-w-0">
+                                        @if ($entry instanceof \App\Models\AuditEvent)
+                                            <div class="truncate text-[12px] font-medium text-black dark:text-fg">{{ $entry->description }}</div>
+                                            <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">{{ $entry->event }}</div>
+                                        @else
+                                            <pre class="whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-700 dark:text-fg-dim">{{ Str::limit($entry->message, 1000) }}</pre>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <x-table-pagination :from="$entries->firstItem() ?? 0" :to="$entries->lastItem() ?? 0"
+                        :total="$entries->total()" :current-page="$entries->currentPage()"
+                        :last-page="$entries->lastPage()" wire-target="setPage,previousPage,nextPage"
+                        previous-action="previousPage" next-action="nextPage" />
+                @else
+                    <x-empty title="No log entries" description="No entries match this source and filter yet." icon-name="file-content" size="sm" />
+                @endif
+            </x-application.settings-section>
+        </div>
+    </x-platform.layout>
+</div>

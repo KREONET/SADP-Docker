@@ -1,0 +1,59 @@
+# Dependencies (installed with composer install / npm ci)
+/vendor
+/node_modules
+/docker/coolify-terminal/node_modules
+
+# Frontend build output (npm run build / npm run dev)
+/public/build
+/public/hot
+/public/storage
+
+# Local environment and secrets.
+# Templates (.env.*.example, .env.production, .env.testing, .env.dusk.ci) stay tracked.
+.env
+.env.backup
+.env.secrets
+.env.local
+.env.dusk.local
+auth.json
+/storage/*.key
+/.ssh
+.rnd
+
+# Per-branch dev instances created by ./scripts/dev
+/.dev-instances
+
+# Test and QA output
+/.phpunit.cache
+.phpunit.result.cache
+/coverage
+/tests/Browser/Screenshots
+/tests/Browser/console
+/tests/Browser/source
+/test-results
+/playwright-report
+/blob-report
+
+# Laravel / debugging tools
+.ignition.json
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+Homestead.json
+Homestead.yaml
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+
+# Editors, OS and local tool settings
+/.idea
+/.vscode
+/.fleet
+/.zed
+/.npm
+/.bash_history
+/_data
+.DS_Store
+Thumbs.db
+/.claude/settings.local.json

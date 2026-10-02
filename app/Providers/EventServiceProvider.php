@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Logging\SystemLogRecorder;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -9,6 +10,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use SocialiteProviders\Authentik\AuthentikExtendSocialite;
 use SocialiteProviders\Azure\AzureExtendSocialite;
@@ -35,6 +37,7 @@ class EventServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(MessageLogged::class, [SystemLogRecorder::class, 'handle']);
         Event::listen(Login::class, function (Login $event): void {
             auditLog('auth.user.login_succeeded', $this->authContext($event->user));
         });

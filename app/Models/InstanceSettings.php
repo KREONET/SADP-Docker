@@ -72,6 +72,19 @@ class InstanceSettings extends Model
         'trivy_ignore_unfixed',
         'trivy_block_on_findings',
         'trivy_report_to_repository',
+        'is_log_collection_enabled',
+        'is_audit_log_collection_enabled',
+        'is_system_log_collection_enabled',
+        'is_container_log_collection_enabled',
+        'log_retention_days',
+        'is_loki_shipping_enabled',
+        'loki_url',
+        'loki_username',
+        'loki_password',
+        'loki_tenant_id',
+        'loki_shipping_started_at',
+        'loki_last_pushed_at',
+        'loki_last_error',
     ];
 
     protected $hidden = [
@@ -86,6 +99,7 @@ class InstanceSettings extends Model
         'sentinel_token',
         'forgejo_bot_token',
         'forgejo_webhook_secret',
+        'loki_password',
     ];
 
     protected $casts = [
@@ -123,6 +137,15 @@ class InstanceSettings extends Model
         'trivy_ignore_unfixed' => 'boolean',
         'trivy_block_on_findings' => 'boolean',
         'trivy_report_to_repository' => 'boolean',
+        'is_log_collection_enabled' => 'boolean',
+        'is_audit_log_collection_enabled' => 'boolean',
+        'is_system_log_collection_enabled' => 'boolean',
+        'is_container_log_collection_enabled' => 'boolean',
+        'log_retention_days' => 'integer',
+        'is_loki_shipping_enabled' => 'boolean',
+        'loki_password' => 'encrypted',
+        'loki_shipping_started_at' => 'datetime',
+        'loki_last_pushed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -135,6 +158,36 @@ class InstanceSettings extends Model
             // Clear once() cache so subsequent calls get fresh data
             Once::flush();
         });
+    }
+
+    /**
+     * The master switch gates every log source, so turning it off stops all collection and shipping at once.
+     */
+    public function isAuditLogCollectionActive(): bool
+    {
+        return (bool) $this->is_log_collection_enabled && (bool) $this->is_audit_log_collection_enabled;
+    }
+
+    public function isSystemLogCollectionActive(): bool
+    {
+        return (bool) $this->is_log_collection_enabled && (bool) $this->is_system_log_collection_enabled;
+    }
+
+    public function isContainerLogCollectionActive(): bool
+    {
+        return (bool) $this->is_log_collection_enabled && (bool) $this->is_container_log_collection_enabled;
+    }
+
+    public function isLokiShippingActive(): bool
+    {
+        return (bool) $this->is_log_collection_enabled
+            && (bool) $this->is_loki_shipping_enabled
+            && filled($this->loki_url);
+    }
+
+    public function logRetentionDays(): int
+    {
+        return max(1, min(365, (int) ($this->log_retention_days ?: 7)));
     }
 
     public function isPasswordRegistrationAllowed(): bool

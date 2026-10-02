@@ -5,6 +5,7 @@
 #   ./scripts/dev start [qemu-profile]   # start this branch's instance (KVM VM, Lima VM, or testing-host)
 #   ./scripts/dev stop [qemu-profile]    # stop containers and VMs; data is kept
 #   ./scripts/dev run [qemu-profile]     # start, follow logs, stop on exit (Jean)
+#   ./scripts/dev demo [qemu-profile]    # start with Loki + Grafana and fill every screen with demo data
 #   ./scripts/dev urls                   # all instances, ports, and state
 #   ./scripts/dev ps | logs | exec <cmd...> | container
 #   ./scripts/dev destroy <name>         # delete containers, volumes, VMs, and the port slot
@@ -20,7 +21,7 @@
 #
 # Ports: the main checkout uses 8000 (Reverb 6001, terminal 6002, db 5432, redis 6379,
 # vite 5173). Worktrees use 20000 + slot*10: app +0, Reverb +1, terminal +2, db +3,
-# redis +4, vite +5, mailpit +6/+7, minio +8/+9.
+# redis +4, vite +5, mailpit +6/+7, minio +8/+9. Grafana (demo) uses 3000, worktrees 30000 + slot.
 #
 # Env: COOLIFY_DEV_SERVER_BACKEND=auto|lima|testing-host, COOLIFY_DEV_KVM_PROFILE=<profile>
 #
@@ -38,7 +39,7 @@ QEMU_STORAGE="${DEVELOPMENT_QEMU_STORAGE_PATH:-/var/lib/libvirt/images/coolify-d
 LEGACY_CONTAINERS=(coolify coolify-db coolify-redis coolify-vite coolify-mail coolify-minio coolify-minio-init coolify-testing-host)
 
 usage() {
-  sed -n '2,26p' "$0" | sed 's/^# \?//'
+  sed -n '2,27p' "$0" | sed 's/^# \?//'
 }
 
 normalize_name() {
@@ -108,17 +109,18 @@ app_url() {
 
 ensure_env() {
   local name="$1" slot env_file existing_key base
-  local app reverb terminal db redis vite mail mail_ui minio minio_ui
+  local app reverb terminal db redis vite mail mail_ui minio minio_ui grafana
   slot="$(instance_slot "$name")"
   env_file="$(env_file "$name")"
 
   if ! is_linked_worktree && [[ -z "${COOLIFY_DEV_INSTANCE:-}" ]]; then
     app=8000 reverb=6001 terminal=6002 db=5432 redis=6379 vite=5173
-    mail=1025 mail_ui=8025 minio=9000 minio_ui=9001
+    mail=1025 mail_ui=8025 minio=9000 minio_ui=9001 grafana=3000
   else
     base=$((20000 + slot * 10))
     app=$base reverb=$((base + 1)) terminal=$((base + 2)) db=$((base + 3)) redis=$((base + 4))
     vite=$((base + 5)) mail=$((base + 6)) mail_ui=$((base + 7)) minio=$((base + 8)) minio_ui=$((base + 9))
+    grafana=$((30000 + slot))
   fi
 
   # Never rotate APP_KEY once set: encrypted DB columns (private keys, secrets)
@@ -154,6 +156,7 @@ FORWARD_MAILPIT_PORT=${mail}
 FORWARD_MAILPIT_DASHBOARD_PORT=${mail_ui}
 FORWARD_MINIO_PORT=${minio}
 FORWARD_MINIO_PORT_CONSOLE=${minio_ui}
+FORWARD_GRAFANA_PORT=${grafana}
 PUSHER_APP_ID=coolify-${name}
 PUSHER_APP_KEY=coolify-${name}
 PUSHER_APP_SECRET=coolify-${name}
@@ -198,6 +201,10 @@ select_backend() {
   profiles=(--profile vite --profile mailpit --profile minio)
   if [[ "$backend" == "testing-host" ]]; then
     profiles+=(--profile testing-host)
+  fi
+  # Loki + Grafana start only with demo; the other commands include them so they stop and show too.
+  if [[ "$command" != start && "$command" != run ]]; then
+    profiles+=(--profile observability)
   fi
 }
 
@@ -471,7 +478,7 @@ case "$command" in
     usage
     exit 0
     ;;
-  start | stop | run)
+  start | stop | run | demo)
     if [[ $# -gt 1 ]]; then
       usage >&2
       exit 2
@@ -532,6 +539,15 @@ case "$command" in
     ;;
   stop)
     stop_backend
+    ;;
+  demo)
+    start_backend
+    echo "==> Seeding demo data"
+    compose "$instance" exec -T coolify php artisan dev:demo --loki-url=http://loki:3100
+    echo
+    echo "Coolify:  $(env_value "$instance" APP_URL)  (Platform Admin → Logs: /platform/logs)"
+    echo "Grafana:  $(app_url "$(env_value "$instance" FORWARD_GRAFANA_PORT)")  (dashboard: Coolify Logs)"
+    echo "Vite hot reload is on: edit resources/views or resources/css and the browser updates."
     ;;
   run)
     cleanup() {

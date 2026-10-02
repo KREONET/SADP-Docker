@@ -4,6 +4,7 @@ use App\Jobs\DeleteResourceJob;
 use App\Livewire\Platform\Applications;
 use App\Livewire\Platform\Dashboard;
 use App\Livewire\Platform\Groups;
+use App\Livewire\Platform\Logs;
 use App\Livewire\Platform\Security;
 use App\Livewire\Platform\Sources;
 use App\Models\Application;
@@ -57,13 +58,13 @@ function actAsPlatformUser(User $user, Team $team): void
 
 test('guests are redirected to login from platform pages', function (string $path) {
     $this->get($path)->assertRedirect('/login');
-})->with(['/platform', '/platform/applications', '/platform/groups', '/platform/sources', '/platform/security']);
+})->with(['/platform', '/platform/applications', '/platform/groups', '/platform/sources', '/platform/security', '/platform/logs']);
 
 test('team owners outside the root team cannot open platform pages', function (string $path) {
     actAsPlatformUser($this->tenantAdmin, $this->otherTeam);
 
     $this->get($path)->assertForbidden();
-})->with(['/platform', '/platform/applications', '/platform/groups', '/platform/sources', '/platform/security']);
+})->with(['/platform', '/platform/applications', '/platform/groups', '/platform/sources', '/platform/security', '/platform/logs']);
 
 test('root team members without admin role cannot open platform components', function (string $component) {
     $member = User::factory()->create();
@@ -71,7 +72,7 @@ test('root team members without admin role cannot open platform components', fun
     actAsPlatformUser($member, $this->rootTeam);
 
     Livewire::test($component)->assertForbidden();
-})->with([Dashboard::class, Applications::class, Groups::class, Sources::class, Security::class]);
+})->with([Dashboard::class, Applications::class, Groups::class, Sources::class, Security::class, Logs::class]);
 
 test('platform admins see applications of every team', function () {
     actAsPlatformUser($this->platformAdmin, $this->rootTeam);

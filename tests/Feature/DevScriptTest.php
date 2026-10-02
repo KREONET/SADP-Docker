@@ -158,6 +158,33 @@ it('gives a worktree branch its own port block, tailscale ports, and stable data
         ->and($this->devRoot.'/wt/.dev-instances')->not->toBeDirectory();
 });
 
+it('starts the demo with loki and grafana, seeds demo data, and prints the urls', function () {
+    $process = runDevScript('main', ['demo']);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and(devInstanceEnv('main'))->toContain('FORWARD_GRAFANA_PORT=3000')
+        ->and(devScriptLog())
+        ->toContain('--profile vite --profile mailpit --profile minio --profile testing-host --profile observability up -d --build')
+        ->toContain('exec -T coolify php artisan db:seed --class=ServerSeeder --force')
+        ->toContain('exec -T coolify php artisan dev:demo --loki-url=http://loki:3100')
+        ->and($process->getOutput())
+        ->toContain('Coolify:  https://devserver.example.ts.net:8000')
+        ->toContain('Grafana:  https://devserver.example.ts.net:3000');
+});
+
+it('gives each worktree its own grafana port and keeps loki out of a normal start', function () {
+    runDevScript('main', ['start']);
+    $start = runDevScript('wt', ['start']);
+    $stop = runDevScript('wt', ['stop']);
+
+    expect($start->isSuccessful())->toBeTrue($start->getErrorOutput())
+        ->and($stop->isSuccessful())->toBeTrue($stop->getErrorOutput())
+        ->and(devInstanceEnv('fix-some_thing'))->toContain('FORWARD_GRAFANA_PORT=30002')
+        ->and(devScriptLog())
+        ->not->toContain('--profile observability up')
+        ->toContain('--profile observability stop');
+});
+
 it('stops the other running instance of the same checkout', function () {
     runDevScript('main', ['start'], ['COOLIFY_DEV_INSTANCE' => 'older']);
     file_put_contents($this->devLog, '');

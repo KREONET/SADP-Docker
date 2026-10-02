@@ -23,6 +23,7 @@ use App\Livewire\Notifications\Webhook as NotificationWebhook;
 use App\Livewire\Platform\Applications as PlatformApplications;
 use App\Livewire\Platform\Dashboard as PlatformDashboard;
 use App\Livewire\Platform\Groups as PlatformGroups;
+use App\Livewire\Platform\Logs as PlatformLogs;
 use App\Livewire\Platform\Security as PlatformSecurity;
 use App\Livewire\Platform\Sources as PlatformSources;
 use App\Livewire\Profile\Appearance as ProfileAppearance;
@@ -175,6 +176,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/groups', PlatformGroups::class)->name('platform.groups');
         Route::get('/sources', PlatformSources::class)->name('platform.sources');
         Route::get('/security', PlatformSecurity::class)->name('platform.security');
+        Route::get('/logs', PlatformLogs::class)->name('platform.logs');
     });
     Route::get('/onboarding', BoardingIndex::class)->name('onboarding');
 

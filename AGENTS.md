@@ -19,6 +19,7 @@ Docker Compose-based dev setup with services: coolify (app, which also runs Reve
 ./scripts/dev start [qemu-profile]           # localhost VM: KVM (Linux, /dev/kvm + root/sudo) or Lima (macOS, limactl), else testing-host
 ./scripts/dev stop                           # stop containers and VMs; data is kept for the next start
 ./scripts/dev run                            # start + follow logs, stop on exit (Jean run script)
+./scripts/dev demo                           # start + Loki/Grafana (observability profile), seed demo data (php artisan dev:demo)
 ./scripts/dev urls                           # all instances, URLs, ports, and checkouts
 ./scripts/dev exec php artisan migrate       # run a command in this branch's Coolify container
 ./scripts/dev destroy <name>                 # delete containers, volumes, VMs, and the port slot

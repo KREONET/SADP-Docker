@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AuditEvent;
+use App\Services\Logging\SystemLogRecorder;
 use Illuminate\Support\Facades\Log;
 
 if (! function_exists('auditLog')) {
@@ -32,7 +33,7 @@ if (! function_exists('auditLog')) {
                 'path' => $request?->path(),
             ], $context));
 
-            Log::channel('audit')->{$level}($event, $payload);
+            SystemLogRecorder::withoutRecording(fn () => Log::channel('audit')->{$level}($event, $payload));
         } catch (Throwable) {
             // The database sink remains available when the optional channel fails.
         }

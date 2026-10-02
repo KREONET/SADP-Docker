@@ -9,13 +9,16 @@ use App\Jobs\CheckMissingDatabaseBackupsJob;
 use App\Jobs\CleanupInstanceStuffsJob;
 use App\Jobs\CleanupOrphanedPreviewContainersJob;
 use App\Jobs\CleanupStaleMultiplexedConnections;
+use App\Jobs\ContainerLogCollectionManagerJob;
 use App\Jobs\PullChangelog;
 use App\Jobs\PullTemplatesFromCDN;
 use App\Jobs\RegenerateSslCertJob;
 use App\Jobs\RevalidateUnusableS3StoragesJob;
 use App\Jobs\ServerManagerJob;
+use App\Jobs\ShipLogsToLokiJob;
 use App\Jobs\UpdateCoolifyJob;
 use App\Models\InstanceSettings;
+use App\Models\LogEntry;
 use App\Services\ScheduledJobDeliveryService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -65,6 +68,7 @@ class Kernel extends ConsoleKernel
         $this->scheduleInstance->job(new ApiTokenExpirationWarningJob)->hourly()->onOneServer();
         $this->scheduleInstance->job(new CheckMissingDatabaseBackupsJob)->hourly()->onOneServer();
         $this->scheduleInstance->job(new RevalidateUnusableS3StoragesJob)->hourly()->onOneServer();
+        $this->scheduleLogCollection();
 
         if (isDev()) {
             // Instance Jobs
@@ -127,6 +131,25 @@ class Kernel extends ConsoleKernel
             ->everyMinute()
             ->onOneServer()
             ->runInBackground();
+    }
+
+    /**
+     * The jobs re-check the switches, so turning collection off takes effect within one run.
+     */
+    private function scheduleLogCollection(): void
+    {
+        $this->scheduleInstance->job(new ContainerLogCollectionManagerJob)
+            ->everyFiveMinutes()
+            ->onOneServer()
+            ->when(fn () => (bool) InstanceSettings::query()->find(0)?->isContainerLogCollectionActive());
+        $this->scheduleInstance->job(new ShipLogsToLokiJob)
+            ->everyMinute()
+            ->onOneServer()
+            ->when(fn () => (bool) InstanceSettings::query()->find(0)?->isLokiShippingActive());
+        $this->scheduleInstance->call(fn () => LogEntry::pruneOlderThan(instanceSettings()->logRetentionDays()))
+            ->name('cleanup:log-entries')
+            ->dailyAt('04:30')
+            ->onOneServer();
     }
 
     private function scheduleUpdates(): void
