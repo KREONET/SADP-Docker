@@ -91,7 +91,7 @@ class Applications extends Component
 
             auditLog('platform.application.updated', ['application_uuid' => $application->uuid]);
             $this->cancelEdit();
-            $this->dispatch('success', 'Application updated.');
+            $this->dispatch('success', __('Application updated.'));
         } catch (DisallowedSourceException $e) {
             $this->addError('gitRepository', $e->getMessage());
         } catch (ValidationException $e) {
@@ -114,7 +114,7 @@ class Applications extends Component
             );
 
             auditLog('platform.application.redeployed', ['application_uuid' => $application->uuid]);
-            $this->dispatch($result['status'] === 'queue_full' ? 'error' : 'success', $result['message'] ?? 'Deployment queued.');
+            $this->dispatch($result['status'] === 'queue_full' ? 'error' : 'success', $result['message'] ?? __('Deployment queued.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -129,7 +129,7 @@ class Applications extends Component
             StopApplication::dispatch($application);
 
             auditLog('platform.application.stopped', ['application_uuid' => $application->uuid]);
-            $this->dispatch('success', 'Stopping the application.');
+            $this->dispatch('success', __('Stopping the application.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -139,7 +139,7 @@ class Applications extends Component
     {
         $this->authorizePlatformAdmin();
         if (! verifyPasswordConfirmation($password, $this)) {
-            return 'The provided password is incorrect.';
+            return __('The provided password is incorrect.');
         }
 
         try {
@@ -147,7 +147,7 @@ class Applications extends Component
             DeleteResourceJob::dispatch($application);
 
             auditLog('platform.application.deleted', ['application_uuid' => $application->uuid, 'application_name' => $application->name]);
-            $this->dispatch('success', "Deleting {$application->name}.");
+            $this->dispatch('success', __('Deleting :name.', ['name' => $application->name]));
 
             return true;
         } catch (\Throwable $e) {

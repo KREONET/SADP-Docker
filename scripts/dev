@@ -226,6 +226,23 @@ wait_for_coolify() {
   return 1
 }
 
+# The container turns healthy before its first-time setup (migrations and base seed data) is
+# finished. Demo data needs the base data, so wait for the setup of this container start.
+wait_for_initialization() {
+  local container started deadline
+  container="$(project_name "$instance")"
+  started="$(docker inspect --format '{{.State.StartedAt}}' "$container")"
+  deadline=$((SECONDS + ${COOLIFY_DEV_INIT_TIMEOUT:-300}))
+  echo "==> Waiting for the first-time setup of ${instance}"
+  until docker logs --since "$started" "$container" 2>&1 | grep -q 'init-setup: done'; do
+    if ((SECONDS >= deadline)); then
+      echo 'The first-time setup did not finish in time. Check ./scripts/dev logs, then run demo again.' >&2
+      return 1
+    fi
+    sleep 1
+  done
+}
+
 # Only one instance of a checkout runs at a time: they share its ports (main checkout)
 # and its public/hot Vite file. The legacy fixed-name stack also holds the main ports.
 stop_other_checkout_instances() {
@@ -541,13 +558,17 @@ case "$command" in
     stop_backend
     ;;
   demo)
+    # Load assets and hot reload through the app port, so one forwarded port is enough.
+    export VITE_ORIGIN="$(env_value "$instance" APP_URL)"
     start_backend
+    wait_for_initialization
     echo "==> Seeding demo data"
     compose "$instance" exec -T coolify php artisan dev:demo --loki-url=http://loki:3100
     echo
     echo "Coolify:  $(env_value "$instance" APP_URL)  (Platform Admin → Logs: /platform/logs)"
     echo "Grafana:  $(app_url "$(env_value "$instance" FORWARD_GRAFANA_PORT)")  (dashboard: Coolify Logs)"
-    echo "Vite hot reload is on: edit resources/views or resources/css and the browser updates."
+    echo "Vite hot reload is on through the app port: edit resources/views or resources/css and the browser updates."
+    echo "Over SSH, forward the app port (and 3000 for Grafana), e.g. ssh -L 8000:localhost:8000 -L 3000:localhost:3000 <server>"
     ;;
   run)
     cleanup() {

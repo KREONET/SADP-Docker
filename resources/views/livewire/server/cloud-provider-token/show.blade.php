@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($server, 'name')->limit(10) }} > Cloud Token | Coolify
+        {{ data_get_str($server, 'name')->limit(10) }} > {{ __('Cloud Token') }} | Coolify
     </x-slot>
 
     <livewire:server.navbar :server="$server" />
@@ -12,17 +12,17 @@
         <div class="application-settings-form w-full">
             @if ($server->hetzner_server_id || $server->vultr_instance_id)
                 <x-application.settings-section id="server-cloud-token-section"
-                    title="{{ $providerName }} token"
-                    helper="Choose the cloud credential used to manage this server." flush>
+                    :title="__(':provider token', ['provider' => $providerName])"
+                    :helper="__('Choose the cloud credential used to manage this server.')" flush>
                     <x-slot:actions>
                         <div class="flex items-center gap-2">
                             <x-forms.button canGate="update" :canResource="$server"
                                 wire:click.prevent="validateToken">
                                 <x-reicon name="refresh" class="size-3.5" />
-                                Validate token
+                                {{ __('Validate token') }}
                             </x-forms.button>
                             @can('create', App\Models\CloudProviderToken::class)
-                                <x-modal-input buttonTitle="+ Add" title="Add {{ $providerName }} Token">
+                                <x-modal-input :buttonTitle="__('+ Add')" :title="__('Add :provider Token', ['provider' => $providerName])">
                                     <livewire:security.cloud-provider-token-form :modal_mode="true"
                                         :provider="$provider" />
                                 </x-modal-input>
@@ -43,31 +43,31 @@
                                         {{ $token->name }}
                                     </p>
                                     @if (data_get($server, 'cloudProviderToken.id') === $token->id)
-                                        <x-status-badge status="Active" type="success" />
+                                        <x-status-badge :status="__('Active')" type="success" />
                                     @endif
                                 </div>
                                 <p class="mt-0.5 text-xs text-neutral-500 dark:text-fg-dim">
-                                    {{ $token->description ?: 'Created ' . $token->created_at->diffForHumans() }}
+                                    {{ $token->description ?: __('Created :time', ['time' => $token->created_at->diffForHumans()]) }}
                                 </p>
                             </div>
                             @if (data_get($server, 'cloudProviderToken.id') !== $token->id)
                                 <x-forms.button canGate="update" :canResource="$server"
                                     wire:click="setCloudProviderToken({{ $token->id }})">
-                                    Use this token
+                                    {{ __('Use this token') }}
                                 </x-forms.button>
                             @endif
                         </div>
                     @empty
-                        <x-empty size="sm" title="No {{ $providerName }} tokens"
-                            description="Add a token to manage this server through {{ $providerName }}."
+                        <x-empty size="sm" :title="__('No :provider tokens', ['provider' => $providerName])"
+                            :description="__('Add a token to manage this server through :provider.', ['provider' => $providerName])"
                             icon-name="keys" />
                     @endforelse
                 </x-application.settings-section>
             @else
-                <x-application.settings-section title="Cloud token"
-                    helper="Cloud credentials are available for servers created through a supported provider.">
-                    <x-empty size="sm" title="No cloud provider integration"
-                        description="This server was not created through Hetzner or Vultr, so it does not require a managed cloud token."
+                <x-application.settings-section :title="__('Cloud token')"
+                    :helper="__('Cloud credentials are available for servers created through a supported provider.')">
+                    <x-empty size="sm" :title="__('No cloud provider integration')"
+                        :description="__('This server was not created through Hetzner or Vultr, so it does not require a managed cloud token.')"
                         icon-name="keys" />
                 </x-application.settings-section>
             @endif

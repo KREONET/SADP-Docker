@@ -31,7 +31,7 @@ class Show extends Component
     protected function messages(): array
     {
         return [
-            'name.required' => 'Token name is required.',
+            'name.required' => __('Token name is required.'),
         ];
     }
 
@@ -48,7 +48,7 @@ class Show extends Component
             $this->name = $this->cloudProviderToken->name;
             $this->description = $this->cloudProviderToken->description;
         } catch (AuthorizationException) {
-            abort(403, 'You do not have permission to view this cloud token.');
+            abort(403, __('You do not have permission to view this cloud token.'));
         } catch (\Throwable) {
             abort(404);
         }
@@ -73,7 +73,7 @@ class Show extends Component
             'provider' => $this->cloudProviderToken->provider,
         ]);
 
-        $this->dispatch('success', 'Cloud provider token updated.');
+        $this->dispatch('success', __('Cloud provider token updated.'));
         $this->dispatch('securityResourceChanged');
     }
 
@@ -93,8 +93,8 @@ class Show extends Component
         $this->dispatch(
             $isValid ? 'success' : 'error',
             $isValid
-                ? "{$providerName} token is valid."
-                : "{$providerName} token validation failed. Please check the token."
+                ? __(':provider token is valid.', ['provider' => $providerName])
+                : __(':provider token validation failed. Please check the token.', ['provider' => $providerName])
         );
 
         auditLog('ui.cloud_token.validated', [
@@ -112,7 +112,7 @@ class Show extends Component
 
         if ($this->cloudProviderToken->hasServers()) {
             $serverCount = $this->cloudProviderToken->servers()->count();
-            $this->dispatch('error', "Cannot delete this token. It is currently used by {$serverCount} server(s). Please reassign those servers to a different token first.");
+            $this->dispatch('error', __('Cannot delete this token. It is currently used by :count server(s). Please reassign those servers to a different token first.', ['count' => $serverCount]));
 
             return null;
         }

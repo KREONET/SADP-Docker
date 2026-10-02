@@ -96,7 +96,7 @@
                         lineNumbersMinChars: 3,
                         automaticLayout: true,
                         language: '{{ $language }}',
-                        placeholder: 'Start typing here',
+                        placeholder: @js(__('Start typing here')),
                         domReadOnly: '{{ $readonly ?? false }}',
                         contextmenu: '!{{ $readonly ?? false }}',
                         renderLineHighlight: 'none',

@@ -214,8 +214,8 @@ class ByHetzner extends Component
     protected function messages(): array
     {
         return [
-            'selected_token_id.required' => 'Please select a Hetzner token.',
-            'selected_token_id.exists' => 'Selected token not found.',
+            'selected_token_id.required' => __('Please select a Hetzner token.'),
+            'selected_token_id.exists' => __('Selected token not found.'),
         ];
     }
 
@@ -308,7 +308,7 @@ class ByHetzner extends Component
 
         if (! $token) {
             $this->loading_data = false;
-            $this->dispatch('error', 'Please select a valid Hetzner token.');
+            $this->dispatch('error', __('Please select a valid Hetzner token.'));
 
             return;
         }
@@ -371,7 +371,7 @@ class ByHetzner extends Component
             $details = data_get($e->response->json(), $jsonMessageKey) ?: $e->response->body() ?: $details;
         }
 
-        return "{$providerName} API error: {$details}";
+        return __(':provider API error: :details', ['provider' => $providerName, 'details' => $details]);
     }
 
     private function getCpuVendorInfo(array $serverType): ?string
@@ -512,26 +512,26 @@ class ByHetzner extends Component
         $summary = [];
 
         if (count($this->selectedHetznerSshKeyIds) > 0) {
-            $summary[] = count($this->selectedHetznerSshKeyIds).' extra SSH '.str('key')->plural(count($this->selectedHetznerSshKeyIds));
+            $summary[] = trans_choice(':count extra SSH key|:count extra SSH keys', count($this->selectedHetznerSshKeyIds));
         }
 
         if (count($this->selectedHetznerFirewallIds) > 0) {
-            $summary[] = count($this->selectedHetznerFirewallIds).' '.str('firewall')->plural(count($this->selectedHetznerFirewallIds));
+            $summary[] = trans_choice(':count firewall|:count firewalls', count($this->selectedHetznerFirewallIds));
         }
 
         if (count($this->selectedHetznerNetworkIds) > 0) {
-            $summary[] = count($this->selectedHetznerNetworkIds).' private '.str('network')->plural(count($this->selectedHetznerNetworkIds));
+            $summary[] = trans_choice(':count private network|:count private networks', count($this->selectedHetznerNetworkIds));
         }
 
         if ($this->enable_backups) {
-            $summary[] = 'Backups on';
+            $summary[] = __('Backups on');
         }
 
         if (! $this->enable_ipv4 || ! $this->enable_ipv6) {
             $summary[] = collect([
                 $this->enable_ipv4 ? 'IPv4' : null,
                 $this->enable_ipv6 ? 'IPv6' : null,
-            ])->filter()->join(' + ') ?: 'No public IP';
+            ])->filter()->join(' + ') ?: __('No public IP');
         }
 
         if ($this->show_cloud_init_script || filled($this->cloud_init_script) || filled($this->selected_cloud_init_script_id)) {
@@ -680,8 +680,8 @@ class ByHetzner extends Component
         $this->validate();
 
         if (! $this->enable_ipv4 && ! $this->enable_ipv6) {
-            $this->addError('enable_ipv4', 'Enable at least one public IP protocol.');
-            $this->addError('enable_ipv6', 'Enable at least one public IP protocol.');
+            $this->addError('enable_ipv4', __('Enable at least one public IP protocol.'));
+            $this->addError('enable_ipv6', __('Enable at least one public IP protocol.'));
 
             return null;
         }
@@ -690,7 +690,7 @@ class ByHetzner extends Component
             $this->authorize('create', Server::class);
 
             if (Team::serverLimitReached()) {
-                return $this->dispatch('error', 'You have reached the server limit for your subscription.');
+                return $this->dispatch('error', __('You have reached the server limit for your subscription.'));
             }
 
             // Save cloud-init script if requested
@@ -768,7 +768,7 @@ class ByHetzner extends Component
                 }
             }
 
-            return $this->dispatch('error', 'You have reached the server limit for your subscription.');
+            return $this->dispatch('error', __('You have reached the server limit for your subscription.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

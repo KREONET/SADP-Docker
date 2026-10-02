@@ -37,8 +37,8 @@ class Create extends Component
         return array_merge(
             ValidationPatterns::combinedMessages(),
             [
-                'value.required' => 'The Private Key field is required.',
-                'value.string' => 'The Private Key must be a valid string.',
+                'value.required' => __('The Private Key field is required.'),
+                'value.string' => __('The Private Key must be a valid string.'),
             ]
         );
     }
@@ -66,7 +66,7 @@ class Create extends Component
             // If in modal mode, dispatch event and don't redirect
             if ($this->modal_mode) {
                 $this->dispatch('privateKeyCreated', keyId: $privateKey->id);
-                $this->dispatch('success', 'Private key created successfully.');
+                $this->dispatch('success', __('Private key created successfully.'));
 
                 return;
             }
@@ -83,7 +83,7 @@ class Create extends Component
         $this->publicKey = $validationResult['publicKey'];
 
         if (! $validationResult['isValid']) {
-            $this->addError('value', 'Invalid private key');
+            $this->addError('value', __('Invalid private key'));
         }
     }
 

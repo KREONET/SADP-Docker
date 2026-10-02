@@ -60,29 +60,32 @@ class Form extends Component
         return array_merge(
             ValidationPatterns::combinedMessages(),
             [
-                'region.required' => 'The Region field is required.',
-                'region.max' => 'The Region may not be greater than 255 characters.',
-                'key.required' => 'The Access Key field is required.',
-                'key.max' => 'The Access Key may not be greater than 255 characters.',
-                'secret.required' => 'The Secret Key field is required.',
-                'secret.max' => 'The Secret Key may not be greater than 255 characters.',
-                'bucket.required' => 'The Bucket field is required.',
-                'endpoint.required' => 'The Endpoint field is required.',
-                'endpoint.max' => 'The Endpoint may not be greater than 255 characters.',
+                'region.required' => __('The Region field is required.'),
+                'region.max' => __('The Region may not be greater than 255 characters.'),
+                'key.required' => __('The Access Key field is required.'),
+                'key.max' => __('The Access Key may not be greater than 255 characters.'),
+                'secret.required' => __('The Secret Key field is required.'),
+                'secret.max' => __('The Secret Key may not be greater than 255 characters.'),
+                'bucket.required' => __('The Bucket field is required.'),
+                'endpoint.required' => __('The Endpoint field is required.'),
+                'endpoint.max' => __('The Endpoint may not be greater than 255 characters.'),
             ]
         );
     }
 
-    protected $validationAttributes = [
-        'isUsable' => 'Is Usable',
-        'name' => 'Name',
-        'description' => 'Description',
-        'region' => 'Region',
-        'key' => 'Key',
-        'secret' => 'Secret',
-        'bucket' => 'Bucket',
-        'endpoint' => 'Endpoint',
-    ];
+    protected function validationAttributes(): array
+    {
+        return [
+            'isUsable' => __('Is Usable'),
+            'name' => __('Name'),
+            'description' => __('Description'),
+            'region' => __('Region'),
+            'key' => __('Key'),
+            'secret' => __('Secret'),
+            'bucket' => __('Bucket'),
+            'endpoint' => __('Endpoint'),
+        ];
+    }
 
     /**
      * Sync data between component properties and model
@@ -154,7 +157,7 @@ class Form extends Component
             $this->storage->save();
             $this->dispatch('storage-status-changed', isUsable: $this->isUsable);
 
-            return $this->dispatch('success', 'Connection is working.', 'Tested with "ListObjectsV2" action.');
+            return $this->dispatch('success', __('Connection is working.'), __('Tested with "ListObjectsV2" action.'));
         } catch (\Throwable $e) {
             if ($testedStorage) {
                 $this->isUsable = $testedStorage->is_usable;
@@ -164,7 +167,7 @@ class Form extends Component
             }
             $this->dispatch('storage-status-changed', isUsable: $this->isUsable);
 
-            $this->dispatch('error', 'Failed to test connection.', $e->getMessage());
+            $this->dispatch('error', __('Failed to test connection.'), $e->getMessage());
         }
     }
 
@@ -196,7 +199,7 @@ class Form extends Component
                 $this->isUsable = true;
             });
 
-            $this->dispatch('success', 'Storage settings updated and connection verified.');
+            $this->dispatch('success', __('Storage settings updated and connection verified.'));
         } catch (\Throwable $e) {
             // Refresh the model to revert UI to database values after rollback
             $this->storage->refresh();

@@ -53,7 +53,7 @@ class Resources extends Component
 
         unset($this->selectedStorages[$backupId]);
 
-        $this->dispatch('success', 'S3 disabled.', 'S3 backup has been disabled for this schedule.');
+        $this->dispatch('success', __('S3 disabled.'), __('S3 backup has been disabled for this schedule.'));
     }
 
     public function moveBackup(int $backupId): void
@@ -66,7 +66,7 @@ class Resources extends Component
         $newStorageId = $this->selectedStorages[$backupId] ?? null;
 
         if (! $newStorageId || (int) $newStorageId === $this->storage->id) {
-            $this->dispatch('error', 'No change.', 'The backup is already using this storage.');
+            $this->dispatch('error', __('No change.'), __('The backup is already using this storage.'));
 
             return;
         }
@@ -76,7 +76,7 @@ class Resources extends Component
             ->first();
 
         if (! $newStorage) {
-            $this->dispatch('error', 'Storage not found.');
+            $this->dispatch('error', __('Storage not found.'));
 
             return;
         }
@@ -87,7 +87,7 @@ class Resources extends Component
 
         unset($this->selectedStorages[$backupId]);
 
-        $this->dispatch('success', 'Backup moved.', "Moved to {$newStorage->name}.");
+        $this->dispatch('success', __('Backup moved.'), __('Moved to :name.', ['name' => $newStorage->name]));
     }
 
     public function disableVolumeS3(int $backupId): void
@@ -106,7 +106,7 @@ class Resources extends Component
 
         unset($this->selectedVolumeStorages[$backupId]);
 
-        $this->dispatch('success', 'S3 disabled.', 'S3 backup has been disabled for this schedule.');
+        $this->dispatch('success', __('S3 disabled.'), __('S3 backup has been disabled for this schedule.'));
     }
 
     public function moveVolumeBackup(int $backupId): void
@@ -120,7 +120,7 @@ class Resources extends Component
         $newStorageId = $this->selectedVolumeStorages[$backupId] ?? null;
 
         if (! $newStorageId || (int) $newStorageId === $this->storage->id) {
-            $this->dispatch('error', 'No change.', 'The backup is already using this storage.');
+            $this->dispatch('error', __('No change.'), __('The backup is already using this storage.'));
 
             return;
         }
@@ -131,7 +131,7 @@ class Resources extends Component
             ->first();
 
         if (! $newStorage) {
-            $this->dispatch('error', 'Storage not found.');
+            $this->dispatch('error', __('Storage not found.'));
 
             return;
         }
@@ -142,7 +142,7 @@ class Resources extends Component
 
         unset($this->selectedVolumeStorages[$backupId]);
 
-        $this->dispatch('success', 'Backup moved.', "Moved to {$newStorage->name}.");
+        $this->dispatch('success', __('Backup moved.'), __('Moved to :name.', ['name' => $newStorage->name]));
     }
 
     public function render()

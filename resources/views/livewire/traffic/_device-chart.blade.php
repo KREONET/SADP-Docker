@@ -14,7 +14,7 @@
     $hasDeviceData = array_sum(array_map('intval', $series)) > 0;
 @endphp
 @if (! $hasDeviceData)
-    <x-empty size="sm" title="No device data" description="No device data for the selected range." icon-name="network" />
+    <x-empty size="sm" :title="__('No device data')" :description="__('No device data for the selected range.')" icon-name="network" />
 @else
     <div wire:ignore id="{!! $deviceChartId !!}" class="min-h-[240px] w-full"></div>
 
@@ -48,11 +48,11 @@
                         const requests = Number(series[seriesIndex] ?? 0).toLocaleString();
 
                         return `<div class="apexcharts-tooltip-custom">
-                            <div class="apexcharts-tooltip-custom-value">${label}: <span class="apexcharts-tooltip-value-bold">${requests} requests</span></div>
+                            <div class="apexcharts-tooltip-custom-value">${label}: <span class="apexcharts-tooltip-value-bold">${@js(__(':count requests')).replace(':count', requests)}</span></div>
                         </div>`;
                     },
                 },
-                noData: { text: 'Loading devices…', style: { color: textColor } },
+                noData: { text: @js(__('Loading devices…')), style: { color: textColor } },
             });
             chart.render();
 

@@ -61,9 +61,9 @@ class Sources extends Component
         ]);
 
         if ($this->isSourceAllowlistEnabled && SourcePolicy::current()->allowedGitSources()->isEmpty()) {
-            $this->dispatch('warning', 'The allow-list is enabled but empty, so every git deployment is blocked.');
+            $this->dispatch('warning', __('The allow-list is enabled but empty, so every git deployment is blocked.'));
         } else {
-            $this->dispatch('success', 'Allowed sources saved.');
+            $this->dispatch('success', __('Allowed sources saved.'));
         }
         auditLog('platform.sources.allowlist_updated', ['enabled' => $this->isSourceAllowlistEnabled]);
     }
@@ -85,7 +85,7 @@ class Sources extends Component
         $this->forgejoBotToken = null;
         $this->hasForgejoBotToken = filled(instanceSettings()->forgejo_bot_token);
         auditLog('platform.sources.forgejo_updated', ['base_url' => $payload['forgejo_base_url']]);
-        $this->dispatch('success', 'Forgejo settings saved.');
+        $this->dispatch('success', __('Forgejo settings saved.'));
     }
 
     public function testForgejo(): void
@@ -95,12 +95,12 @@ class Sources extends Component
         try {
             $client = ForgejoClient::fromSettings(instanceSettings());
             if ($client === null) {
-                $this->dispatch('error', 'Save the Forgejo base URL first.');
+                $this->dispatch('error', __('Save the Forgejo base URL first.'));
 
                 return;
             }
             $user = $client->currentUser();
-            $this->dispatch('success', 'Connected to Forgejo as '.e((string) data_get($user, 'login', 'unknown')).'.');
+            $this->dispatch('success', __('Connected to Forgejo as :login.', ['login' => e((string) data_get($user, 'login', 'unknown'))]));
         } catch (\Throwable $e) {
             $this->dispatch('error', e($e->getMessage()));
         }
@@ -116,7 +116,7 @@ class Sources extends Component
         $this->revealedWebhookSecret = $secret;
 
         auditLog('platform.sources.forgejo_webhook_secret_rotated', []);
-        $this->dispatch('success', 'New webhook secret generated. Update the Forgejo webhook now.');
+        $this->dispatch('success', __('New webhook secret generated. Update the Forgejo webhook now.'));
     }
 
     public function removeBotToken(): void
@@ -124,7 +124,7 @@ class Sources extends Component
         $this->authorizePlatformAdmin();
         instanceSettings()->update(['forgejo_bot_token' => null]);
         $this->hasForgejoBotToken = false;
-        $this->dispatch('success', 'Bot token removed.');
+        $this->dispatch('success', __('Bot token removed.'));
     }
 
     private function cleanList(?string $value): ?string

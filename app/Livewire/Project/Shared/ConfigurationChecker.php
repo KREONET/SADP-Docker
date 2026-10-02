@@ -78,7 +78,7 @@ class ConfigurationChecker extends Component
                 $change['old_full_value'] = null;
                 $change['new_full_value'] = null;
                 $change['expandable'] = false;
-                $change['display_summary'] = data_get($change, 'type') === 'changed' ? 'Changed' : null;
+                $change['display_summary'] = data_get($change, 'type') === 'changed' ? __('Changed') : null;
 
                 return $change;
             })

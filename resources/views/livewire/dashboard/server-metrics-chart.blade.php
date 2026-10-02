@@ -37,6 +37,8 @@
     @script
         <script>
             (() => {
+                const memoryLabel = @js(__('Memory'));
+                const yourTimeLabel = @js(__('Your time'));
                 const chart = new ApexCharts(
                     document.getElementById('dashboard-server-metrics-{{ $server->uuid }}'), {
                         chart: {
@@ -50,7 +52,7 @@
                         },
                         series: [
                             { name: 'CPU', data: [] },
-                            { name: 'Memory', data: [] },
+                            { name: memoryLabel, data: [] },
                         ],
                         colors: [
                             'rgba(30, 144, 255, 0.52)',
@@ -106,8 +108,8 @@
 
                                 return `<div class="apexcharts-tooltip-custom">
                                     <div class="apexcharts-tooltip-custom-value" style="display:flex;align-items:center">${dot('rgb(30, 144, 255)')}CPU: <span class="apexcharts-tooltip-value-bold" style="margin-left:4px">${formatPercent(cpu)}</span></div>
-                                    <div class="apexcharts-tooltip-custom-value" style="display:flex;align-items:center">${dot('rgb(168, 85, 247)')}Memory: <span class="apexcharts-tooltip-value-bold" style="margin-left:4px">${formatPercent(memory)}</span></div>
-                                    <div class="apexcharts-tooltip-custom-title">Your time: ${formatLocalTimestamp(timestamp)}</div>
+                                    <div class="apexcharts-tooltip-custom-value" style="display:flex;align-items:center">${dot('rgb(168, 85, 247)')}${memoryLabel}: <span class="apexcharts-tooltip-value-bold" style="margin-left:4px">${formatPercent(memory)}</span></div>
+                                    <div class="apexcharts-tooltip-custom-title">${yourTimeLabel}: ${formatLocalTimestamp(timestamp)}</div>
                                     <div class="apexcharts-tooltip-custom-title">UTC: ${formatUtcTimestamp(timestamp)}</div>
                                 </div>`;
                             },
@@ -123,7 +125,7 @@
                             data: chartData[0].cpu ?? [],
                         },
                         {
-                            name: 'Memory',
+                            name: memoryLabel,
                             data: chartData[0].memory ?? [],
                         },
                     ]);

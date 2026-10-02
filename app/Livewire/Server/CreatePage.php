@@ -43,8 +43,8 @@ class CreatePage extends Component
             'hetzner' => 'Hetzner',
             'vultr' => 'Vultr',
             'digital-ocean' => 'DigitalOcean',
-            'manual' => 'Manual',
-            default => 'New Server',
+            'manual' => __('Manual'),
+            default => __('New Server'),
         };
     }
 

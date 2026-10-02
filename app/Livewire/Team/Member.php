@@ -23,7 +23,7 @@ class Member extends Component
 
             if (Role::from(auth()->user()->role())->lt(Role::ADMIN)
                 || Role::from($this->getMemberRole())->gt(auth()->user()->role())) {
-                throw new \Exception('You are not authorized to perform this action.');
+                throw new \Exception(__('You are not authorized to perform this action.'));
             }
             $teamId = currentTeam()->id;
             DB::transaction(function () use ($teamId): void {
@@ -44,7 +44,7 @@ class Member extends Component
 
             if (Role::from(auth()->user()->role())->lt(Role::OWNER)
                 || Role::from($this->getMemberRole())->gt(auth()->user()->role())) {
-                throw new \Exception('You are not authorized to perform this action.');
+                throw new \Exception(__('You are not authorized to perform this action.'));
             }
             $teamId = currentTeam()->id;
             DB::transaction(function () use ($teamId): void {
@@ -65,7 +65,7 @@ class Member extends Component
 
             if (Role::from(auth()->user()->role())->lt(Role::ADMIN)
                 || Role::from($this->getMemberRole())->gt(auth()->user()->role())) {
-                throw new \Exception('You are not authorized to perform this action.');
+                throw new \Exception(__('You are not authorized to perform this action.'));
             }
             $teamId = currentTeam()->id;
             DB::transaction(function () use ($teamId): void {
@@ -86,7 +86,7 @@ class Member extends Component
 
             if (Role::from(auth()->user()->role())->lt(Role::ADMIN)
                 || Role::from($this->getMemberRole())->gt(auth()->user()->role())) {
-                throw new \Exception('You are not authorized to perform this action.');
+                throw new \Exception(__('You are not authorized to perform this action.'));
             }
             $teamId = currentTeam()->id;
             DB::transaction(function () use ($teamId): void {

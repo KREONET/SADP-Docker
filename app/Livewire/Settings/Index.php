@@ -4,6 +4,7 @@ namespace App\Livewire\Settings;
 
 use App\Models\InstanceSettings;
 use App\Models\Server;
+use App\Support\InterfaceLocale;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Validate;
@@ -41,6 +42,8 @@ class Index extends Component
     #[Validate('required|string|timezone')]
     public string $instance_timezone;
 
+    public string $default_locale = InterfaceLocale::FALLBACK;
+
     #[Validate(['nullable', 'string', 'max:128', 'regex:/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/'])]
     public ?string $dev_helper_version = null;
 
@@ -50,11 +53,14 @@ class Index extends Component
 
     public bool $forceSaveDomains = false;
 
-    protected array $messages = [
-        'fqdn.url' => 'Invalid instance URL.',
-        'fqdn.max' => 'URL must not exceed 255 characters.',
-        'dev_helper_version.regex' => 'Dev helper version must match Docker tag format (alphanumeric, _, ., -; first char cannot be . or -).',
-    ];
+    protected function messages(): array
+    {
+        return [
+            'fqdn.url' => __('Invalid instance URL.'),
+            'fqdn.max' => __('URL must not exceed 255 characters.'),
+            'dev_helper_version.regex' => __('Dev helper version must match Docker tag format (alphanumeric, _, ., -; first char cannot be . or -).'),
+        ];
+    }
 
     public function render()
     {
@@ -78,6 +84,7 @@ class Index extends Component
         $this->public_ipv4 = $this->settings->public_ipv4;
         $this->public_ipv6 = $this->settings->public_ipv6;
         $this->instance_timezone = $this->settings->instance_timezone;
+        $this->default_locale = InterfaceLocale::instanceDefault();
         $this->dev_helper_version = $this->settings->dev_helper_version;
     }
 
@@ -105,8 +112,22 @@ class Index extends Component
         $this->settings->dev_helper_version = $this->dev_helper_version;
         if ($isSave) {
             $this->settings->save();
-            $this->dispatch('success', 'Settings updated!');
+            $this->dispatch('success', __('Settings updated!'));
         }
+    }
+
+    public function updateDefaultLocale()
+    {
+        $this->authorize('update', $this->settings);
+        $this->validate([
+            'default_locale' => ['required', 'in:'.implode(',', array_keys(InterfaceLocale::available()))],
+        ]);
+
+        $this->settings->update(['default_locale' => $this->default_locale]);
+        auditLog('ui.instance.default_locale_updated', ['locale' => $this->default_locale]);
+
+        // Reload so this page also renders in the new default when the admin follows it.
+        return $this->redirect(route('settings.index'));
     }
 
     public function confirmDomainUsage()
@@ -126,13 +147,13 @@ class Index extends Component
 
             if (! validate_timezone($this->instance_timezone)) {
                 $this->instance_timezone = config('app.timezone');
-                throw new \Exception('Invalid timezone.');
+                throw new \Exception(__('Invalid timezone.'));
             } else {
                 $this->settings->instance_timezone = $this->instance_timezone;
             }
 
             if ($this->settings->public_port_min > $this->settings->public_port_max) {
-                $this->addError('settings.public_port_min', 'The minimum port must be lower than the maximum port.');
+                $this->addError('settings.public_port_min', __('The minimum port must be lower than the maximum port.'));
 
                 return;
             }
@@ -148,7 +169,7 @@ class Index extends Component
                 if (! validateDNSEntry($this->fqdn, $this->server)) {
                     $target = serverDnsTargetIp($this->server) ?? $this->server->ip;
                     $guidance = dnsMismatchGuidanceMessage($target, $target);
-                    $this->dispatch('error', "Validating DNS failed.<br><br>{$guidance}<br><br>Check this <a target='_blank' class='underline dark:text-white' href='https://coolify.io/docs/knowledge-base/dns-configuration'>documentation</a> for further help.");
+                    $this->dispatch('error', __("Validating DNS failed.<br><br>:guidance<br><br>Check this <a target='_blank' class='underline dark:text-white' href='https://coolify.io/docs/knowledge-base/dns-configuration'>documentation</a> for further help.", ['guidance' => $guidance]));
                     $error_show = true;
                 }
             }
@@ -174,7 +195,7 @@ class Index extends Component
                 $this->server->setupDynamicProxyConfiguration();
             }
             if (! $error_show) {
-                $this->dispatch('success', 'Instance settings updated successfully!');
+                $this->dispatch('success', __('Instance settings updated successfully!'));
             }
         } catch (\Exception $e) {
             return handleError($e, $this);
@@ -186,13 +207,13 @@ class Index extends Component
         try {
             $this->authorize('update', $this->settings);
             if (! isDev()) {
-                $this->dispatch('error', 'Building helper image is only available in development mode.');
+                $this->dispatch('error', __('Building helper image is only available in development mode.'));
 
                 return;
             }
 
             if (! $this->server) {
-                $this->dispatch('error', 'Server not available.');
+                $this->dispatch('error', __('Server not available.'));
 
                 return;
             }
@@ -201,13 +222,13 @@ class Index extends Component
 
             $version = $this->dev_helper_version ?: config('constants.coolify.helper_version');
             if (empty($version)) {
-                $this->dispatch('error', 'Please specify a version to build.');
+                $this->dispatch('error', __('Please specify a version to build.'));
 
                 return;
             }
 
             if (! preg_match('/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/', (string) $version)) {
-                $this->dispatch('error', 'Invalid helper version format.');
+                $this->dispatch('error', __('Invalid helper version format.'));
 
                 return;
             }
@@ -224,7 +245,7 @@ class Index extends Component
             $this->buildActivityId = $activity->id;
             $this->dispatch('activityMonitor', $activity->id);
 
-            $this->dispatch('success', "Building coolify-helper:{$version}...");
+            $this->dispatch('success', __('Building coolify-helper::version...', ['version' => $version]));
         } catch (\Exception $e) {
             return handleError($e, $this);
         }

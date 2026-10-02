@@ -330,14 +330,14 @@
             })
             window.Livewire.on('info', (message) => {
                 if (typeof message === 'string') {
-                    window.toast('Info', {
+                    window.toast(@js(__('Info')), {
                         type: 'info',
                         description: message,
                     })
                     return;
                 }
                 if (message.length == 1) {
-                    window.toast('Info', {
+                    window.toast(@js(__('Info')), {
                         type: 'info',
                         description: message[0],
                     })
@@ -350,14 +350,14 @@
             })
             window.Livewire.on('error', (message) => {
                 if (typeof message === 'string') {
-                    window.toast('Error', {
+                    window.toast(@js(__('Error')), {
                         type: 'danger',
                         description: message,
                     })
                     return;
                 }
                 if (message.length == 1) {
-                    window.toast('Error', {
+                    window.toast(@js(__('Error')), {
                         type: 'danger',
                         description: message[0],
                     })
@@ -370,14 +370,14 @@
             })
             window.Livewire.on('warning', (message) => {
                 if (typeof message === 'string') {
-                    window.toast('Warning', {
+                    window.toast(@js(__('Warning')), {
                         type: 'warning',
                         description: message,
                     })
                     return;
                 }
                 if (message.length == 1) {
-                    window.toast('Warning', {
+                    window.toast(@js(__('Warning')), {
                         type: 'warning',
                         description: message[0],
                     })
@@ -390,14 +390,14 @@
             })
             window.Livewire.on('success', (message) => {
                 if (typeof message === 'string') {
-                    window.toast('Success', {
+                    window.toast(@js(__('Success')), {
                         type: 'success',
                         description: message,
                     })
                     return;
                 }
                 if (message.length == 1) {
-                    window.toast('Success', {
+                    window.toast(@js(__('Success')), {
                         type: 'success',
                         description: message[0],
                     })

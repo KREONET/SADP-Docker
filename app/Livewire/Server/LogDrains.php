@@ -177,10 +177,10 @@ class LogDrains extends Component
             $this->auditLogDrain('updated');
             if ($this->server->isLogDrainEnabled()) {
                 StartLogDrain::run($this->server);
-                $this->dispatch('success', 'Log drain service started.');
+                $this->dispatch('success', __('Log drain service started.'));
             } else {
                 StopLogDrain::run($this->server);
-                $this->dispatch('success', 'Log drain service stopped.');
+                $this->dispatch('success', __('Log drain service stopped.'));
             }
         } catch (\Throwable $e) {
             return handleError($e, $this);
@@ -213,10 +213,10 @@ class LogDrains extends Component
 
             if ($this->server->isLogDrainEnabled()) {
                 StartLogDrain::run($this->server);
-                $this->dispatch('success', 'Log drain service started.');
+                $this->dispatch('success', __('Log drain service started.'));
             } else {
                 StopLogDrain::run($this->server);
-                $this->dispatch('success', 'Log drain service stopped.');
+                $this->dispatch('success', __('Log drain service stopped.'));
             }
         } catch (\Throwable $e) {
             // Restore the previously persisted enabled flags so the UI/DB never
@@ -236,7 +236,7 @@ class LogDrains extends Component
         try {
             $this->authorize('update', $this->server);
             $this->syncData(true);
-            $this->dispatch('success', 'Settings saved.');
+            $this->dispatch('success', __('Settings saved.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -253,7 +253,7 @@ class LogDrains extends Component
             'newrelic' => 'isLogDrainNewRelicEnabled',
             'axiom' => 'isLogDrainAxiomEnabled',
             'custom' => 'isLogDrainCustomEnabled',
-            default => throw new \InvalidArgumentException('Unknown log drain type.'),
+            default => throw new \InvalidArgumentException(__('Unknown log drain type.')),
         };
     }
 
@@ -282,7 +282,7 @@ class LogDrains extends Component
                 'logDrainCustomConfig' => ['required'],
                 'logDrainCustomConfigParser' => ['string', 'nullable'],
             ]),
-            default => throw new \InvalidArgumentException('Unknown log drain type.'),
+            default => throw new \InvalidArgumentException(__('Unknown log drain type.')),
         };
     }
 }

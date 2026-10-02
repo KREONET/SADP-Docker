@@ -261,7 +261,7 @@ class Analytics extends Component
             foreach ($projectResources->sortBy(fn (TrafficResource $resource) => $resource->name()) as $resource) {
                 $grouped[] = [
                     'value' => $resource->uuid(),
-                    'label' => $resource->isService() ? $resource->name().' (Service)' : $resource->name(),
+                    'label' => $resource->isService() ? __(':name (Service)', ['name' => $resource->name()]) : $resource->name(),
                 ];
             }
         }

@@ -26,7 +26,7 @@ class Show extends Component
 
             $found = $this->project->environment_variables()->where('key', $data['key'])->first();
             if ($found) {
-                throw new \Exception('Variable already exists.');
+                throw new \Exception(__('Variable already exists.'));
             }
             $this->project->environment_variables()->create([
                 'key' => $data['key'],
@@ -119,7 +119,7 @@ class Show extends Component
         });
 
         if ($changesMade) {
-            $this->dispatch('success', 'Environment variables updated.');
+            $this->dispatch('success', __('Environment variables updated.'));
         }
     }
 

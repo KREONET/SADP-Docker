@@ -38,7 +38,7 @@ class Swarm extends Component
     {
         if ($toModel) {
             if (! $this->server->team->usesSwarm()) {
-                throw new \Exception('Docker Swarm is deprecated and cannot be enabled for new teams.');
+                throw new \Exception(__('Docker Swarm is deprecated and cannot be enabled for new teams.'));
             }
             $this->server->settings->is_swarm_manager = $this->isSwarmManager;
             $this->server->settings->is_swarm_worker = $this->isSwarmWorker;
@@ -54,7 +54,7 @@ class Swarm extends Component
         try {
             $this->authorize('update', $this->server);
             $this->syncData(true);
-            $this->dispatch('success', 'Swarm settings updated.');
+            $this->dispatch('success', __('Swarm settings updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

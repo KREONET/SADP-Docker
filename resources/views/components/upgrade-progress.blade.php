@@ -11,10 +11,10 @@
 --}}
 @php
     $steps = [
-        1 => 'Preparing',
-        2 => 'Helper',
-        3 => 'Image',
-        4 => 'Restart',
+        1 => __('Preparing'),
+        2 => __('Helper'),
+        3 => __('Image'),
+        4 => __('Restart'),
     ];
 @endphp
 

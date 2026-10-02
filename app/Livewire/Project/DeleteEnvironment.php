@@ -41,7 +41,7 @@ class DeleteEnvironment extends Component
                 return redirectRoute($this, 'project.show', ['project_uuid' => $this->parameters['project_uuid']]);
             }
 
-            return $this->dispatch('error', "<strong>Environment {$environment->name}</strong> has defined resources, please delete them first.");
+            return $this->dispatch('error', __('<strong>Environment :name</strong> has defined resources, please delete them first.', ['name' => e($environment->name)]));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

@@ -62,7 +62,7 @@ class Patches extends Component
     {
         $job = CheckUpdates::run($this->server);
         if (isset($job['error'])) {
-            $this->error = data_get($job, 'error', 'Something went wrong.');
+            $this->error = data_get($job, 'error', __('Something went wrong.'));
         } else {
             $this->totalUpdates = data_get($job, 'total_updates', 0);
             $this->updates = data_get($job, 'updates', []);
@@ -76,7 +76,7 @@ class Patches extends Component
         try {
             $this->authorize('update', $this->server);
             if (! $this->packageManager || ! $this->osId) {
-                $this->dispatch('error', message: 'Run "Check for updates" first.');
+                $this->dispatch('error', message: __('Run "Check for updates" first.'));
 
                 return;
             }
@@ -107,7 +107,7 @@ class Patches extends Component
     public function sendTestEmail()
     {
         if (! isDev()) {
-            $this->dispatch('error', message: 'Test email functionality is only available in development mode.');
+            $this->dispatch('error', message: __('Test email functionality is only available in development mode.'));
 
             return;
         }
@@ -119,9 +119,9 @@ class Patches extends Component
             // Send test notification
             $this->server->team->notify(new ServerPatchCheck($this->server, $testPatchData));
 
-            $this->dispatch('success', 'Test email sent successfully! Check your email inbox.');
+            $this->dispatch('success', __('Test email sent successfully! Check your email inbox.'));
         } catch (\Exception $e) {
-            $this->dispatch('error', message: 'Failed to send test email: '.$e->getMessage());
+            $this->dispatch('error', message: __('Failed to send test email: :error', ['error' => $e->getMessage()]));
         }
     }
 

@@ -1,5 +1,5 @@
 @props([
-    'placeholder' => 'Search',
+    'placeholder' => null,
     'loadingTarget' => null,
     'disabled' => false,
     'clearAction' => null,
@@ -7,7 +7,7 @@
 ])
 
 <div class="table-search relative min-w-0 w-full">
-    <input type="search" placeholder="{{ $placeholder }}" aria-label="{{ $placeholder }}"
+    <input type="search" placeholder="{{ $placeholder ?? __('Search') }}" aria-label="{{ $placeholder ?? __('Search') }}"
         {{ $attributes->class(['input w-full pl-8!'])->except(['loading-target']) }} @disabled($disabled) />
     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
         @if ($loadingTarget)
@@ -26,7 +26,7 @@
     @if ($clearAction && $clearWhen)
         <button x-cloak x-show="{{ $clearWhen }}" x-on:click="{{ $clearAction }}" type="button"
             class="absolute top-1/2 right-2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.07] dark:hover:text-fg"
-            aria-label="Clear search">
+            aria-label="{{ __('Clear search') }}">
             <x-reicon name="x" class="size-3" />
         </button>
     @endif

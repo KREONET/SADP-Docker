@@ -17,7 +17,7 @@
         <button type="button"
             @click="live = !live"
             :aria-pressed="live ? 'true' : 'false'"
-            title="Toggle realtime refresh (updates every 60s)"
+            title="{{ __('Toggle realtime refresh (updates every 60s)') }}"
             class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium ring-1 transition-colors"
             :class="live
                 ? 'bg-white text-black shadow-sm ring-neutral-200 dark:bg-white/[0.09] dark:text-fg dark:ring-white/[0.08]'
@@ -26,7 +26,7 @@
                 <span x-show="live" class="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 motion-safe:animate-ping"></span>
                 <span class="relative inline-flex h-1.5 w-1.5 rounded-full" :class="live ? 'bg-emerald-500' : 'bg-neutral-400 dark:bg-white/40'"></span>
             </span>
-            <span>Live Refresh</span>
+            <span>{{ __('Live Refresh') }}</span>
         </button>
     </div>
 @endif

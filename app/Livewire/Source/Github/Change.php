@@ -202,23 +202,23 @@ class Change extends Component
             $missingFields = [];
 
             if (! $this->github_app->app_id) {
-                $missingFields[] = 'App ID';
+                $missingFields[] = __('App ID');
             }
 
             if (! $this->github_app->private_key_id) {
-                $missingFields[] = 'Private Key';
+                $missingFields[] = __('Private Key');
             }
 
             if (! empty($missingFields)) {
                 $fieldsList = implode(', ', $missingFields);
-                $this->dispatch('error', "Cannot fetch permissions. Please set the following required fields first: {$fieldsList}");
+                $this->dispatch('error', __('Cannot fetch permissions. Please set the following required fields first: :fields', ['fields' => $fieldsList]));
 
                 return;
             }
 
             // Verify the private key exists and is accessible
             if (! $this->github_app->privateKey) {
-                $this->dispatch('error', 'Private Key not found. Please select a valid private key.');
+                $this->dispatch('error', __('Private Key not found. Please select a valid private key.'));
 
                 return;
             }
@@ -231,13 +231,13 @@ class Change extends Component
             $this->isConnected = $this->github_app->isConnected();
             $this->name = str($this->github_app->name)->kebab();
 
-            $this->dispatch('success', 'Github App permissions updated.');
+            $this->dispatch('success', __('Github App permissions updated.'));
         } catch (\Throwable $e) {
             // Provide better error message for unsupported key formats
             $errorMessage = $e->getMessage();
             if (str_contains($errorMessage, 'DECODER routines::unsupported') ||
                 str_contains($errorMessage, 'parse your key')) {
-                $this->dispatch('error', 'The selected private key format is not supported for GitHub Apps. <br><br>Please use an RSA private key in PEM format (BEGIN RSA PRIVATE KEY). <br><br>OpenSSH format keys (BEGIN OPENSSH PRIVATE KEY) are not supported.');
+                $this->dispatch('error', __('The selected private key format is not supported for GitHub Apps. <br><br>Please use an RSA private key in PEM format (BEGIN RSA PRIVATE KEY). <br><br>OpenSSH format keys (BEGIN OPENSSH PRIVATE KEY) are not supported.'));
 
                 return;
             }
@@ -252,13 +252,13 @@ class Change extends Component
             $this->authorize('view', $this->github_app);
 
             if (! $this->github_app->isConnected()) {
-                $this->dispatch('error', 'GitHub App is not fully set up. Please complete installation first.');
+                $this->dispatch('error', __('GitHub App is not fully set up. Please complete installation first.'));
 
                 return;
             }
 
             if (! $this->github_app->private_key_id || ! $this->github_app->privateKey) {
-                $this->dispatch('error', 'Private Key not found. Please select a valid private key.');
+                $this->dispatch('error', __('Private Key not found. Please select a valid private key.'));
 
                 return;
             }
@@ -270,8 +270,8 @@ class Change extends Component
             ])->timeout(10)->get("{$this->github_app->api_url}/app");
 
             if (! $appResponse->successful()) {
-                $error = data_get($appResponse->json(), 'message', 'Unknown error');
-                $this->dispatch('error', "Connection failed: {$error}");
+                $error = data_get($appResponse->json(), 'message', __('Unknown error'));
+                $this->dispatch('error', __('Connection failed: :error', ['error' => $error]));
 
                 return;
             }
@@ -281,12 +281,12 @@ class Change extends Component
 
             $appName = data_get($appResponse->json(), 'name')
                 ?? data_get($appResponse->json(), 'slug', 'unknown');
-            $this->dispatch('success', "Connection successful! Authenticated as GitHub App: {$appName}");
+            $this->dispatch('success', __('Connection successful! Authenticated as GitHub App: :name', ['name' => $appName]));
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
             if (str_contains($errorMessage, 'DECODER routines::unsupported') ||
                 str_contains($errorMessage, 'parse your key')) {
-                $this->dispatch('error', 'The selected private key format is not supported for GitHub Apps. <br><br>Please use an RSA private key in PEM format (BEGIN RSA PRIVATE KEY). <br><br>OpenSSH format keys (BEGIN OPENSSH PRIVATE KEY) are not supported.');
+                $this->dispatch('error', __('The selected private key format is not supported for GitHub Apps. <br><br>Please use an RSA private key in PEM format (BEGIN RSA PRIVATE KEY). <br><br>OpenSSH format keys (BEGIN OPENSSH PRIVATE KEY) are not supported.'));
 
                 return;
             }
@@ -386,13 +386,13 @@ class Change extends Component
             $this->github_app->unsetRelation('privateKey');
 
             if (! $this->appId) {
-                $this->dispatch('error', 'App ID is required before synchronizing the GitHub App name.');
+                $this->dispatch('error', __('App ID is required before synchronizing the GitHub App name.'));
 
                 return;
             }
 
             if (! PrivateKey::ownedByCurrentTeam()->find($this->privateKeyId)) {
-                $this->dispatch('error', 'No private key found for this GitHub App.');
+                $this->dispatch('error', __('No private key found for this GitHub App.'));
 
                 return;
             }
@@ -401,9 +401,9 @@ class Change extends Component
 
             if ($appSlug) {
                 $this->name = str($appSlug)->kebab();
-                $this->dispatch('success', 'GitHub App name and private key name synchronized successfully.');
+                $this->dispatch('success', __('GitHub App name and private key name synchronized successfully.'));
             } else {
-                $this->dispatch('info', 'Could not find App Name (slug) in GitHub response.');
+                $this->dispatch('info', __('Could not find App Name (slug) in GitHub response.'));
             }
         } catch (\Throwable $e) {
             return handleError($e, $this);
@@ -424,7 +424,7 @@ class Change extends Component
             $this->syncData(true);
             $this->github_app->save();
             $this->isConnected = $this->github_app->isConnected();
-            $this->dispatch('success', 'Github App updated.');
+            $this->dispatch('success', __('Github App updated.'));
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -442,7 +442,7 @@ class Change extends Component
 
         // Redirect to avoid Livewire morphing issues when view structure changes
         return redirect()->route('source.github.show', ['github_app_uuid' => $this->github_app->uuid])
-            ->with('success', 'Github App updated. You can now configure the details.');
+            ->with('success', __('Github App updated. You can now configure the details.'));
     }
 
     public function instantSave()
@@ -455,7 +455,7 @@ class Change extends Component
             $this->syncData(true);
             $this->github_app->save();
             $this->isConnected = $this->github_app->isConnected();
-            $this->dispatch('success', 'Github App updated.');
+            $this->dispatch('success', __('Github App updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -467,7 +467,7 @@ class Change extends Component
             $this->authorize('delete', $this->github_app);
 
             if ($this->github_app->applications->isNotEmpty()) {
-                $this->dispatch('error', 'This source is being used by an application. Please delete all applications first.');
+                $this->dispatch('error', __('This source is being used by an application. Please delete all applications first.'));
 
                 return;
             }

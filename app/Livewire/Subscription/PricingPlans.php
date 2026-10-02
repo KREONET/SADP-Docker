@@ -20,7 +20,7 @@ class PricingPlans extends Component
         }
 
         if ($team->subscription?->stripe_invoice_paid) {
-            $this->dispatch('error', 'Team already has an active subscription.');
+            $this->dispatch('error', __('Team already has an active subscription.'));
 
             return null;
         }
@@ -32,7 +32,7 @@ class PricingPlans extends Component
         };
 
         if (! $priceId) {
-            $this->dispatch('error', 'Price ID not found! Please contact the administrator.');
+            $this->dispatch('error', __('Price ID not found! Please contact the administrator.'));
 
             return null;
         }
@@ -40,20 +40,20 @@ class PricingPlans extends Component
             $session = app(CreateCheckoutSession::class)->execute($team, $user, $priceId);
         } catch (ApiErrorException $exception) {
             report($exception);
-            $this->dispatch('error', 'Unable to confirm checkout with Stripe. Please try again shortly.');
+            $this->dispatch('error', __('Unable to confirm checkout with Stripe. Please try again shortly.'));
 
             return null;
         } catch (CheckoutUnavailableException $exception) {
             $message = $exception->getMessage();
             if ($exception->billingPortalUrl) {
-                $message .= ' <a href="'.e($exception->billingPortalUrl).'" target="_blank" rel="noopener noreferrer" class="underline">Open billing portal</a>';
+                $message .= ' <a href="'.e($exception->billingPortalUrl).'" target="_blank" rel="noopener noreferrer" class="underline">'.e(__('Open billing portal')).'</a>';
             }
             $this->dispatch('error', $message);
 
             return null;
         } catch (RuntimeException $exception) {
             report($exception);
-            $this->dispatch('error', 'Unable to start checkout. Please try again shortly.');
+            $this->dispatch('error', __('Unable to start checkout. Please try again shortly.'));
 
             return null;
         }

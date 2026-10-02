@@ -68,18 +68,13 @@
                             class="flex items-center hover:opacity-80 transition-opacity">
                             <img x-show="collapsed" x-cloak src="/coolify-logo.svg" alt="Coolify"
                                 class="size-5" />
-                            <span x-show="!collapsed" class="text-[15px] font-semibold tracking-tight text-black dark:text-white">Coolify</span>
+                            <span x-show="!collapsed" class="text-[15px] font-semibold tracking-tight text-black dark:text-white">
+                                Kreonet-IAPP
+                            </span>
                         </a>
                         <x-version x-show="!collapsed"
                             class="!text-[10.5px] font-medium text-neutral-400 dark:text-fg-faint !opacity-100 hover:!opacity-100 dark:hover:text-fg hover:text-black" />
                     </div>
-                    @if (isInstanceAdmin() && !isCloud())
-                        <div x-show="!collapsed" class="ml-auto shrink-0">
-                            @persist('upgrade')
-                                <livewire:upgrade />
-                            @endpersist
-                        </div>
-                    @endif
                 </div>
                 {{-- Collapse toggle + team switcher --}}
                 <div
@@ -109,7 +104,7 @@
                 {{-- Panel: slides in from the right (iOS drawer curve), exits faster --}}
                 <div class="fixed inset-y-0 right-0 flex" :class="!open && 'pointer-events-none'">
                     <div x-show="open" x-cloak x-trap.inert.noscroll="open"
-                        role="dialog" aria-modal="true" aria-label="Navigation menu"
+                        role="dialog" aria-modal="true" aria-label="{{ __('Navigation menu') }}"
                         x-transition:enter="transform transition ease-[cubic-bezier(0.32,0.72,0,1)] duration-300"
                         x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
                         x-transition:leave="transform transition ease-in duration-200"
@@ -124,7 +119,7 @@
                                 </a>
                                 <x-version class="!text-[10.5px] font-medium text-neutral-400 dark:text-fg-faint !opacity-100 hover:!opacity-100 hover:text-black dark:hover:text-fg" />
                             </div>
-                            <button type="button" x-on:click="open = false" aria-label="Close menu"
+                            <button type="button" x-on:click="open = false" aria-label="{{ __('Close menu') }}"
                                 class="-mr-1.5 flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black active:scale-95 dark:text-fg-dim dark:hover:bg-white/[0.06] dark:hover:text-fg">
                                 <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75"
                                     stroke="currentColor" aria-hidden="true">
@@ -171,7 +166,7 @@
                     <x-top-user-menu />
                     <button type="button" x-on:click="open = !open"
                         class="-mr-1 flex size-9 items-center justify-center rounded-md text-neutral-500 transition-transform duration-100 ease-out hover:bg-neutral-100 hover:text-black active:scale-90 dark:text-fg-dim dark:hover:bg-white/[0.06] dark:hover:text-fg">
-                        <span class="sr-only">Open sidebar</span>
+                        <span class="sr-only">{{ __('Open sidebar') }}</span>
                         <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6" />
                             <path d="M9 4v16" stroke="currentColor" stroke-width="1.6" />

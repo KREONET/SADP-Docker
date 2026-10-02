@@ -76,28 +76,28 @@ class ApiTokens extends Component
     {
         // Re-evaluate policies fresh — never trust stored snapshot booleans.
         if ($permissionToUpdate == 'root' && ! auth()->user()->can('useRootPermissions', PersonalAccessToken::class)) {
-            $this->dispatch('error', 'You do not have permission to use root permissions.');
+            $this->dispatch('error', __('You do not have permission to use root permissions.'));
             $this->permissions = array_diff($this->permissions, ['root']);
 
             return;
         }
 
         if (in_array($permissionToUpdate, ['write', 'write:sensitive'], true) && ! auth()->user()->can('useWritePermissions', PersonalAccessToken::class)) {
-            $this->dispatch('error', 'You do not have permission to use write permissions.');
+            $this->dispatch('error', __('You do not have permission to use write permissions.'));
             $this->permissions = array_diff($this->permissions, ['write', 'write:sensitive']);
 
             return;
         }
 
         if ($permissionToUpdate == 'deploy' && ! auth()->user()->can('useDeployPermissions', PersonalAccessToken::class)) {
-            $this->dispatch('error', 'You do not have permission to use deploy permissions.');
+            $this->dispatch('error', __('You do not have permission to use deploy permissions.'));
             $this->permissions = array_diff($this->permissions, ['deploy']);
 
             return;
         }
 
         if ($permissionToUpdate == 'read:sensitive' && ! auth()->user()->can('useSensitivePermissions', PersonalAccessToken::class)) {
-            $this->dispatch('error', 'You do not have permission to use read:sensitive permissions.');
+            $this->dispatch('error', __('You do not have permission to use read:sensitive permissions.'));
             $this->permissions = array_diff($this->permissions, ['read:sensitive']);
 
             return;
@@ -134,19 +134,19 @@ class ApiTokens extends Component
             // Never trust $this->canUse* booleans — they come from the Livewire
             // snapshot which can be replayed from another user's session.
             if (in_array('root', $permissions, true) && ! auth()->user()->can('useRootPermissions', PersonalAccessToken::class)) {
-                throw new \Exception('You do not have permission to create tokens with root permissions.');
+                throw new \Exception(__('You do not have permission to create tokens with root permissions.'));
             }
 
             if (array_intersect(['write', 'write:sensitive'], $permissions) && ! auth()->user()->can('useWritePermissions', PersonalAccessToken::class)) {
-                throw new \Exception('You do not have permission to create tokens with write permissions.');
+                throw new \Exception(__('You do not have permission to create tokens with write permissions.'));
             }
 
             if (in_array('deploy', $permissions, true) && ! auth()->user()->can('useDeployPermissions', PersonalAccessToken::class)) {
-                throw new \Exception('You do not have permission to create tokens with deploy permissions.');
+                throw new \Exception(__('You do not have permission to create tokens with deploy permissions.'));
             }
 
             if (in_array('read:sensitive', $permissions, true) && ! auth()->user()->can('useSensitivePermissions', PersonalAccessToken::class)) {
-                throw new \Exception('You do not have permission to create tokens with read:sensitive permissions.');
+                throw new \Exception(__('You do not have permission to create tokens with read:sensitive permissions.'));
             }
 
             $expiresAt = filled($validated['expiresInDays'] ?? null) ? now()->addDays((int) $validated['expiresInDays']) : null;

@@ -1,6 +1,6 @@
 @props([
     'helper',
-    'label' => 'More information',
+    'label' => null,
 ])
 
 <div x-data="{
@@ -101,7 +101,7 @@
             'info-helper relative inline-flex shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none',
             'size-3.5' => ! isset($trigger),
         ])
-        aria-label="{{ $label }}" :aria-describedby="open ? $id('helper-popup') : null"
+        aria-label="{{ $label ?? __('More information') }}" :aria-describedby="open ? $id('helper-popup') : null"
         @mouseenter="show()" @mouseleave="hide" @focus="show()" @blur="closeWhenFocusLeaves()"
         @click.prevent.stop="show()">
         @isset($trigger)

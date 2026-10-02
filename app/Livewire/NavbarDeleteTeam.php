@@ -21,7 +21,7 @@ class NavbarDeleteTeam extends Component
     {
         try {
             if (! verifyPasswordConfirmation($password, $this)) {
-                return 'The provided password is incorrect.';
+                return __('The provided password is incorrect.');
             }
 
             $currentTeam = currentTeam();

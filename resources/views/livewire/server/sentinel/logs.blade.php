@@ -1,22 +1,22 @@
 <div>
     <x-slot:title>
-        Sentinel Logs | Coolify
+        {{ __('Sentinel Logs') }} | Coolify
     </x-slot>
     <livewire:server.navbar :server="$server" />
     <div
         class="server-settings-workspace application-settings-workspace mt-4 grid w-full max-w-none min-w-0 gap-8 lg:mt-0 xl:grid-cols-[210px_minmax(0,1fr)] xl:gap-8">
         <x-server.sidebar :server="$server" activeMenu="sentinel" />
         <div class="application-settings-form w-full">
-            <x-application.settings-section title="Sentinel logs"
-                helper="Search, filter, follow, copy, or download recent output from the Sentinel container."
+            <x-application.settings-section :title="__('Sentinel logs')"
+                :helper="__('Search, filter, follow, copy, or download recent output from the Sentinel container.')"
                 flush class="logs-settings-section">
                 @if ($server->isSentinelEnabled())
                     @php
                         $sentinelStatus = $server->sentinelStatus();
                         [$sentinelStatusLabel, $sentinelStatusType] = match ($sentinelStatus) {
-                            'waiting' => ['Waiting for first report', 'neutral'],
-                            'in_sync' => ['In sync', 'success'],
-                            default => ['Out of sync', 'warning'],
+                            'waiting' => [__('Waiting for first report'), 'neutral'],
+                            'in_sync' => [__('In sync'), 'success'],
+                            default => [__('Out of sync'), 'warning'],
                         };
                     @endphp
                     <x-slot:actions>
@@ -28,8 +28,8 @@
                             displayName="Sentinel" :collapsible="false" />
                     </div>
                 @else
-                    <x-empty size="sm" title="Sentinel is unavailable"
-                        description="Sentinel does not run on build or Swarm servers."
+                    <x-empty size="sm" :title="__('Sentinel is unavailable')"
+                        :description="__('Sentinel does not run on build or Swarm servers.')"
                         icon-name="dashboard" />
                 @endif
             </x-application.settings-section>

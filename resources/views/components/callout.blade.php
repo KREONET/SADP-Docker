@@ -1,6 +1,6 @@
 @props([
     'type' => 'warning',
-    'title' => 'Warning',
+    'title' => null,
     'class' => '',
     'dismissible' => false,
     'onDismiss' => null,
@@ -46,13 +46,13 @@
     <div class="flex items-start gap-2.5">
         <x-reicon :name="$style['icon']" class="mt-0.5 size-4 shrink-0 {{ $style['iconClass'] }}" />
         <div class="min-w-0 flex-1 {{ $dismissible ? 'pr-7' : '' }}">
-            <div class="text-[12px] font-semibold {{ $style['titleClass'] }}">{{ $title }}</div>
+            <div class="text-[12px] font-semibold {{ $style['titleClass'] }}">{{ $title ?? __('Warning') }}</div>
             <div class="mt-0.5 text-[12px] leading-5 {{ $style['textClass'] }}">{{ $slot }}</div>
         </div>
         @if ($dismissible && $onDismiss)
             <button type="button" @click.stop="{{ $onDismiss }}"
                 class="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-md transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.06]"
-                aria-label="Dismiss">
+                aria-label="{{ __('Dismiss') }}">
                 <x-reicon name="x" class="size-3.5 {{ $style['iconClass'] }}" />
             </button>
         @endif

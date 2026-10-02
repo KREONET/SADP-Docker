@@ -19,8 +19,8 @@
          chart's listener survives live/range re-renders). --}}
     <div id="{{ $chartId }}-requests-empty" style="display: {{ $this->hasRequestSeries() ? 'none' : 'flex' }}"
         class="absolute inset-0 items-center justify-center bg-white dark:bg-base">
-        <x-empty size="sm" title="No requests in this range"
-            description="No request traffic was recorded for the selected filters and range. Try a wider range or check back later."
+        <x-empty size="sm" :title="__('No requests in this range')"
+            :description="__('No request traffic was recorded for the selected filters and range. Try a wider range or check back later.')"
             icon-name="analytics" />
     </div>
 </div>
@@ -65,7 +65,7 @@
                 animations: { enabled: false },
                 background: 'transparent',
             },
-            series: [{ name: 'Requests', data: initialPoints }],
+            series: [{ name: @js(__('Requests')), data: initialPoints }],
             colors: [accent()],
             dataLabels: { enabled: false },
             stroke: { width: 2, curve: 'smooth' },
@@ -93,7 +93,7 @@
             },
             legend: { show: false },
             noData: {
-                text: 'Loading requests…',
+                text: @js(__('Loading requests…')),
                 style: { color: textColor },
             },
             tooltip: {
@@ -105,8 +105,8 @@
                     const timestamp = w.globals.seriesX[seriesIndex][dataPointIndex];
 
                     return `<div class="apexcharts-tooltip-custom">
-                        <div class="apexcharts-tooltip-custom-value">Requests: <span class="apexcharts-tooltip-value-bold">${requests.toLocaleString()}</span></div>
-                        <div class="apexcharts-tooltip-custom-title">Your time: ${formatLocalTimestamp(timestamp)}</div>
+                        <div class="apexcharts-tooltip-custom-value">${@js(__('Requests'))}: <span class="apexcharts-tooltip-value-bold">${requests.toLocaleString()}</span></div>
+                        <div class="apexcharts-tooltip-custom-title">${@js(__('Your time:'))} ${formatLocalTimestamp(timestamp)}</div>
                         <div class="apexcharts-tooltip-custom-title">UTC: ${formatUtcTimestamp(timestamp)}</div>
                     </div>`;
                 },
@@ -138,7 +138,7 @@
                 },
                 tooltip: { x: { format: timeFormat(data.range) } },
             });
-            chart.updateSeries([{ name: 'Requests', data: points }]);
+            chart.updateSeries([{ name: @js(__('Requests')), data: points }]);
         });
         });
     })();

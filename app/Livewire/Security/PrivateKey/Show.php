@@ -46,9 +46,9 @@ class Show extends Component
         return array_merge(
             ValidationPatterns::combinedMessages(),
             [
-                'name.required' => 'The Name field is required.',
-                'privateKeyValue.required' => 'The Private Key field is required.',
-                'privateKeyValue.string' => 'The Private Key must be a valid string.',
+                'name.required' => __('The Name field is required.'),
+                'privateKeyValue.required' => __('The Private Key field is required.'),
+                'privateKeyValue.string' => __('The Private Key must be a valid string.'),
             ]
         );
     }
@@ -96,7 +96,7 @@ class Show extends Component
             $this->isInUse = $this->private_key->isInUse();
             $this->public_key = $this->private_key->getPublicKey();
         } catch (AuthorizationException $e) {
-            abort(403, 'You do not have permission to view this private key.');
+            abort(403, __('You do not have permission to view this private key.'));
         } catch (\Throwable) {
             abort(404);
         }
@@ -109,7 +109,7 @@ class Show extends Component
 
             if ($this->private_key->isInUse()) {
                 $this->isInUse = true;
-                $this->dispatch('error', $this->deleteDisabledReason);
+                $this->dispatch('error', __($this->deleteDisabledReason));
 
                 return;
             }
@@ -143,7 +143,7 @@ class Show extends Component
                 'private_key' => formatPrivateKey($this->private_key->private_key),
             ]);
             refresh_server_connection($this->private_key);
-            $this->dispatch('success', 'Private key updated.');
+            $this->dispatch('success', __('Private key updated.'));
             if ($this->modalMode) {
                 $this->dispatch('privateKeyUpdated');
 

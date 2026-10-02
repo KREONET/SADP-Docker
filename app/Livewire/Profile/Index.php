@@ -3,6 +3,7 @@
 namespace App\Livewire\Profile;
 
 use App\Services\AvatarStorageService;
+use App\Support\InterfaceLocale;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -42,6 +43,11 @@ class Index extends Component
 
     public $avatar;
 
+    /**
+     * Interface language; "default" follows the instance default language.
+     */
+    public string $locale = 'default';
+
     public function uploadAvatar(AvatarStorageService $avatarStorage): bool
     {
         try {
@@ -52,7 +58,7 @@ class Index extends Component
             $avatarStorage->store(Auth::user(), $this->avatar);
             $this->reset('avatar');
             $this->dispatch('avatar-updated', url: profile_avatar_url(Auth::user()->fresh()));
-            $this->dispatch('success', 'Profile picture updated.');
+            $this->dispatch('success', __('Profile picture updated.'));
 
             return true;
         } catch (\Throwable $e) {
@@ -67,7 +73,7 @@ class Index extends Component
         try {
             $avatarStorage->delete(Auth::user());
             $this->dispatch('avatar-updated', url: null);
-            $this->dispatch('success', 'Profile picture removed.');
+            $this->dispatch('success', __('Profile picture removed.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -78,6 +84,7 @@ class Index extends Component
         $this->userId = Auth::id();
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->locale = InterfaceLocale::isAvailable(Auth::user()->locale) ? Auth::user()->locale : 'default';
 
         $oauthIdentity = Auth::user()->oauthIdentities()->latest('id')->first();
         $this->uses_sso = $oauthIdentity !== null;
@@ -101,10 +108,23 @@ class Index extends Component
             ]);
             auditLog('ui.user.profile_updated', $this->auditContext(['changed_fields' => ['name']]));
 
-            $this->dispatch('success', 'Profile updated.');
+            $this->dispatch('success', __('Profile updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
+    }
+
+    public function updateLocale()
+    {
+        $this->validate([
+            'locale' => ['required', 'in:default,'.implode(',', array_keys(InterfaceLocale::available()))],
+        ]);
+
+        Auth::user()->update(['locale' => $this->locale === 'default' ? null : $this->locale]);
+        auditLog('ui.user.locale_updated', $this->auditContext(['locale' => $this->locale]));
+
+        // Reload so the navigation and every component render in the new language.
+        return $this->redirect(route('profile'));
     }
 
     public function requestEmailChange()
@@ -118,7 +138,7 @@ class Index extends Component
             if (! isCloud()) {
                 $settings = instanceSettings();
                 if (! $settings->smtp_enabled && ! $settings->resend_enabled) {
-                    $this->dispatch('error', 'Email functionality is not configured. Please contact your administrator.');
+                    $this->dispatch('error', __('Email functionality is not configured. Please contact your administrator.'));
 
                     return;
                 }
@@ -136,7 +156,7 @@ class Index extends Component
                 $userEmailKey = 'email-change:user:'.Auth::id();
                 if (! RateLimiter::attempt($userEmailKey, 1, function () {}, 120)) {
                     $seconds = RateLimiter::availableIn($userEmailKey);
-                    $this->dispatch('error', 'Too many requests. Please wait '.$seconds.' seconds before trying again.');
+                    $this->dispatch('error', __('Too many requests. Please wait :seconds seconds before trying again.', ['seconds' => $seconds]));
 
                     return;
                 }
@@ -144,7 +164,7 @@ class Index extends Component
                 // Rate limit by new email address (3 requests per hour per email)
                 $newEmailKey = 'email-change:email:'.md5($this->new_email);
                 if (! RateLimiter::attempt($newEmailKey, 3, function () {}, 3600)) {
-                    $this->dispatch('error', 'This email address has received too many verification requests. Please try again later.');
+                    $this->dispatch('error', __('This email address has received too many verification requests. Please try again later.'));
 
                     return;
                 }
@@ -152,7 +172,7 @@ class Index extends Component
                 // Additional rate limit by IP address (5 requests per hour)
                 $ipKey = 'email-change:ip:'.request()->ip();
                 if (! RateLimiter::attempt($ipKey, 5, function () {}, 3600)) {
-                    $this->dispatch('error', 'Too many requests from your IP address. Please try again later.');
+                    $this->dispatch('error', __('Too many requests from your IP address. Please try again later.'));
 
                     return;
                 }
@@ -164,7 +184,7 @@ class Index extends Component
             $this->show_email_change = false;
             $this->show_verification = true;
 
-            $this->dispatch('success', 'Verification code sent to '.$this->new_email);
+            $this->dispatch('success', __('Verification code sent to :email', ['email' => $this->new_email]));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -188,7 +208,7 @@ class Index extends Component
                 if (! RateLimiter::attempt($verifyKey, 5, function () {}, 600)) {
                     $seconds = RateLimiter::availableIn($verifyKey);
                     $minutes = ceil($seconds / 60);
-                    $this->dispatch('error', 'Too many verification attempts. Please wait '.$minutes.' minutes before trying again.');
+                    $this->dispatch('error', __('Too many verification attempts. Please wait :minutes minutes before trying again.', ['minutes' => $minutes]));
 
                     // If too many failed attempts, clear the email change request for security
                     if (RateLimiter::attempts($verifyKey) >= 10) {
@@ -196,7 +216,7 @@ class Index extends Component
                         $this->new_email = '';
                         $this->email_verification_code = '';
                         $this->show_verification = false;
-                        $this->dispatch('error', 'Email change request cancelled due to too many failed attempts. Please start over.');
+                        $this->dispatch('error', __('Email change request cancelled due to too many failed attempts. Please start over.'));
                     }
 
                     return;
@@ -204,7 +224,7 @@ class Index extends Component
             }
 
             if (! Auth::user()->isEmailChangeCodeValid($this->email_verification_code)) {
-                $this->dispatch('error', 'Invalid or expired verification code.');
+                $this->dispatch('error', __('Invalid or expired verification code.'));
 
                 return;
             }
@@ -221,11 +241,11 @@ class Index extends Component
                 $this->email_verification_code = '';
                 $this->show_verification = false;
 
-                $this->dispatch('success', 'Email address updated successfully.');
+                $this->dispatch('success', __('Email address updated successfully.'));
                 $this->dispatch('close-email-change-modal');
                 auditLog('ui.user.email_changed', $this->auditContext());
             } else {
-                $this->dispatch('error', 'Failed to update email address.');
+                $this->dispatch('error', __('Failed to update email address.'));
             }
         } catch (\Throwable $e) {
             return handleError($e, $this);
@@ -241,7 +261,7 @@ class Index extends Component
 
             // Check if there's a pending request
             if (! Auth::user()->hasEmailChangeRequest()) {
-                $this->dispatch('error', 'No pending email change request.');
+                $this->dispatch('error', __('No pending email change request.'));
 
                 return;
             }
@@ -254,7 +274,7 @@ class Index extends Component
 
             if ($timeSinceCreated < $halfExpiryMinutes) {
                 $minutesToWait = ceil($halfExpiryMinutes - $timeSinceCreated);
-                $this->dispatch('error', 'Please wait '.$minutesToWait.' more minutes before requesting a new code.');
+                $this->dispatch('error', __('Please wait :minutes more minutes before requesting a new code.', ['minutes' => $minutesToWait]));
 
                 return;
             }
@@ -266,7 +286,7 @@ class Index extends Component
                 // Rate limit by email address
                 $newEmailKey = 'email-change:email:'.md5(strtolower($pendingEmail));
                 if (! RateLimiter::attempt($newEmailKey, 3, function () {}, 3600)) {
-                    $this->dispatch('error', 'This email address has received too many verification requests. Please try again later.');
+                    $this->dispatch('error', __('This email address has received too many verification requests. Please try again later.'));
 
                     return;
                 }
@@ -275,7 +295,7 @@ class Index extends Component
             // Generate and send new code
             Auth::user()->requestEmailChange($pendingEmail);
 
-            $this->dispatch('success', 'New verification code sent to '.$pendingEmail);
+            $this->dispatch('success', __('New verification code sent to :email', ['email' => $pendingEmail]));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -289,7 +309,7 @@ class Index extends Component
         $this->show_email_change = false;
         $this->show_verification = false;
 
-        $this->dispatch('success', 'Email change request cancelled.');
+        $this->dispatch('success', __('Email change request cancelled.'));
     }
 
     public function showEmailChangeForm()
@@ -311,7 +331,7 @@ class Index extends Component
         $this->uses_sso = true;
         $this->show_email_change = false;
         $this->show_verification = false;
-        $this->dispatch('error', 'Email addresses managed by SSO cannot be changed in Coolify.');
+        $this->dispatch('error', __('Email addresses managed by SSO cannot be changed in Coolify.'));
 
         return true;
     }
@@ -324,12 +344,12 @@ class Index extends Component
                 'new_password' => ['required', Password::defaults(), 'confirmed'],
             ]);
             if (! Hash::check($this->current_password, auth()->user()->password)) {
-                $this->dispatch('error', 'Current password is incorrect.');
+                $this->dispatch('error', __('Current password is incorrect.'));
 
                 return;
             }
             if ($this->new_password !== $this->new_password_confirmation) {
-                $this->dispatch('error', 'The two new passwords does not match.');
+                $this->dispatch('error', __('The two new passwords does not match.'));
 
                 return;
             }
@@ -337,7 +357,7 @@ class Index extends Component
                 'password' => Hash::make($this->new_password),
             ]);
             auditLog('ui.user.password_changed', $this->auditContext());
-            $this->dispatch('success', 'Password updated.');
+            $this->dispatch('success', __('Password updated.'));
             $this->current_password = '';
             $this->new_password = '';
             $this->new_password_confirmation = '';

@@ -12,13 +12,13 @@
 --}}
 @php
     $rows = $rows ?? [];
-    $helper = $helper ?? 'Top '.strtolower($label).' by request count for the selected range.';
+    $helper = $helper ?? __('Top :label by request count for the selected range.', ['label' => strtolower($label)]);
     $maxRequests = max(1, (int) collect($rows)->max('requests'));
 @endphp
 <x-application.settings-section id="analytics-{{ $dimension }}-section" :title="$label" :helper="$helper" flush>
     @if (collect($rows)->isEmpty())
-        <x-empty size="sm" title="No data"
-            :description="'No '.strtolower($label).' data for the selected range.'" icon-name="network" />
+        <x-empty size="sm" :title="__('No data')"
+            :description="__('No :label data for the selected range.', ['label' => strtolower($label)])" icon-name="network" />
     @else
         <div x-data="{ page: 0, per: 10, total: {{ count($rows) }} }">
             @foreach ($rows as $row)
@@ -27,11 +27,11 @@
                     $isOther = $value === '__other__';
                     $host = ! $isOther && $dimension === 'referer' ? refererHost($value) : null;
                     $display = $isOther
-                        ? 'Other'
+                        ? __('Other')
                         : match ($dimension) {
                             'device' => deviceLabel($value),
-                            'referer' => $host ?? 'Direct / none',
-                            default => $value !== '' ? $value : 'Unknown',
+                            'referer' => $host ?? __('Direct / none'),
+                            default => $value !== '' ? $value : __('Unknown'),
                         };
                     $requests = (int) ($row['requests'] ?? 0);
                     $width = min(100, round(($requests / $maxRequests) * 100, 1));
@@ -51,7 +51,7 @@
                         <div class="h-full rounded-full bg-[var(--chart-status-3xx)]" style="width: {{ $width }}%;"></div>
                     </div>
                     <span class="w-12 shrink-0 text-right text-[12px] font-medium tabular-nums text-black dark:text-fg"
-                        title="{{ number_format($requests) }} requests">{{ compactNumber($requests) }}</span>
+                        title="{{ __(':count requests', ['count' => number_format($requests)]) }}">{{ compactNumber($requests) }}</span>
                     <span class="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-neutral-400 sm:inline dark:text-fg-faint">{{ formatBytes((int) ($row['bytesOut'] ?? 0)) }}</span>
                 </div>
             @endforeach

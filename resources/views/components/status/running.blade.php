@@ -17,7 +17,7 @@
         $healthStatus = null;
     }
 
-    $badgeStatus = $healthStatus ? "{$displayStatus} ({$healthStatus})" : $displayStatus;
+    $badgeStatus = $healthStatus ? __($displayStatus).' ('.__($healthStatus).')' : __($displayStatus);
     $showUnknownHelper = ! str($status)->startsWith('Proxy') && (str($status)->contains('unknown') || str($healthStatus)->contains('unknown'));
     $showUnhealthyHelper = ! str($status)->startsWith('Proxy') && (str($status)->contains('unhealthy') || str($healthStatus)->contains('unhealthy'));
 @endphp
@@ -31,9 +31,9 @@
     @if ($showUnknownHelper)
         <div>
             <x-helper
-                helper="No health check configured. <span class='dark:text-warning text-coollabs'>The resource may be functioning normally.</span><br><br>Traefik and Caddy will route traffic to this container even without a health check. However, configuring a health check is recommended to ensure the resource is ready before receiving traffic.<br><br>More details in the <a href='https://coolify.io/docs/knowledge-base/proxy/traefik/healthchecks' class='underline dark:text-warning text-coollabs' target='_blank'>documentation</a>.">
+                :helper="__('No health check configured. <span class=\'dark:text-warning text-coollabs\'>The resource may be functioning normally.</span><br><br>Traefik and Caddy will route traffic to this container even without a health check. However, configuring a health check is recommended to ensure the resource is ready before receiving traffic.<br><br>More details in the <a href=\'https://coolify.io/docs/knowledge-base/proxy/traefik/healthchecks\' class=\'underline dark:text-warning text-coollabs\' target=\'_blank\'>documentation</a>.')">
                 <x-slot:icon>
-                    <x-status-badge status="No healthcheck" type="warning" class="cursor-help" />
+                    <x-status-badge :status="__('No healthcheck')" type="warning" class="cursor-help" />
                 </x-slot:icon>
             </x-helper>
         </div>
@@ -41,9 +41,9 @@
     @if ($showUnhealthyHelper)
         <div>
             <x-helper
-                helper="Unhealthy state. <span class='dark:text-warning text-coollabs'>The health check is failing.</span><br><br>This resource will <span class='dark:text-warning text-coollabs'>NOT work with Traefik</span> as it expects a healthy state. Your action is required to fix the health check or the underlying issue causing it to fail.<br><br>More details in the <a href='https://coolify.io/docs/knowledge-base/proxy/traefik/healthchecks' class='underline dark:text-warning text-coollabs' target='_blank'>documentation</a>.">
+                :helper="__('Unhealthy state. <span class=\'dark:text-warning text-coollabs\'>The health check is failing.</span><br><br>This resource will <span class=\'dark:text-warning text-coollabs\'>NOT work with Traefik</span> as it expects a healthy state. Your action is required to fix the health check or the underlying issue causing it to fail.<br><br>More details in the <a href=\'https://coolify.io/docs/knowledge-base/proxy/traefik/healthchecks\' class=\'underline dark:text-warning text-coollabs\' target=\'_blank\'>documentation</a>.')">
                 <x-slot:icon>
-                    <x-status-badge status="Unhealthy" type="warning" class="cursor-help" />
+                    <x-status-badge :status="__('Unhealthy')" type="warning" class="cursor-help" />
                 </x-slot:icon>
             </x-helper>
         </div>

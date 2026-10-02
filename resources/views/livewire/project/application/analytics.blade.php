@@ -4,36 +4,41 @@ $tabButtonActive = 'bg-white text-black shadow-sm ring-1 ring-neutral-200 dark:b
 $tabButtonInactive = 'text-neutral-500 hover:text-black dark:text-fg-faint dark:hover:text-fg';
 
 $dimensionLabels = [
-    'referer' => 'Referrers',
-    'browser' => 'Browsers',
-    'os' => 'Operating systems',
+    'referer' => __('Referrers'),
+    'browser' => __('Browsers'),
+    'os' => __('Operating systems'),
+];
+$dimensionHelpers = [
+    'referer' => __('Top referrers by request count for the selected range.'),
+    'browser' => __('Top browsers by request count for the selected range.'),
+    'os' => __('Top operating systems by request count for the selected range.'),
 ];
 // Shared by the application and service analytics tabs. A resource with several Sentinel
 // keys (compose services, previews) is merged, so latency and uniques become approximate.
-$approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-1.5 inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-amber-700 uppercase dark:bg-amber-500/10 dark:text-amber-400">~ approximate</span>';
+$approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-1.5 inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-amber-700 uppercase dark:bg-amber-500/10 dark:text-amber-400">'.e(__('~ approximate')).'</span>';
 ?>
 <div class="flex flex-col gap-6">
     @if (! $enabled)
-        <x-application.settings-section id="analytics-section" title="Analytics"
-            helper="Inspect traffic statistics reported by Sentinel.">
+        <x-application.settings-section id="analytics-section" :title="__('Analytics')"
+            :helper="__('Inspect traffic statistics reported by Sentinel.')">
             @if ($analyticsServerUuid)
                 <x-slot:actions>
                     <a class="button" href="{{ route('server.analytics', ['server_uuid' => $analyticsServerUuid]) }}"
                         {{ wireNavigate() }}>
-                        Server analytics
+                        {{ __('Server analytics') }}
                         <x-external-link />
                     </a>
                 </x-slot:actions>
             @endif
-            <x-empty size="sm" title="Traffic analytics is not enabled"
-                description="Enable Sentinel traffic analytics for this server to start collecting request analytics."
+            <x-empty size="sm" :title="__('Traffic analytics is not enabled')"
+                :description="__('Enable Sentinel traffic analytics for this server to start collecting request analytics.')"
                 icon-name="network" />
         </x-application.settings-section>
     @elseif (! $overview)
-        <x-application.settings-section id="analytics-section" title="Analytics"
-            helper="Inspect traffic statistics reported by Sentinel.">
-            <x-empty size="sm" title="No analytics data yet"
-                description="We could not load traffic analytics for the selected range. Try a different range or check back shortly."
+        <x-application.settings-section id="analytics-section" :title="__('Analytics')"
+            :helper="__('Inspect traffic statistics reported by Sentinel.')">
+            <x-empty size="sm" :title="__('No analytics data yet')"
+                :description="__('We could not load traffic analytics for the selected range. Try a different range or check back shortly.')"
                 icon-name="network" />
         </x-application.settings-section>
     @else
@@ -41,23 +46,23 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
             <div wire:poll.60s="loadData" class="hidden"></div>
         @endif
 
-        <x-application.settings-section id="analytics-range-section" title="Analytics"
-            helper="Inspect traffic statistics reported by Sentinel.">
+        <x-application.settings-section id="analytics-range-section" :title="__('Analytics')"
+            :helper="__('Inspect traffic statistics reported by Sentinel.')">
             <x-slot:actions>
                 <div class="flex items-center gap-2">
                     @include('livewire.traffic._live-toggle')
                     <div class="inline-flex items-center gap-0.5 rounded-lg bg-neutral-100 p-1 dark:bg-white/[0.04]">
                         <button type="button" wire:click="setRange('24h')"
                             @class([$tabButtonBase, $range === '24h' ? $tabButtonActive : $tabButtonInactive])>
-                            24 hours
+                            {{ __('24 hours') }}
                         </button>
                         <button type="button" wire:click="setRange('7d')"
                             @class([$tabButtonBase, $range === '7d' ? $tabButtonActive : $tabButtonInactive])>
-                            7 days
+                            {{ __('7 days') }}
                         </button>
                         <button type="button" wire:click="setRange('30d')"
                             @class([$tabButtonBase, $range === '30d' ? $tabButtonActive : $tabButtonInactive])>
-                            30 days
+                            {{ __('30 days') }}
                         </button>
                     </div>
                 </div>
@@ -65,7 +70,7 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
 
             <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-neutral-200 sm:grid-cols-3 lg:grid-cols-5 dark:bg-white/[0.07]">
                 <div class="flex flex-col bg-[var(--coollabs-base)] px-4 py-3">
-                    <span class="text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">Requests</span>
+                    <span class="text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">{{ __('Requests') }}</span>
                     <span class="mt-1 text-xl font-semibold text-black tabular-nums dark:text-fg">{{ number_format($overview['requests'] ?? 0) }}</span>
                     <div class="mt-auto pt-3">
                         @include('livewire.traffic._sparkline', [
@@ -79,9 +84,9 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
                 </div>
                 <div class="flex flex-col bg-[var(--coollabs-base)] px-4 py-3">
                     <span class="flex items-center text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">
-                        Unique visitors
+                        {{ __('Unique visitors') }}
                         @if ($uniquesApproximate)
-                            {!! $approxBadge('Summed across services; visitors of more than one service may be double-counted.') !!}
+                            {!! $approxBadge(__('Summed across services; visitors of more than one service may be double-counted.')) !!}
                         @endif
                     </span>
                     <span class="mt-1 text-xl font-semibold text-black tabular-nums dark:text-fg">{{ number_format($overview['uniqueVisitors'] ?? 0) }}</span>
@@ -96,7 +101,7 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
                     </div>
                 </div>
                 <div class="flex flex-col bg-[var(--coollabs-base)] px-4 py-3">
-                    <span class="text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">Bandwidth</span>
+                    <span class="text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">{{ __('Bandwidth') }}</span>
                     <span class="mt-1 text-xl font-semibold text-black tabular-nums dark:text-fg">{{ formatBytes($this->bandwidthBytes()) }}</span>
                     <div class="mt-auto pt-3">
                         @include('livewire.traffic._sparkline', [
@@ -109,7 +114,7 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
                     </div>
                 </div>
                 <div class="flex flex-col bg-[var(--coollabs-base)] px-4 py-3">
-                    <span class="text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">Error rate</span>
+                    <span class="text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">{{ __('Error rate') }}</span>
                     <span class="mt-1 text-xl font-semibold text-black tabular-nums dark:text-fg">{{ $this->errorRate() }}%</span>
                     <div class="mt-auto pt-3">
                         @include('livewire.traffic._sparkline', [
@@ -123,9 +128,9 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
                 </div>
                 <div class="col-span-2 flex flex-col bg-[var(--coollabs-base)] px-4 py-3 sm:col-span-1">
                     <span class="flex items-center text-[11px] font-medium tracking-wide text-neutral-500 uppercase dark:text-fg-dim">
-                        p95 latency
+                        {{ __('p95 latency') }}
                         @if ($latencyApproximate)
-                            {!! $approxBadge('Highest p95 latency across services; not a true merged percentile.') !!}
+                            {!! $approxBadge(__('Highest p95 latency across services; not a true merged percentile.')) !!}
                         @endif
                     </span>
                     <span class="mt-1 text-xl font-semibold text-black tabular-nums dark:text-fg">{{ number_format($overview['latencyP95'] ?? 0, 1) }} ms</span>
@@ -142,23 +147,23 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
             </div>
         </x-application.settings-section>
 
-        <x-application.settings-section id="analytics-requests-section" title="Requests" flush
-            helper="Total request volume over time for the selected range.">
+        <x-application.settings-section id="analytics-requests-section" :title="__('Requests')" flush
+            :helper="__('Total request volume over time for the selected range.')">
             @include('livewire.traffic._requests-chart')
         </x-application.settings-section>
 
-        <x-application.settings-section id="analytics-status-codes-section" title="Status codes"
-            helper="Share of responses by HTTP status class for the selected range.">
+        <x-application.settings-section id="analytics-status-codes-section" :title="__('Status codes')"
+            :helper="__('Share of responses by HTTP status class for the selected range.')">
             @include('livewire.traffic._status-codes')
         </x-application.settings-section>
 
-        <x-application.settings-section id="analytics-paths-section" title="Top paths"
-            helper="Most requested paths for the selected range." flush>
+        <x-application.settings-section id="analytics-paths-section" :title="__('Top paths')"
+            :helper="__('Most requested paths for the selected range.')" flush>
             @include('livewire.traffic._paths-list', ['paths' => $topPaths])
         </x-application.settings-section>
 
-        <x-application.settings-section id="analytics-country-section" title="Countries"
-            helper="Request volume by visitor country for the selected range." flush>
+        <x-application.settings-section id="analytics-country-section" :title="__('Countries')"
+            :helper="__('Request volume by visitor country for the selected range.')" flush>
             @include('livewire.traffic._geo', [
                 'countries' => data_get($breakdowns, 'country', []),
                 'attribution' => $attribution,
@@ -167,8 +172,8 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
 
         {{-- Requests by device type (donut) + HTTP versions / cache / status. --}}
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <x-application.settings-section id="analytics-device-section" title="Requests by device type"
-                helper="Share of requests by client device class for the selected range.">
+            <x-application.settings-section id="analytics-device-section" :title="__('Requests by device type')"
+                :helper="__('Share of requests by client device class for the selected range.')">
                 @php $deviceChart = $this->deviceChartData(); @endphp
                 @include('livewire.traffic._device-chart', [
                     'labels' => $deviceChart['labels'],
@@ -178,24 +183,24 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
 
             @include('livewire.traffic._breakdown-section', [
                 'dimension' => 'protocol',
-                'label' => 'Top HTTP versions',
+                'label' => __('Top HTTP versions'),
                 'rows' => data_get($breakdowns, 'protocol', []),
-                'helper' => 'Request volume by negotiated HTTP protocol version.',
+                'helper' => __('Request volume by negotiated HTTP protocol version.'),
             ])
         </div>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             @include('livewire.traffic._breakdown-section', [
                 'dimension' => 'cache',
-                'label' => 'Top cache statuses',
+                'label' => __('Top cache statuses'),
                 'rows' => data_get($breakdowns, 'cache', []),
-                'helper' => 'Reverse-proxy cache outcome (hit, miss, bypass, …) by request count.',
+                'helper' => __('Reverse-proxy cache outcome (hit, miss, bypass, …) by request count.'),
             ])
             @include('livewire.traffic._breakdown-section', [
                 'dimension' => 'status',
-                'label' => 'Top status codes',
+                'label' => __('Top status codes'),
                 'rows' => data_get($breakdowns, 'status', []),
-                'helper' => 'Most frequent HTTP response status codes for the selected range.',
+                'helper' => __('Most frequent HTTP response status codes for the selected range.'),
             ])
         </div>
 
@@ -206,28 +211,29 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
                     'dimension' => $dimension,
                     'label' => $label,
                     'rows' => data_get($breakdowns, $dimension, []),
+                    'helper' => $dimensionHelpers[$dimension],
                 ])
             @endforeach
             @include('livewire.traffic._breakdown-section', [
                 'dimension' => 'agent',
-                'label' => 'AI agents & bots',
+                'label' => __('AI agents & bots'),
                 'rows' => data_get($breakdowns, 'agent', []),
-                'helper' => 'Bot and AI-crawler traffic (GPTBot, ClaudeBot, Googlebot, …) by request count.',
+                'helper' => __('Bot and AI-crawler traffic (GPTBot, ClaudeBot, Googlebot, …) by request count.'),
             ])
             @include('livewire.traffic._breakdown-section', [
                 'dimension' => 'ip',
-                'label' => 'Top IPs',
+                'label' => __('Top IPs'),
                 'rows' => data_get($breakdowns, 'ip', []),
-                'helper' => 'Busiest client IPs (real visitor IP, resolved behind Cloudflare / reverse proxies).',
+                'helper' => __('Busiest client IPs (real visitor IP, resolved behind Cloudflare / reverse proxies).'),
             ])
         </div>
 
         {{-- User agents (full width — raw UA strings are long). --}}
         @include('livewire.traffic._breakdown-section', [
             'dimension' => 'useragent',
-            'label' => 'Top user agents',
+            'label' => __('Top user agents'),
             'rows' => data_get($breakdowns, 'useragent', []),
-            'helper' => 'Most frequent raw User-Agent strings for the selected range.',
+            'helper' => __('Most frequent raw User-Agent strings for the selected range.'),
         ])
     @endif
 </div>

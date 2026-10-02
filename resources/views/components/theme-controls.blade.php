@@ -7,10 +7,10 @@
          all theme state/logic comes from the shared window.themeControls(). --}}
     <div x-data="themeControls()" class="grid gap-0.5">
         @foreach ([
-            ['value' => 'light', 'label' => 'Light'],
-            ['value' => 'system', 'label' => 'System'],
-            ['value' => 'dark', 'label' => 'Dark'],
-            ['value' => 'custom', 'label' => 'Custom'],
+            ['value' => 'light', 'label' => __('Light')],
+            ['value' => 'system', 'label' => __('System')],
+            ['value' => 'dark', 'label' => __('Dark')],
+            ['value' => 'custom', 'label' => __('Custom')],
         ] as $option)
             @if ($option['value'] === 'custom')
                 <div class="relative" @click.outside="pickerOpen = false">
@@ -19,7 +19,7 @@
                         <span class="flex items-center gap-2">
                             <span class="size-3.5 rounded-full border border-white/20"
                                 :style="`background: ${themeColor}`"></span>
-                            Custom
+                            {{ __('Custom') }}
                         </span>
                         <svg x-show="theme === 'custom'" class="size-3.5 text-coollabs dark:text-warning"
                             viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -44,11 +44,11 @@
         @endforeach
         <div class="my-1 h-px bg-neutral-200 dark:bg-white/[0.07]"></div>
         <div class="px-2 pt-1 pb-0.5 text-[10px] font-medium tracking-wide text-neutral-400 uppercase dark:text-fg-faint">
-            Page width
+            {{ __('Page width') }}
         </div>
         @foreach ([
-            ['value' => 'full', 'label' => 'Full width'],
-            ['value' => 'centered', 'label' => 'Centered'],
+            ['value' => 'full', 'label' => __('Full width')],
+            ['value' => 'centered', 'label' => __('Centered')],
         ] as $option)
             <button type="button" @click="setWidth('{{ $option['value'] }}')"
                 class="flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-xs text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-neutral-950 dark:text-fg-dim dark:hover:bg-white/[0.06] dark:hover:text-fg">
@@ -68,16 +68,16 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>Color theme</h2>
-                    <p>Choose the color scheme used in this browser.</p>
+                    <h2>{{ __('Color theme') }}</h2>
+                    <p>{{ __('Choose the color scheme used in this browser.') }}</p>
                 </div>
             </div>
             <div class="application-settings-section-body grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ([
-                    ['value' => 'light', 'label' => 'Light', 'description' => 'Bright surfaces and dark text.', 'preview' => 'bg-white'],
-                    ['value' => 'system', 'label' => 'System', 'description' => 'Follow your operating system.', 'preview' => 'bg-gradient-to-r from-white via-neutral-400 to-[#050505]'],
-                    ['value' => 'dark', 'label' => 'Dark', 'description' => 'Dark surfaces and soft contrast.', 'preview' => 'bg-[#181818]'],
-                    ['value' => 'custom', 'label' => 'Custom', 'description' => 'Tint light or dark surfaces with any color.', 'preview' => ''],
+                    ['value' => 'light', 'label' => __('Light'), 'description' => __('Bright surfaces and dark text.'), 'preview' => 'bg-white'],
+                    ['value' => 'system', 'label' => __('System'), 'description' => __('Follow your operating system.'), 'preview' => 'bg-gradient-to-r from-white via-neutral-400 to-[#050505]'],
+                    ['value' => 'dark', 'label' => __('Dark'), 'description' => __('Dark surfaces and soft contrast.'), 'preview' => 'bg-[#181818]'],
+                    ['value' => 'custom', 'label' => __('Custom'), 'description' => __('Tint light or dark surfaces with any color.'), 'preview' => ''],
                 ] as $option)
                     @if ($option['value'] === 'custom')
                         {{-- Clicking the card opens the custom color picker popover (color + light/dark). --}}
@@ -145,14 +145,14 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>Page width</h2>
-                    <p>Choose how content uses the available browser width.</p>
+                    <h2>{{ __('Page width') }}</h2>
+                    <p>{{ __('Choose how content uses the available browser width.') }}</p>
                 </div>
             </div>
             <div class="application-settings-section-body grid gap-3 sm:grid-cols-2">
                 @foreach ([
-                    ['value' => 'full', 'label' => 'Full width', 'description' => 'Use all available space for page content.'],
-                    ['value' => 'centered', 'label' => 'Centered', 'description' => 'Keep content centered at a comfortable maximum width.'],
+                    ['value' => 'full', 'label' => __('Full width'), 'description' => __('Use all available space for page content.')],
+                    ['value' => 'centered', 'label' => __('Centered'), 'description' => __('Keep content centered at a comfortable maximum width.')],
                 ] as $option)
                     <button type="button" @click="setWidth('{{ $option['value'] }}')"
                         class="group overflow-hidden rounded-[10px] border border-neutral-200 bg-white text-left transition-[border-color,box-shadow] hover:border-neutral-300 hover:shadow-sm dark:border-white/[0.07] dark:bg-white/[0.05] dark:hover:border-white/[0.12]"

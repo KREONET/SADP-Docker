@@ -31,13 +31,13 @@ class IntegrationTokens extends Component
         $this->authorize('delete', $token);
 
         if ($token->secretManagerLinks()->exists()) {
-            $this->dispatch('error', 'This token is used by one or more resources as a secret manager source. Remove those links first.');
+            $this->dispatch('error', __('This token is used by one or more resources as a secret manager source. Remove those links first.'));
 
             return;
         }
 
         if ($token->managedDnsRecords()->exists()) {
-            $this->dispatch('error', 'This token manages DNS records. Remove those domains or records first.');
+            $this->dispatch('error', __('This token manages DNS records. Remove those domains or records first.'));
 
             return;
         }
@@ -53,7 +53,7 @@ class IntegrationTokens extends Component
             'provider' => $provider,
         ]);
         $this->loadTokens();
-        $this->dispatch('success', 'Integration token deleted successfully.');
+        $this->dispatch('success', __('Integration token deleted successfully.'));
     }
 
     public function render()

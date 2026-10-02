@@ -1,6 +1,6 @@
 <div class="flex min-h-[calc(100dvh-7.5rem)] flex-col">
     <x-slot:title>
-        {{ data_get_str($application, 'name')->limit(10) }} > Deployment | Coolify
+        {{ data_get_str($application, 'name')->limit(10) }} > {{ __('Deployment') }} | Coolify
         </x-slot>
         <livewire:project.shared.configuration-checker :resource="$application" />
         <livewire:project.application.heading :application="$application" wire:key="application-heading-deployment-show" />
@@ -194,13 +194,13 @@
             const content = this.collectVisibleLogs();
             if (!content) return;
             if (!navigator.clipboard?.writeText) {
-                Livewire.dispatch('error', ['Clipboard is not available. Please use HTTPS or localhost.']);
+                Livewire.dispatch('error', [@js(__('Clipboard is not available. Please use HTTPS or localhost.'))]);
                 return;
             }
             navigator.clipboard?.writeText(content).then(() => {
-                Livewire.dispatch('success', ['Logs copied to clipboard.']);
+                Livewire.dispatch('success', [@js(__('Logs copied to clipboard.'))]);
             }).catch(() => {
-                Livewire.dispatch('error', ['Failed to copy logs to clipboard.']);
+                Livewire.dispatch('error', [@js(__('Failed to copy logs to clipboard.'))]);
             });
         },
         downloadLogs() {
@@ -282,7 +282,7 @@
                         @php
                             $deploymentStatus = data_get($application_deployment_queue, 'status');
                             $deploymentStatusLabel = $deploymentStatus === 'in_progress'
-                                ? 'In progress'
+                                ? __('In progress')
                                 : Str::headline((string) $deploymentStatus);
                             $deploymentStatusType = match ($deploymentStatus) {
                                 'finished' => 'success',
@@ -294,7 +294,7 @@
                         <div class="logs-viewer-toolbar-controls">
                             <div class="logs-viewer-primary">
                                 <div class="logs-viewer-actions">
-                                <button title="Toggle Timestamps" x-on:click="showTimestamps = !showTimestamps"
+                                <button title="{{ __('Toggle Timestamps') }}" x-on:click="showTimestamps = !showTimestamps"
                                     :class="showTimestamps ? 'logs-viewer-btn-active' : ''"
                                     class="logs-viewer-btn">
                                     <svg class="size-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -303,7 +303,7 @@
                                             d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                     </svg>
                                 </button>
-                                <button title="Follow Logs" :class="alwaysScroll ? 'logs-viewer-btn-active' : ''"
+                                <button title="{{ __('Follow Logs') }}" :class="alwaysScroll ? 'logs-viewer-btn-active' : ''"
                                     x-on:click="toggleScroll"
                                     class="logs-viewer-btn">
                                     <svg class="size-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -313,7 +313,7 @@
                                 </button>
                                 @can('update', $application)
                                 <button wire:click="toggleDebug"
-                                    title="{{ $is_debug_enabled ? 'Hide Debug Logs' : 'Show Debug Logs' }}"
+                                    title="{{ $is_debug_enabled ? __('Hide Debug Logs') : __('Show Debug Logs') }}"
                                     class="logs-viewer-btn {{ $is_debug_enabled ? 'logs-viewer-btn-active' : '' }}">
                                     <svg class="size-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none"
                                         stroke="currentColor" stroke-width="1.5">
@@ -322,7 +322,7 @@
                                     </svg>
                                 </button>
                                 @endcan
-                                <button title="Fullscreen" x-show="!fullscreen" x-on:click="makeFullscreen"
+                                <button title="{{ __('Fullscreen') }}" x-show="!fullscreen" x-on:click="makeFullscreen"
                                     class="logs-viewer-btn">
                                     <svg class="size-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <g fill="none">
@@ -333,7 +333,7 @@
                                         </g>
                                     </svg>
                                 </button>
-                                <button title="Minimize" x-show="fullscreen" x-on:click="makeFullscreen"
+                                <button title="{{ __('Minimize') }}" x-show="fullscreen" x-on:click="makeFullscreen"
                                     class="logs-viewer-btn">
                                     <svg class="size-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path fill="none" stroke="currentColor" stroke-linecap="round"
@@ -343,7 +343,7 @@
                                 </button>
                                 <button
                                     x-on:click="copyLogs()"
-                                    title="Copy Logs"
+                                    title="{{ __('Copy Logs') }}"
                                     class="logs-viewer-btn">
                                     <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor">
@@ -352,7 +352,7 @@
                                     </svg>
                                 </button>
                                 <div x-data="{ downloadMenuOpen: false, downloadingAllLogs: false }" class="relative shrink-0">
-                                    <button x-on:click="downloadMenuOpen = !downloadMenuOpen" title="Download Logs"
+                                    <button x-on:click="downloadMenuOpen = !downloadMenuOpen" title="{{ __('Download Logs') }}"
                                         class="logs-viewer-btn">
                                         <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                             stroke-width="1.5" stroke="currentColor">
@@ -371,7 +371,7 @@
                                         <div>
                                             <button x-on:click="downloadLogs(); downloadMenuOpen = false"
                                                 class="listbox-option text-neutral-700! hover:bg-neutral-100! dark:text-neutral-200! dark:hover:bg-white/[0.07]!">
-                                                Download displayed logs
+                                                {{ __('Download displayed logs') }}
                                             </button>
                                             @can('update', $application)
                                             <button x-on:click="
@@ -386,7 +386,7 @@
                                                     a.download = 'deployment-' + deploymentId + '-all-logs-' + timestamp + '.txt';
                                                     a.click();
                                                     URL.revokeObjectURL(url);
-                                                    Livewire.dispatch('success', ['All logs downloaded.']);
+                                                    Livewire.dispatch('success', [@js(__('All logs downloaded.'))]);
                                                 }).finally(() => {
                                                     downloadingAllLogs = false;
                                                     downloadMenuOpen = false;
@@ -395,13 +395,13 @@
                                                 :disabled="downloadingAllLogs"
                                                 :class="{ 'opacity-50 cursor-not-allowed': downloadingAllLogs }"
                                                 class="listbox-option text-neutral-700! hover:bg-neutral-100! dark:text-neutral-200! dark:hover:bg-white/[0.07]!">
-                                                <span x-show="!downloadingAllLogs">Download all logs</span>
+                                                <span x-show="!downloadingAllLogs">{{ __('Download all logs') }}</span>
                                                 <span x-show="downloadingAllLogs" class="flex items-center gap-2">
                                                     <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                     </svg>
-                                                    Downloading...
+                                                    {{ __('Downloading...') }}
                                                 </span>
                                             </button>
                                             @endcan
@@ -418,17 +418,17 @@
                             <div class="logs-viewer-search relative">
                                 <x-reicon name="search"
                                     class="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                                <input type="search" x-model.debounce.300ms="searchQuery" placeholder="Find in logs"
-                                    aria-label="Find in logs"
+                                <input type="search" x-model.debounce.300ms="searchQuery" placeholder="{{ __('Find in logs') }}"
+                                    aria-label="{{ __('Find in logs') }}"
                                     class="h-8! w-full rounded-lg! border-neutral-200! bg-white! py-0! pr-8! pl-8! text-[12px]! text-neutral-800! shadow-none! placeholder:text-neutral-400 focus:border-accent! focus:ring-0! dark:border-white/[0.08]! dark:bg-white/[0.05]! dark:text-white! dark:placeholder:text-neutral-500" />
                                 <button x-cloak x-show="searchQuery" x-on:click="searchQuery = ''" type="button"
                                     class="absolute top-1/2 right-2 z-10 flex size-5 -translate-y-1/2 items-center justify-center rounded text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-500 dark:hover:bg-white/[0.07] dark:hover:text-white"
-                                    aria-label="Clear search">
+                                    aria-label="{{ __('Clear search') }}">
                                     <x-reicon name="x" class="size-3" />
                                 </button>
                             </div>
                             <div class="logs-viewer-meta">
-                                <span x-show="searchQuery.trim()" x-text="matchCount + ' matches'"
+                                <span x-show="searchQuery.trim()" x-text="@js(__(':count matches')).replace(':count', matchCount)"
                                     class="text-xs text-neutral-500 whitespace-nowrap"></span>
                             </div>
                             </div>
@@ -440,7 +440,7 @@
                         <div id="logs" class="flex min-w-0 flex-col font-logs text-[11px] leading-relaxed sm:text-xs">
                             <div x-show="searchQuery.trim() && matchCount === 0"
                                 class="py-2 text-neutral-500">
-                                No matches found.
+                                {{ __('No matches found.') }}
                             </div>
                             @forelse ($this->logLines as $line)
                                 @php
@@ -463,7 +463,7 @@
                                         ])>{{ $lineContent }}</span>
                                 </div>
                             @empty
-                                <span class="mb-2 font-logs text-neutral-400">No logs yet.</span>
+                                <span class="mb-2 font-logs text-neutral-400">{{ __('No logs yet.') }}</span>
                             @endforelse
                         </div>
                     </div>

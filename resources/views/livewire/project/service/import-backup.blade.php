@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($service, 'name')->limit(10) }} > Import Backup | Coolify
+        {{ data_get_str($service, 'name')->limit(10) }} > {{ __('Import Backup') }} | Coolify
     </x-slot>
 
     <livewire:project.service.heading :service="$service" :parameters="$parameters" :query="request()->query()"
@@ -12,16 +12,16 @@
 
             <div class="application-settings-form min-w-0 flex flex-col gap-6">
                 @if ($databases->isEmpty())
-                    <x-application.settings-section title="Import Backup"
-                        helper="Restore a backup into a database in this service.">
-                        <x-empty title="No compatible databases"
-                            description="This service does not contain a database that supports backup imports."
+                    <x-application.settings-section :title="__('Import Backup')"
+                        :helper="__('Restore a backup into a database in this service.')">
+                        <x-empty :title="__('No compatible databases')"
+                            :description="__('This service does not contain a database that supports backup imports.')"
                             icon-name="database" size="sm" />
                     </x-application.settings-section>
                 @else
-                    <x-application.settings-section title="Import Backup"
-                        helper="Choose the database that should receive the backup.">
-                        <x-forms.listbox id="selectedDatabaseUuid" label="Database" live required canGate="update"
+                    <x-application.settings-section :title="__('Import Backup')"
+                        :helper="__('Choose the database that should receive the backup.')">
+                        <x-forms.listbox id="selectedDatabaseUuid" :label="__('Database')" live required canGate="update"
                             :canResource="$service"
                             :options="$databases->map(fn ($database) => [
                                 'value' => $database->uuid,

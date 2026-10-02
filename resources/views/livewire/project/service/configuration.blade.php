@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($service, 'name')->limit(10) }} > Configuration | Coolify
+        {{ data_get_str($service, 'name')->limit(10) }} > {{ __('Configuration') }} | Coolify
     </x-slot>
 
     <livewire:project.service.heading :service="$service" :parameters="$parameters" :query="$query" />
@@ -62,7 +62,7 @@
     <section class="application-settings-workspace mt-4 w-full max-w-none lg:mt-0">
         <div class="grid min-w-0 gap-8 xl:grid-cols-[210px_minmax(0,1fr)] xl:gap-8">
             <aside class="application-settings-navigation min-w-0 xl:self-start">
-                <nav aria-label="Service settings"
+                <nav aria-label="{{ __('Service settings') }}"
                     x-data="settingsSidebarAccordion({ activeGroup: @js($activeGroup), storageKey: 'coolify.settings-sidebar.service' })"
                     class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
                     @foreach ($groupedItems as $groupLabel => $groupItems)
@@ -72,7 +72,7 @@
                         @endunless
                         <button type="button" class="nav-section-toggle hidden xl:flex" @click="toggle(@js($groupLabel))"
                             :aria-expanded="isOpen(@js($groupLabel))">
-                            <span>{{ $groupLabel }}</span>
+                            <span>{{ __($groupLabel) }}</span>
                             <svg class="size-3 shrink-0 opacity-60 transition-transform"
                                 :class="!isOpen(@js($groupLabel)) && '-rotate-90'" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -88,9 +88,9 @@
                                 @if ($menuItem['navigate'] ?? true) {{ wireNavigate() }} @endif
                                 href="{{ route($menuItem['route'], $serviceRouteParameters) }}">
                                 <x-reicon :name="$menuItem['icon']" class="menu-item-icon" />
-                                <span class="menu-item-label">{{ $menuItem['label'] }}</span>
+                                <span class="menu-item-label">{{ __($menuItem['label']) }}</span>
                                 @if ($menuItem['hasWarning'] ?? false)
-                                    <span class="ml-auto size-2 shrink-0 rounded-full bg-error" title="Required environment variables missing"></span>
+                                    <span class="ml-auto size-2 shrink-0 rounded-full bg-error" title="{{ __('Required environment variables missing') }}"></span>
                                 @endif
                             </a>
                             @if ($menuItem['active'] && $menuItem['route'] === 'project.service.storages' && $storageSections->isNotEmpty())
@@ -125,9 +125,9 @@
                     }">
                         <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h2 class="text-base font-semibold text-black dark:text-fg">Compose resources</h2>
+                                <h2 class="text-base font-semibold text-black dark:text-fg">{{ __('Compose resources') }}</h2>
                                 <p class="mt-1 text-sm text-neutral-500 dark:text-fg-dim">
-                                    Applications and databases defined in this service.
+                                    {{ __('Applications and databases defined in this service.') }}
                                 </p>
                             </div>
                             <div class="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
@@ -138,7 +138,7 @@
                                         :class="viewMode === 'table'
                                             ? 'control-selected'
                                             : 'text-neutral-400 hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg'"
-                                        aria-label="Table view" title="Table view">
+                                        aria-label="{{ __('Table view') }}" title="{{ __('Table view') }}">
                                         <x-reicon name="unordered-list" class="size-3.5" />
                                     </button>
                                     <button type="button" x-on:click="setViewMode('grid')"
@@ -146,12 +146,12 @@
                                         :class="viewMode === 'grid'
                                             ? 'control-selected'
                                             : 'text-neutral-400 hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg'"
-                                        aria-label="Grid view" title="Grid view">
+                                        aria-label="{{ __('Grid view') }}" title="{{ __('Grid view') }}">
                                         <x-reicon name="grid" class="size-3.5" />
                                     </button>
                                 </div>
                                 <a class="button" target="_blank" href="{{ $service->documentation() }}">
-                                    Documentation
+                                    {{ __('Documentation') }}
                                     <x-reicon name="external-link" class="size-4" />
                                 </a>
                             </div>
@@ -163,9 +163,9 @@
                             @if ($applications->isNotEmpty() || $databases->isNotEmpty())
                                 <div x-cloak x-show="viewMode === 'table'"
                                     class="grid min-w-[48rem] grid-cols-[minmax(14rem,1fr)_minmax(12rem,1fr)_12rem_5rem] gap-3 border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-fg-faint">
-                                    <div>Resource</div>
-                                    <div>Image</div>
-                                    <div class="justify-self-start">Status</div>
+                                    <div>{{ __('Resource') }}</div>
+                                    <div>{{ __('Image') }}</div>
+                                    <div class="justify-self-start">{{ __('Status') }}</div>
                                     <div></div>
                                 </div>
                             @endif
@@ -173,8 +173,8 @@
                             @if ($applications->isEmpty() && $databases->isEmpty())
                                 <div
                                     class="application-settings-section overflow-hidden sm:col-span-2">
-                                    <x-empty title="No compose resources"
-                                        description="No applications or databases are defined in this Docker Compose file."
+                                    <x-empty :title="__('No compose resources')"
+                                        :description="__('No applications or databases are defined in this Docker Compose file.')"
                                         icon-name="grid" />
                                 </div>
                             @endif
@@ -203,7 +203,7 @@
                     <div class="space-y-6">
                         <div
                             class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-5 text-amber-800 dark:border-warning/15 dark:bg-warning/[0.07] dark:text-amber-300/90">
-                            Service volume mounts are read-only here. Edit the Docker Compose file and reload it to change volumes.
+                            {{ __('Service volume mounts are read-only here. Edit the Docker Compose file and reload it to change volumes.') }}
                         </div>
                         @foreach ($applications as $application)
                             <livewire:project.service.storage wire:key="application-{{ $application->id }}"

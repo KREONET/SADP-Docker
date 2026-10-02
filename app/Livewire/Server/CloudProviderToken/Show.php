@@ -58,7 +58,7 @@ class Show extends Component
     {
         $ownedToken = CloudProviderToken::ownedByCurrentTeam()->find($tokenId);
         if (is_null($ownedToken)) {
-            $this->dispatch('error', 'You are not allowed to use this token.');
+            $this->dispatch('error', __('You are not allowed to use this token.'));
 
             return;
         }
@@ -85,7 +85,7 @@ class Show extends Component
                 'provider' => $ownedToken->provider,
             ]);
 
-            $this->dispatch('success', "{$this->providerName} token updated successfully.");
+            $this->dispatch('success', __(':provider token updated successfully.', ['provider' => $this->providerName]));
             $this->dispatch('refreshServerShow');
         } catch (\Exception $e) {
             $this->server->refresh();
@@ -107,7 +107,7 @@ class Show extends Component
             if (! $response->successful()) {
                 return [
                     'valid' => false,
-                    'error' => 'This token is invalid or has insufficient permissions.',
+                    'error' => __('This token is invalid or has insufficient permissions.'),
                 ];
             }
 
@@ -119,7 +119,7 @@ class Show extends Component
                 if (! $serverResponse->successful()) {
                     return [
                         'valid' => false,
-                        'error' => 'This token cannot access this server. It may belong to a different Hetzner project.',
+                        'error' => __('This token cannot access this server. It may belong to a different Hetzner project.'),
                     ];
                 }
             }
@@ -132,7 +132,7 @@ class Show extends Component
                 if (! $serverResponse->successful()) {
                     return [
                         'valid' => false,
-                        'error' => 'This token cannot access this instance. It may belong to a different Vultr account.',
+                        'error' => __('This token cannot access this instance. It may belong to a different Vultr account.'),
                     ];
                 }
             }
@@ -141,7 +141,7 @@ class Show extends Component
         } catch (\Throwable $e) {
             return [
                 'valid' => false,
-                'error' => 'Failed to validate token: '.$e->getMessage(),
+                'error' => __('Failed to validate token: :error', ['error' => $e->getMessage()]),
             ];
         }
     }
@@ -151,7 +151,7 @@ class Show extends Component
         try {
             $token = $this->server->cloudProviderToken;
             if (! $token) {
-                $this->dispatch('error', "No {$this->providerName} token is associated with this server.");
+                $this->dispatch('error', __('No :provider token is associated with this server.', ['provider' => $this->providerName]));
 
                 return;
             }
@@ -165,9 +165,9 @@ class Show extends Component
             ])->timeout(10)->get($endpoint);
 
             if ($response->successful()) {
-                $this->dispatch('success', "{$this->providerName} token is valid and working.");
+                $this->dispatch('success', __(':provider token is valid and working.', ['provider' => $this->providerName]));
             } else {
-                $this->dispatch('error', "{$this->providerName} token is invalid or has insufficient permissions.");
+                $this->dispatch('error', __(':provider token is invalid or has insufficient permissions.', ['provider' => $this->providerName]));
             }
 
             auditLog('ui.server.cloud_token_validated', [

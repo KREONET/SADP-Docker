@@ -68,7 +68,7 @@ class Heading extends Component
         if ($this->service->server->isFunctional()) {
             GetContainersStatus::dispatch($this->service->server);
         } else {
-            $this->dispatch('error', 'Server is not functional.');
+            $this->dispatch('error', __('Server is not functional.'));
         }
     }
 
@@ -132,7 +132,7 @@ class Heading extends Component
             $this->dispatch('activityMonitor', $this->runningActivityId);
             $this->js("window.dispatchEvent(new CustomEvent('startservice'))");
         } else {
-            $this->dispatch('info', 'No deployment is currently running.');
+            $this->dispatch('info', __('No deployment is currently running.'));
         }
     }
 
@@ -195,7 +195,7 @@ class Heading extends Component
             $this->authorizeService('deploy');
             $this->checkDeployments();
             if ($this->isDeploymentProgress) {
-                $this->dispatch('error', 'There is a deployment in progress.');
+                $this->dispatch('error', __('There is a deployment in progress.'));
 
                 return;
             }
@@ -218,7 +218,7 @@ class Heading extends Component
 
         $this->authorize('update', $resource);
         StopServiceApplication::run($resource, true, true);
-        $this->dispatch('success', 'Container removed.');
+        $this->dispatch('success', __('Container removed.'));
     }
 
     private function selectedResource(): ServiceApplication|ServiceDatabase|null
@@ -238,7 +238,7 @@ class Heading extends Component
             $this->authorizeService('deploy');
             $this->checkDeployments();
             if ($this->isDeploymentProgress) {
-                $this->dispatch('error', 'There is a deployment in progress.');
+                $this->dispatch('error', __('There is a deployment in progress.'));
 
                 return;
             }

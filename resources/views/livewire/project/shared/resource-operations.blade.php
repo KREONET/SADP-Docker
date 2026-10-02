@@ -81,13 +81,13 @@
         return [
             ...this.servers.map(server => ({
                 value: server.id,
-                label: `${server.name} (${server.ip})${server.id == this.currentServerId ? ' (current)' : ''}`,
+                label: `${server.name} (${server.ip})${server.id == this.currentServerId ? ' ' + @js(__('(current)')) : ''}`,
             })),
             ...@js(
                 $buildServers->map(
                     fn ($server) => [
                         'value' => "build-{$server->id}",
-                        'label' => "{$server->name} (build server)",
+                        'label' => __(':name (build server)', ['name' => $server->name]),
                         'disabled' => true,
                     ],
                 )->values(),
@@ -97,7 +97,7 @@
     get cloneDestinationOptions() {
         return this.availableDestinations.map(destination => ({
             value: destination.uuid,
-            label: destination.name + (destination.uuid == this.currentDestinationUuid ? ' (current)' : ''),
+            label: destination.name + (destination.uuid == this.currentDestinationUuid ? ' ' + @js(__('(current)')) : ''),
         }));
     },
     get migrateServerOptions() {
@@ -117,19 +117,19 @@
     get cloneProjectOptions() {
         return this.projects.map(project => ({
             value: project.id,
-            label: project.name + (project.id == this.currentProjectId ? ' (current)' : ''),
+            label: project.name + (project.id == this.currentProjectId ? ' ' + @js(__('(current)')) : ''),
         }));
     },
     get cloneEnvironmentOptions() {
         return this.availableCloneEnvironments.map(environment => ({
             value: environment.id,
-            label: environment.name + (environment.id == this.currentEnvironmentId ? ' (current)' : ''),
+            label: environment.name + (environment.id == this.currentEnvironmentId ? ' ' + @js(__('(current)')) : ''),
         }));
     },
     get moveProjectOptions() {
         return this.projects.map(project => ({
             value: project.id,
-            label: project.name + (project.id == this.currentProjectId ? ' (current)' : ''),
+            label: project.name + (project.id == this.currentProjectId ? ' ' + @js(__('(current)')) : ''),
         }));
     },
     get moveEnvironmentOptions() {
@@ -151,146 +151,141 @@
     $watch('selectedMoveProject', () => selectedMoveEnvironment = null);
 " class="flex flex-col gap-6">
     @can('update', $resource)
-        <x-application.settings-section id="clone-destination-section" title="Clone to another destination"
-            helper="Create the clone in the current environment on another server or network.">
-            <x-callout type="info" title="Configuration only">
-                Cloning copies settings, environment variables, and resource configuration. Stored files,
-                database records, and other persistent data are not copied.
+        <x-application.settings-section id="clone-destination-section" :title="__('Clone to another destination')"
+            :helper="__('Create the clone in the current environment on another server or network.')">
+            <x-callout type="info" :title="__('Configuration only')">
+                {{ __('Cloning copies settings, environment variables, and resource configuration. Stored files, database records, and other persistent data are not copied.') }}
             </x-callout>
 
             <div class="mt-4 grid gap-4 md:grid-cols-2">
-                <x-forms.listbox id="clone-resource-server" label="Server" :wire="false"
+                <x-forms.listbox id="clone-resource-server" :label="__('Server')" :wire="false"
                     x-model="selectedCloneServer" x-effect="options = cloneServerOptions"
-                    placeholder="Choose a server…" />
+                    :placeholder="__('Choose a server…')" />
 
-                <x-forms.listbox id="clone-resource-destination" label="Network destination" :wire="false"
+                <x-forms.listbox id="clone-resource-destination" :label="__('Network destination')" :wire="false"
                     x-model="selectedCloneDestination" x-effect="options = cloneDestinationOptions"
                     x-bind:disabled="selectedCloneServer === null || selectedCloneServer === ''"
-                    placeholder="Choose a destination…"
-                    emptyText="No network destinations are available on this server." />
+                    :placeholder="__('Choose a destination…')"
+                    :emptyText="__('No network destinations are available on this server.')" />
             </div>
 
             <div x-show="selectedCloneDestination" x-cloak
                 class="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.07]">
                 <p class="text-[13px] text-neutral-500 dark:text-fg-dim">
-                    The running resource will not be changed.
+                    {{ __('The running resource will not be changed.') }}
                 </p>
                 <x-forms.button @click="$wire.cloneTo(selectedCloneDestination)">
-                    Clone resource
+                    {{ __('Clone resource') }}
                 </x-forms.button>
             </div>
         </x-application.settings-section>
 
         @if (isDev())
-            <x-application.settings-section id="migrate-destination-section" title="Migrate to another server"
-                helper="Move this resource to a different validated and reachable server. The resource is stopped and persistent volumes can be transferred.">
+            <x-application.settings-section id="migrate-destination-section" :title="__('Migrate to another server')"
+                :helper="__('Move this resource to a different validated and reachable server. The resource is stopped and persistent volumes can be transferred.')">
                 <x-slot:actions>
                     <x-status-badge status="Dev" type="warning" />
                 </x-slot:actions>
-                <x-callout type="warning" title="Downtime">
-                    Migration stops the resource on the source server. After volume transfer finishes, redeploy on
-                    the target server. Source volumes are left in place for safety — clean them up manually when you
-                    confirm the migration succeeded. Only other servers that are validated and reachable are listed.
+                <x-callout type="warning" :title="__('Downtime')">
+                    {{ __('Migration stops the resource on the source server. After volume transfer finishes, redeploy on the target server. Source volumes are left in place for safety — clean them up manually when you confirm the migration succeeded. Only other servers that are validated and reachable are listed.') }}
                 </x-callout>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
-                    <x-forms.listbox id="migrate-resource-server" label="Target server" :wire="false"
+                    <x-forms.listbox id="migrate-resource-server" :label="__('Target server')" :wire="false"
                         x-model="selectedMigrateServer" x-effect="options = migrateServerOptions"
-                        placeholder="Choose a server…"
-                        emptyText="No other validated and reachable servers are available." />
+                        :placeholder="__('Choose a server…')"
+                        :emptyText="__('No other validated and reachable servers are available.')" />
 
-                    <x-forms.listbox id="migrate-resource-destination" label="Network destination" :wire="false"
+                    <x-forms.listbox id="migrate-resource-destination" :label="__('Network destination')" :wire="false"
                         x-model="selectedMigrateDestination" x-effect="options = migrateDestinationOptions"
                         x-bind:disabled="selectedMigrateServer === null || selectedMigrateServer === ''"
-                        placeholder="Choose a destination…"
-                        emptyText="No network destinations are available on this server." />
+                        :placeholder="__('Choose a destination…')"
+                        :emptyText="__('No network destinations are available on this server.')" />
                 </div>
 
                 <div x-show="selectedMigrateDestination" x-cloak class="mt-4">
-                    <x-forms.checkbox id="migrateVolumeData" live label="Migrate persistent volume data"
-                        helper="Named Docker volumes and bind-mount host paths are transferred when both servers are managed by Coolify." />
+                    <x-forms.checkbox id="migrateVolumeData" live :label="__('Migrate persistent volume data')"
+                        :helper="__('Named Docker volumes and bind-mount host paths are transferred when both servers are managed by Coolify.')" />
                 </div>
 
                 <div x-show="selectedMigrateDestination" x-cloak
                     class="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.07]">
                     <p class="text-[13px] text-neutral-500 dark:text-fg-dim">
-                        The resource keeps the same UUID and configuration. Only the hosting server and network
-                        destination change.
+                        {{ __('The resource keeps the same UUID and configuration. Only the hosting server and network destination change.') }}
                     </p>
-                    <x-modal-confirmation title="Migrate this resource?" submitAction="migrate-resource-confirmed"
+                    <x-modal-confirmation :title="__('Migrate this resource?')" submitAction="migrate-resource-confirmed"
                         dispatchAction :confirmWithText="false" :confirmWithPassword="false"
-                        step2ButtonText="Migrate resource"
+                        :step2ButtonText="__('Migrate resource')"
                         :actions="[
-                            'The resource will be stopped on the source server.',
-                            'Redeploy the resource after the migration completes.',
+                            __('The resource will be stopped on the source server.'),
+                            __('Redeploy the resource after the migration completes.'),
                         ]">
                         <x-slot:trigger>
-                            <x-forms.button>Migrate resource</x-forms.button>
+                            <x-forms.button>{{ __('Migrate resource') }}</x-forms.button>
                         </x-slot:trigger>
                     </x-modal-confirmation>
                 </div>
             </x-application.settings-section>
         @endif
 
-        <x-application.settings-section id="clone-environment-section" title="Clone to another environment"
-            helper="Create the clone in another project environment while keeping the current server and network.">
+        <x-application.settings-section id="clone-environment-section" :title="__('Clone to another environment')"
+            :helper="__('Create the clone in another project environment while keeping the current server and network.')">
             <div class="grid gap-4 md:grid-cols-2">
-                <x-forms.listbox id="clone-resource-project" label="Project" :wire="false"
+                <x-forms.listbox id="clone-resource-project" :label="__('Project')" :wire="false"
                     x-model="selectedCloneProject" x-effect="options = cloneProjectOptions"
-                    placeholder="Choose a project…" />
+                    :placeholder="__('Choose a project…')" />
 
-                <x-forms.listbox id="clone-resource-environment" label="Environment" :wire="false"
+                <x-forms.listbox id="clone-resource-environment" :label="__('Environment')" :wire="false"
                     x-model="selectedCloneEnvironment" x-effect="options = cloneEnvironmentOptions"
                     x-bind:disabled="!selectedCloneProject || availableCloneEnvironments.length === 0"
-                    placeholder="Choose an environment…" />
+                    :placeholder="__('Choose an environment…')" />
             </div>
 
             <div x-show="selectedCloneEnvironment" x-cloak
                 class="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.07]">
                 <p class="text-[13px] text-neutral-500 dark:text-fg-dim">
-                    Uses {{ data_get($resource, 'destination.server.name') }} ·
-                    {{ data_get($resource, 'destination.network') }}.
+                    {{ __('Uses :server · :network.', ['server' => data_get($resource, 'destination.server.name'), 'network' => data_get($resource, 'destination.network')]) }}
                 </p>
                 <x-forms.button
                     @click="$wire.cloneTo(currentDestinationUuid, selectedCloneEnvironment)">
-                    Clone resource
+                    {{ __('Clone resource') }}
                 </x-forms.button>
             </div>
         </x-application.settings-section>
 
-        <x-application.settings-section id="move-resource-section" title="Move resource"
-            helper="Transfer this resource to another project environment without changing the running deployment.">
+        <x-application.settings-section id="move-resource-section" :title="__('Move resource')"
+            :helper="__('Transfer this resource to another project environment without changing the running deployment.')">
             @if ($projects->count() > 0)
                 <div class="grid gap-4 md:grid-cols-2">
-                    <x-forms.listbox id="move-resource-project" label="Project" :wire="false"
+                    <x-forms.listbox id="move-resource-project" :label="__('Project')" :wire="false"
                         x-model="selectedMoveProject" x-effect="options = moveProjectOptions"
-                        placeholder="Choose a project…" />
+                        :placeholder="__('Choose a project…')" />
 
-                    <x-forms.listbox id="move-resource-environment" label="Environment"
-                        helper="The current environment is excluded." :wire="false"
+                    <x-forms.listbox id="move-resource-environment" :label="__('Environment')"
+                        :helper="__('The current environment is excluded.')" :wire="false"
                         x-model="selectedMoveEnvironment" x-effect="options = moveEnvironmentOptions"
                         x-bind:disabled="!selectedMoveProject || availableEnvironments.length === 0"
-                        placeholder="Choose an environment…" />
+                        :placeholder="__('Choose an environment…')" />
                 </div>
 
                 <div x-show="selectedMoveEnvironment" x-cloak
                     class="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.07]">
                     <p class="text-[13px] text-neutral-500 dark:text-fg-dim">
-                        All configuration will move with the resource.
+                        {{ __('All configuration will move with the resource.') }}
                     </p>
                     <x-forms.button @click="$wire.moveTo(selectedMoveEnvironment)">
-                        Move resource
+                        {{ __('Move resource') }}
                     </x-forms.button>
                 </div>
             @else
-                <x-empty size="sm" title="No destination environments"
-                    description="Create another project or environment before moving this resource."
+                <x-empty size="sm" :title="__('No destination environments')"
+                    :description="__('Create another project or environment before moving this resource.')"
                     icon-name="projects" />
             @endif
         </x-application.settings-section>
     @else
-        <x-callout type="danger" title="Insufficient permissions">
-            You do not have permission to clone or move this resource. Contact a team administrator for access.
+        <x-callout type="danger" :title="__('Insufficient permissions')">
+            {{ __('You do not have permission to clone or move this resource. Contact a team administrator for access.') }}
         </x-callout>
     @endcan
 </div>

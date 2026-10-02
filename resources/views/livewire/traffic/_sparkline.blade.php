@@ -24,12 +24,12 @@
     $key = $key ?? '';
     $initialCategories = array_column($series ?? [], 'bucket');
     $label = match ($key) {
-        'requestsSpark' => 'Requests',
-        'uniquesSpark' => 'Visitors',
-        'bandwidthSpark' => 'Bandwidth',
-        'errorsSpark' => 'Errors',
-        'latencySpark' => 'p95 latency',
-        default => 'Value',
+        'requestsSpark' => __('Requests'),
+        'uniquesSpark' => __('Visitors'),
+        'bandwidthSpark' => __('Bandwidth'),
+        'errorsSpark' => __('Errors'),
+        'latencySpark' => __('p95 latency'),
+        default => __('Value'),
     };
 @endphp
 <div wire:ignore id="{!! $id !!}" class="h-9 w-full [&_.apexcharts-svg]:overflow-visible!"
@@ -100,7 +100,7 @@
                         const timestamp = w.globals.seriesX[0][dataPointIndex];
                         return `<div class='apexcharts-tooltip-custom'>
                             <div class='apexcharts-tooltip-custom-value'>${@js($label)}: <span class='apexcharts-tooltip-value-bold'>${formatValue(value)}</span></div>
-                            <div class='apexcharts-tooltip-custom-title'>Your time: ${formatLocalTimestamp(timestamp)}</div>
+                            <div class='apexcharts-tooltip-custom-title'>${@js(__('Your time:'))} ${formatLocalTimestamp(timestamp)}</div>
                             <div class='apexcharts-tooltip-custom-title'>UTC: ${formatUtcTimestamp(timestamp)}</div>
                         </div>`;
                     },

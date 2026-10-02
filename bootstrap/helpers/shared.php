@@ -654,17 +654,17 @@ function handleError(?Throwable $error = null, ?Component $livewire = null, ?str
 {
     if ($error instanceof TooManyRequestsException) {
         if (isset($livewire)) {
-            return $livewire->dispatch('error', "Too many requests. Please try again in {$error->secondsUntilAvailable} seconds.");
+            return $livewire->dispatch('error', __('Too many requests. Please try again in :seconds seconds.', ['seconds' => $error->secondsUntilAvailable]));
         }
 
-        return "Too many requests. Please try again in {$error->secondsUntilAvailable} seconds.";
+        return __('Too many requests. Please try again in :seconds seconds.', ['seconds' => $error->secondsUntilAvailable]);
     }
     if ($error instanceof UniqueConstraintViolationException) {
         if (isset($livewire)) {
-            return $livewire->dispatch('error', 'Duplicate entry found. Please use a different name.');
+            return $livewire->dispatch('error', __('Duplicate entry found. Please use a different name.'));
         }
 
-        return 'Duplicate entry found. Please use a different name.';
+        return __('Duplicate entry found. Please use a different name.');
     }
 
     if ($error instanceof ModelNotFoundException) {
@@ -4913,7 +4913,7 @@ function verifyPasswordConfirmation(mixed $password, ?Component $component = nul
     // Verify the password
     if (! Hash::check($password, Auth::user()->password)) {
         if ($component) {
-            $component->addError('password', 'The provided password is incorrect.');
+            $component->addError('password', __('The provided password is incorrect.'));
         }
 
         return false;
@@ -5237,13 +5237,13 @@ function deviceLabel(?string $device): string
     $value = strtolower(trim((string) $device));
 
     return match ($value) {
-        '' => 'Unknown',
-        'pc' => 'Desktop',
-        'smartphone' => 'Mobile',
-        'mobilephone' => 'Mobile',
-        'appliance' => 'Appliance',
-        'crawler' => 'Bot',
-        default => Str::title($value),
+        '' => __('Unknown'),
+        'pc' => __('Desktop'),
+        'smartphone' => __('Mobile'),
+        'mobilephone' => __('Mobile'),
+        'appliance' => __('Appliance'),
+        'crawler' => __('Bot'),
+        default => __(Str::title($value)),
     };
 }
 

@@ -250,18 +250,18 @@
         foreach ($groupedMenuItems as $groupLabel => $groupItems) {
             foreach ($groupItems as $item) {
                 $searchIndex[] = [
-                    'label' => $item['label'],
-                    'breadcrumb' => $groupLabel,
-                    'searchText' => $item['label'].' '.$groupLabel,
+                    'label' => __($item['label']),
+                    'breadcrumb' => __($groupLabel),
+                    'searchText' => __($item['label']).' '.__($groupLabel).' '.$item['label'].' '.$groupLabel,
                     'href' => route($item['route'], $applicationRouteParameters),
                     'icon' => $menuIcons[$item['label']] ?? 'settings',
                     'navigate' => $item['navigate'] ?? true,
                 ];
                 foreach ($pageSections[$item['route']] ?? [] as $section) {
                     $searchIndex[] = [
-                        'label' => $section['label'],
-                        'breadcrumb' => $groupLabel.' · '.$item['label'],
-                        'searchText' => $section['label'].' '.$item['label'].' '.$groupLabel,
+                        'label' => __($section['label']),
+                        'breadcrumb' => __($groupLabel).' · '.__($item['label']),
+                        'searchText' => __($section['label']).' '.__($item['label']).' '.__($groupLabel).' '.$section['label'].' '.$item['label'].' '.$groupLabel,
                         'href' => route($item['route'], $applicationRouteParameters).'#'.$section['id'],
                         'icon' => $menuIcons[$item['label']] ?? 'settings',
                         'navigate' => true,
@@ -276,7 +276,7 @@
     'application-settings-navigation min-w-0 xl:self-start',
     'is-flush' => $flush,
 ])>
-                <nav aria-label="Configuration sections"
+                <nav aria-label="{{ __('Configuration sections') }}"
                     x-data="settingsSidebarAccordion({ activeGroup: @js($activeGroup), storageKey: 'coolify.settings-sidebar.application', labels: @js($searchTexts) })"
                     class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
                     {{-- A quiet inline filter, deliberately lighter than the global ⌘K
@@ -284,17 +284,17 @@
                     <div class="relative col-span-full mb-1.5 xl:mb-2">
                         <x-reicon name="search"
                             class="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-fg-faint" />
-                        <input x-model.debounce.100ms="search" type="search" placeholder="Filter settings"
-                            aria-label="Filter settings"
+                        <input x-model.debounce.100ms="search" type="search" placeholder="{{ __('Filter settings') }}"
+                            aria-label="{{ __('Filter settings') }}"
                             class="h-7 w-full rounded-md border-0 bg-black/[0.035] py-0 pr-7 pl-7 text-[12px] text-nav-text shadow-none outline-none ring-0 transition-colors placeholder:text-neutral-400 focus:bg-black/[0.05] focus-visible:ring-1 focus-visible:ring-accent/40 dark:bg-white/[0.04] dark:text-fg dark:placeholder:text-fg-faint dark:focus:bg-white/[0.06]">
-                        <button x-cloak x-show="searching" type="button" @click="search = ''" aria-label="Clear filter"
+                        <button x-cloak x-show="searching" type="button" @click="search = ''" aria-label="{{ __('Clear filter') }}"
                             class="absolute top-1/2 right-1 flex size-5 -translate-y-1/2 items-center justify-center rounded text-neutral-400 transition-colors hover:text-black dark:text-fg-faint dark:hover:text-fg">
                             <x-reicon name="x" class="size-3" />
                         </button>
                     </div>
                     <p x-cloak x-show="searching && !hasResults"
                         class="col-span-full px-2.5 py-2 text-[12px] text-neutral-500 dark:text-fg-dim">
-                        No settings match “<span x-text="search"></span>”.
+                        {!! __('No settings match “:search”.', ['search' => '<span x-text="search"></span>']) !!}
                     </p>
 
                     {{-- Flat search results (pages + sub-sections), each with its category/parent. --}}
@@ -319,7 +319,7 @@
                         @endunless
                         <button type="button" class="nav-section-toggle hidden xl:flex" x-show="!searching"
                             @click="toggle(@js($groupLabel))" :aria-expanded="isOpen(@js($groupLabel))">
-                            <span>{{ $groupLabel }}</span>
+                            <span>{{ __($groupLabel) }}</span>
                             <svg class="size-3 shrink-0 opacity-60 transition-transform"
                                 :class="!isOpen(@js($groupLabel)) && '-rotate-90'" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -340,7 +340,7 @@
                                     href="{{ route($menuItem['route'], $applicationRouteParameters) }}"
                                     >
                                     <x-reicon :name="$menuIcons[$menuItem['label']] ?? 'settings'" class="menu-item-icon" />
-                                    <span class="menu-item-label">{{ $menuItem['label'] }}</span>
+                                    <span class="menu-item-label">{{ __($menuItem['label']) }}</span>
                                     @if ($menuItem['badge'] ?? false)
                                         <span class="shrink-0">
                                             <livewire:project.application.server-status-badge :application="$application"
@@ -357,7 +357,7 @@
                                             <button type="button" class="menu-subitem"
                                                 :class="activeSection === '{{ $section['id'] }}' && 'menu-subitem-active'"
                                                 x-on:click="activeSection = '{{ $section['id'] }}'; history.replaceState(null, '', '#{{ $section['id'] }}'); window.scrollToSettingsSection?.('{{ $section['id'] }}')">
-                                                <span class="menu-item-label text-left">{{ $section['label'] }}</span>
+                                                <span class="menu-item-label text-left">{{ __($section['label']) }}</span>
                                             </button>
                                         @endforeach
                                     </div>

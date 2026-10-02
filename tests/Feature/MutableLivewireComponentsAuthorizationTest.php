@@ -78,7 +78,7 @@ it('declares deploy authorization on the service container removal confirmation'
     $source = file_get_contents(resource_path('views/livewire/project/service/heading.blade.php'));
 
     expect($source)->toMatch(
-        '/<x-modal-confirmation(?=[^>]*title="Confirm Container Removal\?")(?=[^>]*canGate="deploy")(?=[^>]*:canResource="\$service")[^>]*>/'
+        '/<x-modal-confirmation(?=[^>]*:title="__\(\'Confirm Container Removal\?\'\)")(?=[^>]*canGate="deploy")(?=[^>]*:canResource="\$service")[^>]*>/'
     );
 });
 
@@ -87,11 +87,11 @@ it('declares update authorization on application and service domain removal conf
     $serviceTable = file_get_contents(resource_path('views/livewire/project/service/partials/domain-table.blade.php'));
 
     expect($applicationRow)->toMatch(
-        '/<x-modal-confirmation(?=[^>]*title="Remove domain\?")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$application")[^>]*>/'
+        '/<x-modal-confirmation(?=[^>]*:title="__\(\'Remove domain\?\'\)")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$application")[^>]*>/'
     );
 
     expect($serviceTable)->toMatch(
-        '/<x-modal-confirmation(?=[^>]*title="Remove domain\?")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>/'
+        '/<x-modal-confirmation(?=[^>]*:title="__\(\'Remove domain\?\'\)")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>/'
     );
 });
 
@@ -104,7 +104,7 @@ it('declares update authorization on service backup mutation controls', function
     );
 
     expect($volumeBackupView)
-        ->toMatch('/<x-modal-input(?=[^>]*:title="\'Edit backup schedule\'")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>/')
+        ->toMatch('/<x-modal-input(?=[^>]*:title="__\(\'Edit backup schedule\'\)")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>/')
         ->toMatch('/<x-forms\.button\s+type="button" canGate="update" :canResource="\$service"[^\n]*\n(?:[^\n]*\n){0,3}?\s*wire:click\.stop="backupNow\(\'database\',/')
         ->toMatch('/<x-forms\.button(?=[^>]*wire:click\.stop="backupNow\(\'storage\',[^"]+")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>/');
 });
@@ -115,7 +115,7 @@ it('declares update authorization on application port controls', function () {
     $generalView = file_get_contents(resource_path('views/livewire/project/application/general.blade.php'));
 
     expect($domainsView)
-        ->toMatch('/<x-forms\.button(?=[^>]*canGate="update")(?=[^>]*:canResource="\$application")[^>]*>\s*Cancel/s')
+        ->toMatch('/<x-forms\.button(?=[^>]*canGate="update")(?=[^>]*:canResource="\$application")[^>]*>\s*\{\{ __\(\'Cancel\'\) \}\}/s')
         ->toMatch('/<x-forms\.button(?=[^>]*wire:click="confirmUseUnknownPort")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$application")[^>]*>/s');
 
     expect($previewDomainsView)
@@ -180,8 +180,8 @@ it('authorizes every volume backup form control', function (string $path, array 
     'S3 controls' => [
         'resources/views/livewire/project/shared/storages/volume-backups/s3.blade.php',
         [
-            '/<x-forms\.button(?=[^>]*wire:click="toggleS3")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$resource")[^>]*>\s*Enable S3\s*<\/x-forms\.button>/s',
-            '/<x-forms\.button(?=[^>]*wire:click="toggleS3")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$resource")[^>]*>\s*Disable S3\s*<\/x-forms\.button>/s',
+            '/<x-forms\.button(?=[^>]*wire:click="toggleS3")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$resource")[^>]*>\s*{{ __\(\'Enable S3\'\) }}\s*<\/x-forms\.button>/s',
+            '/<x-forms\.button(?=[^>]*wire:click="toggleS3")(?=[^>]*canGate="update")(?=[^>]*:canResource="\$resource")[^>]*>\s*{{ __\(\'Disable S3\'\) }}\s*<\/x-forms\.button>/s',
             '/<x-forms\.listbox canGate="update" :canResource="\$resource" id="s3StorageId"[\s\S]*?:disabled="! auth\(\)->user\(\)\?->can\(\'update\', \$resource\)"/',
             '/<x-forms\.listbox canGate="update" :canResource="\$resource" id="disableLocalBackup"[\s\S]*?:disabled="! \$saveToS3 \|\| ! auth\(\)->user\(\)\?->can\(\'update\', \$resource\)"/',
         ],
@@ -190,7 +190,7 @@ it('authorizes every volume backup form control', function (string $path, array 
         'resources/views/livewire/project/service/domains.blade.php',
         [
             '/<x-forms\.listbox(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")(?=[^>]*id="newServiceApplicationId")[^>]*>/s',
-            '/@can\(\'update\', \$service\)[\s\S]*?<x-modal-input title="Add domain"(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>[\s\S]*?<x-forms\.domain-input id="newDomainParts"[\s\S]*?@endcan/',
+            '/@can\(\'update\', \$service\)[\s\S]*?<x-modal-input :title="__\(\'Add domain\'\)"(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")[^>]*>[\s\S]*?<x-forms\.domain-input id="newDomainParts"[\s\S]*?@endcan/',
             '/<x-forms\.button(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")(?=[^>]*wire:click="generateDomain")[^>]*>/s',
             '/<x-forms\.button(?=[^>]*canGate="update")(?=[^>]*:canResource="\$service")(?=[^>]*type="submit")[^>]*>/s',
         ],

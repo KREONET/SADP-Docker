@@ -59,7 +59,7 @@ class PreviewDomains extends Component
         $this->authorize('update', $this->preview->application);
         if ($this->preview->application->build_pack === 'dockercompose'
             && ($this->newDomainService === null || ! in_array($this->newDomainService, $this->composeServices(), true))) {
-            $this->addError('newDomainService', 'Select a valid Compose service.');
+            $this->addError('newDomainService', __('Select a valid Compose service.'));
 
             return;
         }
@@ -72,7 +72,7 @@ class PreviewDomains extends Component
             fn (array $row): bool => DomainPortOverrides::withoutPort($row['url']) === $canonicalDomain
                 && $row['service'] === $this->newDomainService
         )) {
-            $this->addError('newDomainParts.host', 'This domain is already configured.');
+            $this->addError('newDomainParts.host', __('This domain is already configured.'));
 
             return;
         }
@@ -109,13 +109,13 @@ class PreviewDomains extends Component
                 $checkId,
                 $this->preview->application->additional_servers->count() > 0,
             );
-            $this->dispatch('success', 'Domain added. DNS check started.');
+            $this->dispatch('success', __('Domain added. DNS check started.'));
         } catch (\Throwable) {
             $this->domainRows[$index]['dns_status'] = 'skipped';
             $this->domainRows[$index]['dns_message'] = 'DNS check could not be started.';
             $this->domainRows[$index]['check_id'] = null;
             $this->persistDnsStatuses();
-            $this->dispatch('error', 'Domain added, but the DNS check could not be started. Try again from the preview domains list.');
+            $this->dispatch('error', __('Domain added, but the DNS check could not be started. Try again from the preview domains list.'));
         }
     }
 
@@ -146,7 +146,7 @@ class PreviewDomains extends Component
             $this->preview->generate_preview_fqdn(generateWithoutApplicationDomain: true);
         }
         $this->refreshDomains();
-        $this->dispatch('success', 'Domain generated.');
+        $this->dispatch('success', __('Domain generated.'));
     }
 
     public function startEdit(int $index): void
@@ -206,7 +206,7 @@ class PreviewDomains extends Component
         $this->dispatch('close-preview-domain-edit', previewId: $this->preview->id);
 
         if (! $dnsRelevantChange) {
-            $this->dispatch('success', 'Domain updated.');
+            $this->dispatch('success', __('Domain updated.'));
 
             return;
         }
@@ -222,13 +222,13 @@ class PreviewDomains extends Component
                 $checkId,
                 $this->preview->application->additional_servers->count() > 0,
             );
-            $this->dispatch('success', 'Domain updated. DNS check started.');
+            $this->dispatch('success', __('Domain updated. DNS check started.'));
         } catch (\Throwable) {
             $this->domainRows[$index]['dns_status'] = 'skipped';
             $this->domainRows[$index]['dns_message'] = 'DNS check could not be started.';
             $this->domainRows[$index]['check_id'] = null;
             $this->persistDnsStatuses();
-            $this->dispatch('error', 'Domain updated, but the DNS check could not be started. Try again from the preview domains list.');
+            $this->dispatch('error', __('Domain updated, but the DNS check could not be started. Try again from the preview domains list.'));
         }
     }
 
@@ -241,7 +241,7 @@ class PreviewDomains extends Component
 
         $server = $this->preview->application->destination?->server;
         if (! $server) {
-            $this->dispatch('error', 'No server found for this preview.');
+            $this->dispatch('error', __('No server found for this preview.'));
 
             return;
         }
@@ -303,7 +303,7 @@ class PreviewDomains extends Component
         if (! $this->persistDomains()) {
             return;
         }
-        $this->dispatch('success', 'Domain removed.');
+        $this->dispatch('success', __('Domain removed.'));
     }
 
     public function removeDomainByKey(string $domainKey): void
@@ -392,9 +392,9 @@ class PreviewDomains extends Component
         $host = parse_url($url, PHP_URL_HOST) ?: $url;
 
         match ($status) {
-            'ok' => $this->dispatch('success', "DNS is configured correctly for {$host}."),
-            'failed' => $this->dispatch('error', "DNS is not configured for {$host}. Review the required DNS record. If you changed it recently, DNS propagation can take some time, so please try again later."),
-            default => $this->dispatch('info', "DNS check skipped for {$host}."),
+            'ok' => $this->dispatch('success', __('DNS is configured correctly for :host.', ['host' => $host])),
+            'failed' => $this->dispatch('error', __('DNS is not configured for :host. Review the required DNS record. If you changed it recently, DNS propagation can take some time, so please try again later.', ['host' => $host])),
+            default => $this->dispatch('info', __('DNS check skipped for :host.', ['host' => $host])),
         };
     }
 
@@ -454,7 +454,7 @@ class PreviewDomains extends Component
                 $composeServices = $this->composeServices(failOnError: true);
             } catch (\Throwable) {
                 $this->refreshDomains();
-                $this->dispatch('error', 'Compose configuration could not be parsed. Preview domains were not changed.');
+                $this->dispatch('error', __('Compose configuration could not be parsed. Preview domains were not changed.'));
 
                 return false;
             }

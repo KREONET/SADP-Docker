@@ -89,7 +89,7 @@ class All extends Component
 
         $storage = $this->findStorageOrFail($storageId);
         if ($storage->shouldBeReadOnlyInUI()) {
-            $this->dispatch('error', 'This volume is read-only.');
+            $this->dispatch('error', __('This volume is read-only.'));
 
             return;
         }
@@ -102,7 +102,7 @@ class All extends Component
         $storage->is_preview_suffix_enabled = (bool) $form['isPreviewSuffixEnabled'];
         $storage->save();
 
-        $this->dispatch('success', 'Storage updated successfully');
+        $this->dispatch('success', __('Storage updated successfully'));
     }
 
     public function instantSave(int $storageId): void
@@ -136,19 +136,19 @@ class All extends Component
         $storage = $this->findStorageOrFail($storageId);
 
         if ($storage->isSharedWithAnotherResource()) {
-            $this->dispatch('error', 'This volume is connected to a SQLite database. Unlink it on the SQLite database page.');
+            $this->dispatch('error', __('This volume is connected to a SQLite database. Unlink it on the SQLite database page.'));
 
             return false;
         }
 
         if ($this->isComposeOrService && $storage->isDeclaredInCompose()) {
-            $this->dispatch('error', 'This volume is managed by the current Docker Compose file.');
+            $this->dispatch('error', __('This volume is managed by the current Docker Compose file.'));
 
             return false;
         }
 
         if ($storage->scheduledBackups()->exists()) {
-            $this->dispatch('error', 'Delete this volume backup schedule and its archives before deleting the volume.');
+            $this->dispatch('error', __('Delete this volume backup schedule and its archives before deleting the volume.'));
 
             return false;
         }
@@ -164,7 +164,7 @@ class All extends Component
                     'docker volume rm -f '.escapeshellarg($storage->name),
                 ], $server);
             } catch (\Throwable $exception) {
-                $this->dispatch('error', 'Failed to delete the Docker volume: '.$exception->getMessage());
+                $this->dispatch('error', __('Failed to delete the Docker volume: :message', ['message' => $exception->getMessage()]));
 
                 return false;
             }

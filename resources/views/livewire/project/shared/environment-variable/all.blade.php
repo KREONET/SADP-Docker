@@ -5,24 +5,24 @@
     $showEnvironmentType = false;
     $activeFilterCount = count($variableFilters) + count($serviceFilters) + ($environmentFilter !== 'all' ? 1 : 0);
     $filterLabels = [
-        'managed' => 'Managed', 'user' => 'User-defined', 'buildtime' => 'Buildtime',
-        'runtime' => 'Runtime', 'multiline' => 'Multiline', 'literal' => 'Literal',
+        'managed' => __('Managed'), 'user' => __('User-defined'), 'buildtime' => __('Buildtime'),
+        'runtime' => __('Runtime'), 'multiline' => __('Multiline'), 'literal' => __('Literal'),
     ];
     $activeFilterLabels = collect($variableFilters)->map(fn ($filter) => $filterLabels[$filter] ?? $filter);
     $activeFilterLabels = $activeFilterLabels->merge($serviceFilters);
     if ($environmentFilter !== 'all') {
-        $activeFilterLabels->push(str($environmentFilter)->headline()->toString());
+        $activeFilterLabels->push(__(str($environmentFilter)->headline()->toString()));
     }
     $activeFilterText = $activeFilterLabels->implode(', ');
 @endphp
 <div class="flex flex-col gap-4" wire:init="loadEnvironmentVariables">
-    <x-application.settings-section id="environment-variables-section" title="Environment variables"
-        helper="Environment variables (secrets) for this resource.">
+    <x-application.settings-section id="environment-variables-section" :title="__('Environment variables')"
+        :helper="__('Environment variables (secrets) for this resource.')">
         @can('manageEnvironment', $resource)
             <x-slot:actions>
                 <x-forms.button wire:click='switch' wire:loading.attr="disabled"
                     wire:target="loadEnvironmentVariables,switch">
-                    {{ $view === 'normal' ? 'Developer view' : 'Normal view' }}
+                    {{ $view === 'normal' ? __('Developer view') : __('Normal view') }}
                 </x-forms.button>
             </x-slot:actions>
         @endcan
@@ -30,42 +30,42 @@
             @if ($resourceClass === 'App\Models\Application')
                 <div class="grid w-full items-end gap-4 sm:grid-cols-2">
                     @if (data_get($resource, 'build_pack') !== 'dockercompose')
-                        <x-forms.listbox id="is_env_sorting_enabled" label="Environment variable order"
+                        <x-forms.listbox id="is_env_sorting_enabled" :label="__('Environment variable order')"
                             onChange="instantSave"
-                            helper="Controls how environment variables are ordered in the list and written to the generated .env file on deploy."
+                            :helper="__('Controls how environment variables are ordered in the list and written to the generated .env file on deploy.')"
                             :options="[
-                                ['value' => false, 'label' => 'Creation order'],
-                                ['value' => true, 'label' => 'Alphabetical'],
+                                ['value' => false, 'label' => __('Creation order')],
+                                ['value' => true, 'label' => __('Alphabetical')],
                             ]" :disabled="! auth()->user()->can('manageEnvironment', $resource)" />
                     @endif
-                    <x-forms.listbox id="use_build_secrets" label="Build secrets" onChange="instantSave"
-                        helper="Docker BuildKit secrets keep values out of the final image for enhanced security during builds. Requires Docker 18.09+ with BuildKit support."
+                    <x-forms.listbox id="use_build_secrets" :label="__('Build secrets')" onChange="instantSave"
+                        :helper="__('Docker BuildKit secrets keep values out of the final image for enhanced security during builds. Requires Docker 18.09+ with BuildKit support.')"
                         :options="[
-                            ['value' => false, 'label' => 'Standard build arguments'],
-                            ['value' => true, 'label' => 'Docker BuildKit secrets'],
+                            ['value' => false, 'label' => __('Standard build arguments')],
+                            ['value' => true, 'label' => __('Docker BuildKit secrets')],
                         ]" :disabled="! auth()->user()->can('manageEnvironment', $resource)" />
                 </div>
             @else
-                <p class="text-sm text-neutral-500 dark:text-fg-dim">Manage this resource's environment variables below.</p>
+                <p class="text-sm text-neutral-500 dark:text-fg-dim">{{ __('Manage this resource\'s environment variables below.') }}</p>
             @endif
         @else
             <form wire:submit.prevent='submit' class="flex w-full flex-col gap-4">
                 @can('manageEnvironment', $resource)
-                    <x-callout type="info" title="Note">
-                        Inline comments with space before # (e.g., <code class="font-mono">KEY=value #comment</code>) are stripped.
+                    <x-callout type="info" :title="__('Note')">
+                        {!! __('Inline comments with space before # (e.g., :example) are stripped.', ['example' => '<code class="font-mono">KEY=value #comment</code>']) !!}
                     </x-callout>
                     <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" id="variables"
-                        wire:model="variables" label="Production"></x-forms.textarea>
+                        wire:model="variables" :label="__('Production')"></x-forms.textarea>
                     @if ($showPreview)
-                        <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" label="Preview deployments"
+                        <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" :label="__('Preview deployments')"
                             id="variablesPreview" wire:model="variablesPreview"></x-forms.textarea>
                     @endif
                     <x-unsaved-bar action="submit" />
                 @else
                     <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" id="variables"
-                        wire:model="variables" label="Production" disabled></x-forms.textarea>
+                        wire:model="variables" :label="__('Production')" disabled></x-forms.textarea>
                     @if ($showPreview)
-                        <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" label="Preview deployments"
+                        <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" :label="__('Preview deployments')"
                             id="variablesPreview" wire:model="variablesPreview" disabled></x-forms.textarea>
                     @endif
                 @endcan
@@ -77,19 +77,19 @@
     @if ($view === 'normal')
         <x-table.toolbar class="mt-2" aria-busy="{{ ! $readyToLoad ? 'true' : 'false' }}">
             <x-slot:search>
-                <x-table.search placeholder="Search environment variables"
+                <x-table.search :placeholder="__('Search environment variables')"
                     loading-target="search,loadEnvironmentVariables" wire:model.live.debounce.300ms="search"
                     :disabled="! $readyToLoad" />
             </x-slot:search>
             <x-table.filter :active-count="$activeFilterCount" :active-text="$activeFilterText"
                 reset-action="clearFilters">
                         @foreach ([
-                            'managed' => 'Managed',
-                            'user' => 'User-defined',
-                            'buildtime' => 'Buildtime',
-                            'runtime' => 'Runtime',
-                            'multiline' => 'Multiline',
-                            'literal' => 'Literal',
+                            'managed' => __('Managed'),
+                            'user' => __('User-defined'),
+                            'buildtime' => __('Buildtime'),
+                            'runtime' => __('Runtime'),
+                            'multiline' => __('Multiline'),
+                            'literal' => __('Literal'),
                         ] as $value => $label)
                             <button type="button" class="listbox-option" wire:click="toggleVariableFilter('{{ $value }}')">
                                 <span>{{ $label }}</span>
@@ -111,7 +111,7 @@
                         @endforeach
                         @if ($showPreview)
                             <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
-                            @foreach (['all' => 'All environments', 'production' => 'Production', 'preview' => 'Preview'] as $value => $label)
+                            @foreach (['all' => __('All environments'), 'production' => __('Production'), 'preview' => __('Preview')] as $value => $label)
                                 <button type="button" class="listbox-option" wire:click="setEnvironmentFilter('{{ $value }}')" @click="open = false">
                                     <span>{{ $label }}</span>
                                     <span @class([
@@ -130,7 +130,7 @@
                         @endif
                         @if ($this->serviceFilterOptions !== [])
                             <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
-                            <div class="px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-fg-faint">Services</div>
+                            <div class="px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-fg-faint">{{ __('Services') }}</div>
                             @foreach ($this->serviceFilterOptions as $serviceName)
                                 <button type="button" class="listbox-option" wire:click="toggleServiceFilter(@js($serviceName))">
                                     <span class="truncate">{{ $serviceName }}</span>
@@ -153,7 +153,7 @@
                         @endif
             </x-table.filter>
             <x-table.sort>
-                        @foreach (['default' => 'Default order', 'name_asc' => 'Name A–Z', 'name_desc' => 'Name Z–A'] as $value => $label)
+                        @foreach (['default' => __('Default order'), 'name_asc' => __('Name A–Z'), 'name_desc' => __('Name Z–A')] as $value => $label)
                             <button type="button" class="listbox-option" wire:click="setTableSort('{{ $value }}')" @click="open = false">
                                 <span>{{ $label }}</span>
                                 @if ($tableSort === $value)<span>✓</span>@endif
@@ -163,12 +163,12 @@
                 @can('manageEnvironment', $resource)
                     {{-- Do not disable Add based on readyToLoad: modal-input uses wire:ignore, so a
                          disabled attribute painted on first load would never re-enable. --}}
-                    <x-modal-input title="New Environment Variable" :closeOutside="false">
+                    <x-modal-input :title="__('New Environment Variable')" :closeOutside="false">
                         <x-slot:content>
                             <button type="button"
                                 class="button button-highlighted">
                                 <x-reicon name="plus" class="size-3.5" />
-                                Add
+                                {{ __('Add') }}
                             </button>
                         </x-slot:content>
                         <livewire:project.shared.environment-variable.add :resource="$resource" />
@@ -182,7 +182,7 @@
             <div id="environment-table-section"
                 class="application-settings-section-body mt-1 flex min-h-40 w-full scroll-mt-28 items-center justify-center"
                 wire:loading.class="opacity-100" wire:target="loadEnvironmentVariables">
-                <x-loading text="Loading environment variables..." />
+                <x-loading :text="__('Loading environment variables...')" />
             </div>
         @else
             @php
@@ -195,8 +195,8 @@
             <div id="environment-table-section"
                 class="application-settings-section-body relative mt-1 scroll-mt-28 {{ $totalRows > 0 ? 'is-flush' : '' }} w-full">
                 @if ($this->isSearchActive && $totalRows === 0)
-                    <x-empty size="sm" title="No environment variables found"
-                        description="No variables match your search." />
+                    <x-empty size="sm" :title="__('No environment variables found')"
+                        :description="__('No variables match your search.')" />
                 @elseif ($totalRows > 0)
                     <div class="data-table w-full">
                         <div class="environment-table-scroll relative">
@@ -204,15 +204,15 @@
                                 wire:loading.class="pointer-events-none opacity-40 blur-[2px]"
                                 wire:target="toggleVariableFilter,toggleServiceFilter,clearFilters,setEnvironmentFilter,setTableSort,setEnvironmentVariablePage,previousEnvironmentVariablePage,nextEnvironmentVariablePage">
                             <div class="data-table-header env-table-grid {{ $showEnvironmentType ? '' : 'env-table-grid-no-type' }}">
-                            <span>Name</span>
-                            <span class="text-center">Managed</span>
+                            <span>{{ __('Name') }}</span>
+                            <span class="text-center">{{ __('Managed') }}</span>
                             @if ($showEnvironmentType)
-                                <span>Type</span>
+                                <span>{{ __('Type') }}</span>
                             @endif
-                            <span class="text-center">Literal</span>
-                            <span class="text-center">Multiline</span>
-                            <span class="text-center">Buildtime</span>
-                            <span class="text-center">Runtime</span>
+                            <span class="text-center">{{ __('Literal') }}</span>
+                            <span class="text-center">{{ __('Multiline') }}</span>
+                            <span class="text-center">{{ __('Buildtime') }}</span>
+                            <span class="text-center">{{ __('Runtime') }}</span>
                             <span></span>
                         </div>
                             @php $renderedScope = null; @endphp
@@ -220,7 +220,7 @@
                             @if ($groupByScope && $row['scope'] !== $renderedScope)
                                 @php $renderedScope = $row['scope']; @endphp
                                 <div class="flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-[12px] font-semibold text-neutral-700 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-fg">
-                                    {{ $renderedScope === 'preview' ? 'Preview deployments' : 'Production' }}
+                                    {{ $renderedScope === 'preview' ? __('Preview deployments') : __('Production') }}
                                 </div>
                             @endif
                             @if ($row['kind'] === 'managed')
@@ -236,7 +236,7 @@
                             </div>
                             <x-table.loading
                                 target="toggleVariableFilter,toggleServiceFilter,clearFilters,setEnvironmentFilter,setTableSort,setEnvironmentVariablePage,previousEnvironmentVariablePage,nextEnvironmentVariablePage"
-                                text="Loading environment variables..." />
+                                :text="__('Loading environment variables...')" />
                         </div>
                         <x-table-pagination :from="$firstVisibleRow" :to="$lastVisibleRow" :total="$totalRows"
                             :current-page="$currentPage" :last-page="$lastPage"
@@ -253,11 +253,11 @@
                 @else
                     <div class="relative min-h-40">
                         <div wire:loading.class="pointer-events-none opacity-40 blur-[2px]" wire:target="clearFilters">
-                            <x-empty size="sm" title="No environment variables"
-                                description="Add your first variable with the + Add button above."
+                            <x-empty size="sm" :title="__('No environment variables')"
+                                :description="__('Add your first variable with the + Add button above.')"
                                 icon-name="variables" />
                         </div>
-                        <x-table.loading target="clearFilters" text="Loading environment variables..." />
+                        <x-table.loading target="clearFilters" :text="__('Loading environment variables...')" />
                     </div>
                 @endif
             </div>

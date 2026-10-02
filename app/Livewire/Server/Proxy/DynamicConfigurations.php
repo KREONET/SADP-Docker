@@ -81,11 +81,11 @@ class DynamicConfigurations extends Component
             $totalBytes += $contentBytes;
         }
         if ($skippedFiles->isNotEmpty()) {
-            $this->dispatch('warning', 'Some dynamic configurations were not loaded because they exceed the safe display limits: '.$skippedFiles->implode(', '));
+            $this->dispatch('warning', __('Some dynamic configurations were not loaded because they exceed the safe display limits: :files', ['files' => $skippedFiles->implode(', ')]));
         }
         $this->contents = $contents;
         $this->dispatch('$refresh');
-        $this->dispatch('success', 'Dynamic configurations loaded.');
+        $this->dispatch('success', __('Dynamic configurations loaded.'));
     }
 
     public function mount()

@@ -6,7 +6,7 @@
     </button>
     @if ($slot->hasActualContent())
         <button type="button" class="split-action-caret" @click="open = !open" :aria-expanded="open"
-            aria-haspopup="menu" aria-label="More actions">
+            aria-haspopup="menu" aria-label="{{ __('More actions') }}">
             <span class="inline-flex transition-transform" :class="open && 'rotate-180'">
                 <x-reicon name="chevron-down" class="size-3" />
             </span>

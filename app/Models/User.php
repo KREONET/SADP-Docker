@@ -51,6 +51,7 @@ class User extends Authenticatable implements SendsEmail
         'password',
         'current_team_id',
         'force_password_reset',
+        'locale',
         'marketing_emails',
         'pending_email',
         'email_change_code',

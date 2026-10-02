@@ -5,6 +5,7 @@ use App\Models\AuditEvent;
 use App\Models\InstanceSettings;
 use App\Models\LogEntry;
 use App\Models\Project;
+use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,8 @@ beforeEach(function () {
     Once::flush();
     Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']);
     User::factory()->create(['id' => 0, 'email' => 'test@example.com']);
+    Server::factory()->create(['id' => 0, 'team_id' => 0]);
+    Project::factory()->create(['team_id' => 0, 'name' => 'My first project']);
     Http::fake(['loki:3100/*' => Http::response('', 204)]);
 });
 
@@ -109,3 +112,22 @@ test('an empty loki url keeps shipping off', function () {
         ->and($result['loki'])->toContain('shipping is off');
     Http::assertNothingSent();
 });
+
+test('the demo creates nothing while the base development data is still missing', function (string $missing) {
+    config(['app.env' => 'local']);
+    match ($missing) {
+        'sample project' => Project::query()->where('team_id', 0)->delete(),
+        'localhost server' => Server::query()->whereKey(0)->forceDelete(),
+        'root user' => User::query()->whereKey(0)->delete(),
+    };
+
+    expect(fn () => SeedDevelopmentDemo::run('http://loki:3100', false))
+        ->toThrow(RuntimeException::class, 'base development data does not exist yet');
+
+    // A too early run must not leave rows behind that take the fixed ids of the base seeders.
+    expect(Project::query()->where('name', 'Tenant Shop')->exists())->toBeFalse()
+        ->and(Team::query()->where('name', SeedDevelopmentDemo::TENANT_TEAM)->exists())->toBeFalse()
+        ->and(User::query()->where('email', 'owner@demo.test')->exists())->toBeFalse()
+        ->and(AuditEvent::query()->where('metadata->demo', true)->exists())->toBeFalse();
+    Http::assertNothingSent();
+})->with(['sample project', 'localhost server', 'root user']);

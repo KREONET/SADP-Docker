@@ -1,6 +1,6 @@
 @props([
     'action' => 'reopenDeployment',
-    'label' => 'Deploying',
+    'label' => null,
     'href' => null,
 ])
 
@@ -13,22 +13,22 @@
 
 @if ($href)
     <a href="{{ $href }}" {{ wireNavigate() }} {{ $attributes->class($deployingIndicatorClasses) }}
-        title="View the running deployment log">
+        title="{{ __('View the running deployment log') }}">
         <svg class="size-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25" />
             <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
         </svg>
-        <span>{{ $label }}…</span>
-        <span class="opacity-70">View log</span>
+        <span>{{ $label ?? __('Deploying') }}…</span>
+        <span class="opacity-70">{{ __('View log') }}</span>
     </a>
 @else
     <button type="button" x-on:click="$wire.{{ $action }}()" {{ $attributes->class($deployingIndicatorClasses) }}
-        title="View the running deployment log">
+        title="{{ __('View the running deployment log') }}">
         <svg class="size-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25" />
             <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
         </svg>
-        <span>{{ $label }}…</span>
-        <span class="opacity-70">View log</span>
+        <span>{{ $label ?? __('Deploying') }}…</span>
+        <span class="opacity-70">{{ __('View log') }}</span>
     </button>
 @endif

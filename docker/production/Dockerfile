@@ -157,6 +157,9 @@ COPY --chown=www-data:www-data routes ./routes
 COPY --chown=www-data:www-data storage ./storage
 COPY --chown=www-data:www-data templates ./templates
 COPY --chown=www-data:www-data resources/views ./resources/views
+# Open source notices page (generate:open-source-licenses) and Coolify's own license.
+COPY --chown=www-data:www-data resources/open-source ./resources/open-source
+COPY --chown=www-data:www-data LICENSE ./LICENSE
 COPY --chown=www-data:www-data artisan artisan
 COPY --chown=www-data:www-data openapi.yaml ./openapi.yaml
 COPY --chown=www-data:www-data changelogs/ ./changelogs/

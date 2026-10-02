@@ -83,7 +83,7 @@ class Groups extends Component
 
         auditLog("platform.{$this->editingType}.updated", ['id' => $model->id, 'name' => $model->name]);
         $this->cancelEdit();
-        $this->dispatch('success', 'Saved.');
+        $this->dispatch('success', __('Saved.'));
     }
 
     public function updateMemberRole(int $teamId, int $userId, string $role): void
@@ -100,7 +100,7 @@ class Groups extends Component
 
                 if ($member->pivot->role === 'owner' && $role !== 'owner'
                     && $team->members()->wherePivot('role', 'owner')->count() <= 1) {
-                    throw new RuntimeException('A team must keep at least one owner.');
+                    throw new RuntimeException(__('A team must keep at least one owner.'));
                 }
 
                 $team->members()->updateExistingPivot($member->id, ['role' => $role]);
@@ -108,7 +108,7 @@ class Groups extends Component
             Cache::forget("user:{$userId}:team:{$teamId}");
 
             auditLog('platform.team.member_role_updated', ['team_id' => $teamId, 'user_id' => $userId, 'role' => $role]);
-            $this->dispatch('success', 'Role updated.');
+            $this->dispatch('success', __('Role updated.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -118,17 +118,17 @@ class Groups extends Component
     {
         $this->authorizePlatformAdmin();
         if (! verifyPasswordConfirmation($password, $this)) {
-            return 'The provided password is incorrect.';
+            return __('The provided password is incorrect.');
         }
 
         $project = Project::query()->findOrFail($projectId);
         if (! $project->isEmpty()) {
-            return 'Delete every resource in this project first.';
+            return __('Delete every resource in this project first.');
         }
 
         $project->delete();
         auditLog('platform.project.deleted', ['id' => $project->id, 'name' => $project->name]);
-        $this->dispatch('success', "Project {$project->name} deleted.");
+        $this->dispatch('success', __('Project :name deleted.', ['name' => $project->name]));
 
         return true;
     }
@@ -137,20 +137,20 @@ class Groups extends Component
     {
         $this->authorizePlatformAdmin();
         if (! verifyPasswordConfirmation($password, $this)) {
-            return 'The provided password is incorrect.';
+            return __('The provided password is incorrect.');
         }
 
         try {
             $name = DB::transaction(function () use ($teamId): string {
                 $team = Team::query()->lockForUpdate()->findOrFail($teamId);
                 if ($team->id === 0) {
-                    throw new RuntimeException('The root team cannot be deleted.');
+                    throw new RuntimeException(__('The root team cannot be deleted.'));
                 }
                 if ($team->servers()->exists()) {
-                    throw new RuntimeException('Delete all team servers before deleting this team.');
+                    throw new RuntimeException(__('Delete all team servers before deleting this team.'));
                 }
                 if (! $team->isEmpty()) {
-                    throw new RuntimeException('Delete the team projects, servers and git sources before deleting this team.');
+                    throw new RuntimeException(__('Delete the team projects, servers and git sources before deleting this team.'));
                 }
 
                 $team->members()->get()->each(function (User $member) use ($team): void {
@@ -167,7 +167,7 @@ class Groups extends Component
                 $this->selectedTeamId = null;
             }
             auditLog('platform.team.deleted', ['id' => $teamId, 'name' => $name]);
-            $this->dispatch('success', "Team {$name} deleted.");
+            $this->dispatch('success', __('Team :name deleted.', ['name' => $name]));
 
             return true;
         } catch (\Throwable $e) {

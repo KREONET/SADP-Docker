@@ -57,14 +57,14 @@ class ValidateAndInstall extends Component
         $this->authorize('update', $this->server);
 
         if (! $this->server->canBeValidated()) {
-            $this->error = 'This server was transferred to another Coolify instance and cannot be revalidated here.';
+            $this->error = __('This server was transferred to another Coolify instance and cannot be revalidated here.');
             $this->server->update([
                 'validation_logs' => $this->error,
                 'is_validating' => false,
             ]);
             $this->dispatch(
                 'error',
-                'Cannot revalidate',
+                __('Cannot revalidate'),
                 $this->error
             );
 
@@ -119,8 +119,8 @@ class ValidateAndInstall extends Component
 
                 if (in_array($status, ['stopped', 'suspended', 'deleted'], true)) {
                     $this->error = $status === 'deleted'
-                        ? 'Vultr instance is deleted or no longer accessible. Relink this server before validating.'
-                        : 'Vultr instance is '.($status ?? 'not running').'. Power it on before validating.';
+                        ? __('Vultr instance is deleted or no longer accessible. Relink this server before validating.')
+                        : __('Vultr instance is :status. Power it on before validating.', ['status' => $status ?? __('not running')]);
                     $this->server->update([
                         'validation_logs' => $this->error,
                     ]);
@@ -135,8 +135,8 @@ class ValidateAndInstall extends Component
 
                 if (in_array($status, ['off', 'archive', 'deleted'], true)) {
                     $this->error = $status === 'deleted'
-                        ? 'DigitalOcean droplet is deleted or no longer accessible. Relink this server before validating.'
-                        : 'DigitalOcean droplet is '.($status ?? 'not running').'. Power it on before validating.';
+                        ? __('DigitalOcean droplet is deleted or no longer accessible. Relink this server before validating.')
+                        : __('DigitalOcean droplet is :status. Power it on before validating.', ['status' => $status ?? __('not running')]);
                     $this->server->update([
                         'validation_logs' => $this->error,
                     ]);
@@ -148,7 +148,7 @@ class ValidateAndInstall extends Component
             ['uptime' => $this->uptime, 'error' => $error] = $this->server->validateConnection();
             if (! $this->uptime) {
                 $sanitizedError = htmlspecialchars($error ?? '', ENT_QUOTES, 'UTF-8');
-                $this->error = 'Server is not reachable. Please validate your configuration and connection.<br>Check this <a target="_blank" class="text-black underline dark:text-white" href="https://coolify.io/docs/knowledge-base/server/openssh">documentation</a> for further help. <br><br><div class="text-error">Error: '.$sanitizedError.'</div>';
+                $this->error = __('Server is not reachable. Please validate your configuration and connection.<br>Check this <a target="_blank" class="text-black underline dark:text-white" href="https://coolify.io/docs/knowledge-base/server/openssh">documentation</a> for further help. <br><br><div class="text-error">Error: :error</div>', ['error' => $sanitizedError]);
                 $this->server->update([
                     'validation_logs' => $this->error,
                 ]);
@@ -167,7 +167,7 @@ class ValidateAndInstall extends Component
 
         $this->supported_os_type = $this->server->validateOS();
         if (! $this->supported_os_type) {
-            $this->error = 'Server OS type is not supported. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.';
+            $this->error = __('Server OS type is not supported. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.');
             $this->server->update([
                 'validation_logs' => $this->error,
             ]);
@@ -187,7 +187,7 @@ class ValidateAndInstall extends Component
             if ($this->install) {
                 if ($this->number_of_tries == $this->max_tries) {
                     $missingCommands = implode(', ', $validationResult['missing']);
-                    $this->error = "Prerequisites ({$missingCommands}) could not be installed. Please install them manually before continuing.";
+                    $this->error = __('Prerequisites (:commands) could not be installed. Please install them manually before continuing.', ['commands' => $missingCommands]);
                     $this->server->update([
                         'validation_logs' => $this->error,
                     ]);
@@ -199,14 +199,14 @@ class ValidateAndInstall extends Component
                         $activity = $this->server->installPrerequisites();
                         $this->isInstalling = true;
                         $this->number_of_tries++;
-                        $this->dispatch('activityMonitor', $activity->id, 'init', $this->number_of_tries, "{$this->installationStep} Installation Logs");
+                        $this->dispatch('activityMonitor', $activity->id, 'init', $this->number_of_tries, __(':step installation logs', ['step' => __($this->installationStep)]));
                     }
 
                     return;
                 }
             } else {
                 $missingCommands = implode(', ', $validationResult['missing']);
-                $this->error = "Prerequisites ({$missingCommands}) are not installed. Please install them before continuing.";
+                $this->error = __('Prerequisites (:commands) are not installed. Please install them before continuing.', ['commands' => $missingCommands]);
                 $this->server->update([
                     'validation_logs' => $this->error,
                 ]);
@@ -226,7 +226,7 @@ class ValidateAndInstall extends Component
         if (! $this->docker_installed || ! $this->docker_compose_installed) {
             if ($this->install) {
                 if ($this->number_of_tries == $this->max_tries) {
-                    $this->error = 'Docker Engine could not be installed. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.';
+                    $this->error = __('Docker Engine could not be installed. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.');
                     $this->server->update([
                         'validation_logs' => $this->error,
                     ]);
@@ -238,13 +238,13 @@ class ValidateAndInstall extends Component
                         $activity = $this->server->installDocker();
                         $this->isInstalling = true;
                         $this->number_of_tries++;
-                        $this->dispatch('activityMonitor', $activity->id, 'init', $this->number_of_tries, "{$this->installationStep} Installation Logs");
+                        $this->dispatch('activityMonitor', $activity->id, 'init', $this->number_of_tries, __(':step installation logs', ['step' => __($this->installationStep)]));
                     }
 
                     return;
                 }
             } else {
-                $this->error = 'Docker Engine is not installed. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.';
+                $this->error = __('Docker Engine is not installed. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.');
                 $this->server->update([
                     'validation_logs' => $this->error,
                 ]);
@@ -262,7 +262,7 @@ class ValidateAndInstall extends Component
         if ($this->server->isSwarm()) {
             $swarmInstalled = $this->server->validateDockerSwarm();
             if ($swarmInstalled) {
-                $this->dispatch('success', 'Docker Swarm is initiated.');
+                $this->dispatch('success', __('Docker Swarm is initiated.'));
             }
         } else {
             $this->docker_version = $this->server->validateDockerEngineVersion();
@@ -279,7 +279,7 @@ class ValidateAndInstall extends Component
                 if ($this->server->isSentinelEnabled()) {
                     CheckAndStartSentinelJob::dispatch($this->server);
                 }
-                $this->dispatch('success', 'Server validated, proxy is starting in a moment.');
+                $this->dispatch('success', __('Server validated, proxy is starting in a moment.'));
                 $proxyShouldRun = CheckProxy::run($this->server, true);
                 if (! $proxyShouldRun) {
                     return;
@@ -290,7 +290,7 @@ class ValidateAndInstall extends Component
                 StartProxy::dispatch($this->server);
             } else {
                 $requiredDockerVersion = str(config('constants.docker.minimum_required_version'))->before('.');
-                $this->error = 'Minimum Docker Engine version '.$requiredDockerVersion.' is not installed. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.';
+                $this->error = __('Minimum Docker Engine version :version is not installed. Please install Docker manually before continuing: <a target="_blank" class="underline" href="https://docs.docker.com/engine/install/#server">documentation</a>.', ['version' => $requiredDockerVersion]);
                 $this->server->update([
                     'validation_logs' => $this->error,
                 ]);

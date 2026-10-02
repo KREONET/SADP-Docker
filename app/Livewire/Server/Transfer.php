@@ -58,7 +58,7 @@ class Transfer extends Component
         try {
             $this->authorize('update', $this->server);
             if ($this->isLocalhost) {
-                throw new \RuntimeException('The Coolify host (localhost) cannot be transferred.');
+                throw new \RuntimeException(__('The Coolify host (localhost) cannot be transferred.'));
             }
 
             $result = $migrator->migrate(
@@ -75,7 +75,7 @@ class Transfer extends Component
             unset($safe['target_token']);
             $this->lastResultJson = json_encode($safe, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             $this->targetToken = '';
-            $this->dispatch('success', $result['message'] ?? 'Server transferred.');
+            $this->dispatch('success', $result['message'] ?? __('Server transferred.'));
         } catch (Throwable $e) {
             handleError($e, $this);
         }
@@ -88,7 +88,7 @@ class Transfer extends Component
         try {
             $this->authorize('view', $this->server);
             if ($this->isLocalhost) {
-                throw new \RuntimeException('The Coolify host (localhost) cannot be transferred.');
+                throw new \RuntimeException(__('The Coolify host (localhost) cannot be transferred.'));
             }
 
             $bundle = $exporter->export($this->server, includeSensitive: true);
@@ -105,10 +105,10 @@ class Transfer extends Component
 
             $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             if ($json === false) {
-                throw new \RuntimeException('Failed to encode transfer bundle.');
+                throw new \RuntimeException(__('Failed to encode transfer bundle.'));
             }
 
-            $this->dispatch('success', 'Transfer bundle ready for download.');
+            $this->dispatch('success', __('Transfer bundle ready for download.'));
 
             return response()->streamDownload(function () use ($json) {
                 echo $json;

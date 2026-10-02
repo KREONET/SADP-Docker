@@ -228,7 +228,7 @@ class Email extends Component
         $this->authorize('update', $this->settings);
 
         $this->syncData(true);
-        $this->dispatch('success', 'Email notifications settings updated.');
+        $this->dispatch('success', __('Email notifications settings updated.'));
     }
 
     public function instantSave(?string $type = null)
@@ -332,7 +332,7 @@ class Email extends Component
             $changedFields = array_keys($this->settings->getDirty());
             $this->settings->save();
             $this->auditNotificationSettings($changedFields);
-            $this->dispatch('success', 'SMTP settings updated.');
+            $this->dispatch('success', __('SMTP settings updated.'));
         } catch (\Throwable $e) {
             $this->smtpEnabled = false;
 
@@ -359,7 +359,7 @@ class Email extends Component
             $changedFields = array_keys($this->settings->getDirty());
             $this->settings->save();
             $this->auditNotificationSettings($changedFields);
-            $this->dispatch('success', 'Resend settings updated.');
+            $this->dispatch('success', __('Resend settings updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -379,13 +379,13 @@ class Email extends Component
             'smtpTimeout' => 'nullable|numeric',
             'smtpEhloDomain' => ['nullable', 'string', new ValidHostname],
         ], [
-            'smtpFromAddress.required' => 'From Address is required.',
-            'smtpFromAddress.email' => 'Please enter a valid email address.',
-            'smtpFromName.required' => 'From Name is required.',
-            'smtpHost.required' => 'SMTP Host is required.',
-            'smtpPort.required' => 'SMTP Port is required.',
-            'smtpPort.numeric' => 'SMTP Port must be a number.',
-            'smtpEncryption.required' => 'Encryption type is required.',
+            'smtpFromAddress.required' => __('From Address is required.'),
+            'smtpFromAddress.email' => __('Please enter a valid email address.'),
+            'smtpFromName.required' => __('From Name is required.'),
+            'smtpHost.required' => __('SMTP Host is required.'),
+            'smtpPort.required' => __('SMTP Port is required.'),
+            'smtpPort.numeric' => __('SMTP Port must be a number.'),
+            'smtpEncryption.required' => __('Encryption type is required.'),
         ]);
     }
 
@@ -397,10 +397,10 @@ class Email extends Component
             'smtpFromAddress' => 'required|email',
             'smtpFromName' => 'required|string',
         ], [
-            'resendApiKey.required' => 'Resend API Key is required.',
-            'smtpFromAddress.required' => 'From Address is required.',
-            'smtpFromAddress.email' => 'Please enter a valid email address.',
-            'smtpFromName.required' => 'From Name is required.',
+            'resendApiKey.required' => __('Resend API Key is required.'),
+            'smtpFromAddress.required' => __('From Address is required.'),
+            'smtpFromAddress.email' => __('Please enter a valid email address.'),
+            'smtpFromName.required' => __('From Name is required.'),
         ]);
     }
 
@@ -411,8 +411,8 @@ class Email extends Component
             $this->validate([
                 'testEmailAddress' => 'required|email',
             ], [
-                'testEmailAddress.required' => 'Test email address is required.',
-                'testEmailAddress.email' => 'Please enter a valid email address.',
+                'testEmailAddress.required' => __('Test email address is required.'),
+                'testEmailAddress.email' => __('Please enter a valid email address.'),
             ]);
 
             $executed = RateLimiter::attempt(
@@ -420,13 +420,13 @@ class Email extends Component
                 $perMinute = 0,
                 function () {
                     $this->team?->notifyNow(new Test($this->testEmailAddress, 'email'));
-                    $this->dispatch('success', 'Test Email sent.');
+                    $this->dispatch('success', __('Test Email sent.'));
                 },
                 $decaySeconds = 10,
             );
 
             if (! $executed) {
-                throw new \Exception('Too many messages sent!');
+                throw new \Exception(__('Too many messages sent!'));
             }
         } catch (\Throwable $e) {
             return handleError($e, $this);

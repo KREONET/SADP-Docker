@@ -14,17 +14,17 @@
 @endphp
 
 <p {{ $attributes->merge(['class' => 'text-xs leading-5 text-neutral-500 dark:text-fg-dim']) }}>
-    <span class="font-medium text-neutral-700 dark:text-fg">Next run</span>
+    <span class="font-medium text-neutral-700 dark:text-fg">{{ __('Next run') }}</span>
     @if (! $enabled)
-        <span>Disabled</span>
+        <span>{{ __('Disabled') }}</span>
     @elseif ($isFrequencyInvalid)
-        <span class="text-red-500">Invalid frequency. Change it to a valid cron expression, or this schedule never runs.</span>
+        <span class="text-red-500">{{ __('Invalid frequency. Change it to a valid cron expression, or this schedule never runs.') }}</span>
     @elseif (! $nextRunAt)
-        <span>Calculating…</span>
+        <span>{{ __('Calculating…') }}</span>
     @else
         <time datetime="{{ $nextRunAt->toIso8601String() }}"
             title="{{ $nextRunAt->copy()->utc()->format('Y-m-d H:i') }} UTC">{{ $nextRunAt->copy()->setTimezone($displayTimezone)->format('Y-m-d H:i') }} ({{ $displayTimezone }})</time>
         <span>·
-            {{ $nextRunAt->isFuture() ? 'in '.$nextRunAt->diffForHumans(syntax: \Carbon\CarbonInterface::DIFF_ABSOLUTE) : $nextRunAt->diffForHumans() }}</span>
+            {{ $nextRunAt->isFuture() ? __('in :time', ['time' => $nextRunAt->diffForHumans(syntax: \Carbon\CarbonInterface::DIFF_ABSOLUTE)]) : $nextRunAt->diffForHumans() }}</span>
     @endif
 </p>

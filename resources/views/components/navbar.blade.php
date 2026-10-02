@@ -56,11 +56,11 @@
     @if (isSubscribed() || ! isCloud())
         <div class="px-1 pb-3" :class="collapsed && 'lg:px-0'">
             <button @click="$dispatch('open-global-search')" type="button"
-                :title="'Search (Press / or ' + modKeyLabel + 'K)'"
+                :title="@js(__('Search (Press / or :key)')).replace(':key', modKeyLabel + 'K')"
                 class="menu-item justify-between !bg-neutral-100 dark:!bg-white/[0.04] hover:!bg-neutral-200 dark:hover:!bg-white/[0.07] !text-fg-faint">
                 <span class="flex items-center gap-2.5 min-w-0">
                     <x-reicon name="search" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Search</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Search') }}</span>
                 </span>
                 <kbd class="px-1.5 py-0.5 text-[11px] font-medium text-fg-faint bg-neutral-200 dark:bg-white/[0.06] rounded-md border border-transparent dark:border-white/5"
                     :class="collapsed && 'lg:hidden'" x-text="modKeyLabel + 'K'"></kbd>
@@ -71,148 +71,148 @@
     <ul role="list" class="-mx-1 flex min-h-0 flex-1 flex-col gap-y-0.5 overflow-y-auto px-1 pb-2 scrollbar">
         @if (isSubscribed() || !isCloud())
             {{-- Workspace --}}
-            <li class="nav-section" :class="collapsed && 'lg:hidden'">Workspace</li>
+            <li class="nav-section" :class="collapsed && 'lg:hidden'">{{ __('Workspace') }}</li>
             <li>
-                <a title="Dashboard" href="/" {{ wireNavigate() }}
+                <a title="{{ __('Dashboard') }}" href="/" {{ wireNavigate() }}
                     class="{{ request()->is('/') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'">
                     <x-reicon name="dashboard" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Dashboard</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Dashboard') }}</span>
                 </a>
             </li>
             <li>
-                <a title="Projects" {{ wireNavigate() }}
+                <a title="{{ __('Projects') }}" {{ wireNavigate() }}
                     class="{{ request()->is('project/*') || request()->is('projects') ? 'menu-item menu-item-active' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="/projects">
                     <x-reicon name="projects" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Projects</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Projects') }}</span>
                 </a>
             </li>
             <li>
-                <a title="Analytics" {{ wireNavigate() }}
+                <a title="{{ __('Analytics') }}" {{ wireNavigate() }}
                     class="{{ request()->is('analytics') ? 'menu-item menu-item-active' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('analytics') }}">
                     <x-reicon name="analytics" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Analytics</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Analytics') }}</span>
                 </a>
             </li>
             @can('canAccessTerminal')
                 <li>
-                    <a title="Terminal"
+                    <a title="{{ __('Terminal') }}"
                         class="{{ request()->is('terminal*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                         :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('terminal') }}">
                         <x-reicon name="browser-terminal" class="menu-item-icon" />
-                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Terminal</span>
+                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Terminal') }}</span>
                     </a>
                 </li>
             @endcan
             {{-- Infrastructure --}}
             <li class="nav-section mt-3" aria-hidden="true"
                 :class="collapsed && 'lg:mx-2.5 lg:my-2 lg:h-0 lg:overflow-hidden lg:border-t lg:border-neutral-200 lg:p-0 lg:text-transparent dark:lg:border-white/10'">
-                Infrastructure</li>
+                {{ __('Infrastructure') }}</li>
             <li>
-                <a title="Servers" {{ wireNavigate() }}
+                <a title="{{ __('Servers') }}" {{ wireNavigate() }}
                     class="{{ request()->is('server/*') || request()->is('servers') ? 'menu-item menu-item-active' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="/servers">
                     <x-reicon name="servers" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Servers</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Servers') }}</span>
                 </a>
             </li>
             <li>
-                <a title="Sources" {{ wireNavigate() }}
+                <a title="{{ __('Sources') }}" {{ wireNavigate() }}
                     class="{{ request()->is('source*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('source.all') }}">
                     <x-reicon name="sources" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Sources</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Sources') }}</span>
                 </a>
             </li>
             <li>
-                <a title="Destinations" {{ wireNavigate() }}
+                <a title="{{ __('Destinations') }}" {{ wireNavigate() }}
                     class="{{ request()->is('destination*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('destination.index') }}">
                     <x-reicon name="destinations" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Destinations</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Destinations') }}</span>
                 </a>
             </li>
             <li>
-                <a title="S3 Storage" {{ wireNavigate() }}
+                <a title="{{ __('S3 Storage') }}" {{ wireNavigate() }}
                     class="{{ request()->is('storages*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('storage.index') }}">
                     <x-reicon name="storages" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">S3 Storage</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('S3 Storage') }}</span>
                 </a>
             </li>
             <li>
-                <a title="Shared variables" {{ wireNavigate() }}
+                <a title="{{ __('Shared variables') }}" {{ wireNavigate() }}
                     class="{{ request()->is('shared-variables*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('shared-variables.index') }}">
                     <x-reicon name="variables" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Shared Variables</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Shared Variables') }}</span>
                 </a>
             </li>
 
             {{-- Manage --}}
             <li class="nav-section mt-3" aria-hidden="true"
                 :class="collapsed && 'lg:mx-2.5 lg:my-2 lg:h-0 lg:overflow-hidden lg:border-t lg:border-neutral-200 lg:p-0 lg:text-transparent dark:lg:border-white/10'">
-                Manage</li>
+                {{ __('Manage') }}</li>
             <li>
-                <a title="Team" {{ wireNavigate() }}
+                <a title="{{ __('Team') }}" {{ wireNavigate() }}
                     class="{{ request()->is('team*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('team.index') }}">
                     <x-reicon name="teams" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Team</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Team') }}</span>
                 </a>
             </li>
             <li>
-                <a title="Notifications" {{ wireNavigate() }}
+                <a title="{{ __('Notifications') }}" {{ wireNavigate() }}
                     class="{{ request()->is('notifications*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('notifications.email') }}">
                     <x-reicon name="notifications" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Notifications</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Notifications') }}</span>
                 </a>
             </li>
 
             <li>
-                <a title="Keys & Tokens" {{ wireNavigate() }}
+                <a title="{{ __('Keys & Tokens') }}" {{ wireNavigate() }}
                     class="{{ request()->is('security*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('security.private-key.index') }}">
                     <x-reicon name="keys" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Keys & Tokens</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Keys & Tokens') }}</span>
                 </a>
             </li>
             @if (isCloud() && auth()->user()->isAdmin())
                 <li>
-                    <a title="Subscription" {{ wireNavigate() }}
+                    <a title="{{ __('Subscription') }}" {{ wireNavigate() }}
                         class="{{ request()->is('subscription*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                         :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('subscription.show') }}">
                         <x-reicon name="subscription" class="menu-item-icon" />
-                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Subscription</span>
+                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Subscription') }}</span>
                     </a>
                 </li>
             @endif
             <li>
-                <a title="Tags" {{ wireNavigate() }}
+                <a title="{{ __('Tags') }}" {{ wireNavigate() }}
                     class="{{ request()->is('tags*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('tags.show') }}">
                     <x-reicon name="tags" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Tags</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Tags') }}</span>
                 </a>
             </li>
             @if (isInstanceAdmin())
                 <li>
-                    <a title="Platform Admin" {{ wireNavigate() }}
+                    <a title="{{ __('Platform Admin') }}" {{ wireNavigate() }}
                         class="{{ request()->is('platform*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                         :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('platform.dashboard') }}">
                         <x-reicon name="grid" class="menu-item-icon" />
-                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Platform Admin</span>
+                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Platform Admin') }}</span>
                     </a>
                 </li>
                 <li>
-                    <a title="Settings" {{ wireNavigate() }}
+                    <a title="{{ __('Settings') }}" {{ wireNavigate() }}
                         class="{{ request()->is('settings*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                         :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('settings.index') }}">
                         <x-reicon name="settings" class="menu-item-icon" />
-                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Settings</span>
+                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Settings') }}</span>
                     </a>
                 </li>
             @endif
@@ -220,11 +220,11 @@
         @endif
         @if (auth()->id() === 0 && (isCloud() || isDev()))
             <li>
-                <a title="Admin" {{ wireNavigate() }}
+                <a title="{{ __('Admin') }}" {{ wireNavigate() }}
                     class="{{ request()->is('admin') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('admin.index') }}">
                     <x-reicon name="fire" class="menu-item-icon text-pink-500" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Admin</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Admin') }}</span>
                 </a>
             </li>
         @endif
@@ -232,14 +232,14 @@
             {{-- Unsubscribed cloud has no workspace items — keep these at the top of the list. --}}
             <li class="nav-section" aria-hidden="true"
                 :class="collapsed && 'lg:mx-2.5 lg:my-2 lg:h-0 lg:overflow-hidden lg:border-t lg:border-neutral-200 lg:p-0 lg:text-transparent dark:lg:border-white/10'">
-                Account</li>
+                {{ __('Account') }}</li>
             <li>
-                <a title="Subscription" {{ wireNavigate() }}
+                <a title="{{ __('Subscription') }}" {{ wireNavigate() }}
                     class="{{ request()->is('subscription*') ? 'menu-item-active menu-item' : 'menu-item' }}"
                     :class="collapsed && 'lg:justify-center lg:px-0'"
                     href="{{ isSubscriptionOnGracePeriod() ? route('subscription.show') : route('subscription.index') }}">
                     <x-reicon name="subscription" class="menu-item-icon" />
-                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">Subscription</span>
+                    <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Subscription') }}</span>
                 </a>
             </li>
             @if (auth()->user()->teams()->get()->count() > 1)
@@ -256,7 +256,7 @@
         @endif
         <div class="flex items-center gap-1" :class="collapsed ? 'flex-col-reverse justify-center' : 'justify-between'">
             <x-top-user-menu sidebar />
-            <button type="button" @click="toggleSidebar()" title="Toggle sidebar" aria-label="Toggle sidebar"
+            <button type="button" @click="toggleSidebar()" title="{{ __('Toggle sidebar') }}" aria-label="{{ __('Toggle sidebar') }}"
                 class="menu-item sidebar-toggle w-8 shrink-0 justify-center px-0">
                 <svg class="menu-item-icon" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6" />

@@ -75,7 +75,7 @@ class Sentinel extends Component
             $this->sentinelUpdatedAt = $this->server->sentinel_updated_at;
             $this->sentinelStatus = $this->server->sentinelStatus();
             $this->sentinelRestartRequestedAt = null;
-            $this->dispatch('success', 'Sentinel has been restarted successfully.');
+            $this->dispatch('success', __('Sentinel has been restarted successfully.'));
         }
     }
 
@@ -122,7 +122,7 @@ class Sentinel extends Component
             $customImage = isDev() ? $this->sentinelCustomDockerImage : null;
             $this->server->restartSentinel($customImage);
             auditLog('ui.server.sentinel.restarted', $this->auditContext());
-            $this->dispatch('info', 'Restarting Sentinel.');
+            $this->dispatch('info', __('Restarting Sentinel.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -135,7 +135,7 @@ class Sentinel extends Component
             $this->setSentinelRestarting();
             $this->server->settings->generateSentinelToken();
             auditLog('ui.server.sentinel.token_regenerated', $this->auditContext());
-            $this->dispatch('success', 'Token regenerated. Restarting Sentinel.');
+            $this->dispatch('success', __('Token regenerated. Restarting Sentinel.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -154,7 +154,7 @@ class Sentinel extends Component
             $this->setSentinelRestarting();
             $this->server->restartSentinel();
             auditLog('ui.server.sentinel.defaults_restored', $this->auditContext());
-            $this->dispatch('success', 'Default Sentinel configuration restored. Restarting Sentinel.');
+            $this->dispatch('success', __('Default Sentinel configuration restored. Restarting Sentinel.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -169,7 +169,7 @@ class Sentinel extends Component
             auditLog('ui.server.sentinel.updated', $this->auditContext([
                 'changed_fields' => ['is_metrics_enabled', 'sentinel_token', 'sentinel_custom_url', 'is_sentinel_debug_enabled'],
             ]));
-            $this->dispatch('success', 'Sentinel settings updated. Restarting Sentinel.');
+            $this->dispatch('success', __('Sentinel settings updated. Restarting Sentinel.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

@@ -95,7 +95,7 @@ class DockerCleanupExecutions extends Component
         }
 
         if (! $this->selectedExecution->message) {
-            return collect(['Waiting for execution output...']);
+            return collect([__('Waiting for execution output...')]);
         }
 
         $lines = collect(explode("\n", $this->selectedExecution->message));

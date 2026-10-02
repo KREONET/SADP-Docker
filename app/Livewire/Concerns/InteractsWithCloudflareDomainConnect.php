@@ -22,13 +22,13 @@ trait InteractsWithCloudflareDomainConnect
         $this->authorizeUpdateForDomainConnect();
 
         if (! $this->domainConnectAvailable()) {
-            $this->dispatch('error', 'Automated DNS configuration is only available on Coolify Cloud when Domain Connect is configured.');
+            $this->dispatch('error', __('Automated DNS configuration is only available on Coolify Cloud when Domain Connect is configured.'));
 
             return;
         }
 
         if ($this->allDomainHostnames() === []) {
-            $this->dispatch('error', 'Add at least one domain before configuring DNS on Cloudflare.');
+            $this->dispatch('error', __('Add at least one domain before configuring DNS on Cloudflare.'));
 
             return;
         }
@@ -50,7 +50,7 @@ trait InteractsWithCloudflareDomainConnect
         if (! $domainConnect->isAvailable()) {
             $this->dispatch(
                 'error',
-                'Automated DNS configuration is only available on Coolify Cloud when a Domain Connect private key is configured.'
+                __('Automated DNS configuration is only available on Coolify Cloud when a Domain Connect private key is configured.')
             );
 
             return;
@@ -60,7 +60,7 @@ trait InteractsWithCloudflareDomainConnect
         if (blank($ip) || filter_var($ip, FILTER_VALIDATE_IP) === false) {
             $this->dispatch(
                 'error',
-                'A resolvable server IP is required before autoconfiguring DNS. Set a public IP on the server (or instance settings for localhost).'
+                __('A resolvable server IP is required before autoconfiguring DNS. Set a public IP on the server (or instance settings for localhost).')
             );
 
             return;
@@ -68,7 +68,7 @@ trait InteractsWithCloudflareDomainConnect
 
         $hostnames = $this->allDomainHostnames();
         if ($hostnames === []) {
-            $this->dispatch('error', 'Add at least one domain before configuring DNS on Cloudflare.');
+            $this->dispatch('error', __('Add at least one domain before configuring DNS on Cloudflare.'));
 
             return;
         }

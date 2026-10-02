@@ -14,7 +14,7 @@
     $maxRequests = max(1, (int) collect($paths)->max('requests'));
 @endphp
 @if (collect($paths)->isEmpty())
-    <x-empty size="sm" title="No path data" description="No requests were recorded for the selected range."
+    <x-empty size="sm" :title="__('No path data')" :description="__('No requests were recorded for the selected range.')"
         icon-name="unordered-list" />
 @else
     <div x-data="{ page: 0, per: 10, total: {{ count($paths) }} }">
@@ -42,16 +42,16 @@
                     <div class="h-full rounded-full bg-[var(--chart-status-3xx)]" style="width: {{ $width }}%;"></div>
                 </div>
                 <span class="w-12 shrink-0 text-right text-[12px] font-medium tabular-nums text-black dark:text-fg"
-                    title="{{ number_format($requests) }} requests">{{ compactNumber($requests) }}</span>
+                    title="{{ __(':count requests', ['count' => number_format($requests)]) }}">{{ compactNumber($requests) }}</span>
                 <span class="hidden w-14 shrink-0 text-right text-[11px] font-medium tabular-nums text-pink-600 sm:inline dark:text-pink-400"
-                    title="{{ number_format($s4xx) }} client-error responses">{{ compactNumber($s4xx) }} 4xx</span>
+                    title="{{ __(':count client-error responses', ['count' => number_format($s4xx)]) }}">{{ compactNumber($s4xx) }} 4xx</span>
                 <span class="w-14 shrink-0 text-right text-[11px] font-medium tabular-nums text-purple-600 dark:text-purple-400"
-                    title="{{ number_format($s5xx) }} server-error responses">{{ compactNumber($s5xx) }} 5xx</span>
+                    title="{{ __(':count server-error responses', ['count' => number_format($s5xx)]) }}">{{ compactNumber($s5xx) }} 5xx</span>
                 <span class="hidden w-12 shrink-0 text-right text-[11px] tabular-nums text-neutral-400 lg:inline dark:text-fg-faint"
-                    title="Combined 4xx and 5xx response rate">{{ $errorRate }}%</span>
+                    title="{{ __('Combined 4xx and 5xx response rate') }}">{{ $errorRate }}%</span>
                 <span class="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-neutral-400 sm:inline dark:text-fg-faint">{{ formatBytes((int) ($path['bytesOut'] ?? 0)) }}</span>
                 <span class="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-neutral-400 md:inline dark:text-fg-faint"
-                    title="p95 latency">{{ number_format((float) ($path['p95'] ?? 0), 1) }} ms</span>
+                    title="{{ __('p95 latency') }}">{{ number_format((float) ($path['p95'] ?? 0), 1) }} ms</span>
             </div>
         @endforeach
         @include('livewire.traffic._pager')

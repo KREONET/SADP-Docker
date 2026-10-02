@@ -131,7 +131,7 @@ it('declares explicit authorization on the changed storage controls', function (
         ->toContain('canGate="update"')
         ->toContain(':canResource="$resource"');
 
-    preg_match_all('/<x-forms\.button\b[^>]*>\s*Backup\s*<\/x-forms\.button>/s', $view, $backupButtons);
+    preg_match_all('/<x-forms\.button\b[^>]*>\s*\{\{ __\(\'Backup\'\) \}\}\s*<\/x-forms\.button>/s', $view, $backupButtons);
 
     expect($backupButtons[0])->toHaveCount(3);
 

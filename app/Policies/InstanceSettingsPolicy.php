@@ -8,18 +8,17 @@ use App\Models\User;
 class InstanceSettingsPolicy
 {
     /**
-     * Determine whether the user can view the instance settings.
+     * Instance settings belong to platform admins (admins and owners of the root team),
+     * the same rule as the accessPlatformAdmin gate. The checked user is the given one,
+     * not whoever is signed in, so Gate::forUser() and API tokens are evaluated correctly.
      */
     public function view(User $user, InstanceSettings $settings): bool
     {
-        return isInstanceAdmin();
+        return $user->isInstanceAdmin();
     }
 
-    /**
-     * Determine whether the user can update the instance settings.
-     */
     public function update(User $user, InstanceSettings $settings): bool
     {
-        return isInstanceAdmin();
+        return $user->isInstanceAdmin();
     }
 }

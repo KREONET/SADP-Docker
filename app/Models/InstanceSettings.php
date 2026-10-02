@@ -85,6 +85,7 @@ class InstanceSettings extends Model
         'loki_shipping_started_at',
         'loki_last_pushed_at',
         'loki_last_error',
+        'default_locale',
     ];
 
     protected $hidden = [

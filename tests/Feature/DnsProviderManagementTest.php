@@ -454,8 +454,16 @@ test('dns provider action controls declare update authorization against the reso
 
     expect($providerModal)
         ->toContain('$dnsAuthResource = property_exists($this, \'application\') ? $this->application : $this->service')
-        ->toMatch('/<x-modal-confirmation(?=[^>]*submitAction="replaceManagedDnsRecord)(?=[^>]*canGate="update")(?=[^>]*:canResource="\$dnsAuthResource")[^>]*>/')
         ->toMatch('/<x-forms\.button(?=[^>]*wire:click="createManagedDnsRecord)(?=[^>]*canGate="update")(?=[^>]*:canResource="\$dnsAuthResource")[^>]*>/');
+
+    preg_match_all('/<x-modal-confirmation\b(?:"[^"]*"|[^">])*>/s', $providerModal, $confirmations);
+    $replaceConfirmation = collect($confirmations[0])->first(
+        fn (string $control): bool => str_contains($control, 'submitAction="replaceManagedDnsRecord')
+    );
+
+    expect($replaceConfirmation)
+        ->not->toBeNull()
+        ->toContain('canGate="update"', ':canResource="$dnsAuthResource"');
 });
 
 test('removing a domain deletes only the managed dns record for that resource', function () {

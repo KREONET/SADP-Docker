@@ -172,8 +172,8 @@ class ByVultr extends Component
     protected function messages(): array
     {
         return [
-            'selected_token_id.required' => 'Please select a Vultr token.',
-            'selected_token_id.exists' => 'Selected token not found.',
+            'selected_token_id.required' => __('Please select a Vultr token.'),
+            'selected_token_id.exists' => __('Selected token not found.'),
         ];
     }
 
@@ -297,15 +297,15 @@ class ByVultr extends Component
         $summary = [];
 
         if (count($this->selectedVultrSshKeyIds) > 0) {
-            $summary[] = count($this->selectedVultrSshKeyIds).' extra SSH '.str('key')->plural(count($this->selectedVultrSshKeyIds));
+            $summary[] = trans_choice(':count extra SSH key|:count extra SSH keys', count($this->selectedVultrSshKeyIds));
         }
 
         if (! $this->enable_ipv6) {
-            $summary[] = 'IPv6 disabled';
+            $summary[] = __('IPv6 disabled');
         }
 
         if ($this->disable_public_ipv4) {
-            $summary[] = 'Public IPv4 disabled';
+            $summary[] = __('Public IPv4 disabled');
         }
 
         if (! empty($this->cloud_init_script)) {
@@ -332,7 +332,7 @@ class ByVultr extends Component
 
         if (! $token) {
             $this->loading_data = false;
-            $this->dispatch('error', 'Please select a valid Vultr token.');
+            $this->dispatch('error', __('Please select a valid Vultr token.'));
 
             return;
         }
@@ -377,7 +377,11 @@ class ByVultr extends Component
 
         $prefix = "{$providerName} API error: ";
 
-        return str_starts_with($details, $prefix) ? $details : $prefix.$details;
+        if (str_starts_with($details, $prefix)) {
+            $details = substr($details, strlen($prefix));
+        }
+
+        return __(':provider API error: :details', ['provider' => $providerName, 'details' => $details]);
     }
 
     private function createVultrServer(VultrService $vultrService): array
@@ -429,7 +433,7 @@ class ByVultr extends Component
             $this->authorize('create', Server::class);
 
             if (Team::serverLimitReached()) {
-                return $this->dispatch('error', 'You have reached the server limit for your subscription.');
+                return $this->dispatch('error', __('You have reached the server limit for your subscription.'));
             }
 
             if ($this->save_cloud_init_script && ! empty($this->cloud_init_script) && ! empty($this->cloud_init_script_name)) {
@@ -540,7 +544,7 @@ class ByVultr extends Component
             return true;
         }
 
-        $this->addError('enable_ipv6', 'Enable IPv6 when disabling public IPv4.');
+        $this->addError('enable_ipv6', __('Enable IPv6 when disabling public IPv4.'));
 
         return false;
     }

@@ -181,8 +181,8 @@ class ByDigitalOcean extends Component
     protected function messages(): array
     {
         return [
-            'selected_token_id.required' => 'Please select a DigitalOcean token.',
-            'selected_token_id.exists' => 'Selected token not found.',
+            'selected_token_id.required' => __('Please select a DigitalOcean token.'),
+            'selected_token_id.exists' => __('Selected token not found.'),
         ];
     }
 
@@ -262,7 +262,7 @@ class ByDigitalOcean extends Component
 
         if (! $token) {
             $this->loading_data = false;
-            $this->dispatch('error', 'Please select a valid DigitalOcean token.');
+            $this->dispatch('error', __('Please select a valid DigitalOcean token.'));
 
             return;
         }
@@ -298,7 +298,11 @@ class ByDigitalOcean extends Component
 
         $prefix = "{$providerName} API error: ";
 
-        return str_starts_with($details, $prefix) ? $details : $prefix.$details;
+        if (str_starts_with($details, $prefix)) {
+            $details = substr($details, strlen($prefix));
+        }
+
+        return __(':provider API error: :details', ['provider' => $providerName, 'details' => $details]);
     }
 
     public function getAvailableSizesProperty(): array
@@ -377,15 +381,15 @@ class ByDigitalOcean extends Component
         $summary = [];
 
         if (count($this->selectedDigitalOceanSshKeyIds) > 0) {
-            $summary[] = count($this->selectedDigitalOceanSshKeyIds).' extra SSH '.str('key')->plural(count($this->selectedDigitalOceanSshKeyIds));
+            $summary[] = trans_choice(':count extra SSH key|:count extra SSH keys', count($this->selectedDigitalOceanSshKeyIds));
         }
 
         if (! $this->enable_ipv6) {
-            $summary[] = 'IPv4 only';
+            $summary[] = __('IPv4 only');
         }
 
         if (! $this->monitoring) {
-            $summary[] = 'Monitoring off';
+            $summary[] = __('Monitoring off');
         }
 
         if ($this->show_cloud_init_script || filled($this->cloud_init_script) || filled($this->selected_cloud_init_script_id)) {
@@ -460,7 +464,7 @@ class ByDigitalOcean extends Component
             $this->authorize('create', Server::class);
 
             if (Team::serverLimitReached()) {
-                return $this->dispatch('error', 'You have reached the server limit for your subscription.');
+                return $this->dispatch('error', __('You have reached the server limit for your subscription.'));
             }
 
             if ($this->save_cloud_init_script && ! empty($this->cloud_init_script) && ! empty($this->cloud_init_script_name)) {

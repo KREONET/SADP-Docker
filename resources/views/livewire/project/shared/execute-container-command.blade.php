@@ -1,6 +1,6 @@
 <div @if ($type !== 'server') wire:init="loadContainers" @endif>
     <x-slot:title>
-        {{ data_get_str($resource, 'name')->limit(10) }} > Terminal | Coolify
+        {{ data_get_str($resource, 'name')->limit(10) }} > {{ __('Terminal') }} | Coolify
     </x-slot>
 
     @if ($type === 'application')
@@ -18,7 +18,7 @@
         $consoleUnavailable = ($type === 'server' && (! $servers->first()->isTerminalEnabled() || ! $servers->first()->isFunctional()))
             || ($type !== 'server' && $containersLoaded && $containers->isEmpty());
         $consoleThemes = [
-            ['key' => 'system', 'name' => 'System', 'background' => 'linear-gradient(135deg, #ffffff 0 50%, #121214 50% 100%)', 'accent' => '#8C8E9C'],
+            ['key' => 'system', 'name' => __('System'), 'background' => 'linear-gradient(135deg, #ffffff 0 50%, #121214 50% 100%)', 'accent' => '#8C8E9C'],
             ['key' => 'shadows-midnight', 'name' => 'Midnight', 'background' => 'linear-gradient(135deg, #2a3b4c, rgba(42, 59, 76, 0.4))', 'accent' => '#6d7a7c'],
             ['key' => 'shadows-golden-hour', 'name' => 'Golden Hour', 'background' => 'linear-gradient(135deg, #d58a42, rgba(213, 138, 66, 0.4))', 'accent' => '#bf8c3c'],
             ['key' => 'shadows-cosmic-purple', 'name' => 'Cosmic Purple', 'background' => 'linear-gradient(135deg, #5d3e66, rgba(93, 62, 102, 0.4))', 'accent' => '#A76DBE'],
@@ -57,12 +57,12 @@
     @if ($consoleUnavailable)
         <section class="mt-8 w-full max-w-none xl:mt-0">
             @if ($type === 'server')
-                <x-empty size="lg" title="Terminal unavailable"
-                    description="This server is not functional or terminal access is disabled."
+                <x-empty size="lg" :title="__('Terminal unavailable')"
+                    :description="__('This server is not functional or terminal access is disabled.')"
                     icon-name="browser-terminal" />
             @else
-                <x-empty size="lg" title="Terminal unavailable"
-                    description="No containers are running, or terminal access is disabled on the destination server."
+                <x-empty size="lg" :title="__('Terminal unavailable')"
+                    :description="__('No containers are running, or terminal access is disabled on the destination server.')"
                     icon-name="browser-terminal" />
             @endif
         </section>
@@ -102,7 +102,7 @@
                 },
                 get selectedContainerLabel() {
                     return this.containerOptions.find((option) => option.value === this.selectedContainer)?.label
-                        ?? 'Choose a container';
+                        ?? @js(__('Choose a container'));
                 },
             }">
             <div data-terminal-session-canvas
@@ -182,9 +182,9 @@
                             class="absolute inset-0 z-20 flex items-start justify-start p-6 sm:p-10">
                             <div class="terminal-target-picker w-full max-w-md rounded-lg border p-2 shadow-[var(--shadow-dropdown)]">
                                 <div class="px-2 pt-1 pb-2">
-                                    <div class="text-sm font-semibold text-white/80">Start a terminal session</div>
+                                    <div class="text-sm font-semibold text-white/80">{{ __('Start a terminal session') }}</div>
                                     <div class="mt-0.5 text-[11px] text-white/45">
-                                    Choose a container to start a session
+                                    {{ __('Choose a container to start a session') }}
                                     </div>
                                 </div>
                                 <div class="max-h-64 overflow-y-auto">

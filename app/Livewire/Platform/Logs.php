@@ -118,7 +118,7 @@ class Logs extends Component
             'container' => $this->isContainerLogCollectionEnabled,
             'retention_days' => $this->logRetentionDays,
         ]);
-        $this->dispatch('success', $this->isLogCollectionEnabled ? 'Log collection settings saved.' : 'Log collection is off.');
+        $this->dispatch('success', $this->isLogCollectionEnabled ? __('Log collection settings saved.') : __('Log collection is off.'));
     }
 
     public function saveLoki(): void
@@ -152,7 +152,7 @@ class Logs extends Component
             'enabled' => $this->isLokiShippingEnabled,
             'loki_host' => parse_url((string) $attributes['loki_url'], PHP_URL_HOST),
         ]);
-        $this->dispatch('success', $this->isLokiShippingEnabled ? 'Loki shipping settings saved.' : 'Loki shipping is off.');
+        $this->dispatch('success', $this->isLokiShippingEnabled ? __('Loki shipping settings saved.') : __('Loki shipping is off.'));
     }
 
     public function testLokiConnection(): void
@@ -171,12 +171,12 @@ class Logs extends Component
 
         $error = $client->testConnection(ShipLogsToLokiJob::instanceLabel($settings));
         if ($error !== null) {
-            $this->dispatch('error', 'Loki connection failed.', $error);
+            $this->dispatch('error', __('Loki connection failed.'), $error);
 
             return;
         }
 
-        $this->dispatch('success', 'Loki accepted the test log line.');
+        $this->dispatch('success', __('Loki accepted the test log line.'));
     }
 
     public function clearLokiPassword(): void
@@ -185,14 +185,14 @@ class Logs extends Component
         instanceSettings()->update(['loki_password' => null]);
         $this->lokiPassword = null;
         auditLog('platform.logs.loki_password_removed');
-        $this->dispatch('success', 'Loki password removed.');
+        $this->dispatch('success', __('Loki password removed.'));
     }
 
     public function export(string $format = 'ndjson'): ?StreamedResponse
     {
         $this->authorizePlatformAdmin();
         if (! in_array($format, ['ndjson', 'csv'], true)) {
-            $this->dispatch('error', 'Unknown export format.');
+            $this->dispatch('error', __('Unknown export format.'));
 
             return null;
         }

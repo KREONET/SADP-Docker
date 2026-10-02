@@ -90,7 +90,7 @@ class SettingsOauth extends Component
             $oauth = OauthSetting::find($oauthData['id']);
 
             if (! $oauth) {
-                throw new \Exception('OAuth setting for '.$provider.' not found. It may have been deleted.');
+                throw new \Exception(__('OAuth setting for :provider not found. It may have been deleted.', ['provider' => $provider]));
             }
 
             $this->fillOauthSetting($oauth, $oauthData);
@@ -101,7 +101,7 @@ class SettingsOauth extends Component
 
             $this->oauth_settings_map[$provider] = $this->oauthSettingToArray($oauth);
 
-            $this->dispatch('success', 'OAuth settings for '.$oauth->provider.' updated successfully!');
+            $this->dispatch('success', __('OAuth settings for :provider updated successfully!', ['provider' => $oauth->provider]));
 
             return;
         }
@@ -120,12 +120,12 @@ class SettingsOauth extends Component
 
             if ($oauth->enabled && ! $oauth->couldBeEnabled()) {
                 $oauth->enabled = false;
-                $errors[] = "OAuth settings are incomplete for '{$oauth->provider}'. Required fields are missing. The provider has been disabled.";
+                $errors[] = __("OAuth settings are incomplete for ':provider'. Required fields are missing. The provider has been disabled.", ['provider' => $oauth->provider]);
             }
 
             if ($oauth->enabled && $oauth->isOidc() && ! in_array('openid', $oauth->scopeList(), true)) {
                 $oauth->enabled = false;
-                $errors[] = "OIDC scopes must include 'openid'. The provider has been disabled.";
+                $errors[] = __("OIDC scopes must include 'openid'. The provider has been disabled.");
             }
 
             $oauth->save();
@@ -185,12 +185,12 @@ class SettingsOauth extends Component
 
         if (! $oauth->couldBeEnabled()) {
             $oauth->update(['enabled' => false]);
-            throw new \Exception('OAuth settings are not complete for '.$oauth->provider.'.<br/>Please fill in all required fields.');
+            throw new \Exception(__('OAuth settings are not complete for :provider.<br/>Please fill in all required fields.', ['provider' => $oauth->provider]));
         }
 
         if ($oauth->isOidc() && ! in_array('openid', $oauth->scopeList(), true)) {
             $oauth->update(['enabled' => false]);
-            throw new \Exception("OIDC scopes must include 'openid'.");
+            throw new \Exception(__("OIDC scopes must include 'openid'."));
         }
     }
 
@@ -266,7 +266,7 @@ class SettingsOauth extends Component
 
         $oauth = OauthSetting::find($this->oauth_settings_map[$provider]['id']);
         if (! $oauth) {
-            throw new \Exception('OAuth setting for '.$provider.' not found. It may have been deleted.');
+            throw new \Exception(__('OAuth setting for :provider not found. It may have been deleted.', ['provider' => $provider]));
         }
 
         $this->fillOauthSetting($oauth, [
@@ -275,11 +275,11 @@ class SettingsOauth extends Component
         ]);
 
         if (! $oauth->couldBeEnabled()) {
-            throw new \Exception('OAuth settings are not complete for '.$oauth->provider.'.<br/>Please fill in all required fields.');
+            throw new \Exception(__('OAuth settings are not complete for :provider.<br/>Please fill in all required fields.', ['provider' => $oauth->provider]));
         }
 
         if ($oauth->isOidc() && ! in_array('openid', $oauth->scopeList(), true)) {
-            throw new \Exception("OIDC scopes must include 'openid'.");
+            throw new \Exception(__("OIDC scopes must include 'openid'."));
         }
     }
 
@@ -299,7 +299,7 @@ class SettingsOauth extends Component
             'changed_fields' => ['disable_registration_when_oauth_enabled'],
         ]);
 
-        $this->dispatch('success', 'Authentication settings updated successfully!');
+        $this->dispatch('success', __('Authentication settings updated successfully!'));
     }
 
     public function submit(): void
@@ -309,7 +309,7 @@ class SettingsOauth extends Component
             $this->updateOauthSettings($this->selectedProvider);
 
             if ($this->selectedProvider === null) {
-                $this->dispatch('success', 'Instance settings updated successfully!');
+                $this->dispatch('success', __('Instance settings updated successfully!'));
             }
         } catch (ValidationException $e) {
             throw $e;

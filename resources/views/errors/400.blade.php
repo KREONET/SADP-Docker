@@ -5,7 +5,7 @@
         <x-toast />
         <x-error-page
             code="400"
-            title="Bad request"
-            :description="$exception->getMessage() ?: 'The request could not be understood by the server due to malformed syntax.'" />
+            :title="__('Bad request')"
+            :description="$exception->getMessage() ?: __('The request could not be understood by the server due to malformed syntax.')" />
     </body>
 @endsection

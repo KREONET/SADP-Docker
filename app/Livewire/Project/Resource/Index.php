@@ -170,17 +170,17 @@ class Index extends Component
             'clickhouses' => $this->clickhouses,
             'sqlites' => $this->sqlites,
             'services' => $this->services,
-            'applicationsJs' => $this->toSearchableArray($this->applications, 'application', 'Application'),
-            'postgresqlsJs' => $this->toSearchableArray($this->postgresqls, 'database', 'Database'),
-            'redisJs' => $this->toSearchableArray($this->redis, 'database', 'Database'),
-            'mongodbsJs' => $this->toSearchableArray($this->mongodbs, 'database', 'Database'),
-            'mysqlsJs' => $this->toSearchableArray($this->mysqls, 'database', 'Database'),
-            'mariadbsJs' => $this->toSearchableArray($this->mariadbs, 'database', 'Database'),
-            'keydbsJs' => $this->toSearchableArray($this->keydbs, 'database', 'Database'),
-            'dragonfliesJs' => $this->toSearchableArray($this->dragonflies, 'database', 'Database'),
-            'clickhousesJs' => $this->toSearchableArray($this->clickhouses, 'database', 'Database'),
-            'sqlitesJs' => $this->toSearchableArray($this->sqlites, 'database', 'Database'),
-            'servicesJs' => $this->toSearchableArray($this->services, 'service', 'Service'),
+            'applicationsJs' => $this->toSearchableArray($this->applications, 'application', __('Application')),
+            'postgresqlsJs' => $this->toSearchableArray($this->postgresqls, 'database', __('Database')),
+            'redisJs' => $this->toSearchableArray($this->redis, 'database', __('Database')),
+            'mongodbsJs' => $this->toSearchableArray($this->mongodbs, 'database', __('Database')),
+            'mysqlsJs' => $this->toSearchableArray($this->mysqls, 'database', __('Database')),
+            'mariadbsJs' => $this->toSearchableArray($this->mariadbs, 'database', __('Database')),
+            'keydbsJs' => $this->toSearchableArray($this->keydbs, 'database', __('Database')),
+            'dragonfliesJs' => $this->toSearchableArray($this->dragonflies, 'database', __('Database')),
+            'clickhousesJs' => $this->toSearchableArray($this->clickhouses, 'database', __('Database')),
+            'sqlitesJs' => $this->toSearchableArray($this->sqlites, 'database', __('Database')),
+            'servicesJs' => $this->toSearchableArray($this->services, 'service', __('Service')),
         ]);
     }
 
@@ -203,7 +203,7 @@ class Index extends Component
             'hrefLink' => $item->hrefLink ?? '',
             'destination' => [
                 'server' => [
-                    'name' => $item->destination?->server?->name ?? 'Unknown',
+                    'name' => $item->destination?->server?->name ?? __('Unknown'),
                 ],
             ],
             'tags' => $item->tags->map(fn ($tag) => [

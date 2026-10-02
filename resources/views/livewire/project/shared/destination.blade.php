@@ -6,8 +6,8 @@
         @endphp
 
         <div class="flex flex-col gap-6">
-            <x-application.settings-section id="primary-server-section" title="Primary server"
-                helper="The default server and network used for this application's deployments.">
+            <x-application.settings-section id="primary-server-section" :title="__('Primary server')"
+                :helper="__('The default server and network used for this application\'s deployments.')">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-center gap-3">
                         <div
@@ -21,12 +21,12 @@
                                 </h4>
                                 <span
                                     class="rounded-sm bg-coollabs/10 px-1.5 py-0.5 text-[11px] font-medium text-coollabs dark:bg-warning/10 dark:text-warning">
-                                    Primary
+                                    {{ __('Primary') }}
                                 </span>
                                 <x-status-summary :status="$resource->status" />
                             </div>
                             <p class="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-neutral-500 dark:text-fg-dim">
-                                <span>Network</span>
+                                <span>{{ __('Network') }}</span>
                                 <code
                                     class="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-700 dark:bg-white/[0.05] dark:text-fg-dim">{{ data_get($resource, 'destination.network') }}</code>
                             </p>
@@ -35,15 +35,15 @@
 
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         <a href="{{ route('server.show', ['server_uuid' => data_get($resource, 'destination.server.uuid')]) }}"
-                            {{ wireNavigate() }} class="button">Open server</a>
+                            {{ wireNavigate() }} class="button">{{ __('Open server') }}</a>
                         <x-application.restart-limit-warning :application="$resource" />
                         @if ($hasAdditionalDestinations)
                             @can('deploy', $resource)
                                 <div class="relative" x-data="{ open: false }" @click.outside="open = false"
                                     @keydown.escape.window="open = false">
-                                    <button type="button" class="button gap-1.5" title="Server actions" @click="open = !open"
+                                    <button type="button" class="button gap-1.5" title="{{ __('Server actions') }}" @click="open = !open"
                                         :aria-expanded="open" aria-haspopup="menu">
-                                        Actions
+                                        {{ __('Actions') }}
                                         <span class="inline-flex transition-transform" :class="open && 'rotate-180'">
                                             <x-reicon name="chevron-down" class="size-3 opacity-55" />
                                         </span>
@@ -53,14 +53,14 @@
                                         <button type="button" class="listbox-option justify-start! gap-2.5!" role="menuitem"
                                             wire:click="redeploy('{{ data_get($resource, 'destination.id') }}','{{ data_get($resource, 'destination.server.id') }}')" @click="open = false">
                                             <x-reicon name="refresh" class="size-3.5 opacity-70" />
-                                            Deploy
+                                            {{ __('Deploy') }}
                                         </button>
                                     @if (str($resource->status)->startsWith('running'))
                                         <button type="button" class="listbox-option justify-start! gap-2.5!" role="menuitem"
                                             wire:click="stop('{{ data_get($resource, 'destination.server.id') }}')"
                                             @click="open = false">
                                             <x-reicon name="stop-circle" class="size-3.5 text-error" />
-                                            Stop
+                                            {{ __('Stop') }}
                                         </button>
                                     @endif
                                     </div>
@@ -72,8 +72,8 @@
             </x-application.settings-section>
 
             @if ($hasAdditionalDestinations && data_get($resource, 'build_pack') !== 'dockercompose')
-                <x-application.settings-section id="additional-servers-section" title="Additional servers"
-                    helper="Deploy this application to more servers and choose which destination is primary." flush>
+                <x-application.settings-section id="additional-servers-section" :title="__('Additional servers')"
+                    :helper="__('Deploy this application to more servers and choose which destination is primary.')" flush>
                     <div class="divide-y divide-neutral-200 dark:divide-white/[0.07]">
                         @foreach ($additionalDestinations as $destination)
                             @php
@@ -95,7 +95,7 @@
                                         </div>
                                         <p
                                             class="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-neutral-500 dark:text-fg-dim">
-                                            <span>Network</span>
+                                            <span>{{ __('Network') }}</span>
                                             <code
                                                 class="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-700 dark:bg-white/[0.05] dark:text-fg-dim">{{ data_get($destination, 'network') }}</code>
                                         </p>
@@ -104,13 +104,13 @@
 
                                 <div class="flex flex-wrap items-center gap-2 lg:justify-end">
                                     <a href="{{ route('server.show', ['server_uuid' => data_get($destination, 'server.uuid')]) }}"
-                                        {{ wireNavigate() }} class="button">Open server</a>
+                                        {{ wireNavigate() }} class="button">{{ __('Open server') }}</a>
                                     @can('deploy', $resource)
                                         <div class="relative" x-data="{ open: false }" @click.outside="open = false"
                                             @keydown.escape.window="open = false">
-                                            <button type="button" class="button gap-1.5" title="Server actions" @click="open = !open"
+                                            <button type="button" class="button gap-1.5" title="{{ __('Server actions') }}" @click="open = !open"
                                                 :aria-expanded="open" aria-haspopup="menu">
-                                                Actions
+                                                {{ __('Actions') }}
                                                 <span class="inline-flex transition-transform" :class="open && 'rotate-180'">
                                                     <x-reicon name="chevron-down" class="size-3 opacity-55" />
                                                 </span>
@@ -120,14 +120,14 @@
                                                 <button type="button" class="listbox-option justify-start! gap-2.5!" role="menuitem"
                                                     wire:click="redeploy('{{ data_get($destination, 'id') }}','{{ data_get($destination, 'server.id') }}')" @click="open = false">
                                                     <x-reicon name="refresh" class="size-3.5 opacity-70" />
-                                                    Deploy
+                                                    {{ __('Deploy') }}
                                                 </button>
                                             @can('update', $resource)
                                                 <button type="button" class="listbox-option justify-start! gap-2.5!" role="menuitem"
                                                     wire:click="promote('{{ data_get($destination, 'id') }}','{{ data_get($destination, 'server.id') }}')"
                                                     @click="open = false">
                                                     <x-reicon name="shield-star" class="size-3.5 opacity-70" />
-                                                    Make primary
+                                                    {{ __('Make primary') }}
                                                 </button>
                                             @endcan
                                             @if ($destinationStatus->startsWith('running'))
@@ -135,14 +135,14 @@
                                                     wire:click="stop('{{ data_get($destination, 'server.id') }}')"
                                                     @click="open = false">
                                                     <x-reicon name="stop-circle" class="size-3.5 text-error" />
-                                                    Stop
+                                                    {{ __('Stop') }}
                                                 </button>
                                             @endif
                                             @can('update', $resource)
                                                 <button type="button" class="listbox-option justify-start! gap-2.5!" role="menuitem"
                                                     @click="open = false; document.getElementById('destination-remove-trigger-{{ $destination->id }}')?.click()">
                                                     <x-reicon name="trash" class="size-3.5 text-error" />
-                                                    Remove
+                                                    {{ __('Remove') }}
                                                 </button>
                                             @endcan
                                             </div>
@@ -150,16 +150,16 @@
                                     @endcan
                                     @can('update', $resource)
                                         <div class="hidden" aria-hidden="true">
-                                            <x-modal-confirmation title="Remove server from application?" isErrorButton
-                                                buttonTitle="Remove"
+                                            <x-modal-confirmation :title="__('Remove server from application?')" isErrorButton
+                                                :buttonTitle="__('Remove')"
                                                 submitAction="removeServer({{ data_get($destination, 'id') }},{{ data_get($destination, 'server.id') }})"
                                                 :actions="[
-                                                    'This will stop the application on this server and remove it as a deployment destination.',
+                                                    __('This will stop the application on this server and remove it as a deployment destination.'),
                                                 ]" confirmationText="{{ data_get($destination, 'server.name') }}"
-                                                confirmationLabel="Enter the server name to confirm removal"
-                                                shortConfirmationLabel="Server name">
+                                                :confirmationLabel="__('Enter the server name to confirm removal')"
+                                                :shortConfirmationLabel="__('Server name')">
                                                 <x-slot:trigger>
-                                                    <button id="destination-remove-trigger-{{ $destination->id }}" type="button">Remove</button>
+                                                    <button id="destination-remove-trigger-{{ $destination->id }}" type="button">{{ __('Remove') }}</button>
                                                 </x-slot:trigger>
                                             </x-modal-confirmation>
                                         </div>
@@ -172,12 +172,11 @@
             @endif
 
             @if (data_get($resource, 'build_pack') !== 'dockercompose')
-                <x-application.settings-section id="available-servers-section" title="Add another server"
-                    helper="Attach another available server and network as a deployment destination." :flush="$resource->persistentStorages()->count() === 0">
+                <x-application.settings-section id="available-servers-section" :title="__('Add another server')"
+                    :helper="__('Attach another available server and network as a deployment destination.')" :flush="$resource->persistentStorages()->count() === 0">
                     @if ($resource->persistentStorages()->count() > 0)
-                        <x-callout type="warning" title="Additional servers are unavailable">
-                            This application has persistent storage volumes. Applications with persistent storage
-                            cannot use multiple servers because those volumes are not shared between hosts.
+                        <x-callout type="warning" :title="__('Additional servers are unavailable')">
+                            {{ __('This application has persistent storage volumes. Applications with persistent storage cannot use multiple servers because those volumes are not shared between hosts.') }}
                         </x-callout>
                     @elseif ($networks->isNotEmpty())
                         <div class="divide-y divide-neutral-200 dark:divide-white/[0.07]">
@@ -194,7 +193,7 @@
                                                 {{ data_get($network, 'server.name') }}
                                             </h4>
                                             <p class="mt-1 text-[13px] text-neutral-500 dark:text-fg-dim">
-                                                Network
+                                                {{ __('Network') }}
                                                 <code
                                                     class="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-700 dark:bg-white/[0.05] dark:text-fg-dim">{{ data_get($network, 'name') }}</code>
                                             </p>
@@ -202,14 +201,14 @@
                                     </div>
                                     <x-forms.button canGate="update" :canResource="$resource"
                                         wire:click="addServer('{{ $network->id }}','{{ data_get($network, 'server.id') }}')">
-                                        Add server
+                                        {{ __('Add server') }}
                                     </x-forms.button>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <x-empty size="sm" title="No servers available"
-                            description="Every usable server is already attached, or no additional server networks are configured."
+                        <x-empty size="sm" :title="__('No servers available')"
+                            :description="__('Every usable server is already attached, or no additional server networks are configured.')"
                             icon-name="servers" />
                     @endif
                 </x-application.settings-section>
@@ -225,12 +224,12 @@
                 $primaryStatus->startsWith(['starting', 'restarting']) => 'warning',
                 default => 'neutral',
             };
-            $primaryStatusLabel = $primaryStatus->before(':')->headline()->value() ?: 'Unknown';
+            $primaryStatusLabel = $primaryStatus->before(':')->headline()->value() ?: __('Unknown');
         @endphp
 
         <div class="flex flex-col gap-6">
-            <x-application.settings-section id="primary-server-section" title="Primary server"
-                helper="The server and network used by this resource.">
+            <x-application.settings-section id="primary-server-section" :title="__('Primary server')"
+                :helper="__('The server and network used by this resource.')">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-center gap-3">
                         <div
@@ -244,11 +243,11 @@
                                 </h4>
                                 <span
                                     class="rounded-sm bg-coollabs/10 px-1.5 py-0.5 text-[11px] font-medium text-coollabs dark:bg-warning/10 dark:text-warning">
-                                    Primary
+                                    {{ __('Primary') }}
                                 </span>
                             </div>
                             <p class="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-neutral-500 dark:text-fg-dim">
-                                <span>Network</span>
+                                <span>{{ __('Network') }}</span>
                                 <code
                                     class="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-700 dark:bg-white/[0.05] dark:text-fg-dim">{{ data_get($resource, 'destination.network') }}</code>
                             </p>
@@ -257,7 +256,7 @@
 
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         <a href="{{ route('server.show', ['server_uuid' => data_get($resource, 'destination.server.uuid')]) }}"
-                            {{ wireNavigate() }} class="button">Open server</a>
+                            {{ wireNavigate() }} class="button">{{ __('Open server') }}</a>
                         @if (method_exists($resource, 'stoppedAfterRestartLimit'))
                             <x-application.restart-limit-warning :application="$resource" />
                         @endif

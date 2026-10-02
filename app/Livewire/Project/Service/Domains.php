@@ -191,9 +191,9 @@ class Domains extends Component
         $host = parse_url($url, PHP_URL_HOST) ?: $url;
 
         match ($status) {
-            'ok' => $this->dispatch('success', "DNS is configured correctly for {$host}."),
-            'failed' => $this->dispatch('error', "DNS is not configured for {$host}. Review the required DNS record. If you changed it recently, DNS propagation can take some time, so please try again later."),
-            default => $this->dispatch('info', "DNS check skipped for {$host}."),
+            'ok' => $this->dispatch('success', __('DNS is configured correctly for :host.', ['host' => $host])),
+            'failed' => $this->dispatch('error', __('DNS is not configured for :host. Review the required DNS record. If you changed it recently, DNS propagation can take some time, so please try again later.', ['host' => $host])),
+            default => $this->dispatch('info', __('DNS check skipped for :host.', ['host' => $host])),
         };
     }
 
@@ -211,7 +211,7 @@ class Domains extends Component
         $this->service->parse();
         $this->refreshDomains();
         $this->dispatch('configurationChanged')->to(ConfigurationChecker::class);
-        $this->dispatch('success', 'Search engine indexing updated.');
+        $this->dispatch('success', __('Search engine indexing updated.'));
     }
 
     public function updateForceHttps(int $serviceApplicationId, bool $enabled): void
@@ -227,7 +227,7 @@ class Domains extends Component
         $this->service->parse();
         $this->refreshDomains();
         $this->dispatch('configurationChanged')->to(ConfigurationChecker::class);
-        $this->dispatch('success', 'HTTP to HTTPS redirect updated.');
+        $this->dispatch('success', __('HTTP to HTTPS redirect updated.'));
     }
 
     public function loadDomainState(): void
@@ -742,32 +742,32 @@ class Domains extends Component
         return match ($redirect) {
             'www' => $suggestedIsWww
                 ? [
-                    'label' => 'Not added · canonical www',
+                    'label' => __('Not added · canonical www'),
                     'role' => 'canonical',
                     'pending_message' => $pendingMessage,
                     'dns_suffix' => '',
                 ]
                 : [
-                    'label' => 'Not added · redirect source',
+                    'label' => __('Not added · redirect source'),
                     'role' => 'redirect_source',
                     'pending_message' => $pendingMessage,
                     'dns_suffix' => '',
                 ],
             'non-www' => $suggestedIsWww
                 ? [
-                    'label' => 'Not added · redirect source',
+                    'label' => __('Not added · redirect source'),
                     'role' => 'redirect_source',
                     'pending_message' => $pendingMessage,
                     'dns_suffix' => '',
                 ]
                 : [
-                    'label' => 'Not added · canonical non-www',
+                    'label' => __('Not added · canonical non-www'),
                     'role' => 'canonical',
                     'pending_message' => $pendingMessage,
                     'dns_suffix' => '',
                 ],
             default => [
-                'label' => $suggestedIsWww ? 'Not added · www' : 'Not added · non-www',
+                'label' => $suggestedIsWww ? __('Not added · www') : __('Not added · non-www'),
                 'role' => 'pair',
                 'pending_message' => $pendingMessage,
                 'dns_suffix' => '',
@@ -791,7 +791,7 @@ class Domains extends Component
 
             $app = $this->findServiceApp($serviceApplicationId);
             if (! $app) {
-                $this->dispatch('error', 'Service application not found.');
+                $this->dispatch('error', __('Service application not found.'));
 
                 return;
             }
@@ -835,7 +835,7 @@ class Domains extends Component
             $this->forceSaveDomains = false;
             $this->forceRemovePort = false;
             if ($this->notifyRedirectUpdate) {
-                $this->dispatch('success', 'Redirect updated.');
+                $this->dispatch('success', __('Redirect updated.'));
             }
             $this->dispatch('configurationChanged');
             $this->pruneDomainDnsStatusesToCurrentDomains();
@@ -876,7 +876,7 @@ class Domains extends Component
             $missing = $hasWww === 0 ? 'www' : 'non-www';
             $this->dispatch(
                 'error',
-                "Redirect requires both www and non-www domains, but the {$missing} host could not be added automatically (e.g. only IP/sslip hosts).<br><br>Please add the {$missing} domain manually ({$dnsHint})."
+                __('Redirect requires both www and non-www domains, but the :missing host could not be added automatically (e.g. only IP/sslip hosts).<br><br>Please add the :missing domain manually (:hint).', ['missing' => $missing, 'hint' => $dnsHint])
             );
 
             return false;
@@ -1038,14 +1038,14 @@ class Domains extends Component
 
             $app = $this->findServiceApp($this->newServiceApplicationId);
             if (! $app) {
-                $this->dispatch('error', 'Select a service application.');
+                $this->dispatch('error', __('Select a service application.'));
 
                 return;
             }
 
             $normalized = ValidationPatterns::normalizeApplicationDomains($this->newDomain);
             if (blank($normalized)) {
-                $this->addError('newDomain', 'Please enter a valid domain URL.');
+                $this->addError('newDomain', __('Please enter a valid domain URL.'));
 
                 return;
             }
@@ -1064,7 +1064,7 @@ class Domains extends Component
             );
             foreach ($newUrls as $url) {
                 if ($currentCanonicalDomains->contains(DomainPortOverrides::withoutPort($url))) {
-                    $this->addError('newDomain', "Domain {$url} is already configured for this service.");
+                    $this->addError('newDomain', __('Domain :url is already configured for this service.', ['url' => $url]));
 
                     return;
                 }
@@ -1090,7 +1090,7 @@ class Domains extends Component
             $this->refreshDomains();
             $addedUrls = array_values(array_unique(array_merge($newUrls, $pairedUrls)));
             if ($this->configureDnsAfterDomainAdd($addedUrls)) {
-                $this->dispatch('success', 'Domain added.');
+                $this->dispatch('success', __('Domain added.'));
 
                 return;
             }
@@ -1125,12 +1125,12 @@ class Domains extends Component
 
             if ($failedDnsChecks > 0) {
                 $this->persistAllDomainDnsStatuses();
-                $this->dispatch('error', 'Some DNS checks could not be started. Try again from the Domains page.');
+                $this->dispatch('error', __('Some DNS checks could not be started. Try again from the Domains page.'));
             }
 
             $this->dispatch('success', $failedDnsChecks === $dnsChecks->count()
-                ? 'Domain added.'
-                : 'Domain added. DNS check started.');
+                ? __('Domain added.')
+                : __('Domain added. DNS check started.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -1259,7 +1259,7 @@ class Domains extends Component
 
             $normalized = ValidationPatterns::normalizeApplicationDomains($this->editingDomain);
             if (blank($normalized) || count($this->splitDomains($normalized)) !== 1) {
-                $this->addError('editingDomain', 'Please enter a single valid domain URL.');
+                $this->addError('editingDomain', __('Please enter a single valid domain URL.'));
 
                 return;
             }
@@ -1278,7 +1278,7 @@ class Domains extends Component
                 ->reject(fn (string $url): bool => $url === $oldUrl)
                 ->map(fn (string $url): string => DomainPortOverrides::withoutPort($url));
             if ($otherCanonicalDomains->contains(DomainPortOverrides::withoutPort($newUrl))) {
-                $this->addError('editingDomain', "Domain {$newUrl} is already configured for this service.");
+                $this->addError('editingDomain', __('Domain :url is already configured for this service.', ['url' => $newUrl]));
 
                 return;
             }
@@ -1335,7 +1335,7 @@ class Domains extends Component
             $this->forceSaveDomains = false;
             $this->forceRemovePort = false;
             $this->pendingAction = null;
-            $this->dispatch('success', 'Domain updated.');
+            $this->dispatch('success', __('Domain updated.'));
             $this->refreshDomains();
             if ($urlsToCheck !== []) {
                 $this->queueUrlsDns($urlsToCheck, $app);
@@ -1372,7 +1372,7 @@ class Domains extends Component
 
             $this->forceSaveDomains = false;
             $this->forceRemovePort = false;
-            $this->dispatch('success', 'Domain removed.');
+            $this->dispatch('success', __('Domain removed.'));
             $this->pruneDomainDnsStatusesToCurrentDomains();
             $this->refreshDomains();
         } catch (\Throwable $e) {
@@ -1472,7 +1472,7 @@ class Domains extends Component
             $this->pendingAction = null;
             $this->forceSaveDomains = false;
             $this->forceRemovePort = false;
-            $this->dispatch('success', 'Domain added.');
+            $this->dispatch('success', __('Domain added.'));
             $this->refreshDomains();
             $this->checkUrlsDns($newUrls, (int) $app->id);
         } catch (\Throwable $e) {
@@ -1488,7 +1488,7 @@ class Domains extends Component
             $app = $this->findServiceApp($this->newServiceApplicationId);
             $server = $this->service->server;
             if (! $app || ! $server) {
-                $this->dispatch('error', 'Service application or server not found.');
+                $this->dispatch('error', __('Service application or server not found.'));
 
                 return;
             }
@@ -1599,7 +1599,7 @@ class Domains extends Component
         });
 
         if (str($app->fqdn)->contains(',')) {
-            $this->dispatch('warning', 'Some services do not support multiple domains, which can lead to problems and is NOT RECOMMENDED.<br><br>Only use multiple domains if you know what you are doing.');
+            $this->dispatch('warning', __('Some services do not support multiple domains, which can lead to problems and is NOT RECOMMENDED.<br><br>Only use multiple domains if you know what you are doing.'));
         }
 
         $this->dispatch('configurationChanged');
@@ -1680,7 +1680,7 @@ class Domains extends Component
             } catch (\Throwable) {
                 $this->markUrlsDnsCheckUnavailable([$url], (int) $application->id, $checkId);
                 $this->persistAllDomainDnsStatuses();
-                $this->dispatch('error', 'The DNS check could not be started. Try again from the Domains page.');
+                $this->dispatch('error', __('The DNS check could not be started. Try again from the Domains page.'));
             }
         }
     }

@@ -192,13 +192,13 @@ class GithubPrivateRepository extends Component
             ]);
 
             if ($validator->fails()) {
-                throw new \RuntimeException('Invalid repository data: '.$validator->errors()->first());
+                throw new \RuntimeException(__('Invalid repository data: :error', ['error' => $validator->errors()->first()]));
             }
 
             $destination_uuid = $this->query['destination'] ?? null;
             $destination = find_resource_destination_for_current_team($destination_uuid);
             if (! $destination) {
-                throw new \Exception('Destination not found.');
+                throw new \Exception(__('Destination not found.'));
             }
             $destination_class = $destination->getMorphClass();
 
@@ -255,6 +255,6 @@ class GithubPrivateRepository extends Component
             $this->port = 3000;
             $this->publish_directory = null;
         }
-        $this->dispatch('success', 'Application settings updated!');
+        $this->dispatch('success', __('Application settings updated!'));
     }
 }

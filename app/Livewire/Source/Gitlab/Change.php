@@ -273,7 +273,7 @@ class Change extends Component
 
             $this->syncData(true);
             $this->gitlab_app->save();
-            $this->dispatch('success', 'GitLab App updated.');
+            $this->dispatch('success', __('GitLab App updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -288,7 +288,7 @@ class Change extends Component
 
             $this->gitlab_app->is_system_wide = $this->isSystemWide;
             $this->gitlab_app->save();
-            $this->dispatch('success', 'GitLab App updated.');
+            $this->dispatch('success', __('GitLab App updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -300,7 +300,7 @@ class Change extends Component
             $this->authorize('view', $this->gitlab_app);
 
             if (! $this->gitlab_app->isConnected()) {
-                $this->dispatch('error', 'GitLab App is not connected. Please complete the OAuth flow first.');
+                $this->dispatch('error', __('GitLab App is not connected. Please complete the OAuth flow first.'));
 
                 return;
             }
@@ -314,10 +314,10 @@ class Change extends Component
 
             if ($response->successful()) {
                 $username = data_get($response->json(), 'username', 'unknown');
-                $this->dispatch('success', "Connection successful! Authenticated as: {$username}");
+                $this->dispatch('success', __('Connection successful! Authenticated as: :username', ['username' => $username]));
             } else {
-                $error = data_get($response->json(), 'message', 'Unknown error');
-                $this->dispatch('error', "Connection failed: {$error}");
+                $error = data_get($response->json(), 'message', __('Unknown error'));
+                $this->dispatch('error', __('Connection failed: :error', ['error' => $error]));
             }
         } catch (\Throwable $e) {
             return handleError($e, $this);
@@ -330,7 +330,7 @@ class Change extends Component
             $this->authorize('delete', $this->gitlab_app);
 
             if ($this->gitlab_app->applications->isNotEmpty()) {
-                $this->dispatch('error', 'This source is being used by an application. Please delete all applications first.');
+                $this->dispatch('error', __('This source is being used by an application. Please delete all applications first.'));
 
                 return;
             }

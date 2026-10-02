@@ -25,12 +25,12 @@ class Show extends Component
             $this->authorize('update', $this->server);
 
             if (in_array($data['key'], ['COOLIFY_SERVER_UUID', 'COOLIFY_SERVER_NAME'])) {
-                throw new \Exception('Cannot create predefined variable.');
+                throw new \Exception(__('Cannot create predefined variable.'));
             }
 
             $found = $this->server->environment_variables()->where('key', $data['key'])->first();
             if ($found) {
-                throw new \Exception('Variable already exists.');
+                throw new \Exception(__('Variable already exists.'));
             }
             $this->server->environment_variables()->create([
                 'key' => $data['key'],
@@ -120,7 +120,7 @@ class Show extends Component
         });
 
         if ($changesMade) {
-            $this->dispatch('success', 'Environment variables updated.');
+            $this->dispatch('success', __('Environment variables updated.'));
         }
     }
 

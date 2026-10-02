@@ -37,6 +37,7 @@ printf '%s %s\n' "$(basename "$0")" "$*" >> "$DEV_TEST_LOG"
 case "$(basename "$0") $1" in
   'docker inspect') echo "${DEV_TEST_HEALTH:-running healthy}" ;;
   'docker ps') [[ -n "${DEV_TEST_RUNNING:-}" && "$*" == *"$DEV_TEST_RUNNING"* ]] && echo abc123 ;;
+  'docker logs') [[ -z "${DEV_TEST_INIT_PENDING:-}" ]] && echo '👉 init-setup: done' ;;
 esac
 if [[ "$(basename "$0")" == virsh && "$*" == *' list '* ]]; then
   printf '%s\n' coolify-dev-fix-some_thing--ubuntu-root coolify-dev-fix-some_thing-2--ubuntu-root coolify-dev-ubuntu-root
@@ -169,7 +170,25 @@ it('starts the demo with loki and grafana, seeds demo data, and prints the urls'
         ->toContain('exec -T coolify php artisan dev:demo --loki-url=http://loki:3100')
         ->and($process->getOutput())
         ->toContain('Coolify:  https://devserver.example.ts.net:8000')
-        ->toContain('Grafana:  https://devserver.example.ts.net:3000');
+        ->toContain('Grafana:  https://devserver.example.ts.net:3000')
+        ->toContain('ssh -L 8000:localhost:8000 -L 3000:localhost:3000');
+});
+
+it('waits for the first-time setup before it seeds demo data', function () {
+    $process = runDevScript('main', ['demo']);
+    $log = devScriptLog();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput())
+        ->and($log)->toContain('docker logs --since')
+        ->and(strpos($log, 'docker logs --since'))->toBeLessThan(strpos($log, 'php artisan dev:demo'));
+});
+
+it('does not seed demo data when the first-time setup does not finish', function () {
+    $process = runDevScript('main', ['demo'], ['DEV_TEST_INIT_PENDING' => '1', 'COOLIFY_DEV_INIT_TIMEOUT' => '1']);
+
+    expect($process->isSuccessful())->toBeFalse()
+        ->and($process->getErrorOutput())->toContain('first-time setup did not finish')
+        ->and(devScriptLog())->not->toContain('dev:demo');
 });
 
 it('gives each worktree its own grafana port and keeps loki out of a normal start', function () {

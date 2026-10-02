@@ -1,7 +1,7 @@
 <div>
     <x-slot:title>
         {{ data_get_str($service, 'name')->limit(10) }} >
-        {{ data_get_str($serviceDatabase, 'name')->limit(10) }} > Backups | Coolify
+        {{ data_get_str($serviceDatabase, 'name')->limit(10) }} > {{ __('Backups') }} | Coolify
     </x-slot>
 
     <livewire:project.service.heading :service="$service" :parameters="$parameters" :query="$query" />
@@ -20,13 +20,13 @@
                                     {{ wireNavigate() }}
                                     href="{{ route('project.service.volume-backups.index', collect($parameters)->except(['stack_service_uuid', 'backup_uuid'])->all()) }}">
                                     <x-reicon name="arrow-right" class="size-3.5 rotate-180" />
-                                    Back to backups
+                                    {{ __('Back to backups') }}
                                 </a>
                                 <h1 class="mt-2 text-xl font-semibold text-neutral-950 dark:text-fg">
-                                    {{ $serviceDatabase->human_name ?: $serviceDatabase->name }} backup
+                                    {{ __(':name backup', ['name' => $serviceDatabase->human_name ?: $serviceDatabase->name]) }}
                                 </h1>
                                 <p class="mt-1 text-[13px] text-neutral-500 dark:text-fg-dim">
-                                    {{ $backup->frequency }} schedule
+                                    {{ __(':frequency schedule', ['frequency' => $backup->frequency]) }}
                                 </p>
                             </div>
 
@@ -47,12 +47,12 @@
                     <section class="application-settings-section">
                         <div class="application-settings-section-header">
                             <div>
-                                <h2>Scheduled backups</h2>
-                                <p>Automate backups for {{ $serviceDatabase->human_name ?: $serviceDatabase->name }}.</p>
+                                <h2>{{ __('Scheduled backups') }}</h2>
+                                <p>{{ __('Automate backups for :name.', ['name' => $serviceDatabase->human_name ?: $serviceDatabase->name]) }}</p>
                             </div>
                             @if (filled($serviceDatabase->custom_type) || ! $serviceDatabase->is_migrated)
                                 @can('update', $serviceDatabase)
-                                    <x-modal-input buttonTitle="+ Add" title="New Scheduled Backup">
+                                    <x-modal-input :buttonTitle="__('+ Add')" :title="__('New Scheduled Backup')">
                                         <livewire:project.database.create-scheduled-backup
                                             :database="$serviceDatabase" />
                                     </x-modal-input>

@@ -72,8 +72,8 @@ class ConnectApplication extends Component
             'applicationUuid' => 'required|string',
             'mountPath' => ['required', 'string', 'regex:'.ValidationPatterns::DIRECTORY_PATH_PATTERN],
         ], [
-            'applicationUuid.required' => 'Select an application first.',
-            'mountPath.regex' => 'Mount path must start with / and only contain safe path characters.',
+            'applicationUuid.required' => __('Select an application first.'),
+            'mountPath.regex' => __('Mount path must start with / and only contain safe path characters.'),
         ]);
 
         $application = $this->selectedApplication();
@@ -83,12 +83,12 @@ class ConnectApplication extends Component
 
         try {
             if (! $application) {
-                throw new \Exception('The selected application is not available on this server.');
+                throw new \Exception(__('The selected application is not available on this server.'));
             }
 
             if ($this->isComposeApplication($application)) {
                 if (in_array($this->volumeName, composeExternalVolumeDockerNames($application->docker_compose_raw), true)) {
-                    throw new \Exception("{$application->name} already mounts this database volume in its compose file.");
+                    throw new \Exception(__(':name already mounts this database volume in its compose file.', ['name' => $application->name]));
                 }
 
                 $this->composeApplicationName = $application->name;
@@ -102,7 +102,7 @@ class ConnectApplication extends Component
             }
 
             if ($application->persistentStorages()->where('standalone_sqlite_id', $this->database->id)->exists()) {
-                throw new \Exception("{$application->name} already mounts this database volume.");
+                throw new \Exception(__(':name already mounts this database volume.', ['name' => $application->name]));
             }
 
             LocalPersistentVolume::create([
@@ -154,7 +154,7 @@ class ConnectApplication extends Component
 
         $volume->delete();
 
-        $this->dispatch('success', 'Application unlinked. Redeploy it to apply the change.');
+        $this->dispatch('success', __('Application unlinked. Redeploy it to apply the change.'));
     }
 
     public function render()

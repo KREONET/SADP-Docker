@@ -2,7 +2,7 @@
     'title',
     'subtitle' => null,
     'href' => null,
-    'actionLabel' => 'View all',
+    'actionLabel' => null,
     'icon' => 'arrow-right',
 ])
 
@@ -21,7 +21,7 @@
         @elseif (filled($href))
             <a href="{{ $href }}" {{ wireNavigate() }}
                 class="button group">
-                {{ $actionLabel }}
+                {{ $actionLabel ?? __('View all') }}
                 @if ($icon)
                     <x-reicon :name="$icon" class="size-3 opacity-70 transition-transform duration-150 ease-out group-hover:translate-x-0.5" />
                 @endif

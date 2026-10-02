@@ -132,7 +132,7 @@ class VolumeBackups extends Component
         }
 
         $this->backup = $this->persistBackup($this->enabled);
-        $this->dispatch('success', 'Storage backup schedule saved.');
+        $this->dispatch('success', __('Storage backup schedule saved.'));
     }
 
     public function instantSave(): void
@@ -156,7 +156,7 @@ class VolumeBackups extends Component
         }
 
         $this->backup = $this->persistBackup($this->enabled);
-        $this->dispatch('success', 'S3 storage updated.');
+        $this->dispatch('success', __('S3 storage updated.'));
     }
 
     public function toggleS3(): void
@@ -164,7 +164,7 @@ class VolumeBackups extends Component
         $this->authorize('update', $this->resource);
 
         if (! $this->saveToS3 && ! $this->hasValidS3Storage()) {
-            $this->dispatch('error', 'Select a usable S3 storage before enabling S3 backups.');
+            $this->dispatch('error', __('Select a usable S3 storage before enabling S3 backups.'));
 
             return;
         }
@@ -218,7 +218,7 @@ class VolumeBackups extends Component
             'resource_name' => $this->resource->name,
             'backup_uuid' => $this->backup->uuid,
         ]);
-        $this->dispatch('success', 'Storage backup queued.');
+        $this->dispatch('success', __('Storage backup queued.'));
 
         return redirect()->route($this->routeName('executions'), $this->routeParameters());
     }
@@ -242,12 +242,12 @@ class VolumeBackups extends Component
                 deleteS3Archives: in_array('delete_associated_backups_s3', $selectedActions, true),
             );
             $this->backup = null;
-            $this->dispatch('success', 'Storage backup schedule deleted.');
+            $this->dispatch('success', __('Storage backup schedule deleted.'));
             $this->redirectRoute($this->routeName('index'), $this->routeParameters(includeBackup: false), navigate: true);
 
             return true;
         } catch (Throwable $exception) {
-            $this->dispatch('error', 'Could not delete the backup schedule: '.$exception->getMessage());
+            $this->dispatch('error', __('Could not delete the backup schedule: :message', ['message' => $exception->getMessage()]));
 
             return false;
         }
@@ -300,13 +300,13 @@ class VolumeBackups extends Component
 
         $execution = $this->backup?->executions()->whereKey($executionId)->first();
         if (! $execution) {
-            $this->dispatch('error', 'Backup execution not found.');
+            $this->dispatch('error', __('Backup execution not found.'));
 
             return false;
         }
 
         if ($execution->status === 'running' || $execution->stop_recovery_pending || $execution->s3_cleanup_pending) {
-            $this->dispatch('error', 'Wait for the backup and recovery operations to finish before deleting it.');
+            $this->dispatch('error', __('Wait for the backup and recovery operations to finish before deleting it.'));
 
             return false;
         }
@@ -331,11 +331,11 @@ class VolumeBackups extends Component
 
             $execution->delete();
             $this->delete_backup_s3 = false;
-            $this->dispatch('success', 'Backup deleted.');
+            $this->dispatch('success', __('Backup deleted.'));
 
             return true;
         } catch (Throwable $exception) {
-            $this->dispatch('error', 'Failed to delete backup: '.$exception->getMessage());
+            $this->dispatch('error', __('Failed to delete backup: :message', ['message' => $exception->getMessage()]));
 
             return false;
         }

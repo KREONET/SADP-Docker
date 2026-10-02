@@ -153,6 +153,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Interface Languages
+    |--------------------------------------------------------------------------
+    |
+    | Languages users can pick in their profile and platform admins can set as
+    | the instance default. Each needs a complete lang/<code>.json.
+    |
+    */
+
+    'available_locales' => [
+        'en' => 'English',
+        'ko' => '한국어',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Faker Locale
     |--------------------------------------------------------------------------
     |

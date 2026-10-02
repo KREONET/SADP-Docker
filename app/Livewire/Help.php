@@ -47,14 +47,14 @@ class Help extends Component
                     $response = null;
                 }
                 if (! $response?->successful()) {
-                    $this->dispatch('error', 'Feedback could not be sent.', 'Please try again later or contact us on Discord.');
+                    $this->dispatch('error', __('Feedback could not be sent.'), __('Please try again later or contact us on Discord.'));
 
                     return;
                 }
             } else {
                 send_user_an_email($mail, auth()->user()?->email, 'feedback@coollabs.io');
             }
-            $this->dispatch('success', 'Feedback sent.', 'We will get in touch with you as soon as possible.');
+            $this->dispatch('success', __('Feedback sent.'), __('We will get in touch with you as soon as possible.'));
             $this->reset('description', 'subject');
         } catch (\Throwable $e) {
             return handleError($e, $this);

@@ -27,7 +27,7 @@ trait InteractsWithDnsProviders
         $this->authorizeDnsProviderChange();
         $this->loadDnsProviderProposals();
         if ($this->dnsProviderProposals === []) {
-            $this->dispatch('error', 'No connected DNS provider can manage the configured domains.');
+            $this->dispatch('error', __('No connected DNS provider can manage the configured domains.'));
 
             return;
         }
@@ -46,7 +46,7 @@ trait InteractsWithDnsProviders
         $zone = $this->findTeamZone($zoneId);
         $content ??= $this->serverIp;
         if ($zone === null || blank($content) || filter_var($content, FILTER_VALIDATE_IP) === false) {
-            $this->dispatch('error', 'No connected DNS provider or public server IP is available for this domain.');
+            $this->dispatch('error', __('No connected DNS provider or public server IP is available for this domain.'));
 
             return;
         }
@@ -59,7 +59,7 @@ trait InteractsWithDnsProviders
                 $this->otherDnsResourcesForHostname($hostname),
             );
             $this->markDnsManaged($hostname, $zone->integrationToken->name);
-            $this->dispatch('success', "DNS record created for {$hostname}.");
+            $this->dispatch('success', __('DNS record created for :hostname.', ['hostname' => $hostname]));
             $this->loadDnsProviderProposals();
         } catch (DnsRecordConflictException $e) {
             $this->dnsProviderConflicts[$hostname.'|'.$zoneId] = [
@@ -131,7 +131,7 @@ trait InteractsWithDnsProviders
                 $proposal['hostname'],
                 $this->serverIp,
             );
-            $this->dispatch('info', "Adding DNS record for {$proposal['hostname']}.");
+            $this->dispatch('info', __('Adding DNS record for :hostname.', ['hostname' => $proposal['hostname']]));
         }
 
         return true;
@@ -152,7 +152,7 @@ trait InteractsWithDnsProviders
         $zone = $this->findTeamZone($zoneId);
         $content = $this->serverIp;
         if ($conflict === null || $zone === null || blank($content) || filter_var($content, FILTER_VALIDATE_IP) === false) {
-            $this->dispatch('error', 'The DNS conflict is no longer available. Check the record again.');
+            $this->dispatch('error', __('The DNS conflict is no longer available. Check the record again.'));
 
             return;
         }
@@ -167,7 +167,7 @@ trait InteractsWithDnsProviders
                 $this->otherDnsResourcesForHostname($hostname),
             );
             unset($this->dnsProviderConflicts[$key]);
-            $this->dispatch('success', "DNS record replaced for {$hostname}.");
+            $this->dispatch('success', __('DNS record replaced for :hostname.', ['hostname' => $hostname]));
             $this->loadDnsProviderProposals();
         } catch (LockTimeoutException) {
             $this->dispatch('error', $this->dnsHostnameBusyMessage($hostname));
@@ -231,7 +231,7 @@ trait InteractsWithDnsProviders
             return;
         }
 
-        $this->dispatch('error', "DNS record could not be added for {$event['hostname']}: {$event['message']}");
+        $this->dispatch('error', __('DNS record could not be added for :hostname: :message', ['hostname' => $event['hostname'], 'message' => $event['message']]));
     }
 
     /**
@@ -279,18 +279,25 @@ trait InteractsWithDnsProviders
 
     private function reportManagedDnsRelease(?ManagedDnsDeletionResult $result, string $change): void
     {
+        $removed = $change === 'removed';
         if ($result === ManagedDnsDeletionResult::ChangedExternally) {
-            $this->dispatch('warning', "The domain was {$change}, but its DNS record changed externally and was left untouched.");
+            $this->dispatch('warning', $removed
+                ? __('The domain was removed, but its DNS record changed externally and was left untouched.')
+                : __('The domain was updated, but its DNS record changed externally and was left untouched.'));
         } elseif ($result === ManagedDnsDeletionResult::Failed) {
-            $this->dispatch('warning', "The domain was {$change}, but its DNS record could not be deleted because Cloudflare did not respond. It was left untouched.");
+            $this->dispatch('warning', $removed
+                ? __('The domain was removed, but its DNS record could not be deleted because Cloudflare did not respond. It was left untouched.')
+                : __('The domain was updated, but its DNS record could not be deleted because Cloudflare did not respond. It was left untouched.'));
         } elseif ($result === ManagedDnsDeletionResult::Busy) {
-            $this->dispatch('warning', "The domain was {$change}, but another DNS change for the same hostname was in progress. Its DNS record was left untouched.");
+            $this->dispatch('warning', $removed
+                ? __('The domain was removed, but another DNS change for the same hostname was in progress. Its DNS record was left untouched.')
+                : __('The domain was updated, but another DNS change for the same hostname was in progress. Its DNS record was left untouched.'));
         }
     }
 
     private function dnsHostnameBusyMessage(string $hostname): string
     {
-        return "Another DNS change for {$hostname} is in progress. Try again in a few seconds.";
+        return __('Another DNS change for :hostname is in progress. Try again in a few seconds.', ['hostname' => $hostname]);
     }
 
     /**

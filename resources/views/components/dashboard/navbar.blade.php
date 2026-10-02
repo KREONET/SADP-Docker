@@ -126,7 +126,7 @@
                         @if ($item['icon'] ?? null)
                             <x-reicon :name="$item['icon']" class="size-3.5" />
                         @endif
-                        {{ $item['label'] }}
+                        {{ __($item['label']) }}
                     </a>
                 @endforeach
             </div>

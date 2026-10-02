@@ -94,7 +94,7 @@
                     <x-slot:customActions>
                         <div
                             class="relative mx-auto flex w-full max-w-2xl flex-col gap-5 overflow-hidden rounded-2xl border border-red-200 bg-white p-5 shadow-modal sm:p-6 dark:border-red-500/20 dark:bg-surface">
-                            <button type="button" aria-label="Dismiss real-time connection warning"
+                            <button type="button" aria-label="{{ __('Dismiss real-time connection warning') }}"
                                 class="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.07] dark:hover:text-fg"
                                 @click="bannerVisible=false;disableRealtime()">
                                 <x-reicon name="x" class="size-3.5" />
@@ -107,17 +107,13 @@
                                 </div>
                                 <div class="min-w-0">
                                     <h2 class="text-[15px]! leading-5! font-semibold! text-black dark:text-fg">
-                                        Cannot connect to real-time service
+                                        {{ __('Cannot connect to real-time service') }}
                                     </h2>
                                     <p class="mt-1 text-[12px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                        This will cause unusual problems on the UI. Open the
-                                        <a class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90"
-                                            href="https://coolify.io/docs/knowledge-base/server/firewall"
-                                            target="_blank" rel="noopener noreferrer">required ports</a>
-                                        or get help on
-                                        <a class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90"
-                                            href="https://coollabs.io/discord" target="_blank"
-                                            rel="noopener noreferrer">Discord</a>.
+                                        {!! __('This will cause unusual problems on the UI. Open the :ports or get help on :discord.', [
+                                            'ports' => '<a class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90" href="https://coolify.io/docs/knowledge-base/server/firewall" target="_blank" rel="noopener noreferrer">'.e(__('required ports')).'</a>',
+                                            'discord' => '<a class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90" href="https://coollabs.io/discord" target="_blank" rel="noopener noreferrer">Discord</a>',
+                                        ]) !!}
                                     </p>
                                 </div>
                             </div>
@@ -126,12 +122,12 @@
                                 <a target="_blank" rel="noopener noreferrer"
                                     href="https://coolify.io/docs/knowledge-base/server/firewall"
                                     class="button h-9 justify-center sm:min-w-28">
-                                    View docs
+                                    {{ __('View docs') }}
                                 </a>
                                 <button type="button"
                                     class="button h-9 justify-center bg-red-600! text-white! ring-1 ring-red-600/25 hover:bg-red-700! sm:min-w-40 dark:bg-red-500! dark:ring-red-500/30 dark:hover:bg-red-400!"
                                     @click="bannerVisible=false;disableRealtime()">
-                                    Acknowledge &amp; disable
+                                    {{ __('Acknowledge & disable') }}
                                 </button>
                             </div>
                         </div>
@@ -147,7 +143,7 @@
                     <div class="relative mx-auto flex w-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-modal transition-all duration-300 dark:border-white/[0.1] dark:bg-surface"
                         x-on:show-sponsorship-reminder.window="bannerVisible = true"
                         :class="reminders.sponsorship.compact ? 'max-w-sm gap-3 p-4' : 'max-w-2xl gap-5 p-5 sm:p-6'">
-                        <button type="button" aria-label="Dismiss sponsorship reminder"
+                        <button type="button" aria-label="{{ __('Dismiss sponsorship reminder') }}"
                             class="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.07] dark:hover:text-fg"
                             @click="bannerVisible=false;disableSponsorship()">
                             <x-reicon name="x" class="size-3.5" />
@@ -160,13 +156,13 @@
                             </div>
                             <div class="min-w-0">
                                 <h2 class="text-[15px]! leading-5! font-semibold! text-black dark:text-fg">
-                                    Love Coolify? Support our work.
+                                    {{ __('Love Coolify? Support our work.') }}
                                 </h2>
                                 <p x-show="!reminders.sponsorship.compact" x-transition.opacity
                                     class="mt-1 text-[12px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                    Coolify is profitable thanks to <span
-                                        class="font-semibold text-coollabs dark:text-warning">you</span>. Your support
-                                    helps us build more features and keep improving the project.
+                                    {!! __('Coolify is profitable thanks to :you. Your support helps us build more features and keep improving the project.', [
+                                        'you' => '<span class="font-semibold text-coollabs dark:text-warning">'.e(__('you')).'</span>',
+                                    ]) !!}
                                 </p>
                             </div>
                         </div>
@@ -189,7 +185,7 @@
                             <button x-show="!reminders.sponsorship.compact" x-transition.opacity type="button"
                                 class="h-9 cursor-pointer px-2 text-[12px] font-medium text-neutral-500 transition-colors hover:text-black sm:shrink-0 dark:text-fg-dim dark:hover:text-fg"
                                 @click="bannerVisible=false;disableSponsorship()">
-                                Maybe next time
+                                {{ __('Maybe next time') }}
                             </button>
                         </div>
                     </div>
@@ -205,38 +201,34 @@
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                         clip-rule="evenodd" />
                 </svg>
-                <span><span class="font-bold text-red-500">Subscription Error.</span> Something went wrong. Please try
-                    again or <a class="underline dark:text-white"
-                        href="{{ config('constants.urls.contact') }}" target="_blank">contact support</a>.</span>
+                <span><span class="font-bold text-red-500">{{ __('Subscription Error.') }}</span> {!! __('Something went wrong. Please try again or :contact.', [
+                    'contact' => '<a class="underline dark:text-white" href="'.e(config('constants.urls.contact')).'" target="_blank">'.e(__('contact support')).'</a>',
+                ]) !!}</span>
             </div>
         </x-banner>
     @endif
     @if (request()->query->get('success'))
-        <span x-init="$nextTick(() => window.toast('Welcome onboard!', {
+        <span x-init="$nextTick(() => window.toast(@js(__('Welcome onboard!')), {
             type: 'success',
-            description: 'Your subscription has been activated. It could take a few seconds before it is fully active.',
+            description: @js(__('Your subscription has been activated. It could take a few seconds before it is fully active.')),
             persistent: true,
         }))"></span>
     @endif
     @if (currentTeam()->subscriptionPastOverDue())
         <x-banner :closable=false>
-            <div><span class="font-bold text-red-500">WARNING:</span> Your subscription is in over-due. If your
-                latest
-                payment is not paid within a week, all automations <span class="font-bold text-red-500">will
-                    be deactivated</span>. Visit <a href="{{ route('subscription.show') }}" {{ wireNavigate() }}
-                    class="underline dark:text-white">/subscription</a> to check your subscription status or pay
-                your
-                invoice (or check your email for the invoice).
+            <div><span class="font-bold text-red-500">{{ __('WARNING:') }}</span> {!! __('Your subscription is in over-due. If your latest payment is not paid within a week, all automations :deactivated. Visit :link to check your subscription status or pay your invoice (or check your email for the invoice).', [
+                'deactivated' => '<span class="font-bold text-red-500">'.e(__('will be deactivated')).'</span>',
+                'link' => '<a href="'.e(route('subscription.show')).'" '.wireNavigate().' class="underline dark:text-white">/subscription</a>',
+            ]) !!}
             </div>
         </x-banner>
     @endif
     @if (currentTeam()->serverOverflow())
         <x-banner :closable=false>
-            <div><span class="font-bold text-red-500">WARNING:</span> The number of active servers exceeds the limit
-                covered by your payment. If not resolved, some of your servers <span class="font-bold text-red-500">will
-                    be deactivated</span>. Visit <a href="{{ route('subscription.show') }}" {{ wireNavigate() }}
-                    class="underline dark:text-white">/subscription</a> to update your subscription or remove some
-                servers.
+            <div><span class="font-bold text-red-500">{{ __('WARNING:') }}</span> {!! __('The number of active servers exceeds the limit covered by your payment. If not resolved, some of your servers :deactivated. Visit :link to update your subscription or remove some servers.', [
+                'deactivated' => '<span class="font-bold text-red-500">'.e(__('will be deactivated')).'</span>',
+                'link' => '<a href="'.e(route('subscription.show')).'" '.wireNavigate().' class="underline dark:text-white">/subscription</a>',
+            ]) !!}
             </div>
         </x-banner>
     @endif
@@ -246,7 +238,7 @@
                 <x-slot:customActions>
                     <div class="relative mx-auto flex w-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-modal transition-all duration-300 dark:border-white/[0.1] dark:bg-surface"
                         :class="reminders.notification.compact ? 'max-w-sm gap-3 p-4' : 'max-w-2xl gap-5 p-5 sm:p-6'">
-                        <button type="button" aria-label="Dismiss notifications reminder"
+                        <button type="button" aria-label="{{ __('Dismiss notifications reminder') }}"
                             class="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.07] dark:hover:text-fg"
                             @click="bannerVisible=false;disableNotification()">
                             <x-reicon name="x" class="size-3.5" />
@@ -259,15 +251,13 @@
                             </div>
                             <div class="min-w-0">
                                 <h2 class="text-[15px]! leading-5! font-semibold! text-black dark:text-fg">
-                                    No notifications enabled
+                                    {{ __('No notifications enabled') }}
                                 </h2>
                                 <p x-show="!reminders.notification.compact" x-transition.opacity
                                     class="mt-1 text-[12px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                    Enable at least one notification channel so you receive important alerts.
-                                    Visit
-                                    <a href="{{ route('notifications.email') }}" {{ wireNavigate() }}
-                                        class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90">notifications</a>
-                                    to get started.
+                                    {!! __('Enable at least one notification channel so you receive important alerts. Visit :link to get started.', [
+                                        'link' => '<a href="'.e(route('notifications.email')).'" '.wireNavigate().' class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90">'.e(__('notifications')).'</a>',
+                                    ]) !!}
                                 </p>
                             </div>
                         </div>
@@ -275,12 +265,12 @@
                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                             <a href="{{ route('notifications.email') }}" {{ wireNavigate() }}
                                 class="button h-9 justify-center sm:min-w-28">
-                                Open notifications
+                                {{ __('Open notifications') }}
                             </a>
                             <button x-show="!reminders.notification.compact" x-transition.opacity type="button"
                                 class="button h-9 justify-center sm:min-w-32"
                                 @click="bannerVisible=false;disableNotification()">
-                                Accept and close
+                                {{ __('Accept and close') }}
                             </button>
                         </div>
                     </div>

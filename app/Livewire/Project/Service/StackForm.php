@@ -56,9 +56,9 @@ class StackForm extends Component
         return array_merge(
             ValidationPatterns::combinedMessages(),
             [
-                'name.required' => 'The Name field is required.',
-                'dockerComposeRaw.required' => 'The Docker Compose Raw field is required.',
-                'dockerCompose.required' => 'The Docker Compose field is required.',
+                'name.required' => __('The Name field is required.'),
+                'dockerComposeRaw.required' => __('The Docker Compose Raw field is required.'),
+                'dockerCompose.required' => __('The Docker Compose field is required.'),
             ]
         );
     }
@@ -153,7 +153,7 @@ class StackForm extends Component
             $this->service->refresh()->update([
                 'connect_to_docker_network' => $this->connectToDockerNetwork,
             ]);
-            $this->dispatch('success', 'Service settings saved.');
+            $this->dispatch('success', __('Service settings saved.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -181,7 +181,7 @@ class StackForm extends Component
 
             $this->dispatch('refreshEnvs');
             $this->dispatch('refreshServices');
-            $notify && $this->dispatch('success', 'Service saved.');
+            $notify && $this->dispatch('success', __('Service saved.'));
         } catch (\Throwable $e) {
             // On error, refresh from database to restore clean state
             $this->service->refresh();

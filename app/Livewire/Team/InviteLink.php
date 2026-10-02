@@ -58,17 +58,17 @@ class InviteLink extends Component
             // Prevent privilege escalation: users cannot invite someone with higher privileges
             $userRole = auth()->user()->role();
             if (is_null($userRole) || ($userRole === 'member' && in_array($this->role, ['admin', 'owner']))) {
-                throw new \Exception('Members cannot invite admins or owners.');
+                throw new \Exception(__('Members cannot invite admins or owners.'));
             }
             if ($userRole === 'admin' && $this->role === 'owner') {
-                throw new \Exception('Admins cannot invite owners.');
+                throw new \Exception(__('Admins cannot invite owners.'));
             }
 
             $this->email = strtolower($this->email);
 
             $member_emails = currentTeam()->members()->get()->pluck('email');
             if ($member_emails->contains($this->email)) {
-                return handleError(livewire: $this, customErrorMessage: "$this->email is already a member of ".currentTeam()->name.'.');
+                return handleError(livewire: $this, customErrorMessage: __(':email is already a member of :team.', ['email' => $this->email, 'team' => currentTeam()->name]));
             }
             $uuid = new_public_id(32);
             $link = $this->invitationUrl('team.invitation.show', ['uuid' => $uuid]);
@@ -89,7 +89,7 @@ class InviteLink extends Component
             if (! is_null($invitation)) {
                 $invitationValid = $invitation->isValid();
                 if ($invitationValid) {
-                    return handleError(livewire: $this, customErrorMessage: "Pending invitation already exists for $this->email.");
+                    return handleError(livewire: $this, customErrorMessage: __('Pending invitation already exists for :email.', ['email' => $this->email]));
                 } else {
                     $invitation->delete();
                 }
@@ -118,18 +118,18 @@ class InviteLink extends Component
                 ]);
                 $mail->subject('You have been invited to '.currentTeam()->name.' on '.config('app.name').'.');
                 send_user_an_email($mail, $this->email);
-                $this->dispatch('success', 'Invitation sent via email.');
+                $this->dispatch('success', __('Invitation sent via email.'));
                 $this->dispatch('refreshInvitations');
 
                 return;
             } else {
-                $this->dispatch('success', 'Invitation link generated.');
+                $this->dispatch('success', __('Invitation link generated.'));
                 $this->dispatch('refreshInvitations');
             }
         } catch (\Throwable $e) {
             $error_message = $e->getMessage();
             if ($e->getCode() === '23505') {
-                $error_message = 'Invitation already sent.';
+                $error_message = __('Invitation already sent.');
             }
 
             return handleError(error: $e, livewire: $this, customErrorMessage: $error_message);

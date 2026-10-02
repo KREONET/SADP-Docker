@@ -1,19 +1,19 @@
 <div>
     <x-slot:title>
-        Team Audit Log | Coolify
+        {{ __('Team Audit Log') }} | Coolify
     </x-slot>
 
     <x-team.settings-layout>
         <div class="application-settings-form">
-            <x-application.settings-section title="Audit log"
-                description="Activity from the last 90 days for the current team." flush>
+            <x-application.settings-section :title="__('Audit log')"
+                :description="__('Activity from the last 90 days for the current team.')" flush>
                 <div
                     class="flex flex-col gap-2 border-b border-neutral-200 p-3 sm:flex-row sm:items-center dark:border-white/[0.08]">
                     <div class="relative min-w-0 flex-1 sm:max-w-sm">
                         <x-reicon name="search"
                             class="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-fg-faint" />
                         <input wire:model.live.debounce.300ms="search" type="search"
-                            placeholder="Search activity" aria-label="Search activity"
+                            placeholder="{{ __('Search activity') }}" aria-label="{{ __('Search activity') }}"
                             class="h-8! w-full rounded-lg! border-neutral-200! bg-white! py-0! pr-8! pl-8! text-[12px]! shadow-none! placeholder:text-neutral-400 focus:border-accent! focus:ring-0! dark:border-white/[0.08]! dark:bg-white/[0.035]! dark:text-fg! dark:placeholder:text-fg-faint">
                     </div>
                     <div class="grid grid-cols-2 gap-2 sm:flex">
@@ -23,11 +23,11 @@
                         </div>
                         <div class="sm:w-36">
                             <x-forms.listbox id="source" live canGate="viewAdmin" :canResource="currentTeam()" :options="[
-                                ['value' => 'all', 'label' => 'All sources'],
-                                ['value' => 'ui', 'label' => 'Web UI'],
+                                ['value' => 'all', 'label' => __('All sources')],
+                                ['value' => 'ui', 'label' => __('Web UI')],
                                 ['value' => 'api', 'label' => 'API'],
                                 ['value' => 'mcp', 'label' => 'MCP'],
-                                ['value' => 'webhook', 'label' => 'Webhook'],
+                                ['value' => 'webhook', 'label' => __('Webhook')],
                             ]" />
                         </div>
                     </div>
@@ -38,17 +38,17 @@
                         <div class="data-table transition-opacity" wire:loading.class="opacity-50 pointer-events-none"
                             wire:target="search,action,source,setPage,previousPage,nextPage">
                         <div class="grid min-w-[760px] grid-cols-[14rem_minmax(0,1fr)_12rem_9rem] gap-4 border-b border-neutral-200 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:border-white/[0.07] dark:text-fg-faint">
-                            <span>Actor</span>
-                            <span>Activity</span>
-                            <span>Source</span>
-                            <span class="text-right">Time</span>
+                            <span>{{ __('Actor') }}</span>
+                            <span>{{ __('Activity') }}</span>
+                            <span>{{ __('Source') }}</span>
+                            <span class="text-right">{{ __('Time') }}</span>
                         </div>
                         @foreach ($events as $event)
                             <div wire:key="audit-event-{{ $event->id }}"
                                 class="grid min-w-[760px] grid-cols-[14rem_minmax(0,1fr)_12rem_9rem] gap-4 border-b border-neutral-200 px-4 py-3 last:border-b-0 dark:border-white/[0.07]">
                                 <div class="min-w-0">
                                     <div class="truncate text-[12px] font-medium text-black dark:text-fg">
-                                        {{ $event->actor_name ?: Str::headline($event->actor_type) }}
+                                        {{ $event->actor_name ?: __(Str::headline($event->actor_type)) }}
                                     </div>
                                     @if ($event->actor_email)
                                         <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">
@@ -57,8 +57,8 @@
                                     @endif
                                     @if ($event->actor_token_name)
                                         <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint"
-                                            title="Token: {{ $event->actor_token_name }}">
-                                            Token: {{ $event->actor_token_name }}
+                                            title="{{ __('Token: :name', ['name' => $event->actor_token_name]) }}">
+                                            {{ __('Token: :name', ['name' => $event->actor_token_name]) }}
                                         </div>
                                     @endif
                                 </div>
@@ -74,7 +74,7 @@
                                     <span class="rounded-md bg-neutral-100 px-2 py-1 dark:bg-white/[0.06]">
                                         {{ Str::upper($event->source) }}
                                     </span>
-                                    <span>{{ Str::headline($event->action) }}</span>
+                                    <span>{{ __(Str::headline($event->action)) }}</span>
                                 </div>
                                 <time datetime="{{ $event->created_at->toIso8601String() }}"
                                     title="{{ $event->created_at->toDayDateTimeString() }}"
@@ -96,8 +96,8 @@
                         </x-slot:pageSize>
                     </x-table-pagination>
                 @else
-                    <x-empty title="No activity found"
-                        description="Team actions will appear here as they happen." icon-name="time-back" size="sm" />
+                    <x-empty :title="__('No activity found')"
+                        :description="__('Team actions will appear here as they happen.')" icon-name="time-back" size="sm" />
                 @endif
             </x-application.settings-section>
         </div>

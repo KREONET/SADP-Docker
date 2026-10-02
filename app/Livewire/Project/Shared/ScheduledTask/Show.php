@@ -143,7 +143,7 @@ class Show extends Component
             $this->authorize('update', $this->resource);
             $this->authorize('update', $this->task);
             $this->syncData(true);
-            $this->dispatch('success', 'Scheduled task updated.');
+            $this->dispatch('success', __('Scheduled task updated.'));
             $this->refreshTasks();
         } catch (\Exception $e) {
             return handleError($e);
@@ -156,7 +156,7 @@ class Show extends Component
             $this->authorize('update', $this->resource);
             $this->authorize('update', $this->task);
             $this->syncData(true);
-            $this->dispatch('success', 'Scheduled task updated.');
+            $this->dispatch('success', __('Scheduled task updated.'));
         } catch (\Exception $e) {
             return handleError($e, $this);
         }
@@ -201,7 +201,7 @@ class Show extends Component
                 'scheduled_task_uuid' => $this->task->uuid,
                 'scheduled_task_name' => $this->task->name,
             ]);
-            $this->dispatch('success', 'Scheduled task executed.');
+            $this->dispatch('success', __('Scheduled task executed.'));
         } catch (\Exception $e) {
             return handleError($e);
         }

@@ -130,20 +130,22 @@ class BackupExecutions extends Component
             if ($storage?->team_id !== currentTeam()->id) {
                 $storage = null;
             }
-            $storageLabel = $storage ? $storage->name.' (bucket: '.$storage->bucket.')' : 'Unavailable';
+            $storageLabel = $storage ? __(':name (bucket: :bucket)', ['name' => $storage->name, 'bucket' => $storage->bucket]) : __('Unavailable');
             if ($isDatabase && ! $schedule->save_s3) {
-                $storageLabel = 'Not configured';
+                $storageLabel = __('Not configured');
             } elseif (! $isDatabase && ! $execution->s3_storage_id && ! $execution->s3_uploaded && ! $execution->s3_storage_deleted) {
-                $storageLabel = 'No destination recorded';
+                $storageLabel = __('No destination recorded');
             }
 
             return [
                 'id' => $row->type.':'.$execution->id,
                 'uuid' => $execution->uuid,
                 'target' => $isDatabase ? ($schedule->database->human_name ?: $schedule->database->name) : $schedule->targetName(),
-                'type' => $isDatabase ? 'Database' : $schedule->targetType(),
+                'type' => $isDatabase ? __('Database') : __($schedule->targetType()),
                 'schedule' => $schedule->frequency,
-                's3_tooltip' => ($isDatabase ? 'Current schedule S3 storage: ' : 'S3 storage: ').$storageLabel,
+                's3_tooltip' => $isDatabase
+                    ? __('Current schedule S3 storage: :storage', ['storage' => $storageLabel])
+                    : __('S3 storage: :storage', ['storage' => $storageLabel]),
                 'status' => $execution->status,
                 'started_at' => $execution->created_at,
                 'size' => $execution->size,

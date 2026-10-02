@@ -37,28 +37,40 @@ class ResourceLimits extends Component
         'limitsCpuShares' => 'nullable|integer|min:0',
     ];
 
-    protected $validationAttributes = [
-        'limitsMemory' => 'memory',
-        'limitsMemorySwap' => 'swap',
-        'limitsMemorySwappiness' => 'swappiness',
-        'limitsMemoryReservation' => 'reservation',
-        'limitsCpus' => 'cpus',
-        'limitsCpuset' => 'cpuset',
-        'limitsCpuShares' => 'cpu shares',
-    ];
+    /**
+     * @return array<string, string>
+     */
+    protected function validationAttributes(): array
+    {
+        return [
+            'limitsMemory' => __('memory'),
+            'limitsMemorySwap' => __('swap'),
+            'limitsMemorySwappiness' => __('swappiness'),
+            'limitsMemoryReservation' => __('reservation'),
+            'limitsCpus' => __('cpus'),
+            'limitsCpuset' => __('cpuset'),
+            'limitsCpuShares' => __('cpu shares'),
+        ];
+    }
 
-    protected $messages = [
-        'limitsMemory.regex' => 'Maximum Memory Limit must be a number followed by a unit (b, k, m, g). Example: 256m, 1g. Use 0 for unlimited.',
-        'limitsMemorySwap.regex' => 'Maximum Swap Limit must be a number followed by a unit (b, k, m, g). Example: 256m, 1g. Use 0 for unlimited.',
-        'limitsMemoryReservation.regex' => 'Soft Memory Limit must be a number followed by a unit (b, k, m, g). Example: 256m, 1g. Use 0 for unlimited.',
-        'limitsCpus.regex' => 'Number of CPUs must be a number (integer or decimal). Example: 0.5, 2.',
-        'limitsCpuset.regex' => 'CPU sets must be a comma-separated list of CPU numbers or ranges. Example: 0-2 or 0,1,3.',
-        'limitsMemorySwappiness.integer' => 'Swappiness must be a whole number between 0 and 100.',
-        'limitsMemorySwappiness.min' => 'Swappiness must be between 0 and 100.',
-        'limitsMemorySwappiness.max' => 'Swappiness must be between 0 and 100.',
-        'limitsCpuShares.integer' => 'CPU Weight must be a whole number.',
-        'limitsCpuShares.min' => 'CPU Weight must be a positive number.',
-    ];
+    /**
+     * @return array<string, string>
+     */
+    protected function messages(): array
+    {
+        return [
+            'limitsMemory.regex' => __('Maximum Memory Limit must be a number followed by a unit (b, k, m, g). Example: 256m, 1g. Use 0 for unlimited.'),
+            'limitsMemorySwap.regex' => __('Maximum Swap Limit must be a number followed by a unit (b, k, m, g). Example: 256m, 1g. Use 0 for unlimited.'),
+            'limitsMemoryReservation.regex' => __('Soft Memory Limit must be a number followed by a unit (b, k, m, g). Example: 256m, 1g. Use 0 for unlimited.'),
+            'limitsCpus.regex' => __('Number of CPUs must be a number (integer or decimal). Example: 0.5, 2.'),
+            'limitsCpuset.regex' => __('CPU sets must be a comma-separated list of CPU numbers or ranges. Example: 0-2 or 0,1,3.'),
+            'limitsMemorySwappiness.integer' => __('Swappiness must be a whole number between 0 and 100.'),
+            'limitsMemorySwappiness.min' => __('Swappiness must be between 0 and 100.'),
+            'limitsMemorySwappiness.max' => __('Swappiness must be between 0 and 100.'),
+            'limitsCpuShares.integer' => __('CPU Weight must be a whole number.'),
+            'limitsCpuShares.min' => __('CPU Weight must be a positive number.'),
+        ];
+    }
 
     /**
      * Sync data between component properties and model
@@ -125,7 +137,7 @@ class ResourceLimits extends Component
 
             $this->syncData(true);
             $this->resource->save();
-            $this->dispatch('success', 'Resource limits updated.');
+            $this->dispatch('success', __('Resource limits updated.'));
         } catch (ValidationException $e) {
             foreach ($e->validator->errors()->all() as $message) {
                 $this->dispatch('error', $message);

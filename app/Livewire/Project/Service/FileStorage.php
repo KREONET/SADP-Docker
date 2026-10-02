@@ -149,7 +149,7 @@ class FileStorage extends Component
             $this->authorize('update', $this->resource);
 
             if ($this->fileStorage->is_host_file) {
-                throw new \Exception('Host file mounts are bind-only and cannot be converted.');
+                throw new \Exception(__('Host file mounts are bind-only and cannot be converted.'));
             }
 
             $this->fileStorage->deleteStorageOnServer();
@@ -171,12 +171,12 @@ class FileStorage extends Component
             $this->authorize('update', $this->resource);
 
             if ($this->fileStorage->is_host_file) {
-                throw new \Exception('Host file mounts are bind-only and cannot be loaded from the server.');
+                throw new \Exception(__('Host file mounts are bind-only and cannot be loaded from the server.'));
             }
 
             $this->fileStorage->loadStorageOnServer();
             $this->syncData();
-            $this->dispatch('success', 'File storage loaded from server.');
+            $this->dispatch('success', __('File storage loaded from server.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         } finally {
@@ -190,11 +190,11 @@ class FileStorage extends Component
             $this->authorize('update', $this->resource);
 
             if ($this->fileStorage->scheduledBackups()->exists()) {
-                throw new \RuntimeException('Delete this directory backup schedule and its archives before converting it to a file.');
+                throw new \RuntimeException(__('Delete this directory backup schedule and its archives before converting it to a file.'));
             }
 
             if ($this->fileStorage->is_host_file) {
-                throw new \Exception('Host file mounts are bind-only and cannot be converted.');
+                throw new \Exception(__('Host file mounts are bind-only and cannot be converted.'));
             }
 
             $this->fileStorage->deleteStorageOnServer();
@@ -217,24 +217,24 @@ class FileStorage extends Component
         $this->authorize('update', $this->resource);
 
         if (! verifyPasswordConfirmation($password, $this)) {
-            return 'The provided password is incorrect.';
+            return __('The provided password is incorrect.');
         }
 
         if ($this->fileStorage->scheduledBackups()->exists()) {
-            $this->dispatch('error', 'Delete this directory backup schedule and its archives before deleting the directory.');
+            $this->dispatch('error', __('Delete this directory backup schedule and its archives before deleting the directory.'));
 
             return false;
         }
 
         try {
-            $message = 'File deleted.';
+            $message = __('File deleted.');
             if ($this->fileStorage->is_directory) {
-                $message = 'Directory deleted.';
+                $message = __('Directory deleted.');
             } elseif ($this->fileStorage->is_host_file) {
-                $message = 'Host file mount removed.';
+                $message = __('Host file mount removed.');
             }
             if ($this->permanently_delete && ! $this->fileStorage->is_host_file) {
-                $message = 'Directory deleted from the server.';
+                $message = __('Directory deleted from the server.');
                 $this->fileStorage->deleteStorageOnServer();
             }
             $this->fileStorage->delete();
@@ -254,13 +254,13 @@ class FileStorage extends Component
         $this->authorize('update', $this->resource);
 
         if ($this->fileStorage->is_host_file) {
-            $this->dispatch('error', 'Host file mounts are bind-only and cannot be edited from the UI.');
+            $this->dispatch('error', __('Host file mounts are bind-only and cannot be edited from the UI.'));
 
             return;
         }
 
         if ($this->fileStorage->is_too_large) {
-            $this->dispatch('error', 'File on server is too large to edit from the UI.');
+            $this->dispatch('error', __('File on server is too large to edit from the UI.'));
 
             return;
         }
@@ -277,7 +277,7 @@ class FileStorage extends Component
             $this->fileStorage->is_preview_suffix_enabled = $this->isPreviewSuffixEnabled;
             $this->fileStorage->save();
             $this->fileStorage->saveStorageOnServer();
-            $this->dispatch('success', 'File updated.');
+            $this->dispatch('success', __('File updated.'));
         } catch (\Throwable $e) {
             $this->fileStorage->setRawAttributes($original);
             $this->fileStorage->save();
@@ -291,31 +291,31 @@ class FileStorage extends Component
     {
         $this->authorize('update', $this->resource);
         if ($this->fileStorage->is_host_file) {
-            $this->dispatch('error', 'Host file mounts are bind-only and cannot be edited from the UI.');
+            $this->dispatch('error', __('Host file mounts are bind-only and cannot be edited from the UI.'));
 
             return;
         }
 
         if ($this->fileStorage->is_too_large) {
-            $this->dispatch('error', 'File on server is too large to edit from the UI.');
+            $this->dispatch('error', __('File on server is too large to edit from the UI.'));
 
             return;
         }
         $this->syncData(true);
-        $this->dispatch('success', 'File updated.');
+        $this->dispatch('success', __('File updated.'));
     }
 
     public function render()
     {
         return view('livewire.project.service.file-storage', [
             'directoryDeletionCheckboxes' => [
-                ['id' => 'permanently_delete', 'label' => 'The selected directory and all its contents will be permanently deleted from the server.'],
+                ['id' => 'permanently_delete', 'label' => __('The selected directory and all its contents will be permanently deleted from the server.')],
             ],
             'fileDeletionCheckboxes' => [
-                ['id' => 'permanently_delete', 'label' => 'The selected file will be permanently deleted from the server.'],
+                ['id' => 'permanently_delete', 'label' => __('The selected file will be permanently deleted from the server.')],
             ],
             'hostFileDeletionCheckboxes' => [
-                ['id' => 'permanently_delete', 'label' => 'Only the mount configuration will be removed. The host file will not be deleted.'],
+                ['id' => 'permanently_delete', 'label' => __('Only the mount configuration will be removed. The host file will not be deleted.')],
             ],
         ]);
     }

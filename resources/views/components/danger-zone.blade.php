@@ -8,7 +8,7 @@
             <span
                 class="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2.5 py-0.5 text-xs font-medium text-neutral-700 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-fg">
                 <span class="size-1.5 rounded-full bg-red-500"></span>
-                Permanent
+                {{ __('Permanent') }}
             </span>
         </div>
         <div class="mt-2 max-w-2xl space-y-2 text-[13px] leading-5 text-neutral-600 dark:text-fg-dim">

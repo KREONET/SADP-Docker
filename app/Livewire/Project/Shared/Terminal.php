@@ -58,13 +58,13 @@ class Terminal extends Component
             $server = Server::ownedByCurrentTeam()->whereUuid($serverUuid)->firstOrFail();
             $this->authorize('view', $server);
         } catch (AuthorizationException|ModelNotFoundException) {
-            $this->failTerminalSession(self::NOT_ALLOWED_MESSAGE);
+            $this->failTerminalSession(__(self::NOT_ALLOWED_MESSAGE));
 
             return;
         }
 
         if (! $server->isTerminalEnabled() || $server->isForceDisabled()) {
-            $this->failTerminalSession('Terminal access is disabled on this server.');
+            $this->failTerminalSession(__('Terminal access is disabled on this server.'));
 
             return;
         }
@@ -72,7 +72,7 @@ class Terminal extends Component
         if ($isContainer) {
             // Validate container identifier format (alphanumeric, dashes, and underscores only)
             if (! is_string($identifier) || ! ValidationPatterns::isValidContainerName($identifier)) {
-                $this->failTerminalSession('The container name is not valid.');
+                $this->failTerminalSession(__('The container name is not valid.'));
 
                 return;
             }
@@ -80,7 +80,7 @@ class Terminal extends Component
             // Verify container exists and belongs to the user's team
             $status = getContainerStatus($server, $identifier);
             if ($status !== 'running') {
-                $this->failTerminalSession('The container is not running.');
+                $this->failTerminalSession(__('The container is not running.'));
 
                 return;
             }
@@ -88,7 +88,7 @@ class Terminal extends Component
             // Check shell availability
             $this->hasShell = $this->checkShellAvailability($server, $identifier);
             if (! $this->hasShell) {
-                $this->failTerminalSession('No shell is available in this container.');
+                $this->failTerminalSession(__('No shell is available in this container.'));
 
                 return;
             }
@@ -109,10 +109,10 @@ class Terminal extends Component
             || ($exception instanceof HttpExceptionInterface && in_array($exception->getStatusCode(), [403, 404], true));
 
         if ($isDenied) {
-            return self::NOT_ALLOWED_MESSAGE;
+            return __(self::NOT_ALLOWED_MESSAGE);
         }
 
-        return $exception->getMessage() ?: 'Could not start the terminal session.';
+        return $exception->getMessage() ?: __('Could not start the terminal session.');
     }
 
     private function failTerminalSession(string $message): void

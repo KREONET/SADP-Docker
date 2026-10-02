@@ -20,6 +20,7 @@ use App\Livewire\Notifications\Pushover as NotificationPushover;
 use App\Livewire\Notifications\Slack as NotificationSlack;
 use App\Livewire\Notifications\Telegram as NotificationTelegram;
 use App\Livewire\Notifications\Webhook as NotificationWebhook;
+use App\Livewire\OpenSourceLicenses;
 use App\Livewire\Platform\Applications as PlatformApplications;
 use App\Livewire\Platform\Dashboard as PlatformDashboard;
 use App\Livewire\Platform\Groups as PlatformGroups;
@@ -183,19 +184,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/subscription', SubscriptionShow::class)->name('subscription.show');
     Route::get('/subscription/new', SubscriptionIndex::class)->name('subscription.index');
 
-    Route::get('/settings', SettingsIndex::class)->name('settings.index');
-    Route::get('/settings/advanced', SettingsAdvanced::class)->name('settings.advanced');
-    Route::get('/settings/updates', SettingsUpdates::class)->name('settings.updates');
+    // Instance settings change the whole instance, so only platform admins may open them.
+    Route::middleware('can:accessPlatformAdmin')->group(function () {
+        Route::get('/settings', SettingsIndex::class)->name('settings.index');
+        Route::get('/settings/advanced', SettingsAdvanced::class)->name('settings.advanced');
+        Route::get('/settings/updates', SettingsUpdates::class)->name('settings.updates');
 
-    Route::get('/settings/backup', SettingsBackup::class)->name('settings.backup');
-    Route::get('/settings/email', SettingsEmail::class)->name('settings.email');
-    Route::get('/settings/oauth', SettingsOauth::class)->name('settings.oauth');
-    Route::get('/settings/oauth/{provider}', SettingsOauth::class)
-        ->where('provider', '[A-Za-z0-9_-]+')
-        ->name('settings.oauth.provider');
+        Route::get('/settings/backup', SettingsBackup::class)->name('settings.backup');
+        Route::get('/settings/email', SettingsEmail::class)->name('settings.email');
+        Route::get('/settings/oauth', SettingsOauth::class)->name('settings.oauth');
+        Route::get('/settings/oauth/{provider}', SettingsOauth::class)
+            ->where('provider', '[A-Za-z0-9_-]+')
+            ->name('settings.oauth.provider');
+    });
     Route::get('/profile', ProfileIndex::class)->name('profile');
     Route::get('/profile/avatar', ProfileAvatarController::class)->name('profile.avatar');
     Route::get('/profile/appearance', ProfileAppearance::class)->name('profile.appearance');
+    Route::get('/open-source-licenses', OpenSourceLicenses::class)->name('open-source-licenses');
 
     Route::prefix('tags')->group(function () {
         Route::get('/{tagName?}', TagsShow::class)->name('tags.show');

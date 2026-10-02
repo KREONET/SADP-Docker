@@ -128,11 +128,11 @@ class Executions extends Component
         }
 
         if (! $this->canReadOutput()) {
-            return collect(['Hidden (only admins can view)']);
+            return collect([__('Hidden (only admins can view)')]);
         }
 
         if (! $this->selectedExecution->message) {
-            return collect(['Waiting for task output...']);
+            return collect([__('Waiting for task output...')]);
         }
 
         $lines = collect(explode("\n", $this->selectedExecution->message));

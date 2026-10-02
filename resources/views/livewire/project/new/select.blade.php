@@ -1,11 +1,11 @@
 <div class="application-settings-form" x-data x-init="$wire.loadServers">
     <div x-data="searchResources()">
         @if ($current_step === 'type')
-            <x-application.settings-section title="Choose a resource" flush>
+            <x-application.settings-section :title="__('Choose a resource')" flush>
                 <x-slot:actions>
                     <button type="button" class="button" :disabled="loading" @click="loadResources">
                         <x-reicon name="refresh" class="size-3.5" />
-                        Reload
+                        {{ __('Reload') }}
                     </button>
                 </x-slot:actions>
                 <div
@@ -14,7 +14,7 @@
                         <x-reicon name="search"
                             class="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-fg-faint" />
                         <input autocomplete="off" x-ref="searchInput" x-model="search" type="search"
-                            placeholder="Search resources"
+                            placeholder="{{ __('Search resources') }}"
                             class="h-8! w-full rounded-lg! border-neutral-200! bg-white! py-0! pr-8! pl-8! text-[12px]! shadow-none! placeholder:text-neutral-400 focus:border-accent! focus:ring-0! dark:border-white/[0.08]! dark:bg-white/[0.035]! dark:text-fg! dark:placeholder:text-fg-faint"
                             @keydown.window.slash.prevent="$refs.searchInput.focus()">
                     </div>
@@ -24,11 +24,11 @@
                             <x-slot:trigger><button type="button" class="button"
                                 aria-haspopup="listbox" :aria-expanded="open">
                                 <x-reicon name="filter" class="size-3.5" />
-                                Filter
+                                {{ __('Filter') }}
                             </button></x-slot:trigger>
                                 <div
                                     class="px-2 py-1 text-[10px] font-semibold tracking-wide text-neutral-400 uppercase dark:text-fg-faint">
-                                    Resource type
+                                    {{ __('Resource type') }}
                                 </div>
                                 <template x-for="option in resourceTypeOptions" :key="option.value">
                                     <button type="button" class="listbox-option" role="option"
@@ -47,9 +47,9 @@
                                 @click="categoryOpen = !categoryOpen; $nextTick(() => categoryOpen && $refs.categorySearchInput.focus())"
                                 aria-haspopup="listbox" aria-controls="resource-category-options"
                                 :aria-expanded="categoryOpen"
-                                :title="selectedCategory === '' ? 'All categories' : selectedCategory">
+                                :title="selectedCategory === '' ? @js(__('All categories')) : selectedCategory">
                                 <span class="listbox-trigger-label capitalize"
-                                    x-text="selectedCategory === '' ? 'All categories' : selectedCategory"></span>
+                                    x-text="selectedCategory === '' ? @js(__('All categories')) : selectedCategory"></span>
                                 <svg class="size-3.5 shrink-0 opacity-60" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -57,12 +57,12 @@
                                 </svg>
                             </button>
                             <div id="resource-category-options" x-show="categoryOpen" x-cloak
-                                x-transition.opacity.duration.120ms role="listbox" aria-label="Service category"
+                                x-transition.opacity.duration.120ms role="listbox" aria-label="{{ __('Service category') }}"
                                 @keydown.escape.stop="closeCategoryFilter(true)"
                                 class="listbox-panel left-auto! right-0! z-[90]! min-w-56!">
                                 <div class="border-b border-neutral-200 p-2 dark:border-white/[0.08]">
                                     <input type="search" x-ref="categorySearchInput" x-model="categorySearch"
-                                        placeholder="Search categories"
+                                        placeholder="{{ __('Search categories') }}"
                                         class="h-8! w-full rounded-md! border-neutral-200! bg-neutral-50! px-2.5! py-0! text-[12px]! shadow-none! focus:ring-0! dark:border-white/[0.08]! dark:bg-white/[0.04]! dark:text-fg!"
                                         @click.stop>
                                 </div>
@@ -70,7 +70,7 @@
                                     <button type="button" class="listbox-option" role="option"
                                         :aria-selected="selectedCategory === ''"
                                         @click="selectedCategory = ''; categorySearch = ''; categoryOpen = false">
-                                        <span>All categories</span>
+                                        <span>{{ __('All categories') }}</span>
                                         <x-reicon name="check-circle" class="size-3.5 text-accent"
                                             x-show="selectedCategory === ''" />
                                     </button>
@@ -93,7 +93,7 @@
             </x-application.settings-section>
 
             <div x-show="loading" class="flex items-center justify-center py-8">
-                <x-loading text="Loading resources..." />
+                <x-loading :text="__('Loading resources...')" />
             </div>
             <div x-show="!loading" class="mt-6 flex flex-col gap-6">
                 <section
@@ -102,13 +102,13 @@
                     <div class="application-settings-section-header">
                         <div class="flex items-center gap-2">
                             <x-reicon name="globe" class="size-4 text-neutral-400 dark:text-fg-faint" />
-                            <h2>Applications</h2>
+                            <h2>{{ __('Applications') }}</h2>
                         </div>
                     </div>
                     <div
                         class="application-settings-section-body grid grid-cols-1 justify-start gap-3 text-left md:grid-cols-2 xl:grid-cols-3">
                         <template x-for="application in filteredGitBasedApplications" :key="application.name">
-                            <article role="button" tabindex="0" :aria-label="'Deploy ' + application.name"
+                            <article role="button" tabindex="0" :aria-label="@js(__('Deploy')) + ' ' + application.name"
                                 @click="setType(application.id)" @keydown.enter.self.prevent="setType(application.id)"
                                 @keydown.space.self.prevent="setType(application.id)"
                                 class="group flex min-h-48 cursor-pointer flex-col rounded-xl border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent dark:border-white/[0.08] dark:bg-white/[0.05] dark:hover:border-white/[0.14]">
@@ -131,7 +131,7 @@
                                         <h3 class="truncate text-[13px] font-semibold text-black dark:text-fg"
                                             x-text="application.name"></h3>
                                         <p class="mt-0.5 text-[11px] text-neutral-500 dark:text-fg-faint">
-                                            Git source
+                                            {{ __('Git source') }}
                                         </p>
                                     </div>
                                 </div>
@@ -143,10 +143,10 @@
                                     class="mt-auto flex items-center gap-1.5 border-t border-neutral-200 pt-3 dark:border-white/[0.07]">
                                     <a class="button" :href="application.documentation" target="_blank"
                                         rel="noopener noreferrer" @click.stop>
-                                        Docs
+                                        {{ __('Docs') }}
                                     </a>
                                     <span class="button button-highlighted ml-auto">
-                                        Deploy
+                                        {{ __('Deploy') }}
                                         <x-reicon name="arrow-right" class="size-3.5" />
                                     </span>
                                 </div>
@@ -154,7 +154,7 @@
                         </template>
 
                         <template x-for="application in filteredDockerBasedApplications" :key="application.name">
-                            <article role="button" tabindex="0" :aria-label="'Deploy ' + application.name"
+                            <article role="button" tabindex="0" :aria-label="@js(__('Deploy')) + ' ' + application.name"
                                 @click="setType(application.id)" @keydown.enter.self.prevent="setType(application.id)"
                                 @keydown.space.self.prevent="setType(application.id)"
                                 class="group flex min-h-48 cursor-pointer flex-col rounded-xl border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent dark:border-white/[0.08] dark:bg-white/[0.05] dark:hover:border-white/[0.14]">
@@ -167,7 +167,7 @@
                                         <h3 class="truncate text-[13px] font-semibold text-black dark:text-fg"
                                             x-text="application.name"></h3>
                                         <p class="mt-0.5 text-[11px] text-neutral-500 dark:text-fg-faint">
-                                            Docker source
+                                            {{ __('Docker source') }}
                                         </p>
                                     </div>
                                 </div>
@@ -179,10 +179,10 @@
                                     class="mt-auto flex items-center gap-1.5 border-t border-neutral-200 pt-3 dark:border-white/[0.07]">
                                     <a class="button" :href="application.documentation" target="_blank"
                                         rel="noopener noreferrer" @click.stop>
-                                        Docs
+                                        {{ __('Docs') }}
                                     </a>
                                     <span class="button button-highlighted ml-auto">
-                                        Deploy
+                                        {{ __('Deploy') }}
                                         <x-reicon name="arrow-right" class="size-3.5" />
                                     </span>
                                 </div>
@@ -197,13 +197,13 @@
                     <div class="application-settings-section-header">
                         <div class="flex items-center gap-2">
                             <x-reicon name="database" class="size-4 text-neutral-400 dark:text-fg-faint" />
-                            <h2>Databases</h2>
+                            <h2>{{ __('Databases') }}</h2>
                         </div>
                     </div>
                     <div
                         class="application-settings-section-body grid grid-cols-1 justify-start gap-3 text-left md:grid-cols-2 xl:grid-cols-3">
                         <template x-for="database in filteredDatabases" :key="database.id">
-                            <article role="button" tabindex="0" :aria-label="'Deploy ' + database.name"
+                            <article role="button" tabindex="0" :aria-label="@js(__('Deploy')) + ' ' + database.name"
                                 @click="setType(database.id)" @keydown.enter.self.prevent="setType(database.id)"
                                 @keydown.space.self.prevent="setType(database.id)"
                                 class="group flex min-h-48 cursor-pointer flex-col rounded-xl border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent dark:border-white/[0.08] dark:bg-white/[0.05] dark:hover:border-white/[0.14]">
@@ -231,7 +231,7 @@
                                         <h3 class="truncate text-[13px] font-semibold text-black dark:text-fg"
                                             x-text="database.name"></h3>
                                         <template x-if="database.experimental">
-                                            <x-status-badge status="Experimental" type="warning" class="shrink-0" />
+                                            <x-status-badge :status="__('Experimental')" type="warning" class="shrink-0" />
                                         </template>
                                     </div>
                                 </div>
@@ -243,14 +243,14 @@
                                     class="mt-auto flex items-center gap-1.5 border-t border-neutral-200 pt-3 dark:border-white/[0.07]">
                                     <a :href="databaseDocsUrl(database)" target="_blank" rel="noopener noreferrer"
                                         class="button" @click.stop>
-                                        Docs
+                                        {{ __('Docs') }}
                                     </a>
                                     <a :href="databaseWebsiteUrl(database)" target="_blank" rel="noopener noreferrer"
                                         class="button" @click.stop>
-                                        Website
+                                        {{ __('Website') }}
                                     </a>
                                     <span class="button button-highlighted ml-auto">
-                                        Deploy
+                                        {{ __('Deploy') }}
                                         <x-reicon name="arrow-right" class="size-3.5" />
                                     </span>
                                 </div>
@@ -265,24 +265,23 @@
                     <div class="application-settings-section-header" x-init="loadResources">
                         <div class="flex items-center gap-2">
                             <x-reicon name="layers" class="size-4 text-neutral-400 dark:text-fg-faint" />
-                            <h2>Services</h2>
+                            <h2>{{ __('Services') }}</h2>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <div x-show="serviceTemplatesLastUpdated"
                                 class="text-[11px] text-neutral-500 dark:text-fg-faint">
-                                Updated <span x-text="serviceTemplatesLastUpdated"></span>
+                                {{ __('Updated') }} <span x-text="serviceTemplatesLastUpdated"></span>
                             </div>
                         </div>
                     </div>
                     <div class="application-settings-section-body">
-                        <x-callout type="info" title="Trademarks policy" class="mb-4">
-                            The respective trademarks mentioned here are owned by the respective companies, and use of them
-                            does not imply any affiliation or endorsement.
+                        <x-callout type="info" :title="__('Trademarks policy')" class="mb-4">
+                            {{ __('The respective trademarks mentioned here are owned by the respective companies, and use of them does not imply any affiliation or endorsement.') }}
                         </x-callout>
 
                         <div class="grid grid-cols-1 justify-start gap-3 text-left md:grid-cols-2 xl:grid-cols-3">
                             <template x-for="service in filteredServices" :key="service.name">
-                                <article role="button" tabindex="0" :aria-label="'Deploy ' + service.name"
+                                <article role="button" tabindex="0" :aria-label="@js(__('Deploy')) + ' ' + service.name"
                                     @click="setType('one-click-service-' + service.id)"
                                     @keydown.enter.self.prevent="setType('one-click-service-' + service.id)"
                                     @keydown.space.self.prevent="setType('one-click-service-' + service.id)"
@@ -297,17 +296,17 @@
                                             <h3 class="truncate text-[13px] font-semibold text-black dark:text-fg"
                                                 x-text="service.name"></h3>
                                             <p class="mt-0.5 truncate text-[11px] text-neutral-500 dark:text-fg-faint">
-                                                <span x-show="service.templateLastUpdated">Updated </span>
-                                                <span x-text="service.templateLastUpdated || 'Template ready'"></span>
+                                                <span x-show="service.templateLastUpdated">{{ __('Updated') }} </span>
+                                                <span x-text="service.templateLastUpdated || @js(__('Template ready'))"></span>
                                             </p>
                                         </div>
                                         <span x-show="service.amd_only || service.arm_only"
                                             class="shrink-0 rounded-md border border-amber-300/50 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:border-warning/20 dark:bg-warning/10 dark:text-warning"
-                                            x-text="service.arm_only ? 'ARM only' : 'AMD only'"></span>
+                                            x-text="service.arm_only ? @js(__('ARM only')) : @js(__('AMD only'))"></span>
                                     </div>
 
                                     <p class="mt-3 line-clamp-2 text-[12px] leading-5 text-neutral-600 dark:text-fg-dim"
-                                        x-text="service.slogan || service.description || 'Deploy this service with a ready-to-use Coolify template.'">
+                                        x-text="service.slogan || service.description || @js(__('Deploy this service with a ready-to-use Coolify template.'))">
                                     </p>
 
                                     <div
@@ -315,14 +314,14 @@
                                         <a :href="getDocLink(service) || coolifyDocsUrl(service)" target="_blank"
                                             rel="noopener noreferrer" @mouseenter="resolveDocLink(service)" @click.stop
                                             class="button" :class="{ 'opacity-60': docCheckInProgress[service.name] }">
-                                            Docs
+                                            {{ __('Docs') }}
                                         </a>
                                         <a x-show="serviceWebsiteUrl(service)" :href="serviceWebsiteUrl(service)"
                                             target="_blank" rel="noopener noreferrer" class="button" @click.stop>
-                                            Website
+                                            {{ __('Website') }}
                                         </a>
                                         <span class="button button-highlighted ml-auto">
-                                            Deploy
+                                            {{ __('Deploy') }}
                                             <x-reicon name="arrow-right" class="size-3.5" />
                                         </span>
                                     </div>
@@ -332,7 +331,7 @@
                     </div>
                 </section>
                 <div x-show="visibleResourceCount === 0 && loading === false">
-                    <x-empty title="No resources found" description="Try a different search or resource type."
+                    <x-empty :title="__('No resources found')" :description="__('Try a different search or resource type.')"
                         icon-name="layers" size="sm" />
                 </div>
             </div>
@@ -347,19 +346,19 @@
                         resourceType: 'all',
                         resourceTypeOptions: [{
                                 value: 'all',
-                                label: 'All resources'
+                                label: @js(__('All resources'))
                             },
                             {
                                 value: 'applications',
-                                label: 'Applications'
+                                label: @js(__('Applications'))
                             },
                             {
                                 value: 'databases',
-                                label: 'Databases'
+                                label: @js(__('Databases'))
                             },
                             {
                                 value: 'services',
-                                label: 'Services'
+                                label: @js(__('Services'))
                             }
                         ],
                         filterOpen: false,
@@ -624,13 +623,12 @@
         @endif
     </div>
     @if ($current_step === 'servers')
-        <x-application.settings-section title="Select a server"
-            description="Choose the machine that will host this resource." flush>
+        <x-application.settings-section :title="__('Select a server')"
+            :description="__('Choose the machine that will host this resource.')" flush>
             @if ($onlyBuildServerAvailable)
-                <x-callout type="warning" title="No deployment server" class="m-4">
-                    Only build servers are available. Add or reconfigure a server before continuing.
-                    <a class="font-medium underline" href="{{ route('server.index') }}" {{ wireNavigate() }}>Open
-                        servers</a>
+                <x-callout type="warning" :title="__('No deployment server')" class="m-4">
+                    {{ __('Only build servers are available. Add or reconfigure a server before continuing.') }}
+                    <a class="font-medium underline" href="{{ route('server.index') }}" {{ wireNavigate() }}>{{ __('Open servers') }}</a>
                 </x-callout>
             @endif
             <div class="divide-y divide-neutral-200 dark:divide-white/[0.07]">
@@ -653,12 +651,11 @@
                     </button>
                 @empty
                     @if ($buildServers?->isEmpty() && ! $onlyBuildServerAvailable)
-                        <x-empty title="No available servers"
-                            description="Validate a reachable server before creating this resource."
+                        <x-empty :title="__('No available servers')"
+                            :description="__('Validate a reachable server before creating this resource.')"
                             icon-name="servers" size="sm">
                             <x-slot:actions>
-                                <a class="button" href="{{ route('server.index') }}" {{ wireNavigate() }}>Open
-                                    servers</a>
+                                <a class="button" href="{{ route('server.index') }}" {{ wireNavigate() }}>{{ __('Open servers') }}</a>
                             </x-slot:actions>
                         </x-empty>
                     @endif
@@ -673,20 +670,19 @@
                         <span class="min-w-0 flex-1">
                             <span
                                 class="block truncate text-[13px] font-semibold text-black dark:text-fg">{{ $buildServer->name }}</span>
-                            <span class="block text-[11px] text-neutral-500 dark:text-fg-faint">Build-only servers
-                                cannot host resources.</span>
+                            <span class="block text-[11px] text-neutral-500 dark:text-fg-faint">{{ __('Build-only servers cannot host resources.') }}</span>
                         </span>
                         <x-status-badge status="exited" text="Build only" />
                         <a href="{{ route('server.show', ['server_uuid' => $buildServer->uuid]) }}"
-                            {{ wireNavigate() }} class="button">Settings</a>
+                            {{ wireNavigate() }} class="button">{{ __('Settings') }}</a>
                     </div>
                 @endforeach
             </div>
         </x-application.settings-section>
     @endif
     @if ($current_step === 'destinations')
-        <x-application.settings-section title="Select a destination"
-            description="Destinations separate resources by Docker network. Use the default destination when unsure."
+        <x-application.settings-section :title="__('Select a destination')"
+            :description="__('Destinations separate resources by Docker network. Use the default destination when unsure.')"
             flush>
             <div class="divide-y divide-neutral-200 dark:divide-white/[0.07]">
                 @if ($server->isSwarm())
@@ -700,8 +696,7 @@
                             <span class="min-w-0 flex-1">
                                 <span
                                     class="block truncate text-[13px] font-semibold text-black dark:text-fg">{{ $swarmDocker->name }}</span>
-                                <span class="block text-[11px] text-neutral-500 dark:text-fg-faint">Docker Swarm
-                                    destination</span>
+                                <span class="block text-[11px] text-neutral-500 dark:text-fg-faint">{{ __('Docker Swarm destination') }}</span>
                             </span>
                             <x-deprecated-badge />
                         </button>
@@ -717,8 +712,7 @@
                             <span class="min-w-0 flex-1">
                                 <span
                                     class="block truncate text-[13px] font-semibold text-black dark:text-fg">{{ $standaloneDocker->name }}</span>
-                                <span class="block truncate text-[11px] text-neutral-500 dark:text-fg-faint">Network:
-                                    {{ $standaloneDocker->network }}</span>
+                                <span class="block truncate text-[11px] text-neutral-500 dark:text-fg-faint">{{ __('Network: :network', ['network' => $standaloneDocker->network]) }}</span>
                             </span>
                             <x-status-badge status="running" text="Standalone Docker" />
                         </button>
@@ -730,9 +724,8 @@
     @if ($current_step === 'select-postgresql-type')
         <div x-data="{ selecting: false }">
             <div class="mb-4">
-                <h2 class="text-[15px]! font-semibold!">Select a PostgreSQL image</h2>
-                <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">Use PostgreSQL 18 unless the workload
-                    needs bundled extensions.</p>
+                <h2 class="text-[15px]! font-semibold!">{{ __('Select a PostgreSQL image') }}</h2>
+                <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">{{ __('Use PostgreSQL 18 unless the workload needs bundled extensions.') }}</p>
             </div>
             <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <div class="group relative flex min-h-24 items-center gap-3 rounded-[10px] border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-50 dark:border-white/[0.07] dark:bg-surface dark:hover:border-white/[0.12] dark:hover:bg-white/[0.035]"
@@ -741,16 +734,16 @@
                     :disabled="selecting">
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">PostgreSQL 18 <span
-                                class="ml-1 rounded-full bg-coollabs/10 px-2 py-0.5 text-[10px] font-medium text-coollabs dark:bg-warning/15 dark:text-warning">Default</span>
+                                class="ml-1 rounded-full bg-coollabs/10 px-2 py-0.5 text-[10px] font-medium text-coollabs dark:bg-warning/15 dark:text-warning">{{ __('Default') }}</span>
                         </div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            PostgreSQL is a powerful, open-source object-relational database system (no extensions).
+                            {{ __('PostgreSQL is a powerful, open-source object-relational database system (no extensions).') }}
                         </div>
                     </div>
                     <a href="https://hub.docker.com/_/postgres/" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -765,13 +758,13 @@
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">PostgreSQL 17</div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            PostgreSQL is a powerful, open-source object-relational database system (no extensions).
+                            {{ __('PostgreSQL is a powerful, open-source object-relational database system (no extensions).') }}
                         </div>
                     </div>
                     <a href="https://hub.docker.com/_/postgres/" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -786,13 +779,13 @@
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">PostgreSQL 16</div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            PostgreSQL is a powerful, open-source object-relational database system (no extensions).
+                            {{ __('PostgreSQL is a powerful, open-source object-relational database system (no extensions).') }}
                         </div>
                     </div>
                     <a href="https://hub.docker.com/_/postgres/" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -807,13 +800,13 @@
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">Supabase PostgreSQL</div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            Supabase is a modern, open-source alternative to PostgreSQL with lots of extensions.
+                            {{ __('Supabase is a modern, open-source alternative to PostgreSQL with lots of extensions.') }}
                         </div>
                     </div>
                     <a href="https://github.com/supabase/postgres" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -827,16 +820,16 @@
                     :disabled="selecting">
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">PostGIS <span
-                                class="ml-1 text-[10px] font-medium text-amber-600 dark:text-amber-300">AMD only</span>
+                                class="ml-1 text-[10px] font-medium text-amber-600 dark:text-amber-300">{{ __('AMD only') }}</span>
                         </div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            PostGIS is a PostgreSQL extension for geographic objects.
+                            {{ __('PostGIS is a PostgreSQL extension for geographic objects.') }}
                         </div>
                     </div>
                     <a href="https://github.com/postgis/docker-postgis" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -851,13 +844,13 @@
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">PGVector 18</div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            PGVector is a PostgreSQL extension for vector data types.
+                            {{ __('PGVector is a PostgreSQL extension for vector data types.') }}
                         </div>
                     </div>
                     <a href="https://github.com/pgvector/pgvector" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -872,13 +865,13 @@
                     <div class="flex flex-col">
                         <div class="text-[13px] font-semibold text-black dark:text-fg">PGVector 17</div>
                         <div class="mt-1 pr-8 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                            PGVector is a PostgreSQL extension for vector data types.
+                            {{ __('PGVector is a PostgreSQL extension for vector data types.') }}
                         </div>
                     </div>
                     <a href="https://github.com/pgvector/pgvector" target="_blank"
                         @click.stop
                         class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg"
-                        title="View documentation">
+                        title="{{ __('View documentation') }}">
                         <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -890,14 +883,14 @@
         </div>
     @endif
     @if ($current_step === 'existing-postgresql')
-        <x-application.settings-section title="Connect an existing PostgreSQL database"
-            description="Provide the connection URL for the database Coolify should use.">
+        <x-application.settings-section :title="__('Connect an existing PostgreSQL database')"
+            :description="__('Provide the connection URL for the database Coolify should use.')">
             <form wire:submit="addExistingPostgresql" class="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div class="min-w-0 flex-1">
-                    <x-forms.input placeholder="postgres://username:password@database:5432" label="Database URL"
+                    <x-forms.input placeholder="postgres://username:password@database:5432" :label="__('Database URL')"
                         id="existingPostgresqlUrl" />
                 </div>
-                <x-forms.button type="submit">Add database</x-forms.button>
+                <x-forms.button type="submit">{{ __('Add database') }}</x-forms.button>
             </form>
         </x-application.settings-section>
     @endif

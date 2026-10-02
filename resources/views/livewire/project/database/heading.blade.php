@@ -2,7 +2,7 @@
     @php
         $databasePageItems = [
             [
-                'label' => 'Settings',
+                'label' => __('Settings'),
                 'route' => 'project.database.configuration',
                 'active' => request()->routeIs('project.database.configuration')
                     || request()->routeIs('project.database.environment-variables')
@@ -18,19 +18,19 @@
                     || request()->routeIs('project.database.danger'),
             ],
             [
-                'label' => 'Backups',
+                'label' => __('Backups'),
                 'route' => 'project.database.backup.index',
                 'active' => request()->routeIs('project.database.backup.*'),
                 'visible' => $database->isBackupSolutionAvailable(),
             ],
             [
-                'label' => 'Runtime Logs',
+                'label' => __('Runtime Logs'),
                 'route' => 'project.database.logs',
                 'active' => request()->routeIs('project.database.logs'),
                 'navigate' => false,
             ],
             [
-                'label' => 'Terminal',
+                'label' => __('Terminal'),
                 'route' => 'project.database.command',
                 'active' => request()->routeIs('project.database.command'),
                 'navigate' => false,
@@ -49,10 +49,10 @@
     <livewire:project.shared.configuration-checker :resource="$database" />
 
     <x-process-dialog @startdatabase.window="processDialogOpen = true" closeWithX>
-        <x-slot:title>Database Startup</x-slot:title>
+        <x-slot:title>{{ __('Database Startup') }}</x-slot:title>
         <x-slot:content>
             <div wire:ignore class="flex h-full min-h-0 min-w-0 max-w-full flex-col">
-                <livewire:activity-monitor header="Logs" fullHeight />
+                <livewire:activity-monitor :header="__('Logs')" fullHeight />
             </div>
         </x-slot:content>
     </x-process-dialog>
@@ -65,10 +65,10 @@
                     {{ $database->name }}
                 </h1>
                 <div class="relative flex w-full min-w-0 items-center gap-2">
-                    <x-status-summary :status="$database->status" title="Database status"
+                    <x-status-summary :status="$database->status" :title="__('Database status')"
                         :healthcheck-url="route('project.database.healthcheck', $parameters)" />
                     @if ($isDeploymentProgress)
-                        <x-deploying-indicator label="Working" />
+                        <x-deploying-indicator :label="__('Working')" />
                     @endif
                 </div>
                 <div class="flex w-full flex-wrap gap-1">
@@ -86,18 +86,18 @@
                                 @click="document.getElementById('database-restart-trigger')?.click()">
                                 <x-loading-on-button x-show="busy" x-cloak />
                                 <x-reicon name="restart" class="size-3.5" x-show="!busy" />
-                                <span x-text="busy ? 'Restarting…' : 'Restart'">Restart</span>
+                                <span x-text="busy ? @js(__('Restarting…')) : @js(__('Restart'))">{{ __('Restart') }}</span>
                             </x-slot:main>
                             <button type="button" class="listbox-option justify-start! gap-2.5!"
                                 @click="open = false; document.getElementById('database-stop-trigger')?.click()" role="menuitem">
                                 <x-reicon name="stop-circle" class="size-3.5 text-error" />
-                                Stop
+                                {{ __('Stop') }}
                             </button>
                         @else
                             <x-slot:main x-bind:disabled="busy" @click="busy = true; $wire.dispatch('startEvent')">
                                 <x-loading-on-button x-show="busy" x-cloak />
                                 <x-reicon name="play-circle" class="size-3.5" x-show="!busy" />
-                                <span x-text="busy ? 'Starting…' : 'Start'">Start</span>
+                                <span x-text="busy ? @js(__('Starting…')) : @js(__('Start'))">{{ __('Start') }}</span>
                             </x-slot:main>
                         @endif
                     </x-split-action>
@@ -112,7 +112,7 @@
                 class="resource-heading-navbar application-heading-actions flex w-auto min-w-0 items-center justify-end gap-1 overflow-visible">
                 <div class="resource-heading-actions flex shrink-0 items-center gap-0.5">
                     @if ($isDeploymentProgress)
-                        <x-deploying-indicator label="Working" class="mr-1" />
+                        <x-deploying-indicator :label="__('Working')" class="mr-1" />
                     @endif
                     @if ($database->destination->server->isFunctional())
                         @can('manage', $database)
@@ -122,24 +122,24 @@
                                         @click="document.getElementById('database-restart-trigger')?.click()">
                                         <x-loading-on-button x-show="busy" x-cloak />
                                         <x-reicon name="restart" class="size-3.5" x-show="!busy" />
-                                        <span x-text="busy ? 'Restarting…' : 'Restart'">Restart</span>
+                                        <span x-text="busy ? @js(__('Restarting…')) : @js(__('Restart'))">{{ __('Restart') }}</span>
                                     </x-slot:main>
                                     <button type="button" class="listbox-option justify-start! gap-2.5!"
                                         @click="open = false; document.getElementById('database-stop-trigger')?.click()" role="menuitem">
                                         <x-reicon name="stop-circle" class="size-3.5 text-error" />
-                                        Stop
+                                        {{ __('Stop') }}
                                     </button>
                                 @else
                                     <x-slot:main x-bind:disabled="busy" @click="busy = true; $wire.dispatch('startEvent')">
                                         <x-loading-on-button x-show="busy" x-cloak />
                                         <x-reicon name="play-circle" class="size-3.5" x-show="!busy" />
-                                        <span x-text="busy ? 'Starting…' : 'Start'">Start</span>
+                                        <span x-text="busy ? @js(__('Starting…')) : @js(__('Start'))">{{ __('Start') }}</span>
                                     </x-slot:main>
                                 @endif
                             </x-split-action>
                         @endcan
                     @else
-                        <x-status-badge status="Server unavailable" type="error" />
+                        <x-status-badge :status="__('Server unavailable')" type="error" />
                     @endif
                 </div>
             </div>
@@ -150,25 +150,25 @@
 
     @if ($database->destination->server->isFunctional())
         <div class="hidden" aria-hidden="true">
-            <x-modal-confirmation title="Confirm Database Restart?" buttonTitle="Restart"
+            <x-modal-confirmation :title="__('Confirm Database Restart?')" :buttonTitle="__('Restart')"
                 submitAction="restartEvent" :actions="[
-                    'This database will be unavailable during the restart.',
-                    'If the database is currently in use, data could be lost.',
-                ]" :confirmWithText="false" :confirmWithPassword="false" step2ButtonText="Restart Database"
+                    __('This database will be unavailable during the restart.'),
+                    __('If the database is currently in use, data could be lost.'),
+                ]" :confirmWithText="false" :confirmWithPassword="false" :step2ButtonText="__('Restart Database')"
                 :dispatchAction="true">
                 <x-slot:trigger>
-                    <button id="database-restart-trigger" type="button">Restart</button>
+                    <button id="database-restart-trigger" type="button">{{ __('Restart') }}</button>
                 </x-slot:trigger>
             </x-modal-confirmation>
-            <x-modal-confirmation title="Confirm Database Stopping?" buttonTitle="Stop" submitAction="stop"
+            <x-modal-confirmation :title="__('Confirm Database Stopping?')" :buttonTitle="__('Stop')" submitAction="stop"
                 :checkboxes="$checkboxes" :actions="[
-                    'This database will be stopped.',
-                    'If the database is currently in use, data could be lost.',
-                    'Non-persistent containers, networks, and unused images will be removed.',
+                    __('This database will be stopped.'),
+                    __('If the database is currently in use, data could be lost.'),
+                    __('Non-persistent containers, networks, and unused images will be removed.'),
                 ]" :confirmWithText="false" :confirmWithPassword="false"
-                step1ButtonText="Continue" step2ButtonText="Confirm">
+                :step1ButtonText="__('Continue')" :step2ButtonText="__('Confirm')">
                 <x-slot:trigger>
-                    <button id="database-stop-trigger" type="button">Stop</button>
+                    <button id="database-stop-trigger" type="button">{{ __('Stop') }}</button>
                 </x-slot:trigger>
             </x-modal-confirmation>
         </div>
@@ -197,7 +197,7 @@
                     return;
                 }
                 window.dispatchEvent(new CustomEvent('database-busy'));
-                $wire.$dispatch('info', 'Restarting database.');
+                $wire.$dispatch('info', @js(__('Restarting database.')));
                 window.dispatchEvent(new CustomEvent('startdatabase'));
                 try {
                     await $wire.$call('restart');

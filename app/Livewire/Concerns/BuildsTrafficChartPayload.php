@@ -112,7 +112,7 @@ trait BuildsTrafficChartPayload
         $totals = [];
         foreach (($this->breakdowns['device'] ?? []) as $row) {
             $value = (string) ($row['value'] ?? '');
-            $label = $value === '__other__' ? 'Other' : deviceLabel($value);
+            $label = $value === '__other__' ? __('Other') : deviceLabel($value);
             $totals[$label] = ($totals[$label] ?? 0) + (int) ($row['requests'] ?? 0);
         }
         arsort($totals);

@@ -36,7 +36,7 @@ class General extends Component
             $this->syncData();
             $this->server = data_get($this->database, 'destination.server');
             if (! $this->server) {
-                $this->dispatch('error', 'Database destination server is not configured.');
+                $this->dispatch('error', __('Database destination server is not configured.'));
 
                 return;
             }
@@ -62,10 +62,10 @@ class General extends Component
         return array_merge(
             ValidationPatterns::combinedMessages(),
             [
-                'sqliteDatabases.required' => 'The Database Files field is required.',
-                'sqliteDatabases.regex' => 'The Database Files must be comma-separated file names containing only letters, numbers, dots, dashes and underscores.',
-                'image.required' => 'The Docker Image field is required.',
-                'image.string' => 'The Docker Image must be a string.',
+                'sqliteDatabases.required' => __('The Database Files field is required.'),
+                'sqliteDatabases.regex' => __('The Database Files must be comma-separated file names containing only letters, numbers, dots, dashes and underscores.'),
+                'image.required' => __('The Docker Image field is required.'),
+                'image.string' => __('The Docker Image must be a string.'),
             ]
         );
     }
@@ -98,14 +98,14 @@ class General extends Component
 
             if (! $this->server->isLogDrainEnabled()) {
                 $this->isLogDrainEnabled = false;
-                $this->dispatch('error', 'Log drain is not enabled on the server. Please enable it first.');
+                $this->dispatch('error', __('Log drain is not enabled on the server. Please enable it first.'));
 
                 return;
             }
             $this->syncData(true);
 
-            $this->dispatch('success', 'Database updated.');
-            $this->dispatch('success', 'You need to restart the service for the changes to take effect.');
+            $this->dispatch('success', __('Database updated.'));
+            $this->dispatch('success', __('You need to restart the service for the changes to take effect.'));
         } catch (Exception $e) {
             return handleError($e, $this);
         }
@@ -121,7 +121,7 @@ class General extends Component
                 ->filter(fn (string $name) => $name !== '')
                 ->implode(',');
             $this->syncData(true);
-            $this->dispatch('success', 'Database updated.');
+            $this->dispatch('success', __('Database updated.'));
             $this->dispatch('databaseUpdated');
         } catch (Exception $e) {
             return handleError($e, $this);

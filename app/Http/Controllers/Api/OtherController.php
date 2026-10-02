@@ -93,7 +93,7 @@ class OtherController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        if ($teamId !== '0') {
+        if ($teamId !== '0' || ! $request->user()?->isInstanceAdmin()) {
             auditLog('api.instance.enable_denied', ['team_id' => $teamId], 'warning');
 
             return response()->json(['message' => 'You are not allowed to enable the API.'], 403);
@@ -149,7 +149,7 @@ class OtherController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        if ($teamId !== '0') {
+        if ($teamId !== '0' || ! $request->user()?->isInstanceAdmin()) {
             auditLog('api.instance.disable_denied', ['team_id' => $teamId], 'warning');
 
             return response()->json(['message' => 'You are not allowed to disable the API.'], 403);
@@ -205,7 +205,7 @@ class OtherController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        if ($teamId !== '0') {
+        if ($teamId !== '0' || ! $request->user()?->isInstanceAdmin()) {
             auditLog('api.mcp.enable_denied', ['team_id' => $teamId], 'warning');
 
             return response()->json(['message' => 'You are not allowed to enable the MCP server.'], 403);
@@ -261,7 +261,7 @@ class OtherController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        if ($teamId !== '0') {
+        if ($teamId !== '0' || ! $request->user()?->isInstanceAdmin()) {
             auditLog('api.mcp.disable_denied', ['team_id' => $teamId], 'warning');
 
             return response()->json(['message' => 'You are not allowed to disable the MCP server.'], 403);

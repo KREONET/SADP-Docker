@@ -4,9 +4,9 @@
     'helper' => null,
     'required' => false,
     'options' => [], // list of ['value' => ..., 'label' => ..., 'disabled' => bool]
-    'placeholder' => 'Select…',
-    'searchPlaceholder' => 'Search…',
-    'emptyText' => 'No matching options',
+    'placeholder' => null,
+    'searchPlaceholder' => null,
+    'emptyText' => null,
     'live' => false,
     'onChange' => null, // optional $wire method to call after a selection
     'wire' => true, // false = purely client-side value (no Livewire binding)
@@ -42,7 +42,7 @@
         value: @if (!$wire) @js($value) @elseif ($live && ! $onChange) @entangle($id).live @else @entangle($id) @endif,
         get current() {
             const found = this.options.find((option) => String(option.value) === String(this.value));
-            return found ? found.label : @js($placeholder);
+            return found ? found.label : @js($placeholder ?? __('Select…'));
         },
         get filtered() {
             const query = this.query.toLowerCase().trim();
@@ -113,7 +113,7 @@
                 <x-reicon name="search"
                     class="pointer-events-none absolute top-1/2 left-3 size-3 -translate-y-1/2 text-neutral-400 dark:text-fg-faint" />
                 <input x-ref="search" type="search" x-model="query" autocomplete="off"
-                    placeholder="{{ $searchPlaceholder }}"
+                    placeholder="{{ $searchPlaceholder ?? __('Search…') }}"
                     class="searchable-listbox-search-input"
                     @keydown.enter.prevent="filtered.length === 1 && choose(filtered[0])"
                     @keydown.escape.stop="close()" />
@@ -132,7 +132,7 @@
                     </button>
                 </template>
                 <p x-show="filtered.length === 0" class="searchable-listbox-empty">
-                    {{ $emptyText }}
+                    {{ $emptyText ?? __('No matching options') }}
                 </p>
             </div>
         </div>

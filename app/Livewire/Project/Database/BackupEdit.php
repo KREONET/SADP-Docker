@@ -161,7 +161,7 @@ class BackupEdit extends Component
         } else {
             $this->backupEnabled = $this->backup->enabled;
             $this->frequency = $this->backup->frequency;
-            $this->timezone = data_get($this->backup->server(), 'settings.server_timezone', 'Instance timezone');
+            $this->timezone = data_get($this->backup->server(), 'settings.server_timezone', __('Instance timezone'));
             $this->databaseBackupRetentionAmountLocally = $this->backup->database_backup_retention_amount_locally;
             $this->databaseBackupRetentionDaysLocally = $this->backup->database_backup_retention_days_locally;
             $this->databaseBackupRetentionMaxStorageLocally = $this->backup->database_backup_retention_max_storage_locally;
@@ -184,7 +184,7 @@ class BackupEdit extends Component
         $this->authorize('manageBackups', $database);
 
         if (! verifyPasswordConfirmation($password, $this)) {
-            return 'The provided password is incorrect.';
+            return __('The provided password is incorrect.');
         }
 
         try {
@@ -238,7 +238,7 @@ class BackupEdit extends Component
                 ]);
             }
         } catch (Exception $e) {
-            $this->dispatch('error', 'Failed to delete backup: '.$e->getMessage());
+            $this->dispatch('error', __('Failed to delete backup: :error', ['error' => $e->getMessage()]));
 
             return handleError($e, $this);
         }
@@ -252,7 +252,7 @@ class BackupEdit extends Component
             $database = $this->backup->database->refresh();
             $this->status = $database->status;
             if ($database->id !== 0 && ! str($database->status)->startsWith('running')) {
-                $this->dispatch('error', 'The database must be running to start a backup.');
+                $this->dispatch('error', __('The database must be running to start a backup.'));
 
                 return;
             }
@@ -265,7 +265,7 @@ class BackupEdit extends Component
                 'database_name' => $database->name,
                 'backup_uuid' => $this->backup->uuid,
             ]);
-            $this->dispatch('success', 'Backup queued. It will be available in a few minutes.');
+            $this->dispatch('success', __('Backup queued. It will be available in a few minutes.'));
 
             if ($database instanceof ServiceDatabase) {
                 return redirect()->route('project.service.database.backup.executions', [
@@ -302,7 +302,7 @@ class BackupEdit extends Component
             $this->authorize('manageBackups', $this->backup->database);
 
             $this->syncData(true);
-            $this->dispatch('success', 'Backup updated successfully.');
+            $this->dispatch('success', __('Backup updated successfully.'));
         } catch (\Throwable $e) {
             $this->dispatch('error', $e->getMessage());
         }
@@ -315,7 +315,7 @@ class BackupEdit extends Component
 
             $this->backupEnabled = ! $this->backupEnabled;
             $this->backup->update(['enabled' => $this->backupEnabled]);
-            $this->dispatch('success', $this->backupEnabled ? 'Backup enabled.' : 'Backup disabled.');
+            $this->dispatch('success', $this->backupEnabled ? __('Backup enabled.') : __('Backup disabled.'));
         } catch (\Throwable $e) {
             $this->dispatch('error', $e->getMessage());
         }
@@ -329,7 +329,7 @@ class BackupEdit extends Component
     public function toggleS3(): void
     {
         if (! $this->saveS3 && $this->availableS3StorageIds()->isEmpty()) {
-            $this->dispatch('error', 'Select a usable S3 storage before enabling S3 backups.');
+            $this->dispatch('error', __('Select a usable S3 storage before enabling S3 backups.'));
 
             return;
         }
@@ -363,7 +363,7 @@ class BackupEdit extends Component
 
         $isValid = validate_cron_expression($this->backup->frequency);
         if (! $isValid) {
-            throw new Exception('Invalid Cron / Human expression');
+            throw new Exception(__('Invalid Cron / Human expression'));
         }
         $this->validate();
     }
@@ -396,7 +396,7 @@ class BackupEdit extends Component
             $this->authorize('manageBackups', $this->backup->database);
 
             $this->syncData(true);
-            $this->dispatch('success', 'Backup updated successfully.');
+            $this->dispatch('success', __('Backup updated successfully.'));
         } catch (\Throwable $e) {
             $this->dispatch('error', $e->getMessage());
         }
@@ -407,7 +407,7 @@ class BackupEdit extends Component
         return view('livewire.project.database.backup-edit', [
             'checkboxes' => [
                 ['id' => 'delete_associated_backups_locally', 'label' => __('database.delete_backups_locally')],
-                ['id' => 'delete_associated_backups_s3', 'label' => 'All backups will be permanently deleted (associated with this backup job) from the selected S3 Storage.'],
+                ['id' => 'delete_associated_backups_s3', 'label' => __('All backups will be permanently deleted (associated with this backup job) from the selected S3 Storage.')],
                 // ['id' => 'delete_associated_backups_sftp', 'label' => 'All backups associated with this backup job from this database will be permanently deleted from the selected SFTP Storage.']
             ],
         ]);

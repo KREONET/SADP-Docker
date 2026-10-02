@@ -12,12 +12,12 @@
     <div class="flex items-center gap-1">
         <button type="button" @click="page = Math.max(0, page - 1)" :disabled="page === 0"
             class="flex h-6 items-center rounded-md px-2 text-[11px] font-medium text-neutral-500 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-30 dark:text-fg-faint dark:hover:text-fg">
-            Prev
+            {{ __('Prev') }}
         </button>
         <button type="button" @click="page = Math.min(Math.ceil(total / per) - 1, page + 1)"
             :disabled="(page + 1) * per >= total"
             class="flex h-6 items-center rounded-md px-2 text-[11px] font-medium text-neutral-500 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-30 dark:text-fg-faint dark:hover:text-fg">
-            Next
+            {{ __('Next') }}
         </button>
     </div>
 </div>

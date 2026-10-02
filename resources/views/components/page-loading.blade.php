@@ -1,8 +1,6 @@
-@props(['text' => "Loading..."])
+@props(['text' => null])
 <div class="inline-flex items-center justify-center" {{ $attributes }}>
-    @if (isset($text))
-        <div>{{ $text }}</div>
-    @endif
+    <div>{{ $text ?? __('Loading...') }}</div>
     <svg class="loading-indicator w-4 h-4 mx-1 ml-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none"
         viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

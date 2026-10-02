@@ -1,7 +1,7 @@
 @props([
     'status',
-    'title' => 'Application status',
-    'containerName' => 'Container',
+    'title' => null,
+    'containerName' => null,
     'align' => 'left',
     'healthcheckUrl' => null,
 ])
@@ -18,13 +18,30 @@
         $healthStatus = trim($matches[2]);
     }
 
-    $containerLabel = str($containerStatus ?: 'unknown')->headline()->value();
+    $title ??= __('Application status');
+    $containerName ??= __('Container');
+
+    $containerLabel = match ($containerStatus ?: 'unknown') {
+        'running' => __('Running'),
+        'exited' => __('Exited'),
+        'stopped' => __('Stopped'),
+        'starting' => __('Starting'),
+        'restarting' => __('Restarting'),
+        'degraded' => __('Degraded'),
+        'paused' => __('Paused'),
+        'created' => __('Created'),
+        'dead' => __('Dead'),
+        'removing' => __('Removing'),
+        'unknown' => __('Unknown'),
+        default => str($containerStatus)->headline()->value(),
+    };
+    $isHealthNotConfigured = ! $monitoringExcluded && ! in_array($healthStatus, ['healthy', 'unhealthy', 'starting'], true);
     $healthLabel = match (true) {
-        $monitoringExcluded => 'Monitoring disabled',
-        $healthStatus === 'healthy' => 'Healthy',
-        $healthStatus === 'unhealthy' => 'Unhealthy',
-        $healthStatus === 'starting' => 'Starting',
-        default => 'Not configured',
+        $monitoringExcluded => __('Monitoring disabled'),
+        $healthStatus === 'healthy' => __('Healthy'),
+        $healthStatus === 'unhealthy' => __('Unhealthy'),
+        $healthStatus === 'starting' => __('Starting'),
+        default => __('Not configured'),
     };
 
     $containerType = match (true) {
@@ -42,12 +59,12 @@
 
     [$summaryLabel, $summaryType] = match (true) {
         $containerType === 'error' => [$containerLabel, 'error'],
-        str($containerStatus)->startsWith('degraded') => ['Degraded', 'warning'],
-        $healthType === 'error' => ['Degraded', 'error'],
+        str($containerStatus)->startsWith('degraded') => [__('Degraded'), 'warning'],
+        $healthType === 'error' => [__('Degraded'), 'error'],
         $containerType === 'warning' => [$containerLabel, 'warning'],
-        $monitoringExcluded => ["{$containerLabel} (monitoring disabled)", 'warning'],
-        $healthStatus === 'starting' => ["{$containerLabel} (healthcheck starting)", 'warning'],
-        $healthType === 'warning' => ["{$containerLabel} (no healthcheck)", 'warning'],
+        $monitoringExcluded => [__(':status (monitoring disabled)', ['status' => $containerLabel]), 'warning'],
+        $healthStatus === 'starting' => [__(':status (healthcheck starting)', ['status' => $containerLabel]), 'warning'],
+        $healthType === 'warning' => [__(':status (no healthcheck)', ['status' => $containerLabel]), 'warning'],
         default => [$containerLabel, 'success'],
     };
 @endphp
@@ -92,30 +109,30 @@
                 'bg-warning' => $healthType === 'warning',
                 'bg-error' => $healthType === 'error',
             ];
-            $healthHelper = 'No healthcheck is configured, so Coolify can only report the container state. Traffic can still be routed to the container, but Coolify cannot verify that the application inside it is ready to receive requests.';
+            $healthHelper = __('No healthcheck is configured, so Coolify can only report the container state. Traffic can still be routed to the container, but Coolify cannot verify that the application inside it is ready to receive requests.');
         @endphp
         @if ($healthcheckUrl)
             <div class="listbox-option gap-0! p-0!">
                 <a href="{{ $healthcheckUrl }}" {{ wireNavigate() }} role="menuitem"
                     class="flex min-h-8 flex-1 items-center gap-2.5 px-2 py-1.5">
                     <span @class($healthDot)></span>
-                    <span class="flex-1">Healthcheck</span>
+                    <span class="flex-1">{{ __('Healthcheck') }}</span>
                     <span>{{ $healthLabel }}</span>
                 </a>
-                @if ($healthLabel === 'Not configured')
+                @if ($isHealthNotConfigured)
                     <span class="inline-flex pr-2">
-                        <x-helper label="About unconfigured healthchecks" :helper="$healthHelper" />
+                        <x-helper :label="__('About unconfigured healthchecks')" :helper="$healthHelper" />
                     </span>
                 @endif
             </div>
         @else
             <div class="listbox-option cursor-default! gap-2.5!">
                 <span @class($healthDot)></span>
-                <span class="flex-1">Healthcheck</span>
+                <span class="flex-1">{{ __('Healthcheck') }}</span>
                 <span class="inline-flex items-center gap-1.5">
                     {{ $healthLabel }}
-                    @if ($healthLabel === 'Not configured')
-                        <x-helper label="About unconfigured healthchecks" :helper="$healthHelper" />
+                    @if ($isHealthNotConfigured)
+                        <x-helper :label="__('About unconfigured healthchecks')" :helper="$healthHelper" />
                     @endif
                 </span>
             </div>

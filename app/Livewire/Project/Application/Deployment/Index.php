@@ -87,7 +87,7 @@ class Index extends Component
         if ($this->pull_request_id !== null && $this->pull_request_id !== '') {
             if (! is_numeric($this->pull_request_id) || (float) $this->pull_request_id <= 0 || (float) $this->pull_request_id != (int) $this->pull_request_id) {
                 $this->pull_request_id = null;
-                $this->dispatch('error', 'Invalid Pull Request ID in URL. Filter cleared.');
+                $this->dispatch('error', __('Invalid Pull Request ID in URL. Filter cleared.'));
             } else {
                 // Ensure it's stored as a string representation of a positive integer
                 $this->pull_request_id = (string) (int) $this->pull_request_id;
@@ -230,7 +230,7 @@ class Index extends Component
             // Check if it's numeric and positive
             if (! is_numeric($value) || (float) $value <= 0 || (float) $value != (int) $value) {
                 $this->pull_request_id = null;
-                $this->dispatch('error', 'Invalid Pull Request ID. Please enter a valid positive number.');
+                $this->dispatch('error', __('Invalid Pull Request ID. Please enter a valid positive number.'));
 
                 return;
             }
@@ -274,11 +274,11 @@ class Index extends Component
         }
 
         $this->pullRequestOptions = collect([
-            ['value' => '', 'label' => 'All deployments'],
+            ['value' => '', 'label' => __('All deployments')],
         ])
             ->concat($pullRequestIds->map(fn ($pullRequestId) => [
                 'value' => $pullRequestId,
-                'label' => "Pull request #{$pullRequestId}",
+                'label' => __('Pull request #:id', ['id' => $pullRequestId]),
             ]))
             ->all();
     }
@@ -291,11 +291,11 @@ class Index extends Component
             ->pluck('status');
 
         $statusLabels = [
-            ApplicationDeploymentStatus::FINISHED->value => 'Success',
-            ApplicationDeploymentStatus::FAILED->value => 'Failed',
-            ApplicationDeploymentStatus::IN_PROGRESS->value => 'In progress',
-            ApplicationDeploymentStatus::QUEUED->value => 'Queued',
-            ApplicationDeploymentStatus::CANCELLED_BY_USER->value => 'Cancelled',
+            ApplicationDeploymentStatus::FINISHED->value => __('Success'),
+            ApplicationDeploymentStatus::FAILED->value => __('Failed'),
+            ApplicationDeploymentStatus::IN_PROGRESS->value => __('In progress'),
+            ApplicationDeploymentStatus::QUEUED->value => __('Queued'),
+            ApplicationDeploymentStatus::CANCELLED_BY_USER->value => __('Cancelled'),
         ];
 
         $this->statusFilterOptions = collect($statusLabels)
@@ -322,11 +322,11 @@ class Index extends Component
             ->pluck('source_key');
 
         $sourceLabels = [
-            'manual' => 'Manual',
-            'pull-request' => 'Pull requests',
-            'webhook' => 'Webhooks',
+            'manual' => __('Manual'),
+            'pull-request' => __('Pull requests'),
+            'webhook' => __('Webhooks'),
             'api' => 'API',
-            'rollback' => 'Rollbacks',
+            'rollback' => __('Rollbacks'),
         ];
 
         $this->sourceFilterOptions = collect($sourceLabels)
@@ -353,7 +353,7 @@ class Index extends Component
 
                 return [
                     'value' => "server:{$serverId}",
-                    'label' => $deployment->server_name ?: "Server #{$serverId}",
+                    'label' => $deployment->server_name ?: __('Server #:id', ['id' => $serverId]),
                 ];
             })
             ->values()

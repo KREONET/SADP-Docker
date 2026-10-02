@@ -107,7 +107,7 @@ class Advanced extends Component
             : 'local';
         $this->image_cdn_url = $this->settings->image_cdn_url;
         $this->avatar_storage_options = [
-            ['value' => 'local', 'label' => 'Local storage'],
+            ['value' => 'local', 'label' => __('Local storage')],
             ...S3Storage::query()
                 ->whereTeamId(0)
                 ->where('is_usable', true)
@@ -168,13 +168,13 @@ class Advanced extends Component
                 })->filter()->values()->all();
 
                 if (! empty($invalidEntries)) {
-                    $this->dispatch('error', 'Invalid IP addresses or subnets: '.implode(', ', $invalidEntries));
+                    $this->dispatch('error', __('Invalid IP addresses or subnets: :entries', ['entries' => implode(', ', $invalidEntries)]));
 
                     return;
                 }
 
                 if (empty($validEntries)) {
-                    $this->dispatch('error', 'No valid IP addresses or subnets provided');
+                    $this->dispatch('error', __('No valid IP addresses or subnets provided'));
 
                     return;
                 }
@@ -223,7 +223,7 @@ class Advanced extends Component
             $this->settings->image_cdn_url = filled($this->image_cdn_url) ? rtrim($this->image_cdn_url, '/') : null;
             $this->saveAvatarStorageSetting();
             $this->settings->save();
-            $this->dispatch('success', 'Settings updated!');
+            $this->dispatch('success', __('Settings updated!'));
         } catch (\Exception $e) {
             return handleError($e, $this);
         }
@@ -245,7 +245,7 @@ class Advanced extends Component
             ->find($storageId);
 
         if (! $storage || $this->avatar_storage !== 's3:'.$storage->id) {
-            throw new \InvalidArgumentException('The selected avatar storage is not available.');
+            throw new \InvalidArgumentException(__('The selected avatar storage is not available.'));
         }
 
         $this->settings->avatar_storage_type = 's3';
@@ -262,7 +262,7 @@ class Advanced extends Component
             $this->settings->domain_connect_private_key = null;
             $this->settings->save();
             $this->domain_connect_private_key = null;
-            $this->dispatch('success', 'Domain Connect private key removed.');
+            $this->dispatch('success', __('Domain Connect private key removed.'));
         } catch (\Exception $e) {
             handleError($e, $this);
         }
@@ -291,7 +291,7 @@ class Advanced extends Component
 
         $invalidEntries = $entries->reject(fn (string $entry): bool => $this->isValidWebhookAllowlistEntry($entry));
         if ($invalidEntries->isNotEmpty()) {
-            $this->dispatch('error', 'Invalid webhook internal allowlist entries: '.$invalidEntries->implode(', '));
+            $this->dispatch('error', __('Invalid webhook internal allowlist entries: :entries', ['entries' => $invalidEntries->implode(', ')]));
 
             return false;
         }

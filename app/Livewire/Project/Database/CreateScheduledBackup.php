@@ -40,7 +40,7 @@ class CreateScheduledBackup extends Component
         try {
             $database = $this->selectedDatabase();
             if (! $database) {
-                $this->addError('selectedDatabaseUuid', 'Select a database owned by this service.');
+                $this->addError('selectedDatabaseUuid', __('Select a database owned by this service.'));
 
                 return;
             }
@@ -48,7 +48,7 @@ class CreateScheduledBackup extends Component
             $this->authorize('manageBackups', $database);
 
             if (! $database->isBackupSolutionAvailable()) {
-                $this->dispatch('error', 'Scheduled backups are not supported for this database type.');
+                $this->dispatch('error', __('Scheduled backups are not supported for this database type.'));
 
                 return;
             }
@@ -57,7 +57,7 @@ class CreateScheduledBackup extends Component
 
             $isValid = validate_cron_expression($this->frequency);
             if (! $isValid) {
-                $this->dispatch('error', 'Invalid Cron / Human expression.');
+                $this->dispatch('error', __('Invalid Cron / Human expression.'));
 
                 return;
             }

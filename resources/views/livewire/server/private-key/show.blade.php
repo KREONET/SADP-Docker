@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($server, 'name')->limit(10) }} > Private Key | Coolify
+        {{ data_get_str($server, 'name')->limit(10) }} > {{ __('Private Key') }} | Coolify
     </x-slot>
 
     <livewire:server.navbar :server="$server" />
@@ -10,14 +10,14 @@
         <x-server.sidebar :server="$server" activeMenu="private-key" />
 
         <div class="application-settings-form flex w-full flex-col gap-6">
-            <x-application.settings-section id="server-private-keys-section" title="Private key"
-                helper="Choose the SSH key Coolify uses to connect to this server." flush>
+            <x-application.settings-section id="server-private-keys-section" :title="__('Private key')"
+                :helper="__('Choose the SSH key Coolify uses to connect to this server.')" flush>
                 <x-slot:actions>
                     <div class="flex items-center gap-2">
                         <x-forms.button canGate="update" :canResource="$server"
                             wire:click.prevent="checkConnection">
                             <x-reicon name="refresh" class="size-3.5" />
-                            Check connection
+                            {{ __('Check connection') }}
                         </x-forms.button>
 
                         @can('createAnyResource')
@@ -26,7 +26,7 @@
                                 <x-forms.button isHighlighted type="button" @click="open = !open"
                                     aria-haspopup="menu" x-bind:aria-expanded="open">
                                     <x-reicon name="plus" class="size-3.5" />
-                                    Add
+                                    {{ __('Add') }}
                                     <x-reicon name="chevron-down" class="size-3 opacity-55" />
                                 </x-forms.button>
                                 <div x-show="open" x-cloak x-transition.origin.top.right role="menu"
@@ -35,21 +35,21 @@
                                         wire:click="generatePrivateKey('ed25519')" @click="open = false"
                                         role="menuitem">
                                         <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
-                                        Generate ED25519
+                                        {{ __('Generate ED25519') }}
                                     </button>
                                     <button type="button" class="listbox-option justify-start! gap-2.5!"
                                         wire:click="generatePrivateKey('rsa')" @click="open = false"
                                         role="menuitem">
                                         <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
-                                        Generate RSA
+                                        {{ __('Generate RSA') }}
                                     </button>
-                                    <x-modal-input title="Add Private Key Manually">
+                                    <x-modal-input :title="__('Add Private Key Manually')">
                                         <x-slot:content>
                                             <button type="button"
                                                 class="listbox-option justify-start! gap-2.5! w-full"
                                                 @click="open = false" role="menuitem">
                                                 <x-reicon name="plus" class="size-3.5 shrink-0 opacity-70" />
-                                                Add manually
+                                                {{ __('Add manually') }}
                                             </button>
                                         </x-slot:content>
                                         <livewire:security.private-key.create />
@@ -74,7 +74,7 @@
                                         {{ $privateKey->name }}
                                     </p>
                                     @if (data_get($server, 'privateKey.uuid') === $privateKey->uuid)
-                                        <x-status-badge status="Active" type="success" />
+                                        <x-status-badge :status="__('Active')" type="success" />
                                     @endif
                                 </div>
                                 <p class="mt-1 text-xs text-neutral-500 dark:text-fg-dim">
@@ -85,19 +85,19 @@
                         <div class="flex shrink-0 items-center gap-2">
                             <x-forms.button
                                 @click.prevent="copyPublicKeyToClipboard({{ Js::from($privateKey->public_key) }})">
-                                Copy public key
+                                {{ __('Copy public key') }}
                             </x-forms.button>
                             @if (data_get($server, 'privateKey.uuid') !== $privateKey->uuid)
                                 <x-forms.button canGate="update" :canResource="$server"
                                     wire:click="setPrivateKey({{ $privateKey->id }})">
-                                    Use this key
+                                    {{ __('Use this key') }}
                                 </x-forms.button>
                             @endif
                         </div>
                     </div>
                 @empty
-                    <x-empty size="sm" title="No private keys"
-                        description="Add or generate a private key to connect to this server."
+                    <x-empty size="sm" :title="__('No private keys')"
+                        :description="__('Add or generate a private key to connect to this server.')"
                         icon-name="keys" />
                 @endforelse
             </x-application.settings-section>
@@ -108,13 +108,13 @@
         <script>
             window.copyPublicKeyToClipboard = publicKey => {
                 if (!publicKey || !navigator.clipboard?.writeText) {
-                    Livewire.dispatch('error', ['Failed to copy public key to clipboard.']);
+                    Livewire.dispatch('error', [@js(__('Failed to copy public key to clipboard.'))]);
                     return;
                 }
 
                 navigator.clipboard.writeText(publicKey)
-                    .then(() => Livewire.dispatch('success', ['Public key copied to clipboard.']))
-                    .catch(() => Livewire.dispatch('error', ['Failed to copy public key to clipboard.']));
+                    .then(() => Livewire.dispatch('success', [@js(__('Public key copied to clipboard.'))]))
+                    .catch(() => Livewire.dispatch('error', [@js(__('Failed to copy public key to clipboard.'))]));
             };
 
             $wire.on('copyPublicKeyToClipboard', event => {

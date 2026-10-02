@@ -10,7 +10,7 @@
         <div class="min-w-0 py-0.5">
             @if (filled($description ?? $helper))
                 <h3>
-                    <x-helper :helper="$description ?? $helper" :label="'More information about '.$title">
+                    <x-helper :helper="$description ?? $helper" :label="__('More information about :title', ['title' => $title])">
                         <x-slot:trigger>
                             <span class="underline underline-offset-4">{{ $title }}</span>
                         </x-slot:trigger>

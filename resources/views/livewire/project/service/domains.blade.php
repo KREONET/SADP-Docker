@@ -63,19 +63,22 @@
         <div class="hidden" wire:poll.2000ms="pollDnsChecks" aria-hidden="true"></div>
     @endif
     @cannot('update', $service)
-        <x-callout type="danger" title="Insufficient permissions">
-            You don't have permission to manage domains. Contact your team administrator for access.
+        <x-callout type="danger" :title="__('Insufficient permissions')">
+            {{ __('You don\'t have permission to manage domains. Contact your team administrator for access.') }}
         </x-callout>
     @endcannot
 
     {{-- Toolbar --}}
     <div class="flex flex-wrap items-center gap-2">
         <div class="min-w-0 flex-1">
-            <h2 id="domains-section">Domains</h2>
+            <h2 id="domains-section">{{ __('Domains') }}</h2>
             <p class="text-[13px] text-neutral-500 dark:text-fg-dim">
-                {{ $configuredCount }} domain{{ $configuredCount === 1 ? '' : 's' }} across {{ $domainGroups->count() }} service{{ $domainGroups->count() === 1 ? '' : 's' }}
+                {{ __(':domains across :services', [
+                    'domains' => $configuredCount === 1 ? __(':count domain', ['count' => $configuredCount]) : __(':count domains', ['count' => $configuredCount]),
+                    'services' => $domainGroups->count() === 1 ? __(':count service', ['count' => $domainGroups->count()]) : __(':count services', ['count' => $domainGroups->count()]),
+                ]) }}
                 @if ($suggestedCount > 0)
-                    · {{ $suggestedCount }} not added
+                    · {{ __(':count not added', ['count' => $suggestedCount]) }}
                 @endif
             </p>
         </div>
@@ -84,8 +87,8 @@
                 <div class="relative w-full sm:w-64">
                     <x-reicon name="search"
                         class="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-fg-faint" />
-                    <input type="search" x-model="domainSearch" aria-label="Search services or domains"
-                        class="input h-8! w-full pl-8! text-[13px]!" placeholder="Search services or domains" />
+                    <input type="search" x-model="domainSearch" aria-label="{{ __('Search services or domains') }}"
+                        class="input h-8! w-full pl-8! text-[13px]!" placeholder="{{ __('Search services or domains') }}" />
                 </div>
             @endif
             @can('update', $service)
@@ -93,26 +96,26 @@
                     <x-forms.button wire:click="checkAllDns" :showLoadingIndicator="false" wire:loading.attr="disabled"
                         wire:target="checkAllDns,checkDomainDns">
                         <x-reicon name="refresh" class="size-3.5" />
-                        Check all DNS
+                        {{ __('Check all DNS') }}
                     </x-forms.button>
                 @endif
                 @if ($serviceAppCount > 0)
                     <div class="relative shrink-0">
                         @include('livewire.project.shared.cloudflare-autoconfigure')
                     </div>
-                    <x-modal-input title="Add domain" :closeOutside="false" :wireIgnore="false"
+                    <x-modal-input :title="__('Add domain')" :closeOutside="false" :wireIgnore="false"
                         canGate="update" :canResource="$service">
                         <x-slot:content>
                             <button type="button"
                                 class="button button-highlighted">
                                 <x-reicon name="plus" class="size-3.5" />
-                                Add domain
+                                {{ __('Add domain') }}
                             </button>
                         </x-slot:content>
                         <form wire:submit="addDomain" class="application-settings-form flex flex-col gap-4">
                             {{-- Always show which service receives the domain --}}
-                            <x-forms.listbox canGate="update" :canResource="$service" label="Service application" id="newServiceApplicationId" required portal
-                                helper="Domain will be assigned to this compose service application."
+                            <x-forms.listbox canGate="update" :canResource="$service" :label="__('Service application')" id="newServiceApplicationId" required portal
+                                :helper="__('Domain will be assigned to this compose service application.')"
                                 :options="collect($serviceApps)->map(fn ($app) => [
                                     'value' => $app['id'],
                                     'label' => $app['name'].(filled($app['image'] ?? null) ? ' ('.$app['image'].')' : ''),
@@ -122,10 +125,8 @@
                             <x-forms.domain-input id="newDomainParts" errorId="newDomain" />
 
                             @if ($addDomainDnsFailed)
-                                <x-callout type="danger" title="DNS is not pointing to the right IP">
-                                    This domain does not currently resolve to this server.
-                                    Traffic may not reach Coolify until you update DNS.
-                                    Are you sure you want to add it anyway?
+                                <x-callout type="danger" :title="__('DNS is not pointing to the right IP')">
+                                    {{ __('This domain does not currently resolve to this server. Traffic may not reach Coolify until you update DNS. Are you sure you want to add it anyway?') }}
                                     @if (filled($addDomainDnsMessage))
                                         <div class="pt-2">{{ $addDomainDnsMessage }}</div>
                                     @endif
@@ -135,18 +136,18 @@
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
                                 <x-forms.button canGate="update" :canResource="$service" type="button"
                                     wire:click="generateDomain">
-                                    Generate domain
+                                    {{ __('Generate domain') }}
                                 </x-forms.button>
                                 <div class="flex flex-wrap gap-2">
                                     @if ($addDomainDnsFailed)
                                         <x-forms.button canGate="update" :canResource="$service" type="button"
                                             wire:click="confirmAddDomainDespiteDns" isError>
-                                            Continue
+                                            {{ __('Continue') }}
                                         </x-forms.button>
                                     @else
                                         <x-forms.button canGate="update" :canResource="$service" type="submit"
                                             isHighlighted>
-                                            Save
+                                            {{ __('Save') }}
                                         </x-forms.button>
                                     @endif
                                 </div>
@@ -160,14 +161,14 @@
 
     @if ($serviceAppCount === 0)
         <div class="application-settings-section-body mt-1 w-full scroll-mt-28">
-            <x-empty size="sm" title="No application services"
-                description="Only database services are available. Domains can only be assigned to application services."
+            <x-empty size="sm" :title="__('No application services')"
+                :description="__('Only database services are available. Domains can only be assigned to application services.')"
                 icon-name="globe" />
         </div>
     @elseif (! $hasRows)
         <div class="application-settings-section-body mt-1 w-full scroll-mt-28">
-            <x-empty size="sm" title="No domains configured"
-                description="Add your first domain with the Add domain button above. Choose which service application receives it."
+            <x-empty size="sm" :title="__('No domains configured')"
+                :description="__('Add your first domain with the Add domain button above. Choose which service application receives it.')"
                 icon-name="globe" />
         </div>
     @else
@@ -187,15 +188,15 @@
                         <span class="min-w-0 flex-1 truncate text-sm font-medium text-black dark:text-white">{{ $heading }}</span>
                         @if ($hasHttpsDomains)
                             <div class="flex w-full items-center gap-2 sm:w-auto service-domains-https">
-                                <label for="service-force-https-{{ $appId }}-trigger" class="mb-0! whitespace-nowrap text-[12px]!">Redirect HTTP to HTTPS</label>
-                                <x-helper helper="Disable only when Cloudflare Tunnel or another proxy connects to Coolify over HTTP. Keep enabled when Cloudflare uses Full or Full (Strict) SSL." />
+                                <label for="service-force-https-{{ $appId }}-trigger" class="mb-0! whitespace-nowrap text-[12px]!">{{ __('Redirect HTTP to HTTPS') }}</label>
+                                <x-helper :helper="__('Disable only when Cloudflare Tunnel or another proxy connects to Coolify over HTTP. Keep enabled when Cloudflare uses Full or Full (Strict) SSL.')" />
                                 <x-forms.listbox canGate="update" :canResource="$service" id="forceHttpsRedirects.{{ $appId }}"
                                     htmlId="service-force-https-{{ $appId }}" preserveValue
                                     onChange="updateForceHttps"
                                     :onChangeArgs="[(int) $appId]"
                                     :options="[
-                                        ['value' => true, 'label' => 'Enabled'],
-                                        ['value' => false, 'label' => 'Disabled'],
+                                        ['value' => true, 'label' => __('Enabled')],
+                                        ['value' => false, 'label' => __('Disabled')],
                                     ]" :disabled="! auth()->user()->can('update', $service)" />
                             </div>
                         @endif
@@ -215,8 +216,8 @@
             <div x-cloak
                 x-show="domainSearch.trim() && !hasDomainSearchResults(@js($domainSearchValues))"
                 class="px-4 py-8">
-                <x-empty size="sm" title="No domains found"
-                    description="No service or domain matches your search." icon-name="search" />
+                <x-empty size="sm" :title="__('No domains found')"
+                    :description="__('No service or domain matches your search.')" icon-name="search" />
             </div>
         </div>
     @endif
@@ -243,9 +244,9 @@
                         class="application-settings-form application-settings-section relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden lg:w-auto lg:min-w-2xl lg:max-w-4xl"
                         style="box-shadow: 0 0 0 1px var(--coollabs-hairline), var(--shadow-modal)">
                         <header class="flex-nowrap!">
-                            <h3 class="min-w-0 flex-1 truncate">Domain settings</h3>
+                            <h3 class="min-w-0 flex-1 truncate">{{ __('Domain settings') }}</h3>
                             <button type="button" @click="closeEditDomain()" class="icon-button shrink-0"
-                                aria-label="Close">
+                                aria-label="{{ __('Close') }}">
                                 <x-reicon name="x" class="size-4" />
                             </button>
                         </header>
@@ -254,21 +255,19 @@
                             <form wire:submit="updateDomain" class="flex flex-col gap-4">
                                 <div x-show="editingServiceLabel" x-cloak class="w-full">
                                     <div class="mb-1.5 flex h-4 w-full items-center gap-1.5">
-                                        <label class="mb-0! flex items-center gap-1 text-sm font-medium leading-4">Service application</label>
+                                        <label class="mb-0! flex items-center gap-1 text-sm font-medium leading-4">{{ __('Service application') }}</label>
                                     </div>
                                     <input type="text" class="input" readonly x-bind:value="editingServiceLabel" />
                                     <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">
-                                        Domains stay on the service they were added to. Remove and re-add to move.
+                                        {{ __('Domains stay on the service they were added to. Remove and re-add to move.') }}
                                     </p>
                                 </div>
 
                                 <x-forms.domain-input id="editingDomainParts" errorId="editingDomain" />
 
                                 @if ($editDomainDnsFailed)
-                                    <x-callout type="danger" title="DNS is not pointing to the right IP">
-                                        This domain does not currently resolve to this server.
-                                        Traffic may not reach Coolify until you update DNS.
-                                        Are you sure you want to save it anyway?
+                                    <x-callout type="danger" :title="__('DNS is not pointing to the right IP')">
+                                        {{ __('This domain does not currently resolve to this server. Traffic may not reach Coolify until you update DNS. Are you sure you want to save it anyway?') }}
                                         @if (filled($editDomainDnsMessage))
                                             <div class="pt-2">{{ $editDomainDnsMessage }}</div>
                                         @endif
@@ -278,7 +277,7 @@
                                 @if ($editDomainDnsFailed)
                                     <div class="flex justify-end">
                                         <x-forms.button type="button" isError wire:click="confirmUpdateDomainDespiteDns">
-                                            Continue
+                                            {{ __('Continue') }}
                                         </x-forms.button>
                                     </div>
                                 @endif
@@ -287,25 +286,25 @@
                                     <div
                                         class="mt-4 grid grid-cols-1 gap-4 border-t border-neutral-200 pt-4 sm:grid-cols-2 dark:border-white/10">
                                         <x-forms.listbox id="editingIndexing" htmlId="service-domain-indexing"
-                                            label="Search engine indexing" portal
+                                            :label="__('Search engine indexing')" portal
                                             :options="[
-                                                ['value' => 'index', 'label' => 'Indexable'],
-                                                ['value' => 'noindex', 'label' => 'Noindex'],
+                                                ['value' => 'index', 'label' => __('Indexable')],
+                                                ['value' => 'noindex', 'label' => __('Noindex')],
                                             ]" />
                                         <x-forms.listbox id="editingRedirect" htmlId="service-domain-direction"
-                                            label="www redirect"
-                                            helper="Applies to all domains for this service application."
+                                            :label="__('www redirect')"
+                                            :helper="__('Applies to all domains for this service application.')"
                                             portal
                                             :options="[
-                                                ['value' => 'both', 'label' => 'No redirect'],
-                                                ['value' => 'www', 'label' => 'Redirect to www'],
-                                                ['value' => 'non-www', 'label' => 'Redirect to non-www'],
+                                                ['value' => 'both', 'label' => __('No redirect')],
+                                                ['value' => 'www', 'label' => __('Redirect to www')],
+                                                ['value' => 'non-www', 'label' => __('Redirect to non-www')],
                                             ]" />
                                     </div>
                                     <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-200 pt-4 dark:border-white/10">
-                                        <x-forms.button type="button" wire:click="regenerateEditingDomain">Regenerate hostname</x-forms.button>
+                                        <x-forms.button type="button" wire:click="regenerateEditingDomain">{{ __('Regenerate hostname') }}</x-forms.button>
                                         @unless ($editDomainDnsFailed)
-                                            <x-forms.button type="button" wire:click="updateDomain" isHighlighted>Save</x-forms.button>
+                                            <x-forms.button type="button" wire:click="updateDomain" isHighlighted>{{ __('Save') }}</x-forms.button>
                                         @endunless
                                     </div>
                             @endcan
@@ -332,28 +331,28 @@
                         class="application-settings-form application-settings-section relative w-full lg:min-w-[36rem] lg:max-w-2xl"
                         style="box-shadow: 0 0 0 1px var(--coollabs-hairline), var(--shadow-modal)">
                         <header>
-                            <h3>Use a different port?</h3>
+                            <h3>{{ __('Use a different port?') }}</h3>
                             <button type="button"
                                 @click="modalOpen = false; $wire.call('cancelRemovePort')"
-                                class="icon-button" aria-label="Close">
+                                class="icon-button" aria-label="{{ __('Close') }}">
                                 <x-reicon name="x" class="size-4" />
                             </button>
                         </header>
                         <div class="application-settings-section-body">
-                            <x-callout type="warning" title="Port requirement" class="mb-4">
-                                This service requires port <strong>{{ $requiredPort }}</strong> to function correctly.
-                                One or more of your domains use a different port, or none.
+                            <x-callout type="warning" :title="__('Port requirement')" class="mb-4">
+                                {!! __('This service requires port <strong>:port</strong> to function correctly.', ['port' => e($requiredPort)]) !!}
+                                {{ __('One or more of your domains use a different port, or none.') }}
                             </x-callout>
 
                             <div class="mt-4 flex flex-wrap justify-end gap-2 border-t border-neutral-200 pt-4 dark:border-white/[0.08]">
                                 <x-forms.button type="button"
                                     wire:click="cancelRemovePort"
                                     @click="modalOpen = false">
-                                    Keep required port
+                                    {{ __('Keep required port') }}
                                 </x-forms.button>
                                 <x-forms.button type="button" wire:click="confirmRemovePort"
                                     @click="modalOpen = false" isError>
-                                    Use this port anyway
+                                    {{ __('Use this port anyway') }}
                                 </x-forms.button>
                             </div>
                         </div>

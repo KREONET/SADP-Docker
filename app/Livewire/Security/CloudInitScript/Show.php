@@ -31,9 +31,9 @@ class Show extends Component
     protected function messages(): array
     {
         return [
-            'name.required' => 'Script name is required.',
-            'name.max' => 'Script name cannot exceed 255 characters.',
-            'script.required' => 'Cloud-init script content is required.',
+            'name.required' => __('Script name is required.'),
+            'name.max' => __('Script name cannot exceed 255 characters.'),
+            'script.required' => __('Cloud-init script content is required.'),
         ];
     }
 
@@ -50,7 +50,7 @@ class Show extends Component
             $this->name = $this->cloudInitScript->name;
             $this->script = $this->cloudInitScript->script;
         } catch (AuthorizationException) {
-            abort(403, 'You do not have permission to view this cloud-init script.');
+            abort(403, __('You do not have permission to view this cloud-init script.'));
         } catch (\Throwable) {
             abort(404);
         }
@@ -72,7 +72,7 @@ class Show extends Component
             'cloud_init_script_name' => $this->cloudInitScript->name,
         ]);
 
-        $this->dispatch('success', 'Cloud-init script updated successfully.');
+        $this->dispatch('success', __('Cloud-init script updated successfully.'));
         $this->dispatch('securityResourceChanged');
     }
 

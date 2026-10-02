@@ -66,7 +66,7 @@ class Health extends Component
             $this->authorize('update', $this->database);
             $this->syncData(true);
             $updateSuccessful = true;
-            $this->dispatch('success', 'Healthcheck updated. Restart the database to apply the changes.');
+            $this->dispatch('success', __('Healthcheck updated. Restart the database to apply the changes.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -87,7 +87,9 @@ class Health extends Component
             $this->healthCheckEnabled = ! $this->healthCheckEnabled;
             $this->syncData(true);
             $updateSuccessful = true;
-            $this->dispatch('success', 'Healthcheck '.($this->healthCheckEnabled ? 'enabled' : 'disabled').'. Restart the database to apply the changes.');
+            $this->dispatch('success', $this->healthCheckEnabled
+                ? __('Healthcheck enabled. Restart the database to apply the changes.')
+                : __('Healthcheck disabled. Restart the database to apply the changes.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }

@@ -64,7 +64,7 @@
 @endphp
 
 <aside class="application-settings-navigation min-w-0 xl:self-start">
-    <nav aria-label="Database settings"
+    <nav aria-label="{{ __('Database settings') }}"
         x-data="settingsSidebarAccordion({ activeGroup: @js($activeGroup), storageKey: 'coolify.settings-sidebar.database' })"
         class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
         @foreach ($groupedItems as $groupLabel => $groupItems)
@@ -73,7 +73,7 @@
             @endunless
             <button type="button" class="nav-section-toggle hidden xl:flex" @click="toggle(@js($groupLabel))"
                 :aria-expanded="isOpen(@js($groupLabel))">
-                <span>{{ $groupLabel }}</span>
+                <span>{{ __($groupLabel) }}</span>
                 <svg class="size-3 shrink-0 opacity-60 transition-transform"
                     :class="!isOpen(@js($groupLabel)) && '-rotate-90'" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -86,7 +86,7 @@
                     @if ($menuItem['navigate'] ?? true) {{ wireNavigate() }} @endif
                     href="{{ route($menuItem['route'], $databaseRouteParameters) }}">
                     <x-reicon :name="$menuItem['icon']" class="menu-item-icon" />
-                    <span class="menu-item-label">{{ $menuItem['label'] }}</span>
+                    <span class="menu-item-label">{{ __($menuItem['label']) }}</span>
                 </a>
                 @if ($menuItem['active'] && $menuItem['route'] === 'project.database.configuration' && $pageSections !== [])
                     <div class="nav-children hidden flex-col gap-0.5 py-1 xl:flex"
@@ -101,7 +101,7 @@
                             <button type="button" class="menu-subitem"
                                 :class="activeSection === '{{ $section['id'] }}' && 'menu-subitem-active'"
                                 @click="scrollToSection('{{ $section['id'] }}')">
-                                <span class="menu-item-label text-left">{{ $section['label'] }}</span>
+                                <span class="menu-item-label text-left">{{ __($section['label']) }}</span>
                             </button>
                         @endforeach
                     </div>

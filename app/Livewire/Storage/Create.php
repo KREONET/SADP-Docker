@@ -53,28 +53,31 @@ class Create extends Component
         return array_merge(
             ValidationPatterns::combinedMessages(),
             [
-                'region.required' => 'The Region field is required.',
-                'region.max' => 'The Region may not be greater than 255 characters.',
-                'key.required' => 'The Access Key field is required.',
-                'key.max' => 'The Access Key may not be greater than 255 characters.',
-                'secret.required' => 'The Secret Key field is required.',
-                'secret.max' => 'The Secret Key may not be greater than 255 characters.',
-                'bucket.required' => 'The Bucket field is required.',
-                'endpoint.required' => 'The Endpoint field is required.',
-                'endpoint.max' => 'The Endpoint may not be greater than 255 characters.',
+                'region.required' => __('The Region field is required.'),
+                'region.max' => __('The Region may not be greater than 255 characters.'),
+                'key.required' => __('The Access Key field is required.'),
+                'key.max' => __('The Access Key may not be greater than 255 characters.'),
+                'secret.required' => __('The Secret Key field is required.'),
+                'secret.max' => __('The Secret Key may not be greater than 255 characters.'),
+                'bucket.required' => __('The Bucket field is required.'),
+                'endpoint.required' => __('The Endpoint field is required.'),
+                'endpoint.max' => __('The Endpoint may not be greater than 255 characters.'),
             ]
         );
     }
 
-    protected $validationAttributes = [
-        'name' => 'Name',
-        'description' => 'Description',
-        'region' => 'Region',
-        'key' => 'Key',
-        'secret' => 'Secret',
-        'bucket' => 'Bucket',
-        'endpoint' => 'Endpoint',
-    ];
+    protected function validationAttributes(): array
+    {
+        return [
+            'name' => __('Name'),
+            'description' => __('Description'),
+            'region' => __('Region'),
+            'key' => __('Key'),
+            'secret' => __('Secret'),
+            'bucket' => __('Bucket'),
+            'endpoint' => __('Endpoint'),
+        ];
+    }
 
     public function submit()
     {
@@ -104,7 +107,7 @@ class Create extends Component
 
             return redirectRoute($this, 'storage.show', [$this->storage->uuid]);
         } catch (\Throwable $e) {
-            $this->dispatch('error', 'Failed to create storage.', $this->connectionErrorDescription($e));
+            $this->dispatch('error', __('Failed to create storage.'), $this->connectionErrorDescription($e));
             // return handleError($e, $this);
         }
     }
@@ -123,7 +126,7 @@ class Create extends Component
             return $description;
         }
 
-        $link = '<a class="font-medium underline" href="'.e($settingsUrl).'">Set them here.</a>';
+        $link = '<a class="font-medium underline" href="'.e($settingsUrl).'">'.e(__('Set them here.')).'</a>';
 
         return str_replace(e($settingsUrl), $link, $description);
     }

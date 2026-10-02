@@ -47,9 +47,9 @@ class CloneMe extends Component
     protected function messages(): array
     {
         return array_merge([
-            'selectedServer' => 'Please select a server.',
-            'selectedDestination' => 'Please select a server & destination.',
-            'newName.required' => 'Please enter a name for the new project or environment.',
+            'selectedServer' => __('Please select a server.'),
+            'selectedDestination' => __('Please select a server & destination.'),
+            'newName.required' => __('Please enter a name for the new project or environment.'),
         ], ValidationPatterns::nameMessages());
     }
 
@@ -100,7 +100,7 @@ class CloneMe extends Component
             ]);
             $selectedDestination = find_resource_destination_for_current_team($this->selectedDestination);
             if (! $selectedDestination) {
-                throw new \Exception('Destination not found.');
+                throw new \Exception(__('Destination not found.'));
             }
             auditLog('ui.project.clone_started', [
                 'team_id' => $this->project->team_id,
@@ -113,7 +113,7 @@ class CloneMe extends Component
             if ($type === 'project') {
                 $foundProject = Project::where('name', $this->newName)->first();
                 if ($foundProject) {
-                    throw new \Exception('Project with the same name already exists.');
+                    throw new \Exception(__('Project with the same name already exists.'));
                 }
                 $project = Project::create([
                     'name' => $this->newName,
@@ -130,7 +130,7 @@ class CloneMe extends Component
             } else {
                 $foundEnv = $this->project->environments()->where('name', $this->newName)->first();
                 if ($foundEnv) {
-                    throw new \Exception('Environment with the same name already exists.');
+                    throw new \Exception(__('Environment with the same name already exists.'));
                 }
                 $project = $this->project;
                 $environment = $this->project->environments()->create([

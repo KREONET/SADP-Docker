@@ -1,7 +1,7 @@
 @props([
-    'title' => 'Are you sure?',
+    'title' => null,
     'subtitle' => null,
-    'buttonTitle' => 'Open Modal',
+    'buttonTitle' => null,
     'isErrorButton' => false,
     'isHighlightedButton' => false,
     'disabled' => false,
@@ -16,6 +16,11 @@
     'isLarge' => false,
     'fixedHeight' => false,
 ])
+
+@php
+    $title ??= __('Are you sure?');
+    $buttonTitle ??= __('Open Modal');
+@endphp
 
 <div x-data="{ modalOpen: @if ($wireOpen) $wire.entangle(@js($wireOpen)) @else false @endif }"
     x-init="$watch('modalOpen', value => { if (!value) { $wire.dispatch('modalClosed') } })"

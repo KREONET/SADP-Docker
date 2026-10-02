@@ -1,18 +1,18 @@
 <div class="w-full max-h-[70vh] overflow-y-auto pr-1 pt-1">
     <div class="flex flex-col gap-6">
         <div>
-            <h3>Resource</h3>
+            <h3>{{ __('Resource') }}</h3>
             <div class="pt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <x-forms.copy-input label="Name" :text="$resource->name ?? ''" />
+                <x-forms.copy-input :label="__('Name')" :text="$resource->name ?? ''" />
                 <x-forms.copy-input label="UUID" :text="$resource->uuid ?? ''" />
             </div>
         </div>
 
         @if ($environment_uuid)
             <div>
-                <h3>Environment</h3>
+                <h3>{{ __('Environment') }}</h3>
                 <div class="pt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <x-forms.copy-input label="Name" :text="$environment_name ?? ''" />
+                    <x-forms.copy-input :label="__('Name')" :text="$environment_name ?? ''" />
                     <x-forms.copy-input label="UUID" :text="$environment_uuid" />
                 </div>
             </div>
@@ -20,9 +20,9 @@
 
         @if ($project_uuid)
             <div>
-                <h3>Project</h3>
+                <h3>{{ __('Project') }}</h3>
                 <div class="pt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <x-forms.copy-input label="Name" :text="$project_name ?? ''" />
+                    <x-forms.copy-input :label="__('Name')" :text="$project_name ?? ''" />
                     <x-forms.copy-input label="UUID" :text="$project_uuid" />
                 </div>
             </div>
@@ -30,9 +30,9 @@
 
         @if ($server_uuid)
             <div>
-                <h3>Server</h3>
+                <h3>{{ __('Server') }}</h3>
                 <div class="pt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <x-forms.copy-input label="Name" :text="$server_name ?? ''" />
+                    <x-forms.copy-input :label="__('Name')" :text="$server_name ?? ''" />
                     <x-forms.copy-input label="UUID" :text="$server_uuid" />
                 </div>
             </div>
@@ -40,13 +40,13 @@
 
         @if (! empty($stack_applications) || ! empty($stack_databases))
             <div>
-                <h3>Stack Sub-Resources</h3>
+                <h3>{{ __('Stack Sub-Resources') }}</h3>
                 <div class="pt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
                     @foreach ($stack_applications as $item)
-                        <x-forms.copy-input :label="'Application: ' . $item['name']" :text="$item['uuid']" />
+                        <x-forms.copy-input :label="__('Application: :name', ['name' => $item['name']])" :text="$item['uuid']" />
                     @endforeach
                     @foreach ($stack_databases as $item)
-                        <x-forms.copy-input :label="'Database: ' . $item['name']" :text="$item['uuid']" />
+                        <x-forms.copy-input :label="__('Database: :name', ['name' => $item['name']])" :text="$item['uuid']" />
                     @endforeach
                 </div>
             </div>

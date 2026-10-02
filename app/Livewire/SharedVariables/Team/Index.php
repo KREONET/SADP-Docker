@@ -26,7 +26,7 @@ class Index extends Component
 
             $found = $this->team->environment_variables()->where('key', $data['key'])->first();
             if ($found) {
-                throw new \Exception('Variable already exists.');
+                throw new \Exception(__('Variable already exists.'));
             }
             $this->team->environment_variables()->create([
                 'key' => $data['key'],
@@ -118,7 +118,7 @@ class Index extends Component
         });
 
         if ($changesMade) {
-            $this->dispatch('success', 'Environment variables updated.');
+            $this->dispatch('success', __('Environment variables updated.'));
         }
     }
 

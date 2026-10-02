@@ -32,7 +32,7 @@
                 <span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {{ $code['color'] }};" aria-hidden="true"></span>
                 <span class="text-[12px] text-neutral-500 dark:text-fg-dim">{{ $code['label'] }}</span>
                 <span class="text-[12px] font-semibold tabular-nums text-black dark:text-fg"
-                    title="{{ number_format($code['count']) }} responses">{{ compactNumber($code['count']) }}</span>
+                    title="{{ __(':count responses', ['count' => number_format($code['count'])]) }}">{{ compactNumber($code['count']) }}</span>
             </div>
         @endforeach
     </div>
@@ -61,11 +61,11 @@
                 <span x-text="tip.label"></span>
             </div>
             <div class="mt-0.5 text-[11px] text-neutral-300">
-                <span x-text="tip.count"></span> responses · <span x-text="tip.pct"></span>
+                <span x-text="tip.count"></span> {{ __('responses') }} · <span x-text="tip.pct"></span>
             </div>
         </div>
     @else
-        <x-empty size="sm" title="No status data" description="No responses were recorded for the selected range."
+        <x-empty size="sm" :title="__('No status data')" :description="__('No responses were recorded for the selected range.')"
             icon-name="network" />
     @endif
 </div>

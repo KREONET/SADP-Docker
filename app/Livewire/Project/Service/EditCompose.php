@@ -68,9 +68,9 @@ class EditCompose extends Component
     {
         $isValid = validateComposeFile($this->dockerComposeRaw, $this->service->server_id);
         if ($isValid !== 'OK') {
-            $this->dispatch('error', "Invalid docker-compose file.\n$isValid");
+            $this->dispatch('error', __('Invalid docker-compose file.')."\n$isValid");
         } else {
-            $this->dispatch('success', 'Docker compose is valid.');
+            $this->dispatch('success', __('Docker compose is valid.'));
         }
     }
 
@@ -95,7 +95,7 @@ class EditCompose extends Component
             $this->service->refresh()->update([
                 'is_container_label_escape_enabled' => $this->isContainerLabelEscapeEnabled,
             ]);
-            $this->dispatch('success', 'Service updated successfully');
+            $this->dispatch('success', __('Service updated successfully'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

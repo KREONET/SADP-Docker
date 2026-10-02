@@ -38,12 +38,12 @@ class TerminalAccess extends Component
 
             // Check if user is admin or owner
             if (! auth()->user()->isAdmin()) {
-                throw new \Exception('Only team administrators and owners can modify terminal access.');
+                throw new \Exception(__('Only team administrators and owners can modify terminal access.'));
             }
 
             // Verify password
             if (! verifyPasswordConfirmation($password, $this)) {
-                return 'The provided password is incorrect.';
+                return __('The provided password is incorrect.');
             }
 
             // Toggle the terminal setting
@@ -53,8 +53,7 @@ class TerminalAccess extends Component
             // Update the local property
             $this->isTerminalEnabled = $this->server->settings->is_terminal_enabled;
 
-            $status = $this->isTerminalEnabled ? 'enabled' : 'disabled';
-            $this->dispatch('success', "Terminal access has been {$status}.");
+            $this->dispatch('success', $this->isTerminalEnabled ? __('Terminal access has been enabled.') : __('Terminal access has been disabled.'));
 
             return true;
         } catch (\Throwable $e) {

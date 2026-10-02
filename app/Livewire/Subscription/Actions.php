@@ -58,7 +58,7 @@ class Actions extends Component
     public function updateQuantity(string $password = ''): bool
     {
         if ($this->quantity < UpdateSubscriptionQuantity::MIN_SERVER_LIMIT) {
-            $this->dispatch('error', 'Minimum server limit is '.UpdateSubscriptionQuantity::MIN_SERVER_LIMIT.'.');
+            $this->dispatch('error', __('Minimum server limit is :limit.', ['limit' => UpdateSubscriptionQuantity::MIN_SERVER_LIMIT]));
             $this->quantity = UpdateSubscriptionQuantity::MIN_SERVER_LIMIT;
 
             return true;
@@ -73,12 +73,12 @@ class Actions extends Component
         if ($result['success']) {
             $this->server_limits = $this->quantity;
             $this->pricePreview = null;
-            $this->dispatch('success', 'Server limit updated to '.$this->quantity.'.');
+            $this->dispatch('success', __('Server limit updated to :quantity.', ['quantity' => $this->quantity]));
 
             return true;
         }
 
-        $this->dispatch('error', $result['error'] ?? 'Failed to update server limit.');
+        $this->dispatch('error', $result['error'] ?? __('Failed to update server limit.'));
         $this->quantity = (int) $this->server_limits;
 
         return true;
@@ -105,13 +105,13 @@ class Actions extends Component
         $result = app(RefundSubscription::class)->execute(currentTeam());
 
         if ($result['success']) {
-            $this->dispatch('success', 'Subscription refunded successfully.');
+            $this->dispatch('success', __('Subscription refunded successfully.'));
             $this->redirect(route('subscription.index'), navigate: true);
 
             return true;
         }
 
-        $this->dispatch('error', 'Something went wrong with the refund. Please <a href="'.config('constants.urls.contact').'" target="_blank" class="underline">contact us</a>.');
+        $this->dispatch('error', __('Something went wrong with the refund. Please <a href=":url" target="_blank" class="underline">contact us</a>.', ['url' => e(config('constants.urls.contact'))]));
 
         return true;
     }
@@ -127,13 +127,13 @@ class Actions extends Component
             $result = app(RefundSubscription::class)->execute(currentTeam());
 
             if ($result['success']) {
-                $this->dispatch('success', 'Subscription refunded and cancelled successfully.');
+                $this->dispatch('success', __('Subscription refunded and cancelled successfully.'));
                 $this->redirect(route('subscription.index'), navigate: true);
 
                 return true;
             }
 
-            $this->dispatch('error', 'Something went wrong with the refund. Please <a href="'.config('constants.urls.contact').'" target="_blank" class="underline">contact us</a>.');
+            $this->dispatch('error', __('Something went wrong with the refund. Please <a href=":url" target="_blank" class="underline">contact us</a>.', ['url' => e(config('constants.urls.contact'))]));
 
             return true;
         }
@@ -142,7 +142,7 @@ class Actions extends Component
         $subscription = $team->subscription;
 
         if (! $subscription?->stripe_subscription_id) {
-            $this->dispatch('error', 'Something went wrong with the cancellation. Please <a href="'.config('constants.urls.contact').'" target="_blank" class="underline">contact us</a>.');
+            $this->dispatch('error', __('Something went wrong with the cancellation. Please <a href=":url" target="_blank" class="underline">contact us</a>.', ['url' => e(config('constants.urls.contact'))]));
 
             return true;
         }
@@ -164,14 +164,14 @@ class Actions extends Component
 
             \Log::info("Subscription {$subscription->stripe_subscription_id} cancelled immediately for team {$team->name}");
 
-            $this->dispatch('success', 'Subscription cancelled successfully.');
+            $this->dispatch('success', __('Subscription cancelled successfully.'));
             $this->redirect(route('subscription.index'), navigate: true);
 
             return true;
         } catch (\Exception $e) {
             \Log::error("Immediate cancellation error for team {$team->id}: ".$e->getMessage());
 
-            $this->dispatch('error', 'Something went wrong with the cancellation. Please <a href="'.config('constants.urls.contact').'" target="_blank" class="underline">contact us</a>.');
+            $this->dispatch('error', __('Something went wrong with the cancellation. Please <a href=":url" target="_blank" class="underline">contact us</a>.', ['url' => e(config('constants.urls.contact'))]));
 
             return true;
         }
@@ -186,12 +186,12 @@ class Actions extends Component
         $result = (new CancelSubscriptionAtPeriodEnd)->execute(currentTeam());
 
         if ($result['success']) {
-            $this->dispatch('success', 'Subscription will be cancelled at the end of the billing period.');
+            $this->dispatch('success', __('Subscription will be cancelled at the end of the billing period.'));
 
             return true;
         }
 
-        $this->dispatch('error', 'Something went wrong with the cancellation. Please <a href="'.config('constants.urls.contact').'" target="_blank" class="underline">contact us</a>.');
+        $this->dispatch('error', __('Something went wrong with the cancellation. Please <a href=":url" target="_blank" class="underline">contact us</a>.', ['url' => e(config('constants.urls.contact'))]));
 
         return true;
     }
@@ -201,12 +201,12 @@ class Actions extends Component
         $result = (new ResumeSubscription)->execute(currentTeam());
 
         if ($result['success']) {
-            $this->dispatch('success', 'Subscription resumed successfully.');
+            $this->dispatch('success', __('Subscription resumed successfully.'));
 
             return true;
         }
 
-        $this->dispatch('error', 'Something went wrong resuming the subscription. Please <a href="'.config('constants.urls.contact').'" target="_blank" class="underline">contact us</a>.');
+        $this->dispatch('error', __('Something went wrong resuming the subscription. Please <a href=":url" target="_blank" class="underline">contact us</a>.', ['url' => e(config('constants.urls.contact'))]));
 
         return true;
     }

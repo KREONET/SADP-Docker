@@ -39,7 +39,7 @@
     @endif
     @if ($loading)
         <div class="{{ $defaultClass }} flex w-full items-center text-neutral-500 dark:text-fg-dim" aria-busy="true">
-            <x-loading :text="$loadingText" />
+            <x-loading :text="$loadingText ?? __('Loading...')" />
         </div>
     @elseif ($type === 'password')
         <div class="relative" x-data="{ type: 'password' }" @success.window="type = 'password'">
@@ -56,7 +56,7 @@
             @if ($allowToPeak)
                 <button type="button" x-on:click="type = type === 'password' ? 'text' : 'password'"
                     class="password-toggle flex absolute inset-y-0 right-0 z-10 items-center pr-2 cursor-pointer text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white"
-                    aria-label="Toggle password visibility">
+                    aria-label="{{ __('Toggle password visibility') }}">
                     {{-- Eye icon (shown when password is hidden) --}}
                     <x-reicon name="eye" x-show="type === 'password'" class="size-[18px]" />
                     {{-- Eye-off2 icon (shown when password is visible) --}}
@@ -64,7 +64,7 @@
                 </button>
             @endif
             @if ($copyable)
-                <x-copy-button :resolve="$copyResolve" label="Copy to clipboard"
+                <x-copy-button :resolve="$copyResolve" :label="__('Copy to clipboard')"
                     class="absolute top-1/2 z-10 -translate-y-1/2 {{ $allowToPeak ? 'right-8' : 'right-1' }}" />
             @endif
 
@@ -84,7 +84,7 @@
             placeholder="{{ $attributes->get('placeholder') }}"
             @if ($autofocus) x-ref="autofocusInput" autofocus @endif>
         @if ($copyable)
-                <x-copy-button :resolve="$copyResolve" label="Copy to clipboard"
+                <x-copy-button :resolve="$copyResolve" :label="__('Copy to clipboard')"
                     class="absolute top-1/2 right-1 z-10 -translate-y-1/2" />
             </div>
         @endif
@@ -101,7 +101,7 @@
             <span class="text-red-500 label-text-alt">
                 @if ($validationLink)
                     {{ str($message)->beforeLast($validationLink)->trim() }}
-                    <a class="font-medium underline" href="{{ $validationLink }}">Set them here.</a>
+                    <a class="font-medium underline" href="{{ $validationLink }}">{{ __('Set them here.') }}</a>
                 @else
                     {{ $message }}
                 @endif

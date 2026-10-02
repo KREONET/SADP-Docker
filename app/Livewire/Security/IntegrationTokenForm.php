@@ -79,9 +79,9 @@ class IntegrationTokenForm extends Component
     protected function messages(): array
     {
         return [
-            'capabilities.required' => 'Select at least one capability.',
-            'capabilities.min' => 'Select at least one capability.',
-            'token.regex' => 'Use a Doppler service token (dp.st.*) or service account token (dp.sa.*).',
+            'capabilities.required' => __('Select at least one capability.'),
+            'capabilities.min' => __('Select at least one capability.'),
+            'token.regex' => __('Use a Doppler service token (dp.st.*) or service account token (dp.sa.*).'),
         ];
     }
 
@@ -126,7 +126,7 @@ class IntegrationTokenForm extends Component
                 $this->dispatch('close-modal');
             }
 
-            $this->dispatch('success', 'Integration token added successfully.');
+            $this->dispatch('success', __('Integration token added successfully.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }

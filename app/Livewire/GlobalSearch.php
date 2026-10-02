@@ -252,7 +252,7 @@ class GlobalSearch extends Component
         // Try to get from Redis cache first
         $cacheKey = self::getCacheKey(auth()->user()->currentTeam()->id);
 
-        $this->allSearchableItems = Cache::remember($cacheKey, 300, function () {
+        $this->allSearchableItems = $this->localizeSearchableItems(Cache::remember($cacheKey, 300, function () {
             $items = collect();
             $team = auth()->user()->currentTeam();
 
@@ -558,9 +558,6 @@ class GlobalSearch extends Component
                 ->get()
                 ->map(function ($project) {
                     $resourceCount = $project->applications_count + $project->services_count;
-                    $resourceSummary = $resourceCount > 0
-                        ? "{$resourceCount} resource".($resourceCount !== 1 ? 's' : '')
-                        : 'No resources';
 
                     return [
                         'id' => $project->id,
@@ -571,7 +568,7 @@ class GlobalSearch extends Component
                         'link' => $project->navigateTo(),
                         'project' => null,
                         'environment' => null,
-                        'resource_count' => $resourceSummary,
+                        'resource_total' => $resourceCount,
                         'environment_count' => $project->environments_count,
                         'search_text' => strtolower($project->name.' '.$project->description.' project projects'),
                     ];
@@ -584,35 +581,21 @@ class GlobalSearch extends Component
                 ->get()
                 ->map(function ($environment) {
                     $resourceCount = $environment->applications_count + $environment->services_count;
-                    $resourceSummary = $resourceCount > 0
-                        ? "{$resourceCount} resource".($resourceCount !== 1 ? 's' : '')
-                        : 'No resources';
-
-                    // Build description with project context
-                    $descriptionParts = [];
-                    if ($environment->project) {
-                        $descriptionParts[] = "Project: {$environment->project->name}";
-                    }
-                    if ($environment->description) {
-                        $descriptionParts[] = $environment->description;
-                    }
-                    if (empty($descriptionParts)) {
-                        $descriptionParts[] = $resourceSummary;
-                    }
 
                     return [
                         'id' => $environment->id,
                         'name' => $environment->name,
                         'type' => 'environment',
                         'uuid' => $environment->uuid,
-                        'description' => implode(' • ', $descriptionParts),
+                        'description' => $environment->description,
+                        'environment_description' => $environment->description,
                         'link' => route('project.resource.index', [
                             'project_uuid' => $environment->project->uuid,
                             'environment_uuid' => $environment->uuid,
                         ]),
                         'project' => $environment->project->name ?? null,
                         'environment' => null,
-                        'resource_count' => $resourceSummary,
+                        'resource_total' => $resourceCount,
                         'search_text' => strtolower($environment->name.' '.$environment->description.' '.$environment->project->name.' environment'),
                     ];
                 });
@@ -761,7 +744,51 @@ class GlobalSearch extends Component
                 ->merge($environments);
 
             return $items->toArray();
-        });
+        }));
+    }
+
+    /**
+     * Translate the cached (team-wide, locale-neutral) searchable items for the current request locale.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function localizeSearchableItems(array $items): array
+    {
+        return array_map(function (array $item): array {
+            $type = $item['type'] ?? null;
+
+            if ($type === 'navigation') {
+                $item['name'] = __($item['name']);
+                $item['description'] = __($item['description']);
+
+                return $item;
+            }
+
+            if (! array_key_exists('resource_total', $item)) {
+                return $item;
+            }
+
+            $item['resource_count'] = $item['resource_total'] > 0
+                ? trans_choice(':count resource|:count resources', $item['resource_total'])
+                : __('No resources');
+
+            if ($type === 'environment') {
+                $descriptionParts = [];
+                if (filled($item['project'] ?? null)) {
+                    $descriptionParts[] = __('Project: :name', ['name' => $item['project']]);
+                }
+                if (filled($item['environment_description'] ?? null)) {
+                    $descriptionParts[] = $item['environment_description'];
+                }
+                if ($descriptionParts === []) {
+                    $descriptionParts[] = $item['resource_count'];
+                }
+                $item['description'] = implode(' • ', $descriptionParts);
+            }
+
+            return $item;
+        }, $items);
     }
 
     private function search()
@@ -785,8 +812,8 @@ class GlobalSearch extends Component
             'db' => ['database', 'type' => 'standalone-postgresql'],
             'database' => ['database', 'type' => 'standalone-postgresql'],
             'databases' => ['database', 'type' => 'standalone-postgresql'],
-            'service' => ['service', 'category' => 'Services'],
-            'services' => ['service', 'category' => 'Services'],
+            'service' => ['service', 'category' => __('Services')],
+            'services' => ['service', 'category' => __('Services')],
             'project' => ['project', 'type' => 'project'],
             'projects' => ['project', 'type' => 'project'],
         ];
@@ -938,11 +965,11 @@ class GlobalSearch extends Component
         // Project - can be created if user has createAnyResource permission
         if ($user->can('createAnyResource')) {
             $items->push([
-                'name' => 'Project',
-                'description' => 'Create a new project to organize your resources',
+                'name' => __('Project'),
+                'description' => __('Create a new project to organize your resources'),
                 'quickcommand' => '(type: new project)',
                 'type' => 'project',
-                'category' => 'Quick Actions',
+                'category' => __('Quick Actions'),
                 'component' => 'project.add-empty',
             ]);
         }
@@ -950,33 +977,33 @@ class GlobalSearch extends Component
         // Server - can be created if user is admin or owner
         if ($user->isAdmin() || $user->isOwner()) {
             $items->push([
-                'name' => 'Server',
-                'description' => 'Add a new server to deploy your applications',
+                'name' => __('Server'),
+                'description' => __('Add a new server to deploy your applications'),
                 'quickcommand' => '(type: new server)',
                 'type' => 'server',
-                'category' => 'Quick Actions',
+                'category' => __('Quick Actions'),
                 'component' => 'server.create',
             ]);
         }
 
         // Team - can be created by anyone (they become owner of new team)
         $items->push([
-            'name' => 'Team',
-            'description' => 'Create a new team to collaborate with others',
+            'name' => __('Team'),
+            'description' => __('Create a new team to collaborate with others'),
             'quickcommand' => '(type: new team)',
             'type' => 'team',
-            'category' => 'Quick Actions',
+            'category' => __('Quick Actions'),
             'component' => 'team.create',
         ]);
 
         // Storage - can be created if user is admin or owner
         if ($user->isAdmin() || $user->isOwner()) {
             $items->push([
-                'name' => 'S3 Storage',
-                'description' => 'Add S3 storage for backups and file uploads',
+                'name' => __('S3 Storage'),
+                'description' => __('Add S3 storage for backups and file uploads'),
                 'quickcommand' => '(type: new storage)',
                 'type' => 'storage',
-                'category' => 'Quick Actions',
+                'category' => __('Quick Actions'),
                 'component' => 'storage.create',
             ]);
         }
@@ -984,11 +1011,11 @@ class GlobalSearch extends Component
         // Private Key - can be created if user is admin or owner
         if ($user->isAdmin() || $user->isOwner()) {
             $items->push([
-                'name' => 'Private Key',
-                'description' => 'Add an SSH private key for server access',
+                'name' => __('Private Key'),
+                'description' => __('Add an SSH private key for server access'),
                 'quickcommand' => '(type: new private key)',
                 'type' => 'private-key',
-                'category' => 'Quick Actions',
+                'category' => __('Quick Actions'),
                 'component' => 'security.private-key.create',
             ]);
         }
@@ -996,11 +1023,11 @@ class GlobalSearch extends Component
         // GitHub Source - can be created if user has createAnyResource permission
         if ($user->can('createAnyResource')) {
             $items->push([
-                'name' => 'GitHub App',
-                'description' => 'Connect a GitHub app for source control',
+                'name' => __('GitHub App'),
+                'description' => __('Connect a GitHub app for source control'),
                 'quickcommand' => '(type: new github)',
                 'type' => 'source',
-                'category' => 'Quick Actions',
+                'category' => __('Quick Actions'),
                 'component' => 'source.github.create',
             ]);
         }
@@ -1010,57 +1037,57 @@ class GlobalSearch extends Component
         if ($user->can('createAnyResource')) {
             // Git-based applications
             $items->push([
-                'name' => 'Public Git Repository',
-                'description' => 'Deploy from any public Git repository',
+                'name' => __('Public Git Repository'),
+                'description' => __('Deploy from any public Git repository'),
                 'quickcommand' => '(type: new public)',
                 'type' => 'public',
-                'category' => 'Applications',
+                'category' => __('Applications'),
                 'resourceType' => 'application',
             ]);
 
             $items->push([
-                'name' => 'Private Repository (GitHub App)',
-                'description' => 'Deploy private repositories through GitHub Apps',
+                'name' => __('Private Repository (GitHub App)'),
+                'description' => __('Deploy private repositories through GitHub Apps'),
                 'quickcommand' => '(type: new private github)',
                 'type' => 'private-gh-app',
-                'category' => 'Applications',
+                'category' => __('Applications'),
                 'resourceType' => 'application',
             ]);
 
             $items->push([
-                'name' => 'Private Repository (Deploy Key)',
-                'description' => 'Deploy private repositories with a deploy key',
+                'name' => __('Private Repository (Deploy Key)'),
+                'description' => __('Deploy private repositories with a deploy key'),
                 'quickcommand' => '(type: new private deploy)',
                 'type' => 'private-deploy-key',
-                'category' => 'Applications',
+                'category' => __('Applications'),
                 'resourceType' => 'application',
             ]);
 
             // Docker-based applications
             $items->push([
                 'name' => 'Dockerfile',
-                'description' => 'Deploy a simple Dockerfile without Git',
+                'description' => __('Deploy a simple Dockerfile without Git'),
                 'quickcommand' => '(type: new dockerfile)',
                 'type' => 'dockerfile',
-                'category' => 'Applications',
+                'category' => __('Applications'),
                 'resourceType' => 'application',
             ]);
 
             $items->push([
                 'name' => 'Docker Compose',
-                'description' => 'Deploy complex applications with Docker Compose',
+                'description' => __('Deploy complex applications with Docker Compose'),
                 'quickcommand' => '(type: new compose)',
                 'type' => 'docker-compose-empty',
-                'category' => 'Applications',
+                'category' => __('Applications'),
                 'resourceType' => 'application',
             ]);
 
             $items->push([
-                'name' => 'Docker Image',
-                'description' => 'Deploy an existing Docker image from any registry',
+                'name' => __('Docker Image'),
+                'description' => __('Deploy an existing Docker image from any registry'),
                 'quickcommand' => '(type: new image)',
                 'type' => 'docker-image',
-                'category' => 'Applications',
+                'category' => __('Applications'),
                 'resourceType' => 'application',
             ]);
         }
@@ -1070,90 +1097,90 @@ class GlobalSearch extends Component
         if ($user->can('createAnyResource')) {
             $items->push([
                 'name' => 'PostgreSQL',
-                'description' => 'Robust, advanced open-source database',
+                'description' => __('Robust, advanced open-source database'),
                 'quickcommand' => '(type: new postgresql)',
                 'type' => 'postgresql',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/postgresql.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'MySQL',
-                'description' => 'Popular open-source relational database',
+                'description' => __('Popular open-source relational database'),
                 'quickcommand' => '(type: new mysql)',
                 'type' => 'mysql',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/mysql.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'MariaDB',
-                'description' => 'Community-developed fork of MySQL',
+                'description' => __('Community-developed fork of MySQL'),
                 'quickcommand' => '(type: new mariadb)',
                 'type' => 'mariadb',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/mariadb.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'Redis',
-                'description' => 'In-memory data structure store',
+                'description' => __('In-memory data structure store'),
                 'quickcommand' => '(type: new redis)',
                 'type' => 'redis',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/redis.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'KeyDB',
-                'description' => 'High-performance Redis alternative',
+                'description' => __('High-performance Redis alternative'),
                 'quickcommand' => '(type: new keydb)',
                 'type' => 'keydb',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/keydb.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'Dragonfly',
-                'description' => 'Modern in-memory datastore',
+                'description' => __('Modern in-memory datastore'),
                 'quickcommand' => '(type: new dragonfly)',
                 'type' => 'dragonfly',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/dragonfly.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'MongoDB',
-                'description' => 'Document-oriented NoSQL database',
+                'description' => __('Document-oriented NoSQL database'),
                 'quickcommand' => '(type: new mongodb)',
                 'type' => 'mongodb',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/mongodb.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'Clickhouse',
-                'description' => 'Column-oriented database for analytics',
+                'description' => __('Column-oriented database for analytics'),
                 'quickcommand' => '(type: new clickhouse)',
                 'type' => 'clickhouse',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/clickhouse-icon.svg',
                 'resourceType' => 'database',
             ]);
 
             $items->push([
                 'name' => 'SQLite',
-                'description' => 'Lightweight file-based relational database',
+                'description' => __('Lightweight file-based relational database'),
                 'quickcommand' => '(type: new sqlite)',
                 'type' => 'sqlite',
-                'category' => 'Databases',
+                'category' => __('Databases'),
                 'logo' => 'svgs/resources/sqlite.svg',
                 'resourceType' => 'database',
             ]);
@@ -1253,7 +1280,7 @@ class GlobalSearch extends Component
         if (! $server) {
             $this->loadingDestinations = false;
 
-            return $this->dispatch('error', message: 'Server not found');
+            return $this->dispatch('error', message: __('Server not found'));
         }
 
         $destinations = $server->destinations();
@@ -1261,7 +1288,7 @@ class GlobalSearch extends Component
         if ($destinations->isEmpty()) {
             $this->loadingDestinations = false;
 
-            return $this->dispatch('error', message: 'No destinations found on this server');
+            return $this->dispatch('error', message: __('No destinations found on this server'));
         }
 
         $this->availableDestinations = $destinations->map(fn ($d) => [
@@ -1297,7 +1324,7 @@ class GlobalSearch extends Component
         if ($projects->isEmpty()) {
             $this->loadingProjects = false;
 
-            return $this->dispatch('error', message: 'Please create a project first');
+            return $this->dispatch('error', message: __('Please create a project first'));
         }
 
         $this->availableProjects = $projects->map(fn ($p) => [
@@ -1338,7 +1365,7 @@ class GlobalSearch extends Component
         if ($environments->isEmpty()) {
             $this->loadingEnvironments = false;
 
-            return $this->dispatch('error', message: 'No environments found in project');
+            return $this->dispatch('error', message: __('No environments found in project'));
         }
 
         $this->availableEnvironments = $environments->map(fn ($e) => [
@@ -1479,7 +1506,7 @@ class GlobalSearch extends Component
             'projects' => 'Applications',
         ];
 
-        $category = $categoryMap[$categoryKeyword] ?? null;
+        $category = isset($categoryMap[$categoryKeyword]) ? __($categoryMap[$categoryKeyword]) : null;
 
         if (! $category) {
             return [];
@@ -1536,9 +1563,9 @@ class GlobalSearch extends Component
         foreach ($allServices as $serviceKey => $service) {
             $items->push([
                 'name' => str($serviceKey)->headline()->toString(),
-                'description' => data_get($service, 'slogan', 'Deploy '.str($serviceKey)->headline()),
+                'description' => data_get($service, 'slogan', __('Deploy :name', ['name' => str($serviceKey)->headline()->toString()])),
                 'type' => 'one-click-service-'.$serviceKey,
-                'category' => 'Services',
+                'category' => __('Services'),
                 'resourceType' => 'service',
             ] + service_logo_urls(data_get($service, 'logo')) + array_filter([
                 'amd_only' => data_get($service, 'amd_only') ? true : null,

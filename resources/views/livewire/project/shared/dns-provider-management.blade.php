@@ -11,11 +11,11 @@
                 <div class="relative flex min-h-full items-start justify-center p-4 sm:items-center">
                     <div x-show="modalOpen" x-trap.inert.noscroll="modalOpen"
                         class="application-settings-form application-settings-section relative flex w-full max-w-2xl flex-col overflow-hidden">
-                        <header class="flex-nowrap!"><h3 class="min-w-0 flex-1 truncate">Configure DNS</h3>
-                            <button type="button" wire:click="closeDnsProviderModal" class="icon-button" aria-label="Close"><x-reicon name="x" class="size-4" /></button>
+                        <header class="flex-nowrap!"><h3 class="min-w-0 flex-1 truncate">{{ __('Configure DNS') }}</h3>
+                            <button type="button" wire:click="closeDnsProviderModal" class="icon-button" aria-label="{{ __('Close') }}"><x-reicon name="x" class="size-4" /></button>
                         </header>
                         <div class="application-settings-section-body flex flex-col gap-3">
-                            <p class="text-sm text-neutral-600 dark:text-fg-dim">Coolify matched each hostname to a zone available through your connected DNS credentials.</p>
+                            <p class="text-sm text-neutral-600 dark:text-fg-dim">{{ __('Coolify matched each hostname to a zone available through your connected DNS credentials.') }}</p>
                             @foreach ($dnsProviderProposals as $proposal)
                                 @php($key = $proposal['hostname'].'|'.$proposal['zone_id'])
                                 <div wire:key="dns-proposal-{{ $key }}" class="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 dark:border-white/[0.08] sm:flex-row sm:items-center sm:justify-between">
@@ -23,21 +23,21 @@
                                         <div class="text-xs text-neutral-500 dark:text-fg-dim">{{ $proposal['credential'] }} · {{ $proposal['zone'] }} · {{ $proposal['target'] }}</div>
                                     </div>
                                     @if ($proposal['managed'])
-                                        <x-status-badge status="Managed by Coolify" type="success" />
+                                        <x-status-badge :status="__('Managed by Coolify')" type="success" />
                                     @elseif (isset($dnsProviderConflicts[$key]))
                                         @php($conflict = $dnsProviderConflicts[$key])
-                                        <div class="flex flex-col items-end gap-2 text-xs"><span class="text-red-600 dark:text-red-400">Currently {{ $conflict['current'] }}</span>
-                                            <x-modal-confirmation title="Replace conflicting DNS record?" isErrorButton buttonTitle="Replace record"
+                                        <div class="flex flex-col items-end gap-2 text-xs"><span class="text-red-600 dark:text-red-400">{{ __('Currently :value', ['value' => $conflict['current']]) }}</span>
+                                            <x-modal-confirmation :title="__('Replace conflicting DNS record?')" isErrorButton :buttonTitle="__('Replace record')"
                                                 submitAction="replaceManagedDnsRecord({{ \Illuminate\Support\Js::from($proposal['hostname']) }}, {{ $proposal['zone_id'] }})"
-                                                :actions="['Replace '.$proposal['hostname'].' value '.$conflict['current'].' with '.$conflict['proposed'], 'Coolify will manage the replaced record.']"
-                                                :confirmWithPassword="false" :confirmWithText="false" step2ButtonText="Replace record"
+                                                :actions="[__('Replace :hostname value :current with :proposed', ['hostname' => $proposal['hostname'], 'current' => $conflict['current'], 'proposed' => $conflict['proposed']]), __('Coolify will manage the replaced record.')]"
+                                                :confirmWithPassword="false" :confirmWithText="false" :step2ButtonText="__('Replace record')"
                                                 canGate="update" :canResource="$dnsAuthResource" />
                                         </div>
                                     @else
                                         <x-forms.button type="button"
                                             wire:click="createManagedDnsRecord({{ \Illuminate\Support\Js::from($proposal['hostname']) }}, {{ $proposal['zone_id'] }})"
                                             wire:target="createManagedDnsRecord" isHighlighted
-                                            canGate="update" :canResource="$dnsAuthResource">Create DNS record</x-forms.button>
+                                            canGate="update" :canResource="$dnsAuthResource">{{ __('Create DNS record') }}</x-forms.button>
                                     @endif
                                 </div>
                             @endforeach

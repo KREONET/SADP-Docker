@@ -22,16 +22,16 @@ class StatusInfo extends Component
     protected function sslModeOptions(): array
     {
         return [
-            'PREFERRED' => ['title' => 'Prefer secure connections', 'label' => 'Prefer (secure)'],
-            'REQUIRED' => ['title' => 'Require secure connections', 'label' => 'Require (secure)'],
-            'VERIFY_CA' => ['title' => 'Verify CA certificate', 'label' => 'Verify CA (secure)'],
-            'VERIFY_IDENTITY' => ['title' => 'Verify full certificate', 'label' => 'Verify Full (secure)'],
+            'PREFERRED' => ['title' => __('Prefer secure connections'), 'label' => __(':mode (secure)', ['mode' => 'Prefer'])],
+            'REQUIRED' => ['title' => __('Require secure connections'), 'label' => __(':mode (secure)', ['mode' => 'Require'])],
+            'VERIFY_CA' => ['title' => __('Verify CA certificate'), 'label' => __(':mode (secure)', ['mode' => 'Verify CA'])],
+            'VERIFY_IDENTITY' => ['title' => __('Verify full certificate'), 'label' => __(':mode (secure)', ['mode' => 'Verify Full'])],
         ];
     }
 
     protected function sslModeHelper(): string
     {
-        return 'Choose the SSL verification mode for MySQL connections';
+        return __('Choose the SSL verification mode for :engine connections', ['engine' => 'MySQL']);
     }
 
     protected function afterRefresh(): void

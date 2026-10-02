@@ -33,53 +33,52 @@
     @keydown.escape.window="if (showModal) { closeAdjust(); }">
     @if (subscriptionProvider() === 'stripe')
         {{-- Plan Overview --}}
-        <x-application.settings-section title="Plan overview"
-            description="Review billing status and the number of servers included in this plan.">
+        <x-application.settings-section :title="__('Plan overview')"
+            :description="__('Review billing status and the number of servers included in this plan.')">
             <div class="space-y-2">
                 <div class="text-sm">
-                    <span class="text-neutral-500">Plan:</span>
+                    <span class="text-neutral-500">{{ __('Plan:') }}</span>
                     <span class="dark:text-warning font-medium">
                         @if (data_get(currentTeam(), 'subscription')->type() == 'dynamic')
-                            Pay-as-you-go
+                            {{ __('Pay-as-you-go') }}
                         @else
                             {{ data_get(currentTeam(), 'subscription')->type() }}
                         @endif
                     </span>
-                    <span class="text-neutral-500">&middot; {{ $billingInterval === 'yearly' ? 'Yearly' : 'Monthly' }}</span>
+                    <span class="text-neutral-500">&middot; {{ $billingInterval === 'yearly' ? __('Yearly') : __('Monthly') }}</span>
                     <span class="text-neutral-500">&middot;</span>
                     @if (currentTeam()->subscription->stripe_cancel_at_period_end)
-                        <span class="text-red-500 font-medium">Cancelling at end of period</span>
+                        <span class="text-red-500 font-medium">{{ __('Cancelling at end of period') }}</span>
                     @else
-                        <span class="text-green-500 font-medium">Active</span>
+                        <span class="text-green-500 font-medium">{{ __('Active') }}</span>
                     @endif
                 </div>
                 <div class="text-sm flex items-center gap-2 flex-wrap">
                     <span>
-                        <span class="text-neutral-500">Active servers:</span>
+                        <span class="text-neutral-500">{{ __('Active servers:') }}</span>
                         <span class="font-medium {{ currentTeam()->serverOverflow() ? 'text-red-500' : 'dark:text-white' }}">{{ currentTeam()->servers->count() }}</span>
                         <span class="text-neutral-500">/</span>
                         <span class="font-medium dark:text-white" x-text="current"></span>
-                        <span class="text-neutral-500">paid</span>
+                        <span class="text-neutral-500">{{ __('paid') }}</span>
                     </span>
-                    <x-forms.button isHighlighted @click="openAdjust()">Adjust</x-forms.button>
+                    <x-forms.button isHighlighted @click="openAdjust()">{{ __('Adjust') }}</x-forms.button>
                 </div>
                 <div class="text-sm text-neutral-500">
                     @if ($refundCheckLoading)
-                        <x-loading text="Loading..." />
+                        <x-loading :text="__('Loading...')" />
                     @elseif ($nextBillingDate)
                         @if (currentTeam()->subscription->stripe_cancel_at_period_end)
-                            Cancels on <span class="dark:text-white font-medium">{{ $nextBillingDate }}</span>
+                            {{ __('Cancels on') }} <span class="dark:text-white font-medium">{{ $nextBillingDate }}</span>
                         @else
-                            Next billing <span class="dark:text-white font-medium">{{ $nextBillingDate }}</span>
+                            {{ __('Next billing') }} <span class="dark:text-white font-medium">{{ $nextBillingDate }}</span>
                         @endif
                     @endif
                 </div>
             </div>
 
             @if (currentTeam()->serverOverflow())
-                <x-callout type="danger" title="Server limit exceeded" class="mt-4">
-                    You must delete {{ currentTeam()->servers->count() - $server_limits }} servers or upgrade your
-                    subscription. Excess servers will be deactivated.
+                <x-callout type="danger" :title="__('Server limit exceeded')" class="mt-4">
+                    {{ __('You must delete :count servers or upgrade your subscription. Excess servers will be deactivated.', ['count' => currentTeam()->servers->count() - $server_limits]) }}
                 </x-callout>
             @endif
 
@@ -99,7 +98,7 @@
                         x-transition:leave-end="opacity-0 -translate-y-2 sm:scale-95"
                         class="application-settings-section application-settings-form relative flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col shadow-modal">
                         <div class="flex min-h-11 shrink-0 items-center justify-between px-4">
-                            <h3 class="text-[13px]! font-semibold!">Adjust server limit</h3>
+                            <h3 class="text-[13px]! font-semibold!">{{ __('Adjust server limit') }}</h3>
                             <button type="button" @click="closeAdjust()"
                                 class="flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg">
                                 <x-reicon name="x" class="size-3.5" />
@@ -109,7 +108,7 @@
                             style="-webkit-overflow-scrolling: touch;">
                             {{-- Server count input --}}
                             <div>
-                                <label class="mb-1.5 block">Paid servers</label>
+                                <label class="mb-1.5 block">{{ __('Paid servers') }}</label>
                                 <div class="flex items-center gap-3">
                                     <input type="number" min="{{ $minServerLimit }}" max="{{ $maxServerLimit }}" step="1"
                                         x-model.number="qty"
@@ -120,36 +119,36 @@
                                         isHighlighted
                                         x-bind:disabled="!hasChanged || loading"
                                         @click="fetchPreview()">
-                                        Calculate Price
+                                        {{ __('Calculate Price') }}
                                     </x-forms.button>
                                 </div>
                             </div>
 
                             {{-- Loading --}}
                             <div x-show="loading" x-cloak>
-                                <x-loading text="Loading price preview..." />
+                                <x-loading :text="__('Loading price preview...')" />
                             </div>
 
                             {{-- Price Preview --}}
                             <div class="space-y-4" x-show="!loading && hasPreview" x-cloak>
                                 <div>
-                                    <div class="text-xs font-bold text-neutral-500 uppercase tracking-wide pb-1.5">Due now</div>
+                                    <div class="text-xs font-bold text-neutral-500 uppercase tracking-wide pb-1.5">{{ __('Due now') }}</div>
                                     <div class="flex justify-between gap-6 text-sm font-bold">
-                                        <span class="dark:text-white">Prorated charge</span>
+                                        <span class="dark:text-white">{{ __('Prorated charge') }}</span>
                                         <span class="dark:text-warning" x-text="fmt(preview?.due_now)"></span>
                                     </div>
-                                    <p class="text-xs text-neutral-500 pt-1">Charged immediately to your payment method.</p>
+                                    <p class="text-xs text-neutral-500 pt-1">{{ __('Charged immediately to your payment method.') }}</p>
                                 </div>
                                 <div>
                                     <div class="text-xs font-bold text-neutral-500 uppercase tracking-wide pb-1.5">
-                                        Next billing cycle
+                                        {{ __('Next billing cycle') }}
                                         @if ($nextBillingDate)
                                             <span class="normal-case font-normal">&middot; {{ $nextBillingDate }}</span>
                                         @endif
                                     </div>
                                     <div class="space-y-1.5">
                                         <div class="flex justify-between gap-6 text-sm">
-                                            <span class="text-neutral-500" x-text="preview?.quantity + ' servers × ' + fmt(preview?.unit_price)"></span>
+                                            <span class="text-neutral-500" x-text="@js(__(':count servers × :price')).replace(':count', preview?.quantity).replace(':price', fmt(preview?.unit_price))"></span>
                                             <span class="dark:text-white" x-text="fmt(preview?.recurring_subtotal)"></span>
                                         </div>
                                         <div class="flex justify-between gap-6 text-sm" x-show="preview?.tax_description" x-cloak>
@@ -157,7 +156,7 @@
                                             <span class="dark:text-white" x-text="fmt(preview?.recurring_tax)"></span>
                                         </div>
                                         <div class="flex justify-between gap-6 text-sm font-bold pt-1.5 border-t dark:border-coolgray-400 border-neutral-200">
-                                            <span class="dark:text-white">Total / <span x-text="preview?.billing_interval === 'year' ? 'year' : 'month'">month</span></span>
+                                            <span class="dark:text-white">{{ __('Total') }} / <span x-text="preview?.billing_interval === 'year' ? @js(__('year')) : @js(__('month'))">{{ __('month') }}</span></span>
                                             <span class="dark:text-white" x-text="fmt(preview?.recurring_total)"></span>
                                         </div>
                                     </div>
@@ -165,20 +164,20 @@
 
                                 {{-- Update Button with Confirmation --}}
                                 <x-modal-confirmation
-                                    title="Confirm Server Limit Update"
-                                    buttonTitle="Update Server Limit"
+                                    :title="__('Confirm Server Limit Update')"
+                                    :buttonTitle="__('Update Server Limit')"
                                     submitAction="updateQuantity"
                                     :confirmWithText="false"
                                     :confirmWithPassword="false"
                                     :actions="[
-                                        'Your server limit will be updated immediately.',
-                                        'The prorated amount will be invoiced and charged now.',
+                                        __('Your server limit will be updated immediately.'),
+                                        __('The prorated amount will be invoiced and charged now.'),
                                     ]"
-                                    warningMessage="This will update your subscription and charge the prorated amount to your payment method."
-                                    step2ButtonText="Confirm & Pay">
+                                    :warningMessage="__('This will update your subscription and charge the prorated amount to your payment method.')"
+                                    :step2ButtonText="__('Confirm & Pay')">
                                     <x-slot:content>
                                         <x-forms.button class="w-full" @click="$wire.set('quantity', qty)">
-                                            Update Server Limit
+                                            {{ __('Update Server Limit') }}
                                         </x-forms.button>
                                     </x-slot:content>
                                 </x-modal-confirmation>
@@ -186,8 +185,8 @@
 
                             {{-- Reduction Warning --}}
                             <div x-show="isReduction" x-cloak>
-                                <x-callout type="danger" title="Warning">
-                                    Reducing below your active server count will deactivate excess servers.
+                                <x-callout type="danger" :title="__('Warning')">
+                                    {{ __('Reducing below your active server count will deactivate excess servers.') }}
                                 </x-callout>
                             </div>
                         </div>
@@ -197,106 +196,106 @@
         </x-application.settings-section>
 
         {{-- Manage Subscription --}}
-        <x-application.settings-section title="Billing"
-            description="Open the hosted billing portal to update invoices and payment methods.">
+        <x-application.settings-section :title="__('Billing')"
+            :description="__('Open the hosted billing portal to update invoices and payment methods.')">
             <div class="flex flex-wrap items-center gap-2">
                 <x-forms.button class="gap-2" wire:click='stripeCustomerPortal'>
                     <x-reicon name="subscription" class="size-3.5" />
-                    Open billing portal
+                    {{ __('Open billing portal') }}
                 </x-forms.button>
             </div>
         </x-application.settings-section>
 
         {{-- Cancel Subscription --}}
-        <x-application.settings-section title="Cancellation"
-            description="End the plan at the next billing date or cancel it immediately.">
+        <x-application.settings-section :title="__('Cancellation')"
+            :description="__('End the plan at the next billing date or cancel it immediately.')">
             <div class="flex flex-wrap items-center gap-2">
                 @if (currentTeam()->subscription->stripe_cancel_at_period_end)
-                    <x-forms.button wire:click="resumeSubscription">Resume Subscription</x-forms.button>
+                    <x-forms.button wire:click="resumeSubscription">{{ __('Resume Subscription') }}</x-forms.button>
                 @else
-                    <x-modal-confirmation title="Cancel at End of Billing Period?"
-                        buttonTitle="Cancel at Period End" submitAction="cancelAtPeriodEnd"
+                    <x-modal-confirmation :title="__('Cancel at End of Billing Period?')"
+                        :buttonTitle="__('Cancel at Period End')" submitAction="cancelAtPeriodEnd"
                         :actions="[
-                            'Your subscription will remain active until the end of the current billing period.',
-                            'No further charges will be made after the current period.',
-                            'You can resubscribe at any time.',
+                            __('Your subscription will remain active until the end of the current billing period.'),
+                            __('No further charges will be made after the current period.'),
+                            __('You can resubscribe at any time.'),
                         ]" confirmationText="{{ currentTeam()->name }}"
-                        confirmationLabel="Enter your team name to confirm"
-                        shortConfirmationLabel="Team Name" step2ButtonText="Confirm Cancellation" />
+                        :confirmationLabel="__('Enter your team name to confirm')"
+                        :shortConfirmationLabel="__('Team Name')" :step2ButtonText="__('Confirm Cancellation')" />
                     @if ($isRefundEligible)
                         <div wire:key="cancel-immediately-refundable">
-                            <x-modal-confirmation title="Cancel Immediately?" buttonTitle="Cancel Immediately"
+                            <x-modal-confirmation :title="__('Cancel Immediately?')" :buttonTitle="__('Cancel Immediately')"
                                 isErrorButton submitAction="cancelImmediately"
                                 :checkboxes="[
                                     [
                                         'id' => 'refundLatestPayment',
-                                        'label' => 'Refund my latest payment (eligible for '.$refundDaysRemaining.' more days).',
-                                        'default_warning' => 'No refund will be issued for the remaining period.',
+                                        'label' => __('Refund my latest payment (eligible for :days more days).', ['days' => $refundDaysRemaining]),
+                                        'default_warning' => __('No refund will be issued for the remaining period.'),
                                     ],
                                 ]"
                                 :actions="[
-                                    'Your subscription will be cancelled immediately.',
-                                    'All servers will be deactivated.',
+                                    __('Your subscription will be cancelled immediately.'),
+                                    __('All servers will be deactivated.'),
                                 ]" confirmationText="{{ currentTeam()->name }}"
-                                confirmationLabel="Enter your team name to confirm"
-                                shortConfirmationLabel="Team Name" step2ButtonText="Permanently Cancel" />
+                                :confirmationLabel="__('Enter your team name to confirm')"
+                                :shortConfirmationLabel="__('Team Name')" :step2ButtonText="__('Permanently Cancel')" />
                         </div>
                     @else
                         <div wire:key="cancel-immediately-standard">
-                            <x-modal-confirmation title="Cancel Immediately?" buttonTitle="Cancel Immediately"
+                            <x-modal-confirmation :title="__('Cancel Immediately?')" :buttonTitle="__('Cancel Immediately')"
                                 isErrorButton submitAction="cancelImmediately"
                                 :actions="[
-                                    'Your subscription will be cancelled immediately.',
-                                    'All servers will be deactivated.',
-                                    'No refund will be issued for the remaining period.',
+                                    __('Your subscription will be cancelled immediately.'),
+                                    __('All servers will be deactivated.'),
+                                    __('No refund will be issued for the remaining period.'),
                                 ]" confirmationText="{{ currentTeam()->name }}"
-                                confirmationLabel="Enter your team name to confirm"
-                                shortConfirmationLabel="Team Name" step2ButtonText="Permanently Cancel" />
+                                :confirmationLabel="__('Enter your team name to confirm')"
+                                :shortConfirmationLabel="__('Team Name')" :step2ButtonText="__('Permanently Cancel')" />
                         </div>
                     @endif
                 @endif
             </div>
             @if (currentTeam()->subscription->stripe_cancel_at_period_end)
-                <p class="mt-2 text-sm text-neutral-500">Your subscription is set to cancel at the end of the billing period.</p>
+                <p class="mt-2 text-sm text-neutral-500">{{ __('Your subscription is set to cancel at the end of the billing period.') }}</p>
             @endif
         </x-application.settings-section>
 
         {{-- Refund --}}
-        <x-application.settings-section title="Refund"
-            description="Request a refund when this team is still inside the eligibility window.">
+        <x-application.settings-section :title="__('Refund')"
+            :description="__('Request a refund when this team is still inside the eligibility window.')">
             @if ($refundCheckLoading || $isRefundEligible)
                 <div class="flex flex-wrap items-center gap-2">
                     @if ($refundCheckLoading)
-                        <x-forms.button disabled>Request Full Refund</x-forms.button>
+                        <x-forms.button disabled>{{ __('Request Full Refund') }}</x-forms.button>
                     @else
-                        <x-modal-confirmation title="Request Full Refund?" buttonTitle="Request Full Refund"
+                        <x-modal-confirmation :title="__('Request Full Refund?')" :buttonTitle="__('Request Full Refund')"
                             isErrorButton submitAction="refundSubscription"
                             :actions="[
-                                'Your latest payment will be fully refunded.',
-                                'Your subscription will be cancelled immediately.',
-                                'All servers will be deactivated.',
+                                __('Your latest payment will be fully refunded.'),
+                                __('Your subscription will be cancelled immediately.'),
+                                __('All servers will be deactivated.'),
                             ]" confirmationText="{{ currentTeam()->name }}"
-                            confirmationLabel="Enter your team name to confirm" shortConfirmationLabel="Team Name"
-                            step2ButtonText="Confirm Refund & Cancel" />
+                            :confirmationLabel="__('Enter your team name to confirm')" :shortConfirmationLabel="__('Team Name')"
+                            :step2ButtonText="__('Confirm Refund & Cancel')" />
                     @endif
                 </div>
             @endif
             <p class="mt-2 text-sm text-neutral-500">
                 @if ($refundCheckLoading)
-                    Checking refund eligibility...
+                    {{ __('Checking refund eligibility...') }}
                 @elseif ($isRefundEligible)
-                    Eligible for a full refund &mdash; <strong class="dark:text-warning">{{ $refundDaysRemaining }}</strong> days remaining.
+                    {!! __('Eligible for a full refund &mdash; :days days remaining.', ['days' => '<strong class="dark:text-warning">'.e($refundDaysRemaining).'</strong>']) !!}
                 @elseif ($refundAlreadyUsed)
-                    Refund already processed. Each team is eligible for one refund only.
+                    {{ __('Refund already processed. Each team is eligible for one refund only.') }}
                 @else
-                    Not eligible for a refund.
+                    {{ __('Not eligible for a refund.') }}
                 @endif
             </p>
         </x-application.settings-section>
 
         <div class="text-sm text-neutral-500">
-            Need help? <a class="underline dark:text-white" href="{{ config('constants.urls.contact') }}"
-                target="_blank">Contact us.</a>
+            {{ __('Need help?') }} <a class="underline dark:text-white" href="{{ config('constants.urls.contact') }}"
+                target="_blank">{{ __('Contact us.') }}</a>
         </div>
     @endif
 </div>

@@ -59,10 +59,10 @@ class DockerImages extends Component
             $this->authorize('update', $this->server);
             $image = collect($this->images)->firstWhere('reference', $reference);
             if (! $image) {
-                throw new \RuntimeException('Unknown image, refresh the page and try again.');
+                throw new \RuntimeException(__('Unknown image, refresh the page and try again.'));
             }
             if ($image['containers'] !== []) {
-                throw new \RuntimeException('This image is used by '.implode(', ', $image['containers']).'. Remove those containers first.');
+                throw new \RuntimeException(__('This image is used by :containers. Remove those containers first.', ['containers' => implode(', ', $image['containers'])]));
             }
             instant_remote_process(['docker image rm '.escapeshellarg($reference)], $this->server);
             auditLog('ui.server.docker_image_deleted', [
@@ -71,7 +71,7 @@ class DockerImages extends Component
                 'server_name' => $this->server->name,
                 'image' => $reference,
             ]);
-            $this->dispatch('success', "Deleted {$reference}.");
+            $this->dispatch('success', __('Deleted :reference.', ['reference' => $reference]));
             $this->load();
         } catch (\Throwable $e) {
             handleError($e, $this);

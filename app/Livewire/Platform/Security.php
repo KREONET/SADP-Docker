@@ -74,7 +74,7 @@ class Security extends Component
         ]);
 
         auditLog('platform.security.trivy_updated', ['enabled' => $this->isTrivyScanEnabled, 'blocking' => $this->trivyBlockOnFindings]);
-        $this->dispatch('success', 'Vulnerability scanning settings saved.');
+        $this->dispatch('success', __('Vulnerability scanning settings saved.'));
     }
 
     public function saveLogin(): void
@@ -84,14 +84,14 @@ class Security extends Component
 
         if ($this->isSsoOnlyLoginEnabled && ! OauthSetting::where('enabled', true)->exists()) {
             $this->isSsoOnlyLoginEnabled = false;
-            $this->dispatch('error', 'Enable an OIDC/OAuth provider in Settings → Authentication before requiring SSO.');
+            $this->dispatch('error', __('Enable an OIDC/OAuth provider in Settings → Authentication before requiring SSO.'));
 
             return;
         }
 
         instanceSettings()->update(['is_sso_only_login_enabled' => $this->isSsoOnlyLoginEnabled]);
         auditLog('platform.security.sso_only_updated', ['enabled' => $this->isSsoOnlyLoginEnabled]);
-        $this->dispatch('success', 'Login policy saved.');
+        $this->dispatch('success', __('Login policy saved.'));
     }
 
     public function toggleScan(string $uuid): void
@@ -105,13 +105,13 @@ class Security extends Component
         $this->authorizePlatformAdmin();
         $scan = VulnerabilityScan::query()->where('uuid', $uuid)->firstOrFail();
         if ($scan->totalCount() === 0) {
-            $this->dispatch('error', 'This scan has no findings to report.');
+            $this->dispatch('error', __('This scan has no findings to report.'));
 
             return;
         }
 
         ReportVulnerabilitiesToRepositoryJob::dispatch($scan);
-        $this->dispatch('success', 'The report is being posted to the repository.');
+        $this->dispatch('success', __('The report is being posted to the repository.'));
     }
 
     public function render()

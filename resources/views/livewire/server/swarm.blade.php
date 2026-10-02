@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($server, 'name')->limit(10) }} > Swarm | Coolify
+        {{ data_get_str($server, 'name')->limit(10) }} > {{ __('Swarm') }} | Coolify
     </x-slot>
 
     <livewire:server.navbar :server="$server" />
@@ -11,36 +11,36 @@
 
         <div class="application-settings-form w-full">
             <x-application.settings-section id="server-swarm-section" title="Docker Swarm"
-                helper="Legacy Docker Swarm role configuration for this server.">
+                :helper="__('Legacy Docker Swarm role configuration for this server.')">
                 <x-slot:actions>
                     <x-deprecated-badge />
                 </x-slot:actions>
 
-                <x-callout type="warning" title="Docker Swarm support is deprecated">
+                <x-callout type="warning" :title="__('Docker Swarm support is deprecated')">
                     {{ config('deprecations.swarm') }}
                     <a class="font-medium underline" href="https://coolify.io/docs/knowledge-base/docker/swarm"
-                        target="_blank">Read the migration guidance.</a>
+                        target="_blank">{{ __('Read the migration guidance.') }}</a>
                 </x-callout>
 
                 @if (!$canUseSwarm)
-                    <x-callout type="info" title="Unavailable for new teams" class="mt-4">
-                        Docker Swarm cannot be enabled because this team has no existing Swarm resources.
+                    <x-callout type="info" :title="__('Unavailable for new teams')" class="mt-4">
+                        {{ __('Docker Swarm cannot be enabled because this team has no existing Swarm resources.') }}
                     </x-callout>
                 @endif
 
                 <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                    <x-forms.listbox canGate="update" :canResource="$server" id="isSwarmManager" label="Manager role"
-                        helper="Managers control scheduling and cluster state." onChange="instantSave"
+                    <x-forms.listbox canGate="update" :canResource="$server" id="isSwarmManager" :label="__('Manager role')"
+                        :helper="__('Managers control scheduling and cluster state.')" onChange="instantSave"
                         :options="[
-                            ['value' => false, 'label' => 'Not a Swarm manager'],
-                            ['value' => true, 'label' => 'Swarm manager'],
+                            ['value' => false, 'label' => __('Not a Swarm manager')],
+                            ['value' => true, 'label' => __('Swarm manager')],
                         ]"
                         :disabled="!$canUseSwarm || $server->settings->is_swarm_worker || !auth()->user()->can('update', $server)" />
-                    <x-forms.listbox canGate="update" :canResource="$server" id="isSwarmWorker" label="Worker role"
-                        helper="Workers run tasks assigned by a Swarm manager." onChange="instantSave"
+                    <x-forms.listbox canGate="update" :canResource="$server" id="isSwarmWorker" :label="__('Worker role')"
+                        :helper="__('Workers run tasks assigned by a Swarm manager.')" onChange="instantSave"
                         :options="[
-                            ['value' => false, 'label' => 'Not a Swarm worker'],
-                            ['value' => true, 'label' => 'Swarm worker'],
+                            ['value' => false, 'label' => __('Not a Swarm worker')],
+                            ['value' => true, 'label' => __('Swarm worker')],
                         ]"
                         :disabled="!$canUseSwarm || $server->settings->is_swarm_manager || !auth()->user()->can('update', $server)" />
                 </div>

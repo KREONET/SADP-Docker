@@ -17,10 +17,10 @@
                 class="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-white/[0.03]">
                 <x-status-badge
                     :status="match (data_get($execution, 'status')) {
-                        'success' => 'Success',
-                        'running' => 'In progress',
-                        'failed' => 'Failed',
-                        default => str(data_get($execution, 'status'))->headline(),
+                        'success' => __('Success'),
+                        'running' => __('In progress'),
+                        'failed' => __('Failed'),
+                        default => __((string) str(data_get($execution, 'status'))->headline()),
                     }"
                     :type="match (data_get($execution, 'status')) {
                         'success' => 'success',
@@ -34,10 +34,10 @@
                     </p>
                     <p class="mt-0.5 text-xs text-neutral-500 dark:text-fg-dim">
                         @if (data_get($execution, 'status') === 'running')
-                            Cleanup is currently running
+                            {{ __('Cleanup is currently running') }}
                         @else
                             {{ calculateDuration(data_get($execution, 'created_at'), data_get($execution, 'finished_at')) }}
-                            · finished {{ \Carbon\Carbon::parse(data_get($execution, 'finished_at'))->diffForHumans() }}
+                            · {{ __('finished :time', ['time' => \Carbon\Carbon::parse(data_get($execution, 'finished_at'))->diffForHumans()]) }}
                         @endif
                     </p>
                 </div>
@@ -52,11 +52,11 @@
                 <div class="border-t border-neutral-200 bg-neutral-50/60 p-4 dark:border-white/[0.08] dark:bg-black/20">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <p class="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-fg-dim">
-                            Execution output
+                            {{ __('Execution output') }}
                         </p>
                         @if (strlen(data_get($execution, 'message', '')) > 0)
                             <x-forms.button wire:click.prevent="downloadLogs({{ data_get($execution, 'id') }})">
-                                Download logs
+                                {{ __('Download logs') }}
                             </x-forms.button>
                         @endif
                     </div>
@@ -67,14 +67,14 @@
 @endforeach</pre>
                         @if ($this->hasMoreLogs())
                             <div class="mt-3">
-                                <x-forms.button wire:click.prevent="loadMoreLogs">Load more</x-forms.button>
+                                <x-forms.button wire:click.prevent="loadMoreLogs">{{ __('Load more') }}</x-forms.button>
                             </div>
                         @endif
                     @else
                         <p class="text-sm text-neutral-500 dark:text-fg-dim">
                             {{ data_get($execution, 'status') === 'running'
-                                ? 'Waiting for cleanup output…'
-                                : 'No output was recorded for this execution.' }}
+                                ? __('Waiting for cleanup output…')
+                                : __('No output was recorded for this execution.') }}
                         </p>
                     @endif
 
@@ -87,7 +87,7 @@
                                         <code
                                             class="break-all text-xs text-neutral-700 dark:text-neutral-300">{{ data_get($result, 'command') }}</code>
                                     </div>
-                                    <pre class="overflow-auto p-3 font-mono text-xs leading-5 text-neutral-600 dark:text-neutral-300">{{ filled(trim(data_get($result, 'output', ''))) ? data_get($result, 'output') : 'No output returned.' }}</pre>
+                                    <pre class="overflow-auto p-3 font-mono text-xs leading-5 text-neutral-600 dark:text-neutral-300">{{ filled(trim(data_get($result, 'output', ''))) ? data_get($result, 'output') : __('No output returned.') }}</pre>
                                 </div>
                             @endforeach
                         </div>
@@ -96,8 +96,8 @@
             @endif
         </div>
     @empty
-        <x-empty size="sm" title="No cleanup executions"
-            description="Run a manual cleanup or wait for the next scheduled execution."
+        <x-empty size="sm" :title="__('No cleanup executions')"
+            :description="__('Run a manual cleanup or wait for the next scheduled execution.')"
             icon-name="storages" />
     @endforelse
 </div>

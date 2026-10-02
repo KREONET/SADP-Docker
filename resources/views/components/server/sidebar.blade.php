@@ -228,7 +228,7 @@
         sentinelOutOfSync = $event.detail.outOfSync;
         scheduleSentinelExpiry($event.detail.expiresInMilliseconds);
     ">
-    <nav aria-label="Server configuration sections"
+    <nav aria-label="{{ __('Server configuration sections') }}"
         x-data="settingsSidebarAccordion({ activeGroup: @js($activeGroup), storageKey: 'coolify.settings-sidebar.server' })"
         class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
         @foreach ($groupedServerMenuItems as $groupLabel => $groupItems)
@@ -238,7 +238,7 @@
             @endunless
             <button type="button" class="nav-section-toggle hidden xl:flex" @click="toggle(@js($groupLabel))"
                 :aria-expanded="isOpen(@js($groupLabel))">
-                <span>{{ $groupLabel }}</span>
+                <span>{{ __($groupLabel) }}</span>
                 <svg class="size-3 shrink-0 opacity-60 transition-transform"
                     :class="!isOpen(@js($groupLabel)) && '-rotate-90'" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -255,7 +255,7 @@
                     @if ($menuItem['navigate'] ?? true) {{ wireNavigate() }} @endif
                     href="{{ route($menuItem['route'], $serverRouteParameters) }}">
                     <x-reicon :name="$menuItem['icon']" class="menu-item-icon" />
-                    <span class="menu-item-label">{{ $menuItem['label'] }}</span>
+                    <span class="menu-item-label">{{ __($menuItem['label']) }}</span>
                     @if ($menuItem['tracks_proxy_configuration'] ?? false)
                         <x-reicon name="alert-triangle" x-cloak
                             x-show="proxyConfigurationPending || traefikOutdated || proxyNotRunning"
@@ -276,7 +276,7 @@
                                 @if ($child['navigate'] ?? true) {{ wireNavigate() }} @endif
                                 href="{{ route($child['route'], $serverRouteParameters) }}">
                                 <x-reicon :name="$child['icon']" class="menu-item-icon" />
-                                <span class="menu-item-label">{{ $child['label'] }}</span>
+                                <span class="menu-item-label">{{ __($child['label']) }}</span>
                             </a>
                         @endforeach
                     </div>

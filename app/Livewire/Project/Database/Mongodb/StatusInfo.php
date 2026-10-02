@@ -22,16 +22,16 @@ class StatusInfo extends Component
     protected function sslModeOptions(): array
     {
         return [
-            'allow' => ['title' => 'Allow insecure connections', 'label' => 'allow (insecure)'],
-            'prefer' => ['title' => 'Prefer secure connections', 'label' => 'prefer (secure)'],
-            'require' => ['title' => 'Require secure connections', 'label' => 'require (secure)'],
-            'verify-full' => ['title' => 'Verify full certificate', 'label' => 'verify-full (secure)'],
+            'allow' => ['title' => __('Allow insecure connections'), 'label' => __(':mode (insecure)', ['mode' => 'allow'])],
+            'prefer' => ['title' => __('Prefer secure connections'), 'label' => __(':mode (secure)', ['mode' => 'prefer'])],
+            'require' => ['title' => __('Require secure connections'), 'label' => __(':mode (secure)', ['mode' => 'require'])],
+            'verify-full' => ['title' => __('Verify full certificate'), 'label' => __(':mode (secure)', ['mode' => 'verify-full'])],
         ];
     }
 
     protected function sslModeHelper(): string
     {
-        return 'Choose the SSL verification mode for MongoDB connections';
+        return __('Choose the SSL verification mode for :engine connections', ['engine' => 'MongoDB']);
     }
 
     protected function afterRefresh(): void

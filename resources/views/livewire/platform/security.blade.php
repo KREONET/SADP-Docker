@@ -1,44 +1,44 @@
 <div>
-    <x-slot:title>Security | Platform Admin | Coolify</x-slot>
+    <x-slot:title>{{ __('Security') }} | {{ __('Platform Admin') }} | Coolify</x-slot>
 
     <x-platform.layout>
         <div class="flex min-w-0 flex-col gap-6">
             <form wire:submit="saveLogin">
-                <x-application.settings-section title="Login policy"
-                    description="Require company SSO (OIDC). The root user keeps password login as a break-glass account. Configure the OIDC provider under Settings → Authentication or with php artisan platform:configure-oidc.">
+                <x-application.settings-section :title="__('Login policy')"
+                    :description="__('Require company SSO (OIDC). The root user keeps password login as a break-glass account. Configure the OIDC provider under Settings → Authentication or with php artisan platform:configure-oidc.')">
                     <div class="grid gap-4">
-                        <x-forms.checkbox id="isSsoOnlyLoginEnabled" label="Only allow SSO login" />
+                        <x-forms.checkbox id="isSsoOnlyLoginEnabled" :label="__('Only allow SSO login')" />
                         <div class="text-[11px] text-neutral-600 dark:text-fg-dim">
-                            Enabled providers:
+                            {{ __('Enabled providers:') }}
                             @forelse ($enabledProviders as $provider)
                                 <x-status-badge wire:key="provider-{{ $provider->provider }}" :status="$provider->loginLabel()" type="success" />
                             @empty
-                                <span class="text-red-500">none</span>
-                                · <a class="underline" href="{{ route('settings.oauth.provider', 'oidc') }}" {{ wireNavigate() }}>Configure OIDC</a>
+                                <span class="text-red-500">{{ __('none') }}</span>
+                                · <a class="underline" href="{{ route('settings.oauth.provider', 'oidc') }}" {{ wireNavigate() }}>{{ __('Configure OIDC') }}</a>
                             @endforelse
                         </div>
                         <div class="flex justify-end">
-                            <x-forms.button type="submit" isHighlighted>Save login policy</x-forms.button>
+                            <x-forms.button type="submit" isHighlighted>{{ __('Save login policy') }}</x-forms.button>
                         </div>
                     </div>
                 </x-application.settings-section>
             </form>
 
             <form wire:submit="saveTrivy">
-                <x-application.settings-section title="Vulnerability scanning (Trivy)"
-                    description="Before building, every deployment scans the cloned repository's dependencies with Trivy on the build server. Findings can stop the deployment and are reported to the repository by the Forgejo bot.">
+                <x-application.settings-section :title="__('Vulnerability scanning (Trivy)')"
+                    :description="__('Before building, every deployment scans the cloned repository\'s dependencies with Trivy on the build server. Findings can stop the deployment and are reported to the repository by the Forgejo bot.')">
                     <div class="grid gap-4">
                         <div class="grid gap-1 lg:grid-cols-2">
-                            <x-forms.checkbox id="isTrivyScanEnabled" label="Scan packages before every deployment" />
-                            <x-forms.checkbox id="trivyBlockOnFindings" label="Stop the deployment when vulnerabilities are found" />
-                            <x-forms.checkbox id="trivyReportToRepository" label="Open an issue in the repository with the bot" />
-                            <x-forms.checkbox id="trivyIgnoreUnfixed" label="Ignore vulnerabilities without a fix" />
+                            <x-forms.checkbox id="isTrivyScanEnabled" :label="__('Scan packages before every deployment')" />
+                            <x-forms.checkbox id="trivyBlockOnFindings" :label="__('Stop the deployment when vulnerabilities are found')" />
+                            <x-forms.checkbox id="trivyReportToRepository" :label="__('Open an issue in the repository with the bot')" />
+                            <x-forms.checkbox id="trivyIgnoreUnfixed" :label="__('Ignore vulnerabilities without a fix')" />
                         </div>
                         <div class="grid gap-4 lg:grid-cols-2">
-                            <x-forms.input id="trivyImage" label="Trivy image" required
-                                helper="Use a mirrored image (for example registry.example.com/aquasec/trivy:0.58.1) on air-gapped build servers." />
+                            <x-forms.input id="trivyImage" :label="__('Trivy image')" required
+                                :helper="__('Use a mirrored image (for example registry.example.com/aquasec/trivy:0.58.1) on air-gapped build servers.')" />
                             <div>
-                                <div class="mb-1.5 text-sm font-medium leading-4">Severities</div>
+                                <div class="mb-1.5 text-sm font-medium leading-4">{{ __('Severities') }}</div>
                                 <div class="flex flex-wrap gap-3">
                                     @foreach (\App\Services\Security\TrivyScanner::SEVERITIES as $severity)
                                         <label wire:key="severity-{{ $severity }}" class="flex items-center gap-1.5 text-[12px]">
@@ -53,20 +53,20 @@
                             </div>
                         </div>
                         <div class="flex justify-end">
-                            <x-forms.button type="submit" isHighlighted>Save scanning settings</x-forms.button>
+                            <x-forms.button type="submit" isHighlighted>{{ __('Save scanning settings') }}</x-forms.button>
                         </div>
                     </div>
                 </x-application.settings-section>
             </form>
 
-            <x-application.settings-section title="Scan history" flush>
+            <x-application.settings-section :title="__('Scan history')" flush>
                 <x-slot:actions>
-                    <select class="input w-40" wire:model.live="status" aria-label="Filter by status">
-                        <option value="">All results</option>
-                        <option value="blocked">Blocked</option>
-                        <option value="found">Found</option>
-                        <option value="passed">Passed</option>
-                        <option value="error">Error</option>
+                    <select class="input w-40" wire:model.live="status" aria-label="{{ __('Filter by status') }}">
+                        <option value="">{{ __('All results') }}</option>
+                        <option value="blocked">{{ __('Blocked') }}</option>
+                        <option value="found">{{ __('Found') }}</option>
+                        <option value="passed">{{ __('Passed') }}</option>
+                        <option value="error">{{ __('Error') }}</option>
                     </select>
                 </x-slot:actions>
 
@@ -75,7 +75,7 @@
                         class="border-b border-neutral-200 px-4 py-2.5 last:border-b-0 dark:border-white/[0.06]">
                         <div class="grid items-center gap-3 lg:grid-cols-[minmax(10rem,1fr)_minmax(8rem,1fr)_10rem_7rem_auto]">
                             <div class="min-w-0">
-                                <div class="truncate text-[12px] font-semibold">{{ $scan->application?->name ?? 'Deleted application' }}</div>
+                                <div class="truncate text-[12px] font-semibold">{{ $scan->application?->name ?? __('Deleted application') }}</div>
                                 <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">{{ $scan->created_at?->diffForHumans() }}</div>
                             </div>
                             <div class="min-w-0 text-[11px] text-neutral-600 dark:text-fg-dim">
@@ -88,14 +88,14 @@
                             <x-status-badge :status="$scan->status" :type="match ($scan->status) { 'passed' => 'success', 'found' => 'warning', default => 'error' }" />
                             <div class="flex flex-wrap justify-end gap-2">
                                 @if (str_starts_with((string) $scan->report_url, 'https://') || str_starts_with((string) $scan->report_url, 'http://'))
-                                    <a class="button" href="{{ $scan->report_url }}" target="_blank" rel="noopener noreferrer">Issue</a>
+                                    <a class="button" href="{{ $scan->report_url }}" target="_blank" rel="noopener noreferrer">{{ __('Issue') }}</a>
                                 @endif
                                 @if ($scan->totalCount() > 0)
-                                    <x-forms.button wire:click="resendReport('{{ $scan->uuid }}')">Report again</x-forms.button>
+                                    <x-forms.button wire:click="resendReport('{{ $scan->uuid }}')">{{ __('Report again') }}</x-forms.button>
                                 @endif
                                 @if ($scan->totalCount() > 0 || $scan->error)
                                     <x-forms.button wire:click="toggleScan('{{ $scan->uuid }}')">
-                                        {{ $expandedScanUuid === $scan->uuid ? 'Hide' : 'Details' }}
+                                        {{ $expandedScanUuid === $scan->uuid ? __('Hide') : __('Details') }}
                                     </x-forms.button>
                                 @endif
                             </div>
@@ -109,12 +109,12 @@
                                     <table class="w-full text-left text-[11px]">
                                         <thead>
                                             <tr class="border-b border-neutral-200 dark:border-white/[0.08]">
-                                                <th class="p-2">Severity</th>
+                                                <th class="p-2">{{ __('Severity') }}</th>
                                                 <th class="p-2">ID</th>
-                                                <th class="p-2">Package</th>
-                                                <th class="p-2">Installed</th>
-                                                <th class="p-2">Fixed</th>
-                                                <th class="p-2">Target</th>
+                                                <th class="p-2">{{ __('Package') }}</th>
+                                                <th class="p-2">{{ __('Installed') }}</th>
+                                                <th class="p-2">{{ __('Fixed') }}</th>
+                                                <th class="p-2">{{ __('Target') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -141,7 +141,7 @@
                         @endif
                     </div>
                 @empty
-                    <x-empty size="sm" title="No scans" description="Scans appear here after the next deployment with scanning enabled." />
+                    <x-empty size="sm" :title="__('No scans')" :description="__('Scans appear here after the next deployment with scanning enabled.')" />
                 @endforelse
             </x-application.settings-section>
         </div>

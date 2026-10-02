@@ -1,19 +1,19 @@
 <div>
     <x-slot:title>
-        Integration Tokens | Coolify
+        {{ __('Integration Tokens') }} | Coolify
     </x-slot>
 
     <x-security.settings-layout>
         <div class="application-settings-form">
-            <x-application.settings-section title="Integration tokens"
-                description="Credentials used by third-party integrations such as DNS providers and secret managers." flush>
+            <x-application.settings-section :title="__('Integration tokens')"
+                :description="__('Credentials used by third-party integrations such as DNS providers and secret managers.')" flush>
                 <x-slot:actions>
                     @can('create', App\Models\IntegrationToken::class)
-                        <x-modal-input title="New Integration Token">
+                        <x-modal-input :title="__('New Integration Token')">
                             <x-slot:content>
                                 <button type="button" class="button button-highlighted">
                                     <x-reicon name="plus" class="size-3.5" />
-                                    New token
+                                    {{ __('New token') }}
                                 </button>
                             </x-slot:content>
                             <livewire:security.integration-token-form :modal_mode="true"
@@ -23,8 +23,8 @@
                 </x-slot:actions>
 
                 @if ($tokens->isEmpty())
-                    <x-empty title="No integration tokens"
-                        description="Add a provider token to connect a third-party integration."
+                    <x-empty :title="__('No integration tokens')"
+                        :description="__('Add a provider token to connect a third-party integration.')"
                         icon-name="keys" size="sm" />
                 @else
                     <div class="divide-y divide-neutral-200 dark:divide-white/[0.07]">
@@ -45,7 +45,7 @@
                                 x-on:integration-token-deleted.window="
                                     if ($event.detail.uuid === @js($savedToken->uuid)) visible = false
                                 ">
-                            <x-modal-input title="Edit Integration Token" isFullWidth :wireIgnore="false"
+                            <x-modal-input :title="__('Edit Integration Token')" isFullWidth :wireIgnore="false"
                                 :contentClicks="false"
                                 class="border-b border-neutral-200 last:border-b-0 dark:border-white/[0.07]">
                                 <x-slot:content>
@@ -66,15 +66,15 @@
                                             @if ($savedToken->provider === 'cloudflare')
                                                 @if ($savedToken->automaticDnsEnabled())
                                                     <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase text-green-700 dark:bg-green-500/10 dark:text-green-400">
-                                                        Auto DNS
+                                                        {{ __('Auto DNS') }}
                                                     </span>
                                                 @endif
                                                 <span class="text-[11px] text-neutral-500 dark:text-fg-dim">
-                                                    {{ $savedToken->dns_zones_count }} {{ Str::plural('zone', $savedToken->dns_zones_count) }}
+                                                    {{ trans_choice(':count zone|:count zones', $savedToken->dns_zones_count) }}
                                                 </span>
                                             @endif
                                         </div>
-                                        <button type="button" class="icon-button" title="Edit integration token"
+                                        <button type="button" class="icon-button" title="{{ __('Edit integration token') }}"
                                             :aria-label="`Edit ${tokenName}`" @click="modalOpen=true">
                                             <x-reicon name="settings" class="size-3.5" />
                                         </button>

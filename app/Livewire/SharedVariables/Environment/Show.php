@@ -33,7 +33,7 @@ class Show extends Component
 
             $found = $this->environment->environment_variables()->where('key', $data['key'])->first();
             if ($found) {
-                throw new \Exception('Variable already exists.');
+                throw new \Exception(__('Variable already exists.'));
             }
             $this->environment->environment_variables()->create([
                 'key' => $data['key'],
@@ -127,7 +127,7 @@ class Show extends Component
 
         // Only dispatch success after transaction has committed
         if ($changesMade) {
-            $this->dispatch('success', 'Environment variables updated.');
+            $this->dispatch('success', __('Environment variables updated.'));
         }
     }
 

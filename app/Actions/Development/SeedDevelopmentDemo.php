@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\AuditEvent;
 use App\Models\LogEntry;
 use App\Models\Project;
+use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -15,6 +16,7 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Random\Engine\Mt19937;
 use Random\Randomizer;
+use RuntimeException;
 
 /**
  * Fills a development instance with demo data for every screen: the transfer-demo inventory
@@ -56,6 +58,8 @@ class SeedDevelopmentDemo
      */
     public function handle(string $lokiUrl, bool $withInventory = true): array
     {
+        $this->assertBaseDataExists();
+
         // A fixed seed gives every developer the same demo history.
         $this->random = new Randomizer(new Mt19937(20261002));
 
@@ -82,6 +86,21 @@ class SeedDevelopmentDemo
             'container_logs' => $containerLogs,
             'loki' => $this->shipToLoki($hadDemoLogs),
         ];
+    }
+
+    /**
+     * The base development seeders (root team and user, localhost server, "My first project") create
+     * rows with fixed ids that the demo data builds on. Creating demo rows first would take those ids.
+     * Nothing is created before this check passes, so a too early run leaves no residue.
+     */
+    private function assertBaseDataExists(): void
+    {
+        if (Team::query()->find(0) && User::query()->find(0) && Server::query()->find(0)
+            && Project::query()->where('team_id', 0)->exists()) {
+            return;
+        }
+
+        throw new RuntimeException('The base development data does not exist yet. Wait until the instance has finished its first-time setup (init-setup: done in ./scripts/dev logs) and run dev:demo again.');
     }
 
     private function seedInventory(): void

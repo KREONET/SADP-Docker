@@ -17,7 +17,7 @@
         $healthStatus = null;
     }
 
-    $badgeStatus = $healthStatus ? "{$displayStatus} ({$healthStatus})" : $displayStatus;
+    $badgeStatus = $healthStatus ? __($displayStatus).' ('.__($healthStatus).')' : __($displayStatus);
 @endphp
 @if ($lastDeploymentLink)
     <x-status-badge as="a" href="{{ $lastDeploymentLink }}" target="_blank" status="{{ $badgeStatus }}" type="warning"

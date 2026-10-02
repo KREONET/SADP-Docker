@@ -22,7 +22,7 @@
 
 <footer {{ $attributes->class('flex min-h-11 items-center justify-between border-t border-neutral-200 px-4 text-[11px] text-neutral-500 dark:border-white/[0.08] dark:text-fg-faint') }}>
     <div class="flex items-center gap-3">
-        <span class="inline-flex h-7 items-center whitespace-nowrap tabular-nums">{{ $from }}–{{ $to }} of {{ $total }}</span>
+        <span class="inline-flex h-7 items-center whitespace-nowrap tabular-nums">{{ __(':from–:to of :total', ['from' => $from, 'to' => $to, 'total' => $total]) }}</span>
         @isset($pageSize)
             {{ $pageSize }}
         @endisset
@@ -36,18 +36,18 @@
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                     </path>
                 </svg>
-                <span class="sr-only">Loading page…</span>
+                <span class="sr-only">{{ __('Loading page…') }}</span>
             </span>
         @endif
     </div>
     <div class="flex items-center gap-1">
-        <button type="button" class="{{ $buttonClass }}" aria-label="Previous page"
+        <button type="button" class="{{ $buttonClass }}" aria-label="{{ __('Previous page') }}"
             @if (filled($previousAction)) wire:click="{{ $previousAction }}" @endif
             @if ($hasLoading) wire:loading.attr="disabled" wire:target="{{ $wireTarget }}" @endif
             @disabled($onFirstPage)>
             <x-reicon name="arrow-right" class="size-3.5 rotate-180" />
         </button>
-        <button type="button" class="{{ $buttonClass }}" aria-label="Next page"
+        <button type="button" class="{{ $buttonClass }}" aria-label="{{ __('Next page') }}"
             @if (filled($nextAction)) wire:click="{{ $nextAction }}" @endif
             @if ($hasLoading) wire:loading.attr="disabled" wire:target="{{ $wireTarget }}" @endif
             @disabled($onLastPage)>

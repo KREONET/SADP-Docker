@@ -39,7 +39,7 @@ it('renders the changelog modal above the desktop sidebar toggle', function () {
     $component = Livewire::test(SettingsDropdown::class, ['trigger' => 'changelog-sidebar'])
         ->call('openWhatsNewModal')
         ->assertNotDispatched('whats-new-opened')
-        ->assertSee("What's new", false)
+        ->assertSee("What's new")
         ->assertSee('Test Release')
         ->assertSee('Mark read')
         ->assertSeeHtml('z-[99]')
@@ -74,6 +74,6 @@ it('opens the changelog modal when there are no entries', function () {
     Livewire::test(SettingsDropdown::class, ['trigger' => 'account-menu'])
         ->call('openWhatsNewModal')
         ->assertSet('showWhatsNewModal', true)
-        ->assertSee("What's new", false)
+        ->assertSee("What's new")
         ->assertSee('No updates found');
 });

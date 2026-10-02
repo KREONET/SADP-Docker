@@ -1,15 +1,15 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($server, 'name')->limit(10) }} > Security | Coolify
+        {{ data_get_str($server, 'name')->limit(10) }} > {{ __('Security') }} | Coolify
     </x-slot>
 
     <livewire:server.navbar :server="$server" />
 
     <x-process-dialog @startupdate.window="processDialogOpen = true" closeWithX size="xl">
-        <x-slot:title>Updating packages</x-slot:title>
+        <x-slot:title>{{ __('Updating packages') }}</x-slot:title>
         <x-slot:content>
             <div class="flex h-full min-h-0 flex-col">
-                <livewire:activity-monitor header="Logs" fullHeight />
+                <livewire:activity-monitor :header="__('Logs')" fullHeight />
             </div>
         </x-slot:content>
     </x-process-dialog>
@@ -19,75 +19,74 @@
         <x-server.sidebar :server="$server" activeMenu="security" />
 
         <div class="application-settings-form flex w-full flex-col gap-6">
-            <x-application.settings-section id="server-patching-overview-section" title="Server patching"
-                helper="Discover and apply operating system package updates.">
+            <x-application.settings-section id="server-patching-overview-section" :title="__('Server patching')"
+                :helper="__('Discover and apply operating system package updates.')">
                 <x-slot:actions>
-                    <x-status-badge status="Experimental" type="warning" />
+                    <x-status-badge :status="__('Experimental')" type="warning" />
                     @if (isDev())
                         <x-forms.button type="button" wire:click="sendTestEmail">
-                            Send test email
+                            {{ __('Send test email') }}
                         </x-forms.button>
                     @endif
                     <x-forms.button type="button" wire:click="$dispatch('checkForUpdates')">
                         <x-reicon name="refresh" class="size-3.5" />
-                        Check for updates
+                        {{ __('Check for updates') }}
                     </x-forms.button>
                 </x-slot:actions>
 
-                <x-callout type="info" title="Supported package managers">
-                    Automated package discovery currently supports apk, apt, dnf, pacman, and zypper. Weekly status
-                    notifications can be managed from
+                <x-callout type="info" :title="__('Supported package managers')">
+                    {{ __('Automated package discovery currently supports apk, apt, dnf, pacman, and zypper. Weekly status notifications can be managed from') }}
                     <a class="font-medium underline" href="{{ route('notifications.email') }}"
-                        {{ wireNavigate() }}>notification settings</a>.
+                        {{ wireNavigate() }}>{{ __('notification settings') }}</a>.
                 </x-callout>
             </x-application.settings-section>
 
             <div wire:loading wire:target="checkForUpdates">
-                <x-application.settings-section title="Checking for updates"
-                    helper="Package discovery can take several minutes.">
+                <x-application.settings-section :title="__('Checking for updates')"
+                    :helper="__('Package discovery can take several minutes.')">
                     <div class="flex items-center gap-3 py-4 text-sm text-neutral-600 dark:text-fg-dim">
                         <x-loading />
-                        Inspecting installed packages…
+                        {{ __('Inspecting installed packages…') }}
                     </div>
                 </x-application.settings-section>
             </div>
 
             <div wire:loading.remove wire:target="checkForUpdates">
                 @if ($error)
-                    <x-application.settings-section title="Package updates"
-                        helper="Available operating system updates for this server.">
-                        <x-callout type="danger" title="Could not check for updates">
+                    <x-application.settings-section :title="__('Package updates')"
+                        :helper="__('Available operating system updates for this server.')">
+                        <x-callout type="danger" :title="__('Could not check for updates')">
                             {{ $error }}
                         </x-callout>
                     </x-application.settings-section>
                 @elseif ($totalUpdates === 0)
-                    <x-application.settings-section title="Package updates"
-                        helper="Available operating system updates for this server.">
-                        <x-empty size="sm" title="Server is up to date"
-                            description="No package updates are currently available."
+                    <x-application.settings-section :title="__('Package updates')"
+                        :helper="__('Available operating system updates for this server.')">
+                        <x-empty size="sm" :title="__('Server is up to date')"
+                            :description="__('No package updates are currently available.')"
                             icon-name="check-circle" />
                     </x-application.settings-section>
                 @elseif (isset($updates) && count($updates) > 0)
-                    <x-application.settings-section id="server-package-updates-section" title="Package updates"
-                        helper="{{ $totalUpdates }} update{{ $totalUpdates === 1 ? '' : 's' }} available."
+                    <x-application.settings-section id="server-package-updates-section" :title="__('Package updates')"
+                        :helper="trans_choice(':count update available.|:count updates available.', $totalUpdates)"
                         flush>
                         <x-slot:actions>
-                            <x-modal-confirmation title="Confirm package update?"
-                                buttonTitle="Update all packages" isHighlightedButton
+                            <x-modal-confirmation :title="__('Confirm package update?')"
+                                :buttonTitle="__('Update all packages')" isHighlightedButton
                                 submitAction="updateAllPackages" dispatchAction :actions="[
-                                    'All packages will be updated to their latest available versions.',
-                                    'Docker or kernel updates may restart running containers.',
+                                    __('All packages will be updated to their latest available versions.'),
+                                    __('Docker or kernel updates may restart running containers.'),
                                 ]" confirmationText="Update All Packages"
-                                confirmationLabel="Confirm by entering the text below"
-                                shortConfirmationLabel="Confirmation" :confirmWithPassword="false"
-                                step2ButtonText="Update All Packages" />
+                                :confirmationLabel="__('Confirm by entering the text below')"
+                                :shortConfirmationLabel="__('Confirmation')" :confirmWithPassword="false"
+                                :step2ButtonText="__('Update All Packages')" />
                         </x-slot:actions>
 
                         <div class="data-table">
                             <div class="data-table-header package-updates-table-grid">
-                                <span>Package</span>
-                                <span>New version</span>
-                                <span class="text-right">Action</span>
+                                <span>{{ __('Package') }}</span>
+                                <span>{{ __('New version') }}</span>
+                                <span class="text-right">{{ __('Action') }}</span>
                             </div>
                             @foreach ($updates as $update)
                                 <div
@@ -107,21 +106,21 @@
                                         </p>
                                         @if ($packageManager !== 'dnf' && data_get($update, 'current_version'))
                                             <p class="mt-0.5 truncate text-[10px] text-neutral-500 dark:text-fg-faint">
-                                                Current: {{ data_get($update, 'current_version') }}
+                                                {{ __('Current: :version', ['version' => data_get($update, 'current_version')]) }}
                                             </p>
                                         @endif
                                     </div>
                                     <div class="flex justify-end">
                                         <x-forms.button type="button"
                                             wire:click="$dispatch('updatePackage', { package: '{{ data_get($update, 'package') }}' })">
-                                            Update
+                                            {{ __('Update') }}
                                         </x-forms.button>
                                     </div>
                                 </div>
                             @endforeach
                             <div
                                 class="flex min-h-11 items-center border-t border-neutral-200 px-4 text-[11px] text-neutral-500 dark:border-white/[0.08] dark:text-fg-faint">
-                                {{ count($updates) }} {{ Str::plural('package update', count($updates)) }}
+                                {{ trans_choice(':count package update|:count package updates', count($updates)) }}
                             </div>
                         </div>
                     </x-application.settings-section>

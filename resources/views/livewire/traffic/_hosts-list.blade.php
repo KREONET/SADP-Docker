@@ -12,7 +12,7 @@
     $maxRequests = max(1, (int) collect($hosts)->max('requests'));
 @endphp
 @if (empty($hosts))
-    <x-empty size="sm" title="No host data" description="No hostnames were recorded for the selected range."
+    <x-empty size="sm" :title="__('No host data')" :description="__('No hostnames were recorded for the selected range.')"
         icon-name="unordered-list" />
 @else
     <div x-data="{ page: 0, per: 10, total: {{ count($hosts) }} }">
@@ -30,13 +30,13 @@
                     <a href="https://{{ $host }}" target="_blank" rel="noopener noreferrer nofollow"
                         class="min-w-0 flex-1 truncate font-mono text-[12px] text-black hover:underline dark:text-fg">{{ $host }}</a>
                 @else
-                    <span class="min-w-0 flex-1 truncate text-[12px] text-neutral-500 dark:text-fg-dim">Unknown host</span>
+                    <span class="min-w-0 flex-1 truncate text-[12px] text-neutral-500 dark:text-fg-dim">{{ __('Unknown host') }}</span>
                 @endif
                 <div class="hidden h-1 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-100 sm:block dark:bg-white/[0.06]">
                     <div class="h-full rounded-full bg-[var(--chart-status-3xx)]" style="width: {{ $width }}%;"></div>
                 </div>
                 <span class="w-12 shrink-0 text-right text-[12px] font-medium tabular-nums text-black dark:text-fg"
-                    title="{{ number_format($requests) }} requests">{{ compactNumber($requests) }}</span>
+                    title="{{ __(':count requests', ['count' => number_format($requests)]) }}">{{ compactNumber($requests) }}</span>
                 <span class="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-neutral-400 sm:inline dark:text-fg-faint">{{ formatBytes((int) ($row['bandwidth'] ?? 0)) }}</span>
             </div>
         @endforeach

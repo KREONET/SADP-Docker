@@ -123,7 +123,7 @@ class SecretManagerLinks extends Component
 
             $this->resetKeys();
             $this->loadData();
-            $this->dispatch('success', 'Secret manager source saved. References resolve at the next deployment.');
+            $this->dispatch('success', __('Secret manager source saved. References resolve at the next deployment.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -150,7 +150,7 @@ class SecretManagerLinks extends Component
             $this->auditSecretManagerAction('settings_updated');
             $this->resetKeys();
             $this->loadData();
-            $this->dispatch('success', 'Secret manager settings saved.');
+            $this->dispatch('success', __('Secret manager settings saved.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -171,7 +171,7 @@ class SecretManagerLinks extends Component
             $this->settings = [];
             $this->resetKeys();
             $this->loadData();
-            $this->dispatch('success', 'Secret manager source removed. Existing {{vault.*}} references will fail the next deployment until they are removed too.');
+            $this->dispatch('success', __('Secret manager source removed. Existing {{vault.*}} references will fail the next deployment until they are removed too.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -193,7 +193,7 @@ class SecretManagerLinks extends Component
             $this->keysLoaded = true;
             $this->auditSecretManagerAction('keys_viewed', ['key_count' => count($keys)]);
         } catch (\Throwable $e) {
-            $this->dispatch('error', 'Could not fetch keys: '.$e->getMessage());
+            $this->dispatch('error', __('Could not fetch keys: :message', ['message' => $e->getMessage()]));
         }
     }
 

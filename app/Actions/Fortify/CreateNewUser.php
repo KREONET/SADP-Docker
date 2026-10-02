@@ -110,7 +110,7 @@ class CreateNewUser implements CreatesNewUsers
 
         foreach ($keys as $limit) {
             if (RateLimiter::tooManyAttempts($limit['key'], $limit['max'])) {
-                abort(429, 'Too many registration attempts. Please try again later.');
+                abort(429, __('Too many registration attempts. Please try again later.'));
             }
         }
 

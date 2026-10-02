@@ -35,20 +35,20 @@
 
 <section class="application-settings-workspace w-full max-w-none">
     <header class="settings-mobile-header xl:hidden">
-        <h1 class="settings-mobile-title">Keys & Tokens</h1>
-        <p class="settings-mobile-description">Manage SSH keys, cloud credentials, and API access tokens.</p>
+        <h1 class="settings-mobile-title">{{ __('Keys & Tokens') }}</h1>
+        <p class="settings-mobile-description">{{ __('Manage SSH keys, cloud credentials, and API access tokens.') }}</p>
     </header>
     <div class="grid min-w-0 gap-8 xl:grid-cols-[210px_minmax(0,1fr)] xl:gap-8">
         <aside class="application-settings-navigation min-w-0 xl:self-start">
-            <nav aria-label="Keys and tokens"
+            <nav aria-label="{{ __('Keys and tokens') }}"
                 class="grid grid-cols-2 gap-0.5 border-y border-neutral-200 py-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-1 xl:border-y-0 xl:py-0 dark:border-white/[0.06]">
-                <div class="nav-section hidden xl:block">Keys & Tokens</div>
+                <div class="nav-section hidden xl:block">{{ __('Keys & Tokens') }}</div>
                 @foreach ($securityMenuItems as $menuItem)
                     <a wire:key="security-settings-{{ str($menuItem['label'])->slug() }}"
                         @class(['menu-item', 'menu-item-active' => $menuItem['active']])
                         {{ wireNavigate() }} href="{{ route($menuItem['route']) }}">
                         <x-reicon :name="$menuItem['icon']" class="menu-item-icon" />
-                        <span class="menu-item-label">{{ $menuItem['label'] }}</span>
+                        <span class="menu-item-label">{{ __($menuItem['label']) }}</span>
                     </a>
                 @endforeach
             </nav>

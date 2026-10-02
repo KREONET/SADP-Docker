@@ -27,10 +27,10 @@
         if (!this.showWarning) return null;
         const config = this.problematicVars[$wire.key];
         if (!config) return null;
-        return `Recommendation: ${config.recommendation}`;
+        return `${@js(__('Recommendation:'))} ${config.recommendation}`;
     }
 }" x-if="showWarning">
-    <x-callout type="warning" title="Caution">
+    <x-callout type="warning" :title="__('Caution')">
         <div class="text-sm" x-text="warningMessage"></div>
         <div class="text-sm" x-text="recommendation"></div>
     </x-callout>

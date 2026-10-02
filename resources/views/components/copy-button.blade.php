@@ -1,10 +1,11 @@
 @props([
     'value' => null,
     'resolve' => null,
-    'label' => 'Copy to clipboard',
+    'label' => null,
 ])
 
 @php
+    $label ??= __('Copy to clipboard');
     $valueExpression = $resolve ?? \Illuminate\Support\Js::from($value);
 @endphp
 

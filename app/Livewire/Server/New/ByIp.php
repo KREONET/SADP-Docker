@@ -69,22 +69,22 @@ class ByIp extends Component
     protected function messages(): array
     {
         return array_merge(ValidationPatterns::combinedMessages(), [
-            'private_key_id.integer' => 'The Private Key field must be an integer.',
-            'private_key_id.nullable' => 'The Private Key field is optional.',
-            'private_key_id.exists' => 'The selected Private Key is invalid.',
-            'new_private_key_name.string' => 'The Private Key Name must be a string.',
-            'new_private_key_description.string' => 'The Private Key Description must be a string.',
-            'new_private_key_value.string' => 'The Private Key Value must be a string.',
-            'ip.required' => 'The IP Address/Domain is required.',
-            'ip.string' => 'The IP Address/Domain must be a string.',
-            'user.required' => 'The User field is required.',
-            'user.string' => 'The User field must be a string.',
+            'private_key_id.integer' => __('The Private Key field must be an integer.'),
+            'private_key_id.nullable' => __('The Private Key field is optional.'),
+            'private_key_id.exists' => __('The selected Private Key is invalid.'),
+            'new_private_key_name.string' => __('The Private Key Name must be a string.'),
+            'new_private_key_description.string' => __('The Private Key Description must be a string.'),
+            'new_private_key_value.string' => __('The Private Key Value must be a string.'),
+            'ip.required' => __('The IP Address/Domain is required.'),
+            'ip.string' => __('The IP Address/Domain must be a string.'),
+            'user.required' => __('The User field is required.'),
+            'user.string' => __('The User field must be a string.'),
             ...ValidationPatterns::serverUsernameMessages(),
-            'port.required' => 'The Port field is required.',
-            'port.integer' => 'The Port field must be an integer.',
-            'port.between' => 'The Port field must be between 1 and 65535.',
-            'server_role.required' => 'The Server Role field is required.',
-            'server_role.in' => 'The selected Server Role is invalid.',
+            'port.required' => __('The Port field is required.'),
+            'port.integer' => __('The Port field must be an integer.'),
+            'port.between' => __('The Port field must be between 1 and 65535.'),
+            'server_role.required' => __('The Server Role field is required.'),
+            'server_role.in' => __('The selected Server Role is invalid.'),
         ]);
     }
 
@@ -106,7 +106,7 @@ class ByIp extends Component
             $this->authorize('create', PrivateKey::class);
 
             if (! in_array($type, ['ed25519', 'rsa'], true)) {
-                $this->dispatch('error', 'Invalid private key type.');
+                $this->dispatch('error', __('Invalid private key type.'));
 
                 return;
             }
@@ -120,7 +120,7 @@ class ByIp extends Component
             ]);
 
             $this->handlePrivateKeyCreated($privateKey->id);
-            $this->dispatch('success', 'Private key created successfully.');
+            $this->dispatch('success', __('Private key created successfully.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -145,14 +145,14 @@ class ByIp extends Component
             $this->authorize('create', Server::class);
             $foundServer = Server::whereIp($this->ip)->first();
             if ($foundServer) {
-                return $this->dispatch('error', 'A server with this IP/Domain already exists.');
+                return $this->dispatch('error', __('A server with this IP/Domain already exists.'));
             }
 
             if (is_null($this->private_key_id)) {
-                return $this->dispatch('error', 'You must select a private key');
+                return $this->dispatch('error', __('You must select a private key'));
             }
             if (Team::serverLimitReached()) {
-                return $this->dispatch('error', 'You have reached the server limit for your subscription.');
+                return $this->dispatch('error', __('You have reached the server limit for your subscription.'));
             }
             $payload = [
                 'name' => $this->name,

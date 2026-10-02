@@ -45,7 +45,7 @@
 
 <div class="flex flex-col">
     @if (! $hasData)
-        <x-empty size="sm" title="No data" description="No country data for the selected range."
+        <x-empty size="sm" :title="__('No data')" :description="__('No country data for the selected range.')"
             icon-name="network" />
     @else
         <div class="grid grid-cols-1 items-stretch gap-4 border-b border-neutral-200 p-4 lg:grid-cols-[2fr_3fr] dark:border-white/[0.07]">
@@ -89,13 +89,13 @@
                                 <span class="shrink-0 text-[14px] leading-none" aria-hidden="true">🌐</span>
                             @endif
                             <span class="min-w-0 flex-1 truncate text-[12px] text-black dark:text-fg">
-                                {{ $isUnknown ? 'Unknown' : countryName($row['value']) }}
+                                {{ $isUnknown ? __('Unknown') : countryName($row['value']) }}
                             </span>
                             <div class="hidden h-1 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-100 sm:block dark:bg-white/[0.06]">
                                 <div class="h-full rounded-full bg-[var(--chart-status-3xx)]" style="width: {{ $width }}%;"></div>
                             </div>
                             <span class="w-12 shrink-0 text-right text-[12px] font-medium tabular-nums text-black dark:text-fg"
-                                title="{{ number_format($row['requests']) }} requests">{{ compactNumber($row['requests']) }}</span>
+                                title="{{ __(':count requests', ['count' => number_format($row['requests'])]) }}">{{ compactNumber($row['requests']) }}</span>
                             <span class="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-neutral-400 sm:inline dark:text-fg-faint">{{ formatBytes($row['bytesOut']) }}</span>
                         </div>
                     @endforeach

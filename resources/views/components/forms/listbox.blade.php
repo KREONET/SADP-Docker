@@ -5,8 +5,8 @@
     'helper' => null,
     'required' => false,
     'options' => [], // list of ['value' => ..., 'label' => ..., 'disabled' => bool]
-    'placeholder' => 'Select…',
-    'emptyText' => 'No options available.',
+    'placeholder' => null,
+    'emptyText' => null,
     'live' => false,
     'onChange' => null, // optional $wire method to call after a selection
     'onChangeArgs' => null, // optional arguments followed by the selected value
@@ -58,7 +58,7 @@
         value: @if (!$wire) @js($value) @elseif ($live && ! $onChange) @entangle($id).live @else @entangle($id) @endif,
         get current() {
             const found = this.options.find((option) => String(option.value) === String(this.value));
-            return found ? found.label : @js($placeholder);
+            return found ? found.label : @js($placeholder ?? __('Select…'));
         },
         async choose(option) {
             if (option.header || option.disabled || this.saving) return;
@@ -148,7 +148,7 @@
                     x-effect="if (open) requestAnimationFrame(() => positionPanel($el))" role="listbox">
                     <div x-show="options.length === 0"
                         class="px-3 py-2 text-[13px] text-neutral-500 dark:text-fg-dim">
-                        {{ $emptyText }}
+                        {{ $emptyText ?? __('No options available.') }}
                     </div>
                     <template x-for="option in options" :key="String(option.value)">
                         <div>
@@ -185,7 +185,7 @@
                 x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]" role="listbox">
                 <div x-show="options.length === 0"
                     class="px-3 py-2 text-[13px] text-neutral-500 dark:text-fg-dim">
-                    {{ $emptyText }}
+                    {{ $emptyText ?? __('No options available.') }}
                 </div>
                 <template x-for="option in options" :key="String(option.value)">
                     <div>

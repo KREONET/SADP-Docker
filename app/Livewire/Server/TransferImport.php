@@ -51,10 +51,10 @@ class TransferImport extends Component
         try {
             $contents = $this->bundleFile->get();
             if (! is_string($contents) || blank($contents)) {
-                throw new \RuntimeException('Uploaded file is empty.');
+                throw new \RuntimeException(__('Uploaded file is empty.'));
             }
             $this->bundleJson = $contents;
-            $this->dispatch('success', 'Bundle file loaded into the form.');
+            $this->dispatch('success', __('Bundle file loaded into the form.'));
         } catch (Throwable $e) {
             handleError($e, $this);
         }
@@ -67,17 +67,17 @@ class TransferImport extends Component
     {
         $raw = trim($this->bundleJson);
         if ($raw === '') {
-            throw new \RuntimeException('Paste a transfer bundle JSON or upload a file.');
+            throw new \RuntimeException(__('Paste a transfer bundle JSON or upload a file.'));
         }
 
         $decoded = json_decode($raw, true);
         if (! is_array($decoded)) {
-            throw new \RuntimeException('Bundle is not valid JSON.');
+            throw new \RuntimeException(__('Bundle is not valid JSON.'));
         }
 
         if (data_get($decoded, 'encrypted')) {
             if (blank($this->passphrase)) {
-                throw new \RuntimeException('Passphrase is required for encrypted bundles.');
+                throw new \RuntimeException(__('Passphrase is required for encrypted bundles.'));
             }
 
             return ServerTransferBundle::decryptWithPassphrase($decoded, $this->passphrase);
@@ -127,11 +127,11 @@ class TransferImport extends Component
             }
 
             if ($dryRun) {
-                $this->dispatch('success', 'Dry run completed — nothing was written.');
+                $this->dispatch('success', __('Dry run completed — nothing was written.'));
             } elseif (data_get($result, 'claimed')) {
-                $this->dispatch('success', 'Server imported. This instance now manages it.');
+                $this->dispatch('success', __('Server imported. This instance now manages it.'));
             } else {
-                $this->dispatch('success', 'Server imported, but management could not be enabled. Check the warnings, then click Enable management on the server page.');
+                $this->dispatch('success', __('Server imported, but management could not be enabled. Check the warnings, then click Enable management on the server page.'));
             }
         } catch (Throwable $e) {
             handleError($e, $this);

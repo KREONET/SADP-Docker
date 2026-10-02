@@ -85,7 +85,7 @@
         x-transition:leave="transition-opacity ease-in duration-75"
         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
         class="auth-tooltip">
-        {{ $tooltip ?: 'You do not have permission to perform this action.' }}
+        {{ $tooltip ?: __('You do not have permission to perform this action.') }}
     </div>
 </span>
 @endif

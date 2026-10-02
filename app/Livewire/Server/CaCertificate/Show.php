@@ -57,16 +57,16 @@ class Show extends Component
         try {
             $this->authorize('manageCaCertificate', $this->server);
             if (! $this->certificateContent) {
-                throw new \Exception('Certificate content cannot be empty.');
+                throw new \Exception(__('Certificate content cannot be empty.'));
             }
 
             $parsedCert = openssl_x509_read($this->certificateContent);
             if (! $parsedCert) {
-                throw new \Exception('Invalid certificate format.');
+                throw new \Exception(__('Invalid certificate format.'));
             }
 
             if (! openssl_x509_export($parsedCert, $cleanedCertificate)) {
-                throw new \Exception('Failed to process certificate.');
+                throw new \Exception(__('Failed to process certificate.'));
             }
             $this->certificateContent = $cleanedCertificate;
 
@@ -83,7 +83,7 @@ class Show extends Component
                     force_regeneration: true
                 ));
             }
-            $this->dispatch('success', 'CA Certificate saved successfully.');
+            $this->dispatch('success', __('CA Certificate saved successfully.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -110,7 +110,7 @@ class Show extends Component
             ));
 
             $this->loadCaCertificate();
-            $this->dispatch('success', 'CA Certificate regenerated successfully.');
+            $this->dispatch('success', __('CA Certificate regenerated successfully.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
