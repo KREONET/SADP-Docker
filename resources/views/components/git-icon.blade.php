@@ -15,6 +15,16 @@
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M21 14l-9 7l-9 -7l3 -11l3 7h6l3 -7z" />
     </svg>
+@elseif($git === 'App\Models\ForgejoApp')
+    <svg xmlns="http://www.w3.org/2000/svg" {{ $attributes->merge(['class' => 'w-6 h-6']) }} viewBox="0 0 24 24"
+        stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M7 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+        <path d="M7 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+        <path d="M17 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+        <path d="M7 8v8" />
+        <path d="M17 8v2a2 2 0 0 1 -2 2h-6" />
+    </svg>
 @else
     <svg xmlns="http://www.w3.org/2000/svg" {{ $attributes->merge(['class' => 'w-6 h-6']) }} viewBox="0 0 24 24"
         stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">

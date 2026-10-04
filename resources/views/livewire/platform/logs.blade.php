@@ -1,5 +1,5 @@
 <div>
-    <x-slot:title>{{ __('Logs') }} | {{ __('Platform Admin') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Logs') }} | {{ __('Platform Admin') }} | {{ brand_name() }}</x-slot>
 
     <x-platform.layout>
         <div class="flex min-w-0 flex-col gap-6">
@@ -45,12 +45,12 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-2 text-[11px] text-neutral-600 dark:text-fg-dim">
                             @if ($lokiActive)
-                                <x-status-badge status="Shipping" type="success" />
+                                <x-status-badge :status="__('Shipping')" type="success" />
                             @else
-                                <x-status-badge status="Not shipping" type="neutral" />
+                                <x-status-badge :status="__('Not shipping')" type="neutral" />
                             @endif
                             @if ($hasLokiPassword)
-                                <x-status-badge status="Password stored" type="success" />
+                                <x-status-badge :status="__('Password stored')" type="success" />
                                 <x-forms.button type="button" wire:click="clearLokiPassword" isError>{{ __('Remove password') }}</x-forms.button>
                             @endif
                             @if ($lokiActive)

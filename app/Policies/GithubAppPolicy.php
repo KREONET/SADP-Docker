@@ -32,7 +32,8 @@ class GithubAppPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        // Git sources are shared infrastructure, so only platform admins add them.
+        return $user->isInstanceAdmin();
     }
 
     /**

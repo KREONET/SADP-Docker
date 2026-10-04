@@ -21,6 +21,8 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    // Git sources are created by platform admins (admins of the root team) only.
+    (Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']))->members()->attach($this->user->id, ['role' => 'admin']);
     session(['currentTeam' => $this->team]);
 
     // Create an API token for the user

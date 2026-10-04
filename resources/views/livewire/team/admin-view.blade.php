@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Team Admin') }} | Coolify
+        {{ __('Team Admin') }} | {{ brand_name() }}
     </x-slot>
 
     <x-team.settings-layout>
@@ -68,6 +68,7 @@
                                 <x-modal-confirmation :title="__('Confirm User Deletion?')"
                                     submitAction="delete({{ $user->id }})" :actions="[
                                         __('The selected user and their default team resources will be permanently deleted.'),
+                                        __('Applications, databases, and services of teams only this user belongs to are stopped and removed from their servers.'),
                                     ]"
                                     confirmationText="{{ $user->name }}"
                                     :confirmationLabel="__('Enter the user name to confirm deletion')"

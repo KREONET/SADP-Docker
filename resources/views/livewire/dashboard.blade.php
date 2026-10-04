@@ -1,6 +1,6 @@
 <div class="application-settings-form w-full">
     <x-slot:title>
-        {{ __('Dashboard') }} | Coolify
+        {{ __('Dashboard') }} | {{ brand_name() }}
     </x-slot>
 
     @if (session('error'))

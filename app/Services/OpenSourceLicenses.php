@@ -12,6 +12,8 @@ use RuntimeException;
  *
  * Only shipped code is listed: Composer runtime packages, npm packages bundled into the web UI,
  * and the packages of the terminal server. Development tools (packages-dev, test runners) are not.
+ *
+ * [한국어] '오픈소스 고지' 페이지의 목록을 만듭니다. composer.lock 과 package-lock.json 을 읽어 실제로 배포되는 패키지의 라이선스만 모읍니다.
  */
 class OpenSourceLicenses
 {

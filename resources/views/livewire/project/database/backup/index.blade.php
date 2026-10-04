@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($database, 'name')->limit(10) }} > {{ __('Backups') }} | Coolify
+        {{ data_get_str($database, 'name')->limit(10) }} > {{ __('Backups') }} | {{ brand_name() }}
     </x-slot>
 
     <livewire:project.database.heading :database="$database" />

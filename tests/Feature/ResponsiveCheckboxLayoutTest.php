@@ -32,6 +32,8 @@ beforeEach(function () {
         'show_boarding' => false,
     ]);
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    // The global search modals render the Git source forms, and their checkbox, for platform admins only.
+    (Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']))->members()->attach($this->user->id, ['role' => 'admin']);
 
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);

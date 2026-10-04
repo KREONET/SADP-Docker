@@ -17,6 +17,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Instance-wide log collection: user activity (audit events), Coolify system logs and
  * application container logs, with export and shipping to Loki for Grafana.
+ *
+ * [한국어] 플랫폼 관리자 로그 화면(/platform/logs)의 동작입니다. 화면 파일: resources/views/livewire/platform/logs.blade.php
+ * 하는 일: ① 수집 켜기/끄기(마스터 + 항목별) ② 로그 조회·검색 ③ 내보내기 ④ Loki 연결 설정·테스트.
+ * 화면을 열 때와 설정 저장·내보내기 같은 동작은 서버에서 플랫폼 관리자인지 확인합니다. 새 동작을 추가할 때도 같은 확인을 넣으세요.
  */
 class Logs extends Component
 {

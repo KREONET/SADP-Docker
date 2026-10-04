@@ -41,15 +41,16 @@ class TerminalSessionService
             throw new AccessDeniedHttpException('Invalid or expired terminal token.');
         }
 
-        $server = Server::ownedByCurrentTeam()
+        $server = Server::terminalAccessibleBy($user)
             ->whereUuid(data_get($payload, 'server_uuid'))
             ->with('privateKey', 'settings')
             ->firstOrFail();
 
-        if (! $server->isTerminalEnabled()
+        if (! $user->can('openTerminal', $server)
+            || ! $server->isTerminalEnabled()
             || $server->isForceDisabled()
             || ! $server->privateKey
-            || $server->privateKey->team_id !== $user->currentTeam()->id) {
+            || $server->privateKey->team_id !== $server->team_id) {
             throw new AccessDeniedHttpException('Terminal target is not authorized.');
         }
 

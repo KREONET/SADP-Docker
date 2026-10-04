@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Instance Backup') }} | Coolify
+        {{ __('Instance Backup') }} | {{ brand_name() }}
     </x-slot>
 
     <x-settings.layout>

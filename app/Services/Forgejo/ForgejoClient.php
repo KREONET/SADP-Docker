@@ -2,18 +2,26 @@
 
 namespace App\Services\Forgejo;
 
+use App\Models\ForgejoApp;
 use App\Models\InstanceSettings;
 use App\Services\Platform\SourcePolicy;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
  * Minimal client for the Forgejo (Gitea-compatible) REST API, authenticated as the
  * administrator-configured bot account.
+ *
+ * [한국어] Forgejo REST API 를 부르는 작은 클라이언트입니다. 관리자가 등록한 봇/서비스 계정 토큰으로 인증합니다.
+ * 필요한 토큰 권한: read:user, read:repository (이슈 작성은 write:issue).
  */
 class ForgejoClient
 {
+    /** Forgejo caps pages at 50 items by default. */
+    public const PAGE_SIZE = 50;
+
     private readonly string $baseUrl;
 
     public function __construct(string $baseUrl, private readonly ?string $token)
@@ -28,6 +36,11 @@ class ForgejoClient
         }
 
         return new self($settings->forgejo_base_url, $settings->forgejo_bot_token);
+    }
+
+    public static function forSource(ForgejoApp $source): self
+    {
+        return new self($source->html_url, $source->access_token);
     }
 
     public function baseUrl(): string
@@ -88,6 +101,48 @@ class ForgejoClient
     }
 
     /**
+     * One page of the repositories the token's user can read (own, organization and shared).
+     *
+     * @return array{repositories: list<array{id: int, name: string, full_name: string, default_branch: string, private: bool, html_url: ?string}>, has_more: bool}
+     */
+    public function repositories(int $page = 1, int $limit = self::PAGE_SIZE): array
+    {
+        $response = $this->request()->get('/user/repos', ['page' => $page, 'limit' => $limit]);
+        $this->assertSuccessful($response, 'load the repositories');
+
+        $items = collect($response->json() ?? [])->filter(fn ($repository) => is_array($repository) && filled(data_get($repository, 'full_name')));
+
+        return [
+            'repositories' => $items->map(fn (array $repository): array => [
+                'id' => (int) data_get($repository, 'id'),
+                'name' => (string) data_get($repository, 'name'),
+                'full_name' => (string) data_get($repository, 'full_name'),
+                'default_branch' => (string) (data_get($repository, 'default_branch') ?: 'main'),
+                'private' => (bool) data_get($repository, 'private', false),
+                'html_url' => data_get($repository, 'html_url'),
+            ])->values()->all(),
+            'has_more' => count($response->json() ?? []) >= $limit,
+        ];
+    }
+
+    /**
+     * One page of branches of a repository.
+     *
+     * @return list<array{name: string}>
+     */
+    public function branches(string $owner, string $name, int $page = 1, int $limit = self::PAGE_SIZE): array
+    {
+        $response = $this->request()->get('/repos/'.rawurlencode($owner).'/'.rawurlencode($name).'/branches', ['page' => $page, 'limit' => $limit]);
+        $this->assertSuccessful($response, 'load the branches');
+
+        return collect($response->json() ?? [])
+            ->filter(fn ($branch) => is_array($branch) && filled(data_get($branch, 'name')))
+            ->map(fn (array $branch): array => ['name' => (string) data_get($branch, 'name')])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Open an issue, or comment on the open issue with the same title so repeated
      * failing deployments do not flood the repository. Returns the issue or comment URL.
      */
@@ -122,6 +177,21 @@ class ForgejoClient
         }
 
         return (string) (data_get($response->json(), 'html_url') ?? data_get($issue, 'html_url', ''));
+    }
+
+    private function assertSuccessful(Response $response, string $action): void
+    {
+        if ($response->successful()) {
+            return;
+        }
+
+        $reason = match ($response->status()) {
+            401, 403 => 'The access token is invalid or lacks the read:user and read:repository scopes.',
+            404 => 'Not found. Check the server URL.',
+            default => 'Forgejo answered with HTTP '.$response->status().'.',
+        };
+
+        throw new RuntimeException("Could not {$action}. {$reason}");
     }
 
     private function request(): PendingRequest

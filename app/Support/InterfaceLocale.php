@@ -10,6 +10,10 @@ use Throwable;
  * Picks the interface language of a request: the user's own choice, then the instance
  * default set by a platform admin. Before sign-in the browser language is used, so the
  * login page already shows the language the visitor reads.
+ *
+ * [한국어] 요청마다 어떤 언어로 화면을 보여 줄지 정합니다.
+ * 순서: 사용자 개인 설정 → 인스턴스 기본 언어 → 로그인 전에는 브라우저 언어 → 영어(FALLBACK).
+ * 지원 언어는 config/app.php 의 available_locales 에 있습니다. 번역은 lang/<언어>.json 입니다.
  */
 class InterfaceLocale
 {

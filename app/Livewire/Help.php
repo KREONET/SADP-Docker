@@ -47,7 +47,7 @@ class Help extends Component
                     $response = null;
                 }
                 if (! $response?->successful()) {
-                    $this->dispatch('error', __('Feedback could not be sent.'), __('Please try again later or contact us on Discord.'));
+                    $this->dispatch('error', __('Feedback could not be sent.'), __('Please try again later.'));
 
                     return;
                 }

@@ -1,6 +1,6 @@
 <div class="application-settings-form w-full">
     <x-slot:title>
-        {{ __('Tags') }} | Coolify
+        {{ __('Tags') }} | {{ brand_name() }}
     </x-slot>
 
     <header @class([

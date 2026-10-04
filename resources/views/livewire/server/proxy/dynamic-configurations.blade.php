@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Proxy Dynamic Configuration') }} | Coolify
+        {{ __('Proxy Dynamic Configuration') }} | {{ brand_name() }}
     </x-slot>
 
     <livewire:server.navbar :server="$server" />

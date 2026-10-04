@@ -35,7 +35,6 @@ function seedBrowserInstanceSettings(array $attributes = []): InstanceSettings
 {
     return InstanceSettings::forceCreate(array_merge([
         'id' => 0,
-        'is_sponsorship_popup_enabled' => false,
         'is_registration_enabled' => true,
     ], $attributes));
 }

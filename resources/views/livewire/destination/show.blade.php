@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ $destination->name }} | {{ __('Destination') }} | Coolify
+        {{ $destination->name }} | {{ __('Destination') }} | {{ brand_name() }}
     </x-slot>
 
     @php

@@ -1,6 +1,6 @@
 <div class="w-full">
     <x-slot:title>
-        {{ __('Import server') }} | Coolify
+        {{ __('Import server') }} | {{ brand_name() }}
     </x-slot>
 
     <div class="mb-5 flex min-h-9 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

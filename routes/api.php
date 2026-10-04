@@ -37,7 +37,10 @@ use App\Http\Controllers\Api\TagsController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\VolumeBackupsController;
 use App\Http\Controllers\Api\VultrController;
+use App\Http\Controllers\Scim\DiscoveryController as ScimDiscoveryController;
+use App\Http\Controllers\Scim\UsersController as ScimUsersController;
 use App\Http\Middleware\ApiAllowed;
+use App\Http\Middleware\AuthenticateScim;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [OtherController::class, 'healthcheck']);
@@ -441,6 +444,22 @@ Route::group([
     'prefix' => 'v1',
 ], function () {
     Route::post('/sentinel/push', [SentinelController::class, 'push']);
+});
+
+// SCIM 2.0 user provisioning from the OIDC identity provider (token issued on /settings/oauth/oidc)
+Route::group([
+    'prefix' => 'scim/v2',
+    'middleware' => [AuthenticateScim::class],
+], function () {
+    Route::get('/ServiceProviderConfig', [ScimDiscoveryController::class, 'serviceProviderConfig']);
+    Route::get('/ResourceTypes', [ScimDiscoveryController::class, 'resourceTypes']);
+    Route::get('/Schemas', [ScimDiscoveryController::class, 'schemas']);
+    Route::get('/Users', [ScimUsersController::class, 'index']);
+    Route::post('/Users', [ScimUsersController::class, 'store']);
+    Route::get('/Users/{id}', [ScimUsersController::class, 'show']);
+    Route::put('/Users/{id}', [ScimUsersController::class, 'replace']);
+    Route::patch('/Users/{id}', [ScimUsersController::class, 'update']);
+    Route::delete('/Users/{id}', [ScimUsersController::class, 'destroy']);
 });
 
 Route::any('/{any}', function () {

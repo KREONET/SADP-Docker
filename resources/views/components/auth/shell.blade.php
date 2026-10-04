@@ -7,6 +7,9 @@
     <div class="auth-shell-content">
         <div class="auth-card">
             <div class="auth-card-heading">
+                @if ($brandLogoUrl = brand_logo_url())
+                    <img src="{{ $brandLogoUrl }}" alt="" class="auth-card-logo mb-3 h-10 w-auto max-w-[160px] object-contain">
+                @endif
                 <h1>{{ $title }}</h1>
                 @if ($description)
                     <p>{{ $description }}</p>

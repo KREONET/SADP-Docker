@@ -1,5 +1,5 @@
 <div>
-    <x-slot:title>{{ __('Open Source Licenses') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Open Source Licenses') }} | {{ brand_name() }}</x-slot>
 
     <div class="flex min-w-0 flex-col gap-6">
         <div>

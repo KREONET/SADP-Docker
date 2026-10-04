@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Sentinel Logs') }} | Coolify
+        {{ __('Sentinel Logs') }} | {{ brand_name() }}
     </x-slot>
     <livewire:server.navbar :server="$server" />
     <div

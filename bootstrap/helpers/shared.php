@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\ApplicationDeploymentQueue;
 use App\Models\ApplicationPreview;
 use App\Models\EnvironmentVariable;
+use App\Models\ForgejoApp;
 use App\Models\GithubApp;
 use App\Models\GitlabApp;
 use App\Models\InstanceSettings;
@@ -4332,6 +4333,39 @@ function instanceSettings()
     return InstanceSettings::get();
 }
 
+/**
+ * Site name shown in page titles, the navbar and sign-in pages. Falls back to
+ * the default when the settings row is not available yet (fresh installs, tests).
+ */
+function brand_name(): string
+{
+    try {
+        $name = trim((string) instanceSettings()->brand_name);
+    } catch (Throwable) {
+        $name = '';
+    }
+
+    return $name !== '' ? $name : 'PADED';
+}
+
+/**
+ * Public URL of the custom logo, or null when the default logo is used.
+ */
+function brand_logo_url(): ?string
+{
+    try {
+        $settings = instanceSettings();
+    } catch (Throwable) {
+        return null;
+    }
+
+    if (! $settings->brand_logo_path) {
+        return null;
+    }
+
+    return route('branding.logo', ['v' => $settings->updated_at?->timestamp]);
+}
+
 function wireNavigate(): string
 {
     try {
@@ -4572,7 +4606,7 @@ function gitRepositorySlug(?string $gitRepository): string
     return str($gitRepository)->trim('/')->replaceEnd('.git', '')->toString();
 }
 
-function convertGitUrl(string $gitRepository, string $deploymentType, GithubApp|GitlabApp|null $source = null): array
+function convertGitUrl(string $gitRepository, string $deploymentType, GithubApp|GitlabApp|ForgejoApp|null $source = null): array
 {
     $repository = $gitRepository;
     $providerInfo = [
@@ -4595,6 +4629,9 @@ function convertGitUrl(string $gitRepository, string $deploymentType, GithubApp|
                 $providerInfo['host'] = Url::fromString($source->html_url)->getHost();
                 $providerInfo['port'] = $source->custom_port;
                 $providerInfo['user'] = $source->custom_user;
+                break;
+            case ForgejoApp::class:
+                $providerInfo['host'] = Url::fromString($source->html_url)->getHost();
                 break;
         }
         if (! empty($providerInfo['host'])) {

@@ -12,6 +12,9 @@ use Throwable;
 
 /**
  * Pulls new log lines of the running application and service containers on a server over SSH.
+ *
+ * [한국어] 서버에 SSH 로 접속해 실행 중인 앱·서비스 컨테이너의 새 로그를 가져옵니다.
+ * 얼마나 읽었는지(마지막 시각)를 기억해 같은 줄을 두 번 저장하지 않습니다. 파싱은 ContainerLogParser 가 맡습니다.
  */
 class ContainerLogCollector
 {

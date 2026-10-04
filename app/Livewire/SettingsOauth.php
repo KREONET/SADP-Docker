@@ -21,6 +21,12 @@ class SettingsOauth extends Component
 
     public bool $disable_registration_when_oauth_enabled = false;
 
+    /** Whether the OIDC provider has a SCIM bearer token issued. */
+    public bool $hasScimToken = false;
+
+    /** Plaintext SCIM token, shown once right after it is generated. */
+    public ?string $newScimToken = null;
+
     protected function rules(): array
     {
         return $this->validationRules();
@@ -59,9 +65,7 @@ class SettingsOauth extends Component
 
     public function mount(?string $provider = null): ?RedirectResponse
     {
-        if (! isInstanceAdmin()) {
-            return redirect()->route('home');
-        }
+        abort_unless(isInstanceAdmin(), 403);
 
         $this->settings = instanceSettings();
         $this->selectedProvider = $provider;
@@ -77,6 +81,8 @@ class SettingsOauth extends Component
         if ($this->selectedProvider !== null && ! array_key_exists($this->selectedProvider, $this->oauth_settings_map)) {
             abort(404);
         }
+
+        $this->hasScimToken = (bool) OauthSetting::where('provider', 'oidc')->first()?->hasScimToken();
 
         return null;
     }
@@ -281,6 +287,41 @@ class SettingsOauth extends Component
         if ($oauth->isOidc() && ! in_array('openid', $oauth->scopeList(), true)) {
             throw new \Exception(__("OIDC scopes must include 'openid'."));
         }
+    }
+
+    /**
+     * Issue a new SCIM bearer token for identity-provider provisioning. It replaces any previous token.
+     */
+    public function generateScimToken(): void
+    {
+        $this->authorize('update', instanceSettings());
+
+        $oauth = OauthSetting::where('provider', 'oidc')->firstOrFail();
+        $this->newScimToken = $oauth->issueScimToken();
+        $this->hasScimToken = true;
+        auditLog('ui.oauth_setting.scim_token_generated', [
+            'team_id' => null,
+            'resource' => 'oauth_setting',
+            'provider' => 'oidc',
+        ]);
+
+        $this->dispatch('success', __('SCIM token generated. Copy it now; it will not be shown again.'));
+    }
+
+    public function revokeScimToken(): void
+    {
+        $this->authorize('update', instanceSettings());
+
+        OauthSetting::where('provider', 'oidc')->firstOrFail()->revokeScimToken();
+        $this->newScimToken = null;
+        $this->hasScimToken = false;
+        auditLog('ui.oauth_setting.scim_token_revoked', [
+            'team_id' => null,
+            'resource' => 'oauth_setting',
+            'provider' => 'oidc',
+        ]);
+
+        $this->dispatch('success', __('SCIM token revoked. SCIM provisioning is off.'));
     }
 
     public function saveRegistrationPolicy(): void

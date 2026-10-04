@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Advanced Settings') }} | Coolify
+        {{ __('Advanced Settings') }} | {{ brand_name() }}
     </x-slot>
 
     <x-settings.layout>
@@ -134,18 +134,6 @@
                             ['value' => false, 'label' => __('Enabled')],
                             ['value' => true, 'label' => __('Disabled')],
                         ]" />
-                    <div class="flex flex-col gap-2">
-                        <x-forms.listbox id="is_sponsorship_popup_enabled" :label="__('Sponsorship reminders')"
-                            :helper="__('Show the monthly project sponsorship reminder.')" onChange="instantSave" :options="[
-                                ['value' => true, 'label' => __('Enabled')],
-                                ['value' => false, 'label' => __('Disabled')],
-                            ]" />
-                        @if (isDev())
-                            <x-forms.button type="button" @click="$dispatch('show-sponsorship-reminder')">
-                                {{ __('Show sponsorship reminder') }}
-                            </x-forms.button>
-                        @endif
-                    </div>
                 </div>
             </x-application.settings-section>
 

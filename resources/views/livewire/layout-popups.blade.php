@@ -1,23 +1,16 @@
 <div x-data="{
     popups: {
-        sponsorship: true,
         notification: true,
         realtime: false,
     },
     reminders: {
-        sponsorship: { compact: false },
         notification: { compact: false },
     },
     reminderCollapseAfter: 10000,
     isDevelopment: {{ isDev() ? 'true' : 'false' }},
     init() {
-        this.popups.sponsorship = !this.isDevelopment && this.shouldShowMonthlyPopup('popupSponsorship');
         this.popups.notification = this.shouldShowMonthlyPopup('popupNotification');
         this.popups.realtime = localStorage.getItem('popupRealtime');
-
-        if (this.popups.sponsorship) {
-            this.scheduleReminderCollapse('sponsorship');
-        }
 
         if (this.popups.notification) {
             this.scheduleReminderCollapse('notification');
@@ -37,7 +30,7 @@
                         if (checkNumber > 5) {
                             this.popups.realtime = true;
                             console.error(
-                                'Coolify could not connect to its real-time service. This will cause unusual problems on the UI if not fixed! Please check the related documentation (https://coolify.io/docs/knowledge-base/cloudflare/tunnels/overview) or get help on Discord (https://coollabs.io/discord).)'
+                                'Coolify could not connect to its real-time service. This will cause unusual problems on the UI if not fixed! Please check the related documentation (https://coolify.io/docs/knowledge-base/cloudflare/tunnels/overview).)'
                             );
                         }
 
@@ -48,10 +41,6 @@
     },
     scheduleReminderCollapse(reminder) {
         setTimeout(() => {
-            if (reminder === 'sponsorship') {
-                this.reminders.sponsorship.compact = true;
-            }
-
             if (reminder === 'notification') {
                 this.reminders.notification.compact = true;
             }
@@ -86,7 +75,7 @@
         return isDifferentMonth;
         {{-- } --}}
     }
-}" x-on:show-sponsorship-reminder.window="popups.sponsorship = true; reminders.sponsorship.compact = false">
+}">
     @auth
         <span x-show="popups.realtime === true">
             @if (!isCloud())
@@ -110,9 +99,8 @@
                                         {{ __('Cannot connect to real-time service') }}
                                     </h2>
                                     <p class="mt-1 text-[12px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                        {!! __('This will cause unusual problems on the UI. Open the :ports or get help on :discord.', [
+                                        {!! __('This will cause unusual problems on the UI. Open the :ports.', [
                                             'ports' => '<a class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90" href="https://coolify.io/docs/knowledge-base/server/firewall" target="_blank" rel="noopener noreferrer">'.e(__('required ports')).'</a>',
-                                            'discord' => '<a class="font-medium text-coollabs underline decoration-coollabs/30 underline-offset-2 transition-colors hover:text-coollabs-100 dark:text-warning dark:decoration-warning/30 dark:hover:text-warning/90" href="https://coollabs.io/discord" target="_blank" rel="noopener noreferrer">Discord</a>',
                                         ]) !!}
                                     </p>
                                 </div>
@@ -136,63 +124,6 @@
             @endif
         </span>
     @endauth
-    @if ((isDev() || instanceSettings()->is_sponsorship_popup_enabled) && ! isCloud())
-        <span x-show="popups.sponsorship">
-            <x-popup>
-                <x-slot:customActions>
-                    <div class="relative mx-auto flex w-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-modal transition-all duration-300 dark:border-white/[0.1] dark:bg-surface"
-                        x-on:show-sponsorship-reminder.window="bannerVisible = true"
-                        :class="reminders.sponsorship.compact ? 'max-w-sm gap-3 p-4' : 'max-w-2xl gap-5 p-5 sm:p-6'">
-                        <button type="button" aria-label="{{ __('Dismiss sponsorship reminder') }}"
-                            class="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.07] dark:hover:text-fg"
-                            @click="bannerVisible=false;disableSponsorship()">
-                            <x-reicon name="x" class="size-3.5" />
-                        </button>
-
-                        <div class="flex items-start gap-4 pr-8">
-                            <div x-show="!reminders.sponsorship.compact" x-transition.opacity
-                                class="hidden size-12 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 sm:flex dark:border-white/[0.08] dark:bg-white/[0.04]">
-                                <img src="{{ asset('heart.png') }}" alt="" class="size-9">
-                            </div>
-                            <div class="min-w-0">
-                                <h2 class="text-[15px]! leading-5! font-semibold! text-black dark:text-fg">
-                                    {{ __('Love Coolify? Support our work.') }}
-                                </h2>
-                                <p x-show="!reminders.sponsorship.compact" x-transition.opacity
-                                    class="mt-1 text-[12px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                    {!! __('Coolify is profitable thanks to :you. Your support helps us build more features and keep improving the project.', [
-                                        'you' => '<span class="font-semibold text-coollabs dark:text-warning">'.e(__('you')).'</span>',
-                                    ]) !!}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                            <a target="_blank" href="https://github.com/sponsors/coollabsio"
-                                class="button button-highlighted h-9 justify-center sm:flex-1">
-                                GitHub Sponsors
-                            </a>
-                            <a x-show="!reminders.sponsorship.compact" x-transition.opacity target="_blank"
-                                href="https://opencollective.com/coollabsio/donate?interval=month&amount=10&name=&legalName=&email="
-                                class="button h-9 justify-center sm:flex-1">
-                                Open Collective
-                            </a>
-                            <a x-show="!reminders.sponsorship.compact" x-transition.opacity
-                                href="https://donate.stripe.com/8x2bJ104ifmB9kB45u38402" target="_blank"
-                                class="button h-9 justify-center sm:flex-1">
-                                Stripe
-                            </a>
-                            <button x-show="!reminders.sponsorship.compact" x-transition.opacity type="button"
-                                class="h-9 cursor-pointer px-2 text-[12px] font-medium text-neutral-500 transition-colors hover:text-black sm:shrink-0 dark:text-fg-dim dark:hover:text-fg"
-                                @click="bannerVisible=false;disableSponsorship()">
-                                {{ __('Maybe next time') }}
-                            </button>
-                        </div>
-                    </div>
-                </x-slot:customActions>
-            </x-popup>
-        </span>
-    @endif
     @if (request()->query->get('cancelled'))
         <x-banner>
             <div class="flex items-center gap-2">
@@ -279,11 +210,6 @@
         </span>
     @endif
     <script>
-        function disableSponsorship() {
-            // Store current timestamp instead of just 'false'
-            localStorage.setItem('popupSponsorship', Date.now().toString());
-        }
-
         function disableNotification() {
             // Store current timestamp instead of just 'false'
             localStorage.setItem('popupNotification', Date.now().toString());

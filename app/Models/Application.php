@@ -728,6 +728,9 @@ class Application extends BaseModel
                     if (str($this->git_repository)->contains('bitbucket')) {
                         return "{$this->source->html_url}/{$this->git_repository}/src/{$this->git_branch}{$base_dir}";
                     }
+                    if ($this->source_type === ForgejoApp::class) {
+                        return "{$this->source->html_url}/{$this->git_repository}/src/branch/{$this->git_branch}{$base_dir}";
+                    }
 
                     return "{$this->source->html_url}/{$this->git_repository}/tree/{$this->git_branch}{$base_dir}";
                 }
@@ -1714,6 +1717,10 @@ class Application extends BaseModel
             }
         }
 
+        if ($this->deploymentType() === 'source' && $this->source->getMorphClass() === ForgejoApp::class) {
+            return $this->forgejoLsRemoteCommands($deployment_uuid, $branch, $customRepository, $exec_in_docker);
+        }
+
         if ($this->deploymentType() === 'deploy_key') {
             $fullRepoUrl = $customRepository;
             $private_key = data_get($this, 'private_key.private_key');
@@ -2035,6 +2042,9 @@ class Application extends BaseModel
                     'fullRepoUrl' => $fullRepoUrl,
                 ];
             }
+        }
+        if ($this->deploymentType() === 'source' && $this->source->getMorphClass() === ForgejoApp::class) {
+            return $this->forgejoImportCommands($deployment_uuid, $pull_request_id, $git_clone_command, $branch, $customRepository, $escapedBaseDir, $baseDir, $exec_in_docker, $only_checkout, $commit, $pr_branch_name ?? null);
         }
         if ($this->deploymentType() === 'deploy_key') {
             $fullRepoUrl = $customRepository;
@@ -2726,6 +2736,70 @@ class Application extends BaseModel
             'limits_cpuset' => $this->limits_cpuset,
             'limits_cpu_shares' => $this->limits_cpu_shares,
         ];
+    }
+
+    /**
+     * @return array{commands: string, branch: ?string, fullRepoUrl: string}
+     */
+    private function forgejoLsRemoteCommands(string $deployment_uuid, ?string $branch, string $customRepository, bool $exec_in_docker): array
+    {
+        $repoUrl = $this->forgejoRepositoryUrl($customRepository);
+        $command = 'git ls-remote '.escapeshellarg($repoUrl);
+        $commands = collect([$this->gitCommand($exec_in_docker ? executeInDocker($deployment_uuid, $command) : $command)]);
+
+        return [
+            'commands' => $this->gitCommandsAsShellCommand($commands),
+            'branch' => $branch,
+            'fullRepoUrl' => $repoUrl,
+        ];
+    }
+
+    /**
+     * Clone over HTTPS with the source's access token. The token is only part of the git commands
+     * (hidden from the deployment log), and a same-host rewrite lets submodules authenticate too.
+     *
+     * @return array{commands: string, branch: ?string, fullRepoUrl: string}
+     */
+    private function forgejoImportCommands(string $deployment_uuid, int $pull_request_id, string $git_clone_command, ?string $branch, string $customRepository, string $escapedBaseDir, string $baseDir, bool $exec_in_docker, bool $only_checkout, ?string $commit, ?string $pr_branch_name): array
+    {
+        $url = parse_url(filter_var((string) data_get($this, 'source.html_url'), FILTER_SANITIZE_URL)) ?: [];
+        $scheme = $url['scheme'] ?? 'https';
+        $hostWithPort = $this->urlHostWithPort($url);
+        $pathPrefix = rtrim($url['path'] ?? '', '/');
+        $encodedToken = rawurlencode((string) $this->source->access_token);
+
+        $gitConfigOption = '-c '.escapeshellarg("url.{$scheme}://oauth2:{$encodedToken}@{$hostWithPort}{$pathPrefix}/.insteadOf={$scheme}://{$hostWithPort}{$pathPrefix}/");
+        $gitConfigOptions = $this->withGitHttpTransportConfig($gitConfigOption);
+
+        $repoUrl = $this->forgejoRepositoryUrl($customRepository);
+        $cloneCommand = $this->applyGitConfigOptionsToCloneCommand("{$git_clone_command} ".escapeshellarg($repoUrl)." {$escapedBaseDir}", $gitConfigOptions);
+        if (! $only_checkout) {
+            $cloneCommand = $this->setGitImportSettings($deployment_uuid, $cloneCommand, commit: $commit, gitConfigOptions: $gitConfigOptions, baseDir: $baseDir, onlyCheckout: $only_checkout);
+        }
+
+        if ($pull_request_id !== 0) {
+            $branch = "pull/{$pull_request_id}/head:{$pr_branch_name}";
+            $checkout = $this->buildGitCheckoutCommand((string) $pr_branch_name, gitConfigOptions: $gitConfigOptions);
+            $cloneCommand = "{$cloneCommand} && cd {$escapedBaseDir} && git {$gitConfigOptions} fetch origin ".escapeshellarg($branch)." && {$checkout}";
+        }
+
+        $commands = collect([$this->gitCommand($exec_in_docker ? executeInDocker($deployment_uuid, $cloneCommand) : $cloneCommand)]);
+
+        return [
+            'commands' => $this->gitCommandsAsShellCommand($commands),
+            'branch' => $branch,
+            'fullRepoUrl' => $repoUrl,
+        ];
+    }
+
+    private function forgejoRepositoryUrl(string $customRepository): string
+    {
+        $url = parse_url(filter_var((string) data_get($this, 'source.html_url'), FILTER_SANITIZE_URL)) ?: [];
+        $scheme = $url['scheme'] ?? 'https';
+        $pathPrefix = rtrim($url['path'] ?? '', '/');
+        $encodedToken = rawurlencode((string) $this->source->access_token);
+
+        return "{$scheme}://oauth2:{$encodedToken}@{$this->urlHostWithPort($url)}{$pathPrefix}/{$customRepository}.git";
     }
 
     private function urlHostWithPort(array $url): string

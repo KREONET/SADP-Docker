@@ -8,6 +8,7 @@ use App\Models\ApplicationPreview;
 use App\Models\CloudProviderToken;
 use App\Models\Environment;
 use App\Models\EnvironmentVariable;
+use App\Models\ForgejoApp;
 use App\Models\GithubApp;
 use App\Models\GitlabApp;
 use App\Models\LocalFileVolume;
@@ -773,6 +774,13 @@ class ServerTransferImporter
                 if ($gl) {
                     $attributes['source_type'] = GitlabApp::class;
                     $attributes['source_id'] = $gl->id;
+                }
+            } elseif ($sourceType === 'forgejo_app') {
+                // Re-link only to a Forgejo server registered on this instance; the token is never part of a bundle.
+                $forgejo = ForgejoApp::query()->where('uuid', $sourceUuid)->first();
+                if ($forgejo) {
+                    $attributes['source_type'] = ForgejoApp::class;
+                    $attributes['source_id'] = $forgejo->id;
                 }
             }
         }

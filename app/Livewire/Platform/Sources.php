@@ -10,6 +10,9 @@ use Livewire\Component;
 
 /**
  * Allowed git sources / container registries and the company Forgejo integration.
+ *
+ * [한국어] '소스' 화면의 설정 저장 동작: 허용 목록(Git/레지스트리), Forgejo 봇 토큰, 자동 배포 웹훅 비밀값.
+ * 비밀값은 화면에 다시 보여 주지 않고, 새로 만들 때 한 번만 보여 줍니다.
  */
 class Sources extends Component
 {

@@ -1,6 +1,6 @@
 <div>
     @unless ($embedded)
-        <x-slot:title>{{ data_get_str($application, 'name')->limit(10) }} > {{ __('Deployments') }} | Coolify</x-slot>
+        <x-slot:title>{{ data_get_str($application, 'name')->limit(10) }} > {{ __('Deployments') }} | {{ brand_name() }}</x-slot>
         <livewire:project.shared.configuration-checker :resource="$application" />
         <livewire:project.application.heading :application="$application" wire:key="application-heading-deployment-index" />
     @endunless

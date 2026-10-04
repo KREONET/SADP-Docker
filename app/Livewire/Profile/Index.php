@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Profile;
 
+use App\Actions\User\DeleteUserAccount;
 use App\Services\AvatarStorageService;
 use App\Support\InterfaceLocale;
 use Illuminate\Support\Facades\Auth;
@@ -373,6 +374,36 @@ class Index extends Component
             'oidc' => 'OIDC',
             default => str($provider)->headline()->toString(),
         };
+    }
+
+    /**
+     * Withdraw: permanently delete the signed-in account. The root user cannot withdraw.
+     */
+    public function deleteAccount($password = '')
+    {
+        $user = Auth::user();
+        if ($user->id === 0) {
+            $this->dispatch('error', __('The root account cannot be deleted.'));
+
+            return;
+        }
+
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return __('The provided password is incorrect.');
+        }
+
+        try {
+            DeleteUserAccount::execute($user, 'self');
+        } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+
+        // logout() would cycle the remember token and save the deleted user back into the database
+        Auth::guard('web')->logoutCurrentDevice();
+        session()->invalidate();
+        session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 
     private function auditContext(array $context = []): array

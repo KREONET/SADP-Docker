@@ -11,6 +11,9 @@ use Throwable;
 
 /**
  * Stores Coolify's own warning-and-above log messages while system log collection is on.
+ *
+ * [한국어] Coolify 가 남기는 경고 이상의 로그를 '시스템 로그 수집' 이 켜져 있을 때 DB 에 저장합니다.
+ * 로그를 저장하다 다시 로그가 생기면 무한 반복되므로 `$recording` 으로 중첩 기록을 막습니다.
  */
 class SystemLogRecorder
 {

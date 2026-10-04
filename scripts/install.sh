@@ -9,6 +9,7 @@
 ## DOCKER_ADDRESS_POOL_SIZE - Custom Docker address pool size (default: 24)
 ## DOCKER_POOL_FORCE_OVERRIDE - Force override Docker address pool configuration (default: false)
 ## AUTOUPDATE - Set to "false" to disable auto-updates
+## INTERNAL_SIGNUP - "true" keeps the built-in sign-up, "false" creates only a random root account for OIDC sign-in (asked interactively when unset)
 ## REGISTRY_URL - Custom registry URL for Docker images (default: docker.io)
 
 set -e # Exit immediately if a command exits with a non-zero status
@@ -248,6 +249,25 @@ fi
 printf '\n  %sWelcome to Coolify Installer!%s\n' "$C_BOLD" "$C_RESET" >&3
 printf '  %sThis script will install everything for you. Sit back and relax.%s\n' "$C_DIM" "$C_RESET" >&3
 printf '  %sLog file: %s%s\n\n' "$C_DIM" "$INSTALLATION_LOG_WITH_DATE" "$C_RESET" >&3
+
+# Built-in sign-up or OIDC only: ask on the terminal when INTERNAL_SIGNUP is not set
+INTERNAL_SIGNUP=${INTERNAL_SIGNUP:-}
+if [ -z "$INTERNAL_SIGNUP" ] && { : </dev/tty; } 2>/dev/null; then
+    printf '\033[?25h' >&3
+    printf '  %s내부 회원가입 기능을 쓸까요? (Use the built-in sign-up?) [Y/n] %s' "$C_BOLD" "$C_RESET" >&3
+    read -r INTERNAL_SIGNUP_ANSWER </dev/tty || INTERNAL_SIGNUP_ANSWER=""
+    if [ "$UI_TTY" = true ]; then
+        printf '\033[?25l' >&3
+    fi
+    case "$INTERNAL_SIGNUP_ANSWER" in
+    [nN] | [nN][oO] | 아니오 | 아니요) INTERNAL_SIGNUP=false ;;
+    *) INTERNAL_SIGNUP=true ;;
+    esac
+    printf '\n' >&3
+fi
+if [ "$INTERNAL_SIGNUP" != "false" ]; then
+    INTERNAL_SIGNUP=true
+fi
 UI_INSTALL_STARTED=$(ui_now)
 
 echo "=========================================="
@@ -259,6 +279,15 @@ echo "Source code: https://github.com/coollabsio/coolify/blob/v4.x/scripts/insta
 ROOT_USERNAME=${ROOT_USERNAME:-}
 ROOT_USER_EMAIL=${ROOT_USER_EMAIL:-}
 ROOT_USER_PASSWORD=${ROOT_USER_PASSWORD:-}
+GENERATED_ROOT_PASSWORD=false
+echo "Built-in sign-up: ${INTERNAL_SIGNUP}"
+
+
+# Without the built-in sign-up, only a root account exists and everyone else signs in with OIDC
+if [ "$INTERNAL_SIGNUP" = "false" ]; then
+    ROOT_USERNAME=${ROOT_USERNAME:-root}
+    ROOT_USER_EMAIL=${ROOT_USER_EMAIL:-root@paded.local}
+fi
 
 if [ -n "${REGISTRY_URL+x}" ]; then
     echo "Using registry URL from environment variable: $REGISTRY_URL"
@@ -1031,6 +1060,12 @@ update_env_var "PUSHER_APP_KEY" "$(openssl rand -hex 32)"
 update_env_var "PUSHER_APP_SECRET" "$(openssl rand -hex 32)"
 update_env_var "PUSHER_BACKEND_PORT" "6001"
 
+# Random root password (openssl is installed by now): always upper, lower, digit and symbol, no sed-special characters
+if [ "$INTERNAL_SIGNUP" = "false" ] && [ -z "$ROOT_USER_PASSWORD" ]; then
+    ROOT_USER_PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 20)Aa1_"
+    GENERATED_ROOT_PASSWORD=true
+fi
+
 # Add default root user credentials from environment variables
 if [ -n "$ROOT_USERNAME" ] && [ -n "$ROOT_USER_EMAIL" ] && [ -n "$ROOT_USER_PASSWORD" ]; then
     echo " - Setting predefined root user credentials from environment"
@@ -1226,6 +1261,15 @@ for IP in $PRIVATE_IPS; do
     fi
 done
 
+if [ "$INTERNAL_SIGNUP" = "false" ]; then
+    printf '\n  %sRoot account (built-in sign-up is off)%s\n' "$C_BOLD" "$C_RESET" >&3
+    printf '  Email      %s%s%s\n' "$C_BOLD" "$(grep '^ROOT_USER_EMAIL=' "$ENV_FILE" | cut -d '=' -f2-)" "$C_RESET" >&3
+    if [ "$GENERATED_ROOT_PASSWORD" = true ]; then
+        printf '  Password   %s%s%s\n' "$C_BOLD" "$(grep '^ROOT_USER_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2-)" "$C_RESET" >&3
+    fi
+    printf '\n  %s! OIDC를 연동하세요: root로 로그인한 뒤 설정 → OAuth에서 OIDC를 켜면 다른 사용자는 OIDC로 가입하고 로그인합니다.%s\n' "$C_YELLOW" "$C_RESET" >&3
+    printf '  %s  (Connect OIDC: sign in as root, then enable OIDC in Settings → OAuth.)%s\n' "$C_DIM" "$C_RESET" >&3
+fi
 printf '\n  %s! Back up %s/data/coolify/source/.env%s%s to a safe place outside this server (e.g. a password manager).%s\n' "$C_YELLOW" "$C_BOLD" "$C_RESET" "$C_YELLOW" "$C_RESET" >&3
 printf '  %sLog file: %s%s\n\n' "$C_DIM" "$INSTALLATION_LOG_WITH_DATE" "$C_RESET" >&3
 

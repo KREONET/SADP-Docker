@@ -1,5 +1,5 @@
 <div>
-    <x-slot:title>{{ __('Applications') }} | {{ __('Platform Admin') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Applications') }} | {{ __('Platform Admin') }} | {{ brand_name() }}</x-slot>
 
     <x-platform.layout>
         <x-application.settings-section :title="__('All applications')"

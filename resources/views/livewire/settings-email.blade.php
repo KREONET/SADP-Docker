@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Transactional Email') }} | Coolify
+        {{ __('Transactional Email') }} | {{ brand_name() }}
     </x-slot>
 
     <x-settings.layout>

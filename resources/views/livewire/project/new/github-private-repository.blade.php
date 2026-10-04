@@ -11,9 +11,13 @@
                 :description="__('Create an app to grant Coolify access to selected repositories.')"
                 icon-name="sources">
                 <x-slot:contents>
-                    <x-modal-input :buttonTitle="__('+ Add GitHub App')" :title="__('New GitHub App')" closeOutside="false">
-                        <livewire:source.github.create />
-                    </x-modal-input>
+                    @can('create', \App\Models\GithubApp::class)
+                        <x-modal-input :buttonTitle="__('+ Add GitHub App')" :title="__('New GitHub App')" closeOutside="false">
+                            <livewire:source.github.create />
+                        </x-modal-input>
+                    @else
+                        <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Ask a platform admin to add a Git source.') }}</p>
+                    @endcan
                 </x-slot:contents>
             </x-empty>
         </section>
@@ -24,9 +28,11 @@
                     <h2>{{ __('Choose GitHub App') }}</h2>
                     <p>{{ __('Select the installation that can access the repository you want to deploy.') }}</p>
                 </div>
-                <x-modal-input :buttonTitle="__('+ Add GitHub App')" :title="__('New GitHub App')" closeOutside="false">
-                    <livewire:source.github.create />
-                </x-modal-input>
+                @can('create', \App\Models\GithubApp::class)
+                    <x-modal-input :buttonTitle="__('+ Add GitHub App')" :title="__('New GitHub App')" closeOutside="false">
+                        <livewire:source.github.create />
+                    </x-modal-input>
+                @endcan
             </div>
             <div class="application-settings-section-body p-0!">
                 @foreach ($github_apps as $ghapp)

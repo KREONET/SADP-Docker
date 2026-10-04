@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BrandingLogoController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\OauthController;
 use App\Http\Controllers\ProfileAvatarController;
@@ -13,6 +14,7 @@ use App\Livewire\Destination\Index as DestinationIndex;
 use App\Livewire\Destination\Resources as DestinationResources;
 use App\Livewire\Destination\Show as DestinationShow;
 use App\Livewire\Dev\LivewireRequestFailurePreview;
+use App\Livewire\Dev\UiCatalog;
 use App\Livewire\ForcePasswordReset;
 use App\Livewire\Notifications\Discord as NotificationDiscord;
 use App\Livewire\Notifications\Email as NotificationEmail;
@@ -114,6 +116,7 @@ use App\Livewire\Team\DangerZone as TeamDangerZone;
 use App\Livewire\Team\Index as TeamIndex;
 use App\Livewire\Team\Member\Index as TeamMemberIndex;
 use App\Livewire\Terminal\Index as TerminalIndex;
+use App\Models\ForgejoApp;
 use App\Models\ScheduledDatabaseBackupExecution;
 use App\Models\ScheduledVolumeBackupExecution;
 use App\Models\Server;
@@ -131,6 +134,8 @@ Route::get('/email/verify/{id}/{hash}', [Controller::class, 'email_verify'])->mi
 Route::get('/auth/link', [Controller::class, 'link'])->name('auth.link');
 Route::post('/auth/link', [Controller::class, 'acceptLink'])->middleware('throttle:magic-link')->name('auth.link.accept');
 
+Route::get('/branding/logo', BrandingLogoController::class)->name('branding.logo');
+
 Route::get('/auth/{provider}/redirect', [OauthController::class, 'redirect'])->name('auth.redirect');
 Route::get('/auth/{provider}/callback', [OauthController::class, 'callback'])->name('auth.callback');
 
@@ -138,6 +143,9 @@ Route::get('/auth/{provider}/callback', [OauthController::class, 'callback'])->n
 if (app()->environment(['local', 'testing'])) {
     Route::get('/__livewire-request-failure', LivewireRequestFailurePreview::class)
         ->name('dev.livewire-request-failure-preview');
+
+    // UI 컴포넌트 카탈로그: 공통 컴포넌트와 디자인 토큰을 한 화면에서 보고 코드를 복사합니다.
+    Route::get('/dev/ui', UiCatalog::class)->middleware('auth')->name('dev.ui');
 
     Route::get('/__exception', function () {
         throw new RuntimeException('Testing Laravel exception page');
@@ -251,8 +259,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/terminal/auth/ips', function () {
         if (auth()->check()) {
-            $team = auth()->user()->currentTeam();
-            $ipAddresses = $team->servers
+            $ipAddresses = Server::terminalAccessibleBy(auth()->user())
+                ->get()
                 ->where('settings.is_terminal_enabled', true)
                 ->pluck('ip')
                 ->filter()
@@ -446,6 +454,7 @@ Route::middleware(['auth'])->group(function () {
 
         return view('source.all', [
             'sources' => $sources,
+            'forgejoSources' => ForgejoApp::ownedByCurrentTeam()->orderBy('name')->get(),
         ]);
     })->name('source.all');
     Route::get('/source/github/{github_app_uuid}', GitHubChange::class)->name('source.github.show');

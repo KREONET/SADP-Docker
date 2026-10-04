@@ -12,6 +12,9 @@ use Illuminate\Support\Collection;
  *
  * Labels stay low-cardinality (source, level, instance, app); everything else goes into the JSON line,
  * which Grafana reads with `| json`.
+ *
+ * [한국어] DB 의 로그 행을 Loki 가 받는 형식(스트림)으로 바꿉니다.
+ * 라벨(source, level, instance, app)은 종류가 적게 유지해야 Loki 가 느려지지 않습니다. 그 밖의 내용은 JSON 한 줄에 넣습니다.
  */
 class LokiStreamBuilder
 {

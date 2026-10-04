@@ -12,6 +12,8 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Queues one CollectContainerLogsJob per usable server while container log collection is on.
+ *
+ * [한국어] '컨테이너 로그 수집' 이 켜져 있으면 사용 가능한 서버마다 CollectContainerLogsJob 을 하나씩 큐에 넣습니다. 꺼져 있으면 아무것도 하지 않습니다.
  */
 class ContainerLogCollectionManagerJob implements ShouldBeUnique, ShouldQueue
 {

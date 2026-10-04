@@ -28,7 +28,31 @@
 
             return luminance > 0.179 ? 'oklch(0% 0 0)' : 'oklch(100% 0 0)';
         };
+        /*
+         * 화면 밀도와 글자 크기 설정을 <html> 속성으로 적용합니다.
+         * 값은 localStorage 에 저장되고, CSS 는 resources/css/design-tokens.css 에서 이 속성을 읽습니다.
+         *   uiDensity  : auto(기기에 맞춤, 기본) | compact | comfortable | touch
+         *   uiTextSize : small | normal(기본) | large | xlarge
+         */
+        window.UI_DENSITIES = ['auto', 'compact', 'comfortable', 'touch'];
+        window.UI_TEXT_SIZES = ['small', 'normal', 'large', 'xlarge'];
+        window.resolveUiDensity = (preference) => {
+            if (preference === 'auto') {
+                // 터치 화면(손가락)에서는 touch, 마우스 화면에서는 comfortable
+                return matchMedia('(pointer: coarse)').matches ? 'touch' : 'comfortable';
+            }
+            return preference;
+        };
+        window.applyUiPreferences = () => {
+            const density = window.UI_DENSITIES.includes(localStorage.uiDensity) ? localStorage.uiDensity : 'auto';
+            const textSize = window.UI_TEXT_SIZES.includes(localStorage.uiTextSize) ? localStorage.uiTextSize : 'normal';
+            document.documentElement.dataset.density = window.resolveUiDensity(density);
+            document.documentElement.dataset.textSize = textSize;
+            // 현재 토큰 값을 보여 주는 화면(/dev/ui)이 다시 읽도록 알립니다.
+            window.dispatchEvent(new CustomEvent('ui-preferences-changed'));
+        };
         window.applyStoredTheme = () => {
+            window.applyUiPreferences();
             const theme = localStorage.theme === 'purple' ? 'custom' : (localStorage.theme || 'dark');
             const themeColor = localStorage.themeColor || '#6b16ed';
             const customMode = localStorage.customMode || 'dark';
@@ -50,6 +74,8 @@
             themeColor: localStorage.getItem('themeColor') || '#6b16ed',
             customMode: localStorage.getItem('customMode') || 'dark',
             pageWidth: localStorage.getItem('pageWidth') || 'full',
+            density: window.UI_DENSITIES.includes(localStorage.getItem('uiDensity')) ? localStorage.getItem('uiDensity') : 'auto',
+            textSize: window.UI_TEXT_SIZES.includes(localStorage.getItem('uiTextSize')) ? localStorage.getItem('uiTextSize') : 'normal',
             themeColorFrame: null,
             pickerOpen: false,
             init() {
@@ -73,6 +99,20 @@
                     return;
                 }
                 this.applyTheme();
+            },
+            setDensity(density) {
+                this.density = density;
+                localStorage.setItem('uiDensity', density);
+                window.applyUiPreferences();
+            },
+            setTextSize(size) {
+                this.textSize = size;
+                localStorage.setItem('uiTextSize', size);
+                window.applyUiPreferences();
+            },
+            resetDisplay() {
+                this.setDensity('auto');
+                this.setTextSize('normal');
             },
             setWidth(width) {
                 this.pageWidth = width;
@@ -115,6 +155,8 @@
         });
 
         document.addEventListener('livewire:navigated', window.applyStoredTheme);
+        // "기기에 맞춤" 이면 마우스/터치 상태가 바뀔 때(예: 태블릿 키보드 연결) 다시 계산합니다.
+        matchMedia('(pointer: coarse)').addEventListener?.('change', window.applyUiPreferences);
         window.applyStoredTheme();
     })();
 </script>
@@ -129,14 +171,14 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@coolifyio" />
-    <meta name="twitter:title" content="Coolify" />
+    <meta name="twitter:title" content="{{ brand_name() }}" />
     <meta name="twitter:description" content="An open-source & self-hostable Heroku / Netlify / Vercel alternative." />
     <meta name="twitter:image" content="https://cdn.coollabs.io/og-images/coolify.png" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://coolify.io" />
-    <meta property="og:title" content="Coolify" />
+    <meta property="og:title" content="{{ brand_name() }}" />
     <meta property="og:description" content="An open-source & self-hostable Heroku / Netlify / Vercel alternative." />
-    <meta property="og:site_name" content="Coolify" />
+    <meta property="og:site_name" content="{{ brand_name() }}" />
     <meta property="og:image" content="https://cdn.coollabs.io/og-images/coolify.png" />
     @use('App\Models\InstanceSettings')
     @php
@@ -152,16 +194,22 @@
             }
         }
     @endphp
-    <title>{{ $name }}{{ $title ?? 'Coolify' }}</title>
-    @env('local')
-        <link rel="icon" href="{{ asset('coolify-logo-dev-transparent.png') }}" type="image/png" />
+    <title>{{ $name }}{{ $title ?? brand_name() }}</title>
+    @php($brandLogoUrl = brand_logo_url())
+    @if ($brandLogoUrl)
+        <link rel="icon" href="{{ $brandLogoUrl }}" />
+        <link rel="apple-touch-icon" href="{{ $brandLogoUrl }}" />
     @else
-        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32" />
-        <link rel="icon" href="{{ asset('coolify-logo.svg') }}" type="image/svg+xml" />
-    @endenv
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" />
+        @env('local')
+            <link rel="icon" href="{{ asset('coolify-logo-dev-transparent.png') }}" type="image/png" />
+        @else
+            <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32" />
+            <link rel="icon" href="{{ asset('coolify-logo.svg') }}" type="image/svg+xml" />
+        @endenv
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" />
+    @endif
     <link rel="manifest" href="{{ asset('site.webmanifest') }}" />
-    <meta name="apple-mobile-web-app-title" content="Coolify" />
+    <meta name="apple-mobile-web-app-title" content="{{ brand_name() }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/js/app.js', 'resources/css/app.css'])
     <script>

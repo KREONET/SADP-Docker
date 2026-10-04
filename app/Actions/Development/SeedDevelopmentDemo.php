@@ -24,6 +24,9 @@ use RuntimeException;
  * days of user activity, Coolify system logs and container logs shipped to the dev Loki.
  *
  * Demo rows are marked with `demo: true` and replaced on every run.
+ *
+ * [한국어] 개발용 데모 데이터를 만듭니다. `./scripts/dev demo` 또는 `php artisan dev:demo` 로 실행합니다.
+ * 여러 번 실행해도 안전합니다(데모 행은 `demo: true` 로 표시되어 매번 지우고 다시 만듭니다). 운영 환경에서는 쓰지 마세요.
  */
 class SeedDevelopmentDemo
 {

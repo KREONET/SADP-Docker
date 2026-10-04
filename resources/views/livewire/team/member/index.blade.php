@@ -53,7 +53,7 @@
     }
 }">
     <x-slot:title>
-        {{ __('Team Members') }} | Coolify
+        {{ __('Team Members') }} | {{ brand_name() }}
     </x-slot>
 
     <x-team.settings-layout>

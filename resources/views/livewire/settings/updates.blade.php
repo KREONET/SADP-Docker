@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Update Settings') }} | Coolify
+        {{ __('Update Settings') }} | {{ brand_name() }}
     </x-slot>
 
     <x-settings.layout>

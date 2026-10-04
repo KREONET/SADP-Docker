@@ -12,6 +12,7 @@ use App\Models\DiscordNotificationSettings;
 use App\Models\EmailNotificationSettings;
 use App\Models\Environment;
 use App\Models\EnvironmentVariable;
+use App\Models\ForgejoApp;
 use App\Models\GithubApp;
 use App\Models\GitlabApp;
 use App\Models\InstanceSettings;
@@ -52,6 +53,7 @@ use App\Policies\CloudProviderTokenPolicy;
 use App\Policies\DatabasePolicy;
 use App\Policies\EnvironmentPolicy;
 use App\Policies\EnvironmentVariablePolicy;
+use App\Policies\ForgejoAppPolicy;
 use App\Policies\GithubAppPolicy;
 use App\Policies\GitlabAppPolicy;
 use App\Policies\InstanceSettingsPolicy;
@@ -134,6 +136,7 @@ class AuthServiceProvider extends ServiceProvider
         // Git source policies
         GithubApp::class => GithubAppPolicy::class,
         GitlabApp::class => GitlabAppPolicy::class,
+        ForgejoApp::class => ForgejoAppPolicy::class,
 
         // Cloud provider policies
         CloudProviderToken::class => CloudProviderTokenPolicy::class,
@@ -154,9 +157,9 @@ class AuthServiceProvider extends ServiceProvider
         // Platform administrators (admins/owners of the root team) manage every team's resources
         Gate::define('accessPlatformAdmin', fn (User $user): bool => $user->isInstanceAdmin());
 
-        // Register gate for terminal access
+        // Register gate for terminal access; platform administrators reach every team's servers
         Gate::define('canAccessTerminal', function ($user) {
-            return $user->isAdmin() || $user->isOwner();
+            return $user->isAdmin() || $user->isOwner() || $user->isInstanceAdmin();
         });
     }
 }

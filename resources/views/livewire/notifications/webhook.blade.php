@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Webhook Notifications') }} | Coolify
+        {{ __('Webhook Notifications') }} | {{ brand_name() }}
     </x-slot>
 
     <x-notification.settings-layout>

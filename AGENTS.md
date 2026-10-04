@@ -10,6 +10,10 @@ Coolify is an open-source, self-hostable PaaS (alternative to Heroku/Netlify/Ver
 
 For UI/UX design specifications, principles, and visual standards, consult the local [`DESIGN.md`](DESIGN.md). It is the source of truth for frontend design work in this repository.
 
+## Korean developer guide
+
+Beginner-friendly Korean documentation lives in [`docs/ko/`](docs/ko/README.md): getting started, screen-editing recipes, design tokens and display-size settings, i18n, a feature map, and troubleshooting. A local-only UI component catalog is at `/dev/ui`.
+
 ## Development Environment
 
 Docker Compose-based dev setup with services: coolify (app, which also runs Reverb WebSockets and the terminal server), postgres, redis, vite, testing-host, mailpit, minio.

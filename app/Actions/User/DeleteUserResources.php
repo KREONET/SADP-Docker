@@ -2,7 +2,9 @@
 
 namespace App\Actions\User;
 
+use App\Jobs\DeleteResourceJob;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class DeleteUserResources
@@ -96,7 +98,7 @@ class DeleteUserResources
         // Delete applications
         foreach ($resources['applications'] as $application) {
             try {
-                $application->forceDelete();
+                $this->deleteResource($application);
                 $deletedCounts['applications']++;
             } catch (\Exception $e) {
                 \Log::error("Failed to delete application {$application->id}: ".$e->getMessage());
@@ -107,7 +109,7 @@ class DeleteUserResources
         // Delete databases
         foreach ($resources['databases'] as $database) {
             try {
-                $database->forceDelete();
+                $this->deleteResource($database);
                 $deletedCounts['databases']++;
             } catch (\Exception $e) {
                 \Log::error("Failed to delete database {$database->id}: ".$e->getMessage());
@@ -118,7 +120,7 @@ class DeleteUserResources
         // Delete services
         foreach ($resources['services'] as $service) {
             try {
-                $service->forceDelete();
+                $this->deleteResource($service);
                 $deletedCounts['services']++;
             } catch (\Exception $e) {
                 \Log::error("Failed to delete service {$service->id}: ".$e->getMessage());
@@ -127,5 +129,19 @@ class DeleteUserResources
         }
 
         return $deletedCounts;
+    }
+
+    /**
+     * Deletes a resource like the regular resource deletion (containers stopped, volumes and
+     * networks removed). When the remote cleanup fails, the record is still removed.
+     */
+    private function deleteResource(Model $resource): void
+    {
+        try {
+            DeleteResourceJob::dispatchSync($resource);
+        } catch (\Throwable $e) {
+            \Log::warning("Remote cleanup failed for {$resource->getMorphClass()} {$resource->id}: ".$e->getMessage());
+            $resource->forceDelete();
+        }
     }
 }

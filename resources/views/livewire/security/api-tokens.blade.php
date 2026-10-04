@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('API Tokens') }} | Coolify
+        {{ __('API Tokens') }} | {{ brand_name() }}
     </x-slot>
 
     <x-security.settings-layout>

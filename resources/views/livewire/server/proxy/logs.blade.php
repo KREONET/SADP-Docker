@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Proxy Logs') }} | Coolify
+        {{ __('Proxy Logs') }} | {{ brand_name() }}
     </x-slot>
     <livewire:server.navbar :server="$server" />
     <div

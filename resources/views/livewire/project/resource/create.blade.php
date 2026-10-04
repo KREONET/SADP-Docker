@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($project, 'name')->limit(10) }} > {{ __('New') }} | Coolify
+        {{ data_get_str($project, 'name')->limit(10) }} > {{ __('New') }} | {{ brand_name() }}
     </x-slot>
     @if ($type === 'public')
         <livewire:project.new.public-git-repository :type="$type" />
@@ -8,6 +8,8 @@
         <livewire:project.new.github-private-repository :type="$type" />
     @elseif ($type === 'private-gitlab-app')
         <livewire:project.new.gitlab-private-repository :type="$type" />
+    @elseif ($type === 'private-forgejo-app')
+        <livewire:project.new.forgejo-private-repository :type="$type" />
     @elseif ($type === 'private-deploy-key')
         <livewire:project.new.github-private-repository-deploy-key :type="$type" />
     @elseif ($type === 'dockerfile')

@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Cloud-Init Scripts') }} | Coolify
+        {{ __('Cloud-Init Scripts') }} | {{ brand_name() }}
     </x-slot>
 
     <x-security.settings-layout>

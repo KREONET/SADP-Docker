@@ -151,7 +151,7 @@ it('keeps mutable Livewire components behind authorization checks', function (st
     ],
     'terminal' => [
         'app/Livewire/Project/Shared/Terminal.php',
-        ['AuthorizesRequests', "authorize('view'", "authorize('canAccessTerminal'"],
+        ['AuthorizesRequests', "authorize('openTerminal'", "authorize('canAccessTerminal'"],
     ],
     'volume backup settings' => [
         'app/Livewire/Project/Shared/Storages/VolumeBackups.php',

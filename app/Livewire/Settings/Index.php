@@ -4,15 +4,18 @@ namespace App\Livewire\Settings;
 
 use App\Models\InstanceSettings;
 use App\Models\Server;
+use App\Services\BrandingLogoStorageService;
 use App\Support\InterfaceLocale;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Index extends Component
 {
     use AuthorizesRequests;
+    use WithFileUploads;
 
     public InstanceSettings $settings;
 
@@ -46,6 +49,12 @@ class Index extends Component
 
     #[Validate(['nullable', 'string', 'max:128', 'regex:/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/'])]
     public ?string $dev_helper_version = null;
+
+    /** Site name shown in titles, the navbar and sign-in pages; saved by saveBranding(). */
+    public ?string $brand_name = null;
+
+    /** Pending logo upload; stored by uploadLogo(). */
+    public $logo;
 
     public array $domainConflicts = [];
 
@@ -86,6 +95,53 @@ class Index extends Component
         $this->instance_timezone = $this->settings->instance_timezone;
         $this->default_locale = InterfaceLocale::instanceDefault();
         $this->dev_helper_version = $this->settings->dev_helper_version;
+        $this->brand_name = $this->settings->brand_name;
+    }
+
+    public function saveBranding()
+    {
+        $this->authorize('update', $this->settings);
+        $this->validate([
+            'brand_name' => ['nullable', 'string', 'max:60', 'regex:/^[^<>]*$/'],
+        ]);
+
+        $brandName = trim((string) $this->brand_name);
+        $this->settings->update(['brand_name' => $brandName !== '' ? $brandName : null]);
+        auditLog('ui.instance.brand_name_updated', ['brand_name' => $this->settings->brand_name]);
+
+        // Reload so the persisted sidebar and the page head show the new name.
+        return $this->redirect(route('settings.index'));
+    }
+
+    public function uploadLogo(BrandingLogoStorageService $logoStorage)
+    {
+        $this->authorize('update', $this->settings);
+        $this->validate([
+            'logo' => ['required', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+        ]);
+
+        if ($this->logo->guessExtension() === 'svg'
+            && ! BrandingLogoStorageService::isSafeSvg((string) file_get_contents($this->logo->getRealPath()))) {
+            $this->addError('logo', __('The SVG logo must not contain scripts or event handlers.'));
+
+            return null;
+        }
+
+        $logoStorage->store($this->settings, $this->logo);
+        $this->reset('logo');
+        auditLog('ui.instance.brand_logo_updated');
+
+        return $this->redirect(route('settings.index'));
+    }
+
+    public function removeLogo(BrandingLogoStorageService $logoStorage)
+    {
+        $this->authorize('update', $this->settings);
+
+        $logoStorage->delete($this->settings);
+        auditLog('ui.instance.brand_logo_removed');
+
+        return $this->redirect(route('settings.index'));
     }
 
     #[Computed]

@@ -1,5 +1,5 @@
 <div>
-    <x-slot:title>{{ __('Server Variables') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Server Variables') }} | {{ brand_name() }}</x-slot>
 
     <x-shared-variables.layout>
         <div class="w-full" x-data="{

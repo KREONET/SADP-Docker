@@ -65,6 +65,100 @@
 @else
     {{-- Full card grid for the Appearance settings page. --}}
     <div x-data="themeControls()" class="mt-8 flex w-full max-w-none flex-col gap-6 lg:mt-3">
+        {{-- 화면 크기: 밀도(컨트롤 크기)와 글자 크기. 값은 localStorage 에 저장되고
+             resources/css/design-tokens.css 가 <html data-density / data-text-size> 를 읽어 반영합니다. --}}
+        <section class="application-settings-section" id="display-size">
+            <div class="application-settings-section-header">
+                <div>
+                    <h2>{{ __('Display size') }}</h2>
+                    <p>{{ __('Make buttons and text easier to see and tap. The choice is saved in this browser.') }}</p>
+                </div>
+                <x-forms.button type="button" @click="resetDisplay()">{{ __('Reset to default') }}</x-forms.button>
+            </div>
+            <div class="application-settings-section-body flex flex-col gap-6">
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-black dark:text-fg">{{ __('Control size') }}</h3>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        @foreach ([
+                            ['value' => 'auto', 'label' => __('Auto'), 'description' => __('Large targets on touch screens, comfortable with a mouse.')],
+                            ['value' => 'compact', 'label' => __('Compact'), 'description' => __('Dense layout that shows more on one screen.')],
+                            ['value' => 'comfortable', 'label' => __('Comfortable'), 'description' => __('Balanced size for everyday use.')],
+                            ['value' => 'touch', 'label' => __('Touch'), 'description' => __('Large buttons that are easy to tap with a finger.')],
+                        ] as $option)
+                            <div role="button" tabindex="0" wire:key="density-{{ $option['value'] }}"
+                                @click="setDensity('{{ $option['value'] }}')"
+                                @keydown.enter.prevent="setDensity('{{ $option['value'] }}')"
+                                :aria-pressed="density === '{{ $option['value'] }}'"
+                                class="group overflow-hidden rounded-[10px] border border-neutral-200 bg-white text-left transition-[border-color,box-shadow] hover:border-neutral-300 hover:shadow-sm dark:border-white/[0.07] dark:bg-white/[0.05] dark:hover:border-white/[0.12]"
+                                :class="density === '{{ $option['value'] }}'
+                                    ? 'ring-1 ring-coollabs/30 border-coollabs/40 dark:ring-warning/30 dark:border-warning/40'
+                                    : ''">
+                                {{-- 카드마다 해당 밀도로 실제 버튼과 입력창을 그립니다. --}}
+                                <div class="flex flex-col gap-2 border-b border-neutral-200 bg-neutral-50 p-3 dark:border-white/[0.07] dark:bg-black/20"
+                                    @if ($option['value'] === 'auto')
+                                        x-bind:data-density="resolveUiDensity('auto')"
+                                    @else
+                                        data-density="{{ $option['value'] }}"
+                                    @endif>
+                                    <input class="input pointer-events-none" value="{{ __('Name') }}" readonly tabindex="-1" aria-hidden="true">
+                                    <span class="button pointer-events-none w-fit" aria-hidden="true">{{ __('Save') }}</span>
+                                </div>
+                                <div class="p-3">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-semibold text-black dark:text-fg">{{ $option['label'] }}</span>
+                                        <x-reicon name="check-circle" class="size-4 text-coollabs dark:text-warning"
+                                            x-show="density === '{{ $option['value'] }}'" x-cloak />
+                                    </div>
+                                    <p class="mt-1 text-xs leading-5 text-neutral-500 dark:text-fg-dim">{{ $option['description'] }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-black dark:text-fg">{{ __('Text size') }}</h3>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        @foreach ([
+                            ['value' => 'small', 'label' => __('Small'), 'size' => '0.875rem'],
+                            ['value' => 'normal', 'label' => __('Normal'), 'size' => '1rem'],
+                            ['value' => 'large', 'label' => __('Large'), 'size' => '1.25rem'],
+                            ['value' => 'xlarge', 'label' => __('Extra large'), 'size' => '1.5rem'],
+                        ] as $option)
+                            <button type="button" wire:key="text-size-{{ $option['value'] }}"
+                                @click="setTextSize('{{ $option['value'] }}')"
+                                :aria-pressed="textSize === '{{ $option['value'] }}'"
+                                class="flex min-h-16 items-center justify-between gap-3 rounded-[10px] border border-neutral-200 bg-white px-4 py-3 text-left transition-[border-color,box-shadow] hover:border-neutral-300 hover:shadow-sm dark:border-white/[0.07] dark:bg-white/[0.05] dark:hover:border-white/[0.12]"
+                                :class="textSize === '{{ $option['value'] }}'
+                                    ? 'ring-1 ring-coollabs/30 border-coollabs/40 dark:ring-warning/30 dark:border-warning/40'
+                                    : ''">
+                                <span class="font-semibold text-black dark:text-fg" style="font-size: {{ $option['size'] }}">Aa</span>
+                                <span class="text-xs text-neutral-500 dark:text-fg-dim">{{ $option['label'] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- 현재 설정이 그대로 반영되는 미리보기 --}}
+                <div class="rounded-[10px] border border-dashed border-neutral-300 p-4 dark:border-white/[0.12]">
+                    <h3 class="mb-3 text-sm font-semibold text-black dark:text-fg">{{ __('Preview') }}</h3>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="flex flex-col gap-2">
+                            <input class="input" value="{{ __('Application name') }}" readonly tabindex="-1">
+                            <div class="flex flex-wrap gap-2">
+                                <span class="button button-highlighted">{{ __('Deploy') }}</span>
+                                <span class="button">{{ __('Cancel') }}</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="menu-item"><x-reicon name="dashboard" class="menu-item-icon" /><span class="menu-item-label">{{ __('Dashboard') }}</span></span>
+                            <span class="menu-item menu-item-active"><x-reicon name="projects" class="menu-item-icon" /><span class="menu-item-label">{{ __('Projects') }}</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>

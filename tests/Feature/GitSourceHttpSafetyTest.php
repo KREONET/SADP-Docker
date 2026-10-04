@@ -42,20 +42,24 @@ it('rejects a hostname that resolves to a private IP at request time', function 
     ))->toThrow(RuntimeException::class, 'unsafe IP address');
 });
 
-it('requires source administration rather than ordinary team membership to configure a source', function () {
+it('requires platform administration rather than team membership to configure a source', function () {
     $team = Team::factory()->create();
     $owner = User::factory()->create();
     $member = User::factory()->create();
+    $platformAdmin = User::factory()->create();
     $team->members()->attach($owner->id, ['role' => 'owner']);
     $team->members()->attach($member->id, ['role' => 'member']);
+    (Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']))->members()->attach($platformAdmin->id, ['role' => 'admin']);
 
-    $this->actingAs($member);
-    session(['currentTeam' => $team]);
-    expect($member->can('create', GithubApp::class))->toBeFalse();
+    foreach ([$member, $owner] as $user) {
+        $this->actingAs($user);
+        session(['currentTeam' => $team]);
+        expect($user->can('create', GithubApp::class))->toBeFalse();
+    }
 
-    $this->actingAs($owner);
+    $this->actingAs($platformAdmin);
     session(['currentTeam' => $team]);
-    expect($owner->can('create', GithubApp::class))->toBeTrue();
+    expect($platformAdmin->can('create', GithubApp::class))->toBeTrue();
 });
 
 it('does not send a manifest conversion request to an unsafe saved source URL', function () {

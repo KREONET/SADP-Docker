@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ $name ?: 'GitLab App' }} | {{ __('Sources') }} | Coolify
+        {{ $name ?: 'GitLab App' }} | {{ __('Sources') }} | {{ brand_name() }}
     </x-slot>
 
     @if ($isConnected)

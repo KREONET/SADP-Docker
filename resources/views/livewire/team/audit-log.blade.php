@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Team Audit Log') }} | Coolify
+        {{ __('Team Audit Log') }} | {{ brand_name() }}
     </x-slot>
 
     <x-team.settings-layout>

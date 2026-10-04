@@ -36,9 +36,6 @@ class Advanced extends Component
     public ?string $allowed_ips = null;
 
     #[Validate('boolean')]
-    public bool $is_sponsorship_popup_enabled;
-
-    #[Validate('boolean')]
     public bool $disable_two_step_confirmation;
 
     #[Validate('boolean')]
@@ -70,7 +67,6 @@ class Advanced extends Component
             'custom_dns_servers' => ['nullable', 'string', new ValidDnsServers],
             'is_api_enabled' => 'boolean',
             'allowed_ips' => ['nullable', 'string', new ValidIpOrCidr],
-            'is_sponsorship_popup_enabled' => 'boolean',
             'disable_two_step_confirmation' => 'boolean',
             'is_wire_navigate_enabled' => 'boolean',
             'is_mcp_server_enabled' => 'boolean',
@@ -95,7 +91,6 @@ class Advanced extends Component
         $this->is_dns_validation_enabled = $this->settings->is_dns_validation_enabled;
         $this->is_api_enabled = $this->settings->is_api_enabled;
         $this->disable_two_step_confirmation = $this->settings->disable_two_step_confirmation;
-        $this->is_sponsorship_popup_enabled = $this->settings->is_sponsorship_popup_enabled;
         $this->is_wire_navigate_enabled = $this->settings->is_wire_navigate_enabled ?? true;
         $this->is_mcp_server_enabled = $this->settings->is_mcp_server_enabled ?? false;
         $this->webhook_allowed_internal_hosts = collect($this->settings->webhook_allowed_internal_hosts ?? [])->implode(',');
@@ -214,7 +209,6 @@ class Advanced extends Component
             $this->settings->custom_dns_servers = $this->custom_dns_servers;
             $this->settings->is_api_enabled = $this->is_api_enabled;
             $this->settings->allowed_ips = $this->allowed_ips;
-            $this->settings->is_sponsorship_popup_enabled = $this->is_sponsorship_popup_enabled;
             $this->settings->disable_two_step_confirmation = $this->disable_two_step_confirmation;
             $this->settings->is_wire_navigate_enabled = $this->is_wire_navigate_enabled;
             $this->settings->is_mcp_server_enabled = $this->is_mcp_server_enabled;

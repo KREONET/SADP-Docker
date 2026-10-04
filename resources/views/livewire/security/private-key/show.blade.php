@@ -43,7 +43,7 @@
         </div>
     @else
     <x-slot:title>
-        {{ $private_key->name }} | {{ __('Private Keys') }} | Coolify
+        {{ $private_key->name }} | {{ __('Private Keys') }} | {{ brand_name() }}
     </x-slot>
 
     <x-security.settings-layout>

@@ -51,7 +51,7 @@
     },
 }">
     <x-slot:title>
-        {{ data_get_str($service, 'name')->limit(10) }} > {{ __('Backups') }} | Coolify
+        {{ data_get_str($service, 'name')->limit(10) }} > {{ __('Backups') }} | {{ brand_name() }}
     </x-slot>
     <livewire:project.service.heading :service="$service" :parameters="$parameters" :query="request()->query()"
         wire:key="service-heading-volume-backup-index" />

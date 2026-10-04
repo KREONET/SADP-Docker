@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Teams') }} | Coolify
+        {{ __('Teams') }} | {{ brand_name() }}
     </x-slot>
 
     <x-team.settings-layout>

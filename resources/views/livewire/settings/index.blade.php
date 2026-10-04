@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Settings') }} | Coolify
+        {{ __('Settings') }} | {{ brand_name() }}
     </x-slot>
 
     <x-settings.layout>
@@ -73,6 +73,53 @@
                         placeholder="{{ config('constants.coolify.helper_version') }}" />
                 </x-application.settings-section>
             @endif
+        </form>
+
+        <form wire:submit="saveBranding" class="application-settings-form flex w-full min-w-0 flex-col gap-6">
+            <x-application.settings-section :title="__('Branding')"
+                :helper="__('Site name and logo shown in page titles, the navigation bar and the sign-in pages.')">
+                <x-slot:actions>
+                    <x-forms.button type="submit" canGate="update" :canResource="$settings">
+                        {{ __('Save') }}
+                    </x-forms.button>
+                </x-slot:actions>
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <x-forms.input canGate="update" :canResource="$settings" id="brand_name" :label="__('Site name')"
+                        maxlength="60" placeholder="PADED"
+                        :helper="__('Leave empty to use the default name (PADED).')" />
+
+                    <div class="flex min-w-0 flex-col gap-2" x-data>
+                        <span class="text-sm font-medium">{{ __('Logo') }}</span>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-white p-1.5 dark:border-white/10 dark:bg-white/[0.06]">
+                                <img src="{{ brand_logo_url() ?? asset('coolify-logo.svg') }}" alt="{{ __('Current logo') }}"
+                                    class="max-h-full max-w-full object-contain">
+                            </div>
+                            @can('update', $settings)
+                                <input x-ref="logoInput" type="file" wire:model="logo" class="hidden"
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                    x-on:livewire-upload-finish="$wire.uploadLogo()">
+                                <x-forms.button type="button" x-on:click="$refs.logoInput.click()"
+                                    wire:loading.attr="disabled" wire:target="logo,uploadLogo">
+                                    <span wire:loading.remove wire:target="logo,uploadLogo">{{ __('Upload logo') }}</span>
+                                    <span wire:loading wire:target="logo,uploadLogo">{{ __('Uploading…') }}</span>
+                                </x-forms.button>
+                                @if ($settings->brand_logo_path)
+                                    <x-forms.button type="button" wire:click="removeLogo" isError>
+                                        {{ __('Remove') }}
+                                    </x-forms.button>
+                                @endif
+                            @endcan
+                        </div>
+                        <p class="text-xs text-neutral-500 dark:text-fg-dim">
+                            {{ __('PNG, JPG, WebP or SVG, up to 1 MB. A square image works best.') }}
+                        </p>
+                        @error('logo')
+                            <p class="text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </x-application.settings-section>
         </form>
 
     <x-domain-conflict-modal :conflicts="$domainConflicts" :showModal="$showDomainConflictModal"

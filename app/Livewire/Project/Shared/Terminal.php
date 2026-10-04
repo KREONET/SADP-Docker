@@ -55,8 +55,8 @@ class Terminal extends Component
         try {
             $this->authorize('canAccessTerminal');
 
-            $server = Server::ownedByCurrentTeam()->whereUuid($serverUuid)->firstOrFail();
-            $this->authorize('view', $server);
+            $server = Server::terminalAccessibleBy(auth()->user())->whereUuid($serverUuid)->firstOrFail();
+            $this->authorize('openTerminal', $server);
         } catch (AuthorizationException|ModelNotFoundException) {
             $this->failTerminalSession(__(self::NOT_ALLOWED_MESSAGE));
 

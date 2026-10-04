@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ $github_app->name ?: 'GitHub App' }} | {{ __('Sources') }} | Coolify
+        {{ $github_app->name ?: 'GitHub App' }} | {{ __('Sources') }} | {{ brand_name() }}
     </x-slot>
 
     @if (data_get($github_app, 'app_id'))

@@ -8,7 +8,7 @@
         ];
     @endphp
     <x-slot:title>
-        {{ __('Team Danger Zone') }} | Coolify
+        {{ __('Team Danger Zone') }} | {{ brand_name() }}
     </x-slot>
 
     <x-team.settings-layout>

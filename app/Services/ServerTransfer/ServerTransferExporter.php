@@ -7,6 +7,7 @@ use App\Models\ApplicationPreview;
 use App\Models\CloudProviderToken;
 use App\Models\Environment;
 use App\Models\EnvironmentVariable;
+use App\Models\ForgejoApp;
 use App\Models\GithubApp;
 use App\Models\GitlabApp;
 use App\Models\LocalFileVolume;
@@ -532,6 +533,9 @@ class ServerTransferExporter
             $source = ['type' => 'github_app', 'uuid' => $application->source->uuid];
         } elseif ($application->source_type === GitlabApp::class && $application->source) {
             $source = ['type' => 'gitlab_app', 'uuid' => $application->source->uuid];
+        } elseif ($application->source_type === ForgejoApp::class && $application->source) {
+            // Forgejo servers are instance-wide and keep their token on the instance, so only the link is exported.
+            $source = ['type' => 'forgejo_app', 'uuid' => $application->source->uuid];
         }
 
         return [

@@ -16,11 +16,19 @@ class Index extends Component
 
     public bool $isLoadingContainers = true;
 
+    /** Platform administrators see every team's servers, so labels name the team. */
+    public bool $showsAllTeams = false;
+
     public function mount()
     {
-        $this->servers = Server::isReachable()->get()->filter(function ($server) {
-            return $server->isTerminalEnabled();
-        });
+        $user = auth()->user();
+        $this->showsAllTeams = $user->isInstanceAdmin();
+        $this->servers = Server::terminalAccessibleBy($user)
+            ->whereRelation('settings', 'is_reachable', true)
+            ->get()
+            ->filter(function ($server) {
+                return $server->isTerminalEnabled();
+            });
     }
 
     public function loadContainers()

@@ -24,6 +24,10 @@ use Throwable;
  * Rows stay unshipped on network errors, 429 and 5xx, so the next run retries them. Any other 4xx means
  * Loki will never accept the batch (for example samples older than its limit), so the batch is marked
  * as shipped to keep it from blocking newer rows.
+ *
+ * [한국어] 아직 Loki 로 보내지 않은 로그를 일정 간격으로 묶어 전송하는 작업(Job)입니다. 스케줄: app/Console/Kernel.php
+ * 네트워크 오류·429·5xx 는 다음 실행에서 다시 시도하고, 그 밖의 4xx 는 영원히 거부될 데이터이므로 보낸 것으로 표시해 막히지 않게 합니다.
+ * 켜기/끄기: InstanceSettings::is_loki_shipping_enabled (마스터 스위치 is_log_collection_enabled 도 함께 확인).
  */
 class ShipLogsToLokiJob implements ShouldBeUnique, ShouldQueue
 {

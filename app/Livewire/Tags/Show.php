@@ -8,10 +8,8 @@ use App\Models\Tag;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Title('Tags | Coolify')]
 class Show extends Component
 {
     use AuthorizesRequests;

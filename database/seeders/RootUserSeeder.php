@@ -30,7 +30,7 @@ class RootUserSeeder extends Seeder
                 'username' => env('ROOT_USERNAME', 'Root User'),
                 'password' => env('ROOT_USER_PASSWORD'),
             ], [
-                'email' => ['required', 'email:rfc,dns', 'max:255'],
+                'email' => ['required', 'email:rfc', 'max:255'],
                 'username' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\w\s-]+$/'],
                 'password' => ['required', 'string', 'min:8', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised()],
             ]);

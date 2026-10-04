@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Environment Variables') }} | Coolify
+        {{ __('Environment Variables') }} | {{ brand_name() }}
     </x-slot>
 
     <x-shared-variables.editor :resource="$environment"

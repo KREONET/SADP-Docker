@@ -13,6 +13,8 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Stores new container log lines of one server for the instance log viewer and Loki.
+ *
+ * [한국어] 서버 한 대의 컨테이너 새 로그를 읽어 DB 에 저장합니다. 서버마다 하나씩 실행됩니다 (ShouldBeUnique).
  */
 class CollectContainerLogsJob implements ShouldBeUnique, ShouldQueue
 {

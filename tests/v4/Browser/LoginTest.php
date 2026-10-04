@@ -12,7 +12,6 @@ beforeEach(function () {
     // `id` is not mass-assignable; forceCreate so InstanceSettings::get() (id 0) works.
     InstanceSettings::forceCreate([
         'id' => 0,
-        'is_sponsorship_popup_enabled' => false,
         'is_registration_enabled' => true,
     ]);
 });

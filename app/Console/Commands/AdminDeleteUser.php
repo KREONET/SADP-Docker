@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Stripe\CancelSubscription;
+use App\Actions\User\DeleteUserAccount;
 use App\Actions\User\DeleteUserResources;
 use App\Actions\User\DeleteUserServers;
 use App\Actions\User\DeleteUserTeams;
@@ -956,7 +957,7 @@ class AdminDeleteUser extends Command
             $this->info('Deleting user profile...');
 
             try {
-                $this->user->delete();
+                DeleteUserAccount::execute($this->user, 'cli');
                 $this->info('✓ User profile deleted successfully.');
                 $this->logAction("User profile deleted: {$this->user->email}");
             } catch (\Exception $e) {

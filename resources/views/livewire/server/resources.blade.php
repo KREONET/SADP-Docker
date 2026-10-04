@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($server, 'name')->limit(10) }} > {{ __('Server Resources') }} | Coolify
+        {{ data_get_str($server, 'name')->limit(10) }} > {{ __('Server Resources') }} | {{ brand_name() }}
     </x-slot>
 
     <livewire:server.navbar :server="$server" />

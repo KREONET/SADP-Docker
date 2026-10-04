@@ -24,6 +24,21 @@ class ServerPolicy
     }
 
     /**
+     * Determine whether the user can open a terminal on the server. Platform
+     * administrators reach every team's servers; team admins and owners reach
+     * only the servers of their current team.
+     */
+    public function openTerminal(User $user, Server $server): bool
+    {
+        if ($user->isInstanceAdmin()) {
+            return true;
+        }
+
+        return $user->currentTeam()?->id === $server->team_id
+            && $user->isAdminOfTeam($server->team_id);
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool

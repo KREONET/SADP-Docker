@@ -45,7 +45,7 @@
     },
 }">
     <x-slot:title>
-        {{ data_get_str($application, 'name')->limit(10) }} > {{ __('Backups') }} | Coolify
+        {{ data_get_str($application, 'name')->limit(10) }} > {{ __('Backups') }} | {{ brand_name() }}
     </x-slot>
     <livewire:project.shared.configuration-checker :resource="$application" />
     <livewire:project.application.heading :application="$application"

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 class OauthSetting extends Model
 {
@@ -27,6 +28,7 @@ class OauthSetting extends Model
 
     protected $hidden = [
         'client_secret',
+        'scim_token_hash',
     ];
 
     protected function clientSecret(): Attribute
@@ -85,5 +87,41 @@ class OauthSetting extends Model
     public function isOidc(): bool
     {
         return $this->provider === 'oidc';
+    }
+
+    /**
+     * Create a new SCIM bearer token for the OIDC provider. Only its SHA-256 hash is stored,
+     * so the returned plaintext can be shown once.
+     */
+    public function issueScimToken(): string
+    {
+        $token = 'scim_'.Str::random(48);
+        $this->forceFill(['scim_token_hash' => hash('sha256', $token)])->save();
+
+        return $token;
+    }
+
+    public function revokeScimToken(): void
+    {
+        $this->forceFill(['scim_token_hash' => null])->save();
+    }
+
+    public function hasScimToken(): bool
+    {
+        return filled($this->scim_token_hash);
+    }
+
+    /**
+     * The SCIM endpoint accepts a token only when the OIDC provider has one issued.
+     */
+    public static function scimTokenMatches(?string $token): bool
+    {
+        if (blank($token)) {
+            return false;
+        }
+
+        $hash = static::query()->where('provider', 'oidc')->value('scim_token_hash');
+
+        return filled($hash) && hash_equals($hash, hash('sha256', $token));
     }
 }

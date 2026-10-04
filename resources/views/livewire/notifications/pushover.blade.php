@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Pushover Notifications') }} | Coolify
+        {{ __('Pushover Notifications') }} | {{ brand_name() }}
     </x-slot>
 
     <x-notification.settings-layout>

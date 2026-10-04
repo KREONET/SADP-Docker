@@ -1,6 +1,6 @@
 <div class="application-settings-form w-full max-w-none">
     <x-slot:title>
-        {{ __('Subscribe') }} | Coolify
+        {{ __('Subscribe') }} | {{ brand_name() }}
     </x-slot>
 
     <x-dashboard.navbar section="subscription" :title="__('Subscription')"

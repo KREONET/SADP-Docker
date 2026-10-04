@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Integration Tokens') }} | Coolify
+        {{ __('Integration Tokens') }} | {{ brand_name() }}
     </x-slot>
 
     <x-security.settings-layout>

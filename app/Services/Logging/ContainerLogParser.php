@@ -9,6 +9,9 @@ use Throwable;
 
 /**
  * Parses `docker logs --timestamps` output into log lines.
+ *
+ * [한국어] `docker logs --timestamps` 출력의 각 줄을 '시각 + 메시지' 로 나눕니다.
+ * 로그 수집의 가장 작은 단위라 테스트하기 쉽습니다. 형식이 달라지면 여기만 고치면 됩니다.
  */
 class ContainerLogParser
 {

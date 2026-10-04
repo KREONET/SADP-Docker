@@ -48,17 +48,26 @@ it('denies non-team member to view non-system-wide gitlab app', function () {
     expect($policy->view($user, $model))->toBeFalse();
 });
 
-it('allows admin to create gitlab app', function () {
+it('allows a platform admin to create gitlab app', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
 
     $policy = new GitlabAppPolicy;
     expect($policy->create($user))->toBeTrue();
 });
 
-it('denies non-admin to create gitlab app', function () {
+it('denies everyone else to create gitlab app', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+
+    $policy = new GitlabAppPolicy;
+    expect($policy->create($user))->toBeFalse();
+});
+
+it('denies a team admin who is not a platform admin to create gitlab app', function () {
+    $user = Mockery::mock(User::class)->makePartial();
+    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
 
     $policy = new GitlabAppPolicy;
     expect($policy->create($user))->toBeFalse();

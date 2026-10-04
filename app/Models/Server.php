@@ -508,6 +508,19 @@ class Server extends BaseModel
     }
 
     /**
+     * Servers the user may open a terminal on: every team's servers for platform
+     * administrators, otherwise only the servers of the user's current team.
+     */
+    public static function terminalAccessibleBy(User $user): Builder
+    {
+        if ($user->isInstanceAdmin()) {
+            return Server::query()->with('settings', 'team')->orderBy('name');
+        }
+
+        return Server::ownedByCurrentTeam();
+    }
+
+    /**
      * Get query builder for servers owned by current team.
      * If you need all servers without further query chaining, use ownedByCurrentTeamCached() instead.
      */

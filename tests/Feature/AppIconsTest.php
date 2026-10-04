@@ -16,7 +16,7 @@ test('base layout links the app icons and web manifest', function () {
         ->assertSuccessful()
         ->assertSee('<link rel="apple-touch-icon" href="'.asset('apple-touch-icon.png').'" />', false)
         ->assertSee('<link rel="manifest" href="'.asset('site.webmanifest').'" />', false)
-        ->assertSee('<meta name="apple-mobile-web-app-title" content="Coolify" />', false);
+        ->assertSee('<meta name="apple-mobile-web-app-title" content="PADED" />', false);
 });
 
 test('icon files are opaque pngs with the required sizes', function (string $file, int $size) {

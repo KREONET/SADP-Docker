@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Sends log streams to the Loki push API (`/loki/api/v1/push`).
+ *
+ * [한국어] Loki 에 로그를 보내는 HTTP 클라이언트입니다. 주소·인증은 인스턴스 설정(loki_*)에서 읽습니다.
+ * 보낼 데이터의 모양은 LokiStreamBuilder, 언제 보낼지는 ShipLogsToLokiJob 이 정합니다.
  */
 class LokiClient
 {

@@ -2,8 +2,12 @@
 
 use App\Livewire\Project\New\Select;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+
+// The resource picker also looks up the Git servers registered by platform admins.
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Cache::flush();

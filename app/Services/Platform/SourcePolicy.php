@@ -4,6 +4,7 @@ namespace App\Services\Platform;
 
 use App\Exceptions\DisallowedSourceException;
 use App\Models\Application;
+use App\Models\ForgejoApp;
 use App\Models\GithubApp;
 use App\Models\GitlabApp;
 use App\Models\InstanceSettings;
@@ -17,6 +18,10 @@ use Illuminate\Support\Collection;
  * scheme, credentials, port or ".git" suffix), and an entry matches on path-segment
  * boundaries: "git.example.com/team" allows "git.example.com/team/app" but not
  * "git.example.com/teamx/app".
+ *
+ * [한국어] 관리자가 정한 '허용된 Git 주소/컨테이너 레지스트리' 규칙을 검사합니다.
+ * 예: 목록에 `git.example.com/team` 이 있으면 `git.example.com/team/app` 은 허용, `git.example.com/teamx/app` 은 거부합니다.
+ * 허용 목록이 꺼져 있으면 모두 허용합니다. 앱 생성·배포 경로에서 이 검사를 건너뛰지 마세요.
  */
 class SourcePolicy
 {
@@ -41,7 +46,14 @@ class SourcePolicy
      */
     public function allowedGitSources(): Collection
     {
-        return self::parseEntries($this->settings->allowed_git_sources, fn (string $entry) => self::normalizeGitRepository($entry));
+        $registeredForgejoServers = ForgejoApp::query()->pluck('html_url')
+            ->map(fn (string $url) => self::normalizeGitRepository($url))
+            ->filter();
+
+        return self::parseEntries($this->settings->allowed_git_sources, fn (string $entry) => self::normalizeGitRepository($entry))
+            ->merge($registeredForgejoServers)
+            ->unique()
+            ->values();
     }
 
     /**
@@ -126,7 +138,7 @@ class SourcePolicy
             return $repository;
         }
 
-        if (in_array($application->source_type, [GithubApp::class, GitlabApp::class], true)) {
+        if (in_array($application->source_type, [GithubApp::class, GitlabApp::class, ForgejoApp::class], true)) {
             $htmlUrl = data_get($application->source, 'html_url');
             if (filled($htmlUrl)) {
                 return rtrim($htmlUrl, '/').'/'.ltrim($repository, '/');

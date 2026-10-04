@@ -1,5 +1,5 @@
 <x-layout-simple>
-    <x-auth.shell title="Coolify" :description="__('Sign in to manage your applications and infrastructure.')">
+    <x-auth.shell :title="brand_name()" :description="__('Sign in to manage your applications and infrastructure.')">
         <div class="flex flex-col gap-4">
             @if (session('status'))
                 <x-auth.alert type="success">{{ session('status') }}</x-auth.alert>
@@ -114,7 +114,7 @@
 
         <x-slot:footer>
             @if ($is_registration_enabled)
-                <span>{{ __('New to Coolify?') }}</span>
+                <span>{{ __('New to :name?', ['name' => brand_name()]) }}</span>
                 <a href="/register" class="auth-text-link">{{ __('auth.register_now') }}</a>
             @else
                 <span>{{ __('auth.registration_disabled') }}</span>

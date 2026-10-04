@@ -32,7 +32,9 @@ compact divided list, not legacy green check SVGs or fixed-width status rows.
 The interface is compact and product-focused:
 
 - near-neutral layered surfaces instead of large bordered boxes;
-- 13–14px UI typography and 32px controls;
+- 13–14px UI typography and 32px controls in the `compact` density (the default is
+  `comfortable`, 36px; users choose the density and text size themselves, see
+  "Display size tokens" in section 3);
 - crisp hairline rings plus a restrained card lift (single 1px ring +
   `0 1px 2px rgb(0 0 0 / 0.05)`) so cards and tables separate from the canvas,
   never heavy borders or a strong floating shadow;
@@ -130,6 +132,36 @@ dark:bg-warning/15 dark:text-warning dark:ring-warning/25
 
 The filled top-level action/tab treatment uses the same palette at a restrained
 opacity rather than a fully saturated fill.
+
+### Display size tokens
+
+Users pick a density (`auto`, `compact`, `comfortable`, `touch`) and a text size
+(`small`, `normal`, `large`, `xlarge`) under Profile → Appearance → Display size.
+The choice is stored in `localStorage` (`uiDensity`, `uiTextSize`) and applied to
+`<html data-density data-text-size>` before first paint
+(`layouts/base.blade.php`). All values live in `resources/css/design-tokens.css`.
+
+| Token | compact | comfortable | touch | Use |
+|---|---|---|---|---|
+| `--ui-h-sm` | 1.75rem | 2rem | 2.5rem | icon buttons, tabs (`h-7`, `size-7`) |
+| `--ui-h-md` | 2rem | 2.25rem | 2.75rem | buttons, inputs, menu rows (`h-8`, `size-8`) |
+| `--ui-h-lg` | 2.25rem | 2.5rem | 3rem | large controls (`h-9`, `size-9`) |
+| `--ui-h-xl` | 2.5rem | 2.75rem | 3.25rem | extra large controls (`h-10`) |
+| `--ui-text-control` | 13px | 13px | 14px | button and menu text |
+| `--ui-list-option-height` | 2rem | 2.25rem | 2.75rem | listbox options |
+| `--ui-table-row-height` | 3rem | 3.25rem | 3.75rem | `.data-table-row` |
+| `--ui-text-scale` | 1 | 1 | 1 | multiplier for px text (0.9 / 1 / 1.125 / 1.25) |
+
+Rules:
+
+- Prefer `rem` sizes; use `text-[Npx]` only for sizes already remapped in the
+  correction layer, and add new px sizes to that list.
+- `!important` variants (`h-8!`, `text-[12px]!`) are remapped inside
+  `@layer base`; an unlayered `!important` would lose to Tailwind's layered one.
+- Do not mix `h-8 w-8`; use `size-8` so the square scales together.
+- Touch density must keep normal controls at 44px or more
+  (`DisplaySizeSettingsTest`).
+- Preview every component at all densities in the local-only catalog at `/dev/ui`.
 
 ### Shell layering
 
@@ -407,7 +439,9 @@ Use an empty state when the section has no usable controls:
 
 ## 6. Controls
 
-All normal controls are 32px high with an 8px radius.
+All normal controls use the `--ui-h-md` token (32px `compact`, 36px `comfortable`,
+44px `touch`) with an 8px radius. Never hard-code a new fixed control height;
+use `h-8`/`size-8` (remapped to the token) or `h-[var(--ui-h-md)]`.
 
 ### Field grids
 
@@ -801,3 +835,6 @@ oversized 200px status numbers.
 17. Compile Blade views with `./scripts/dev exec php artisan view:cache`.
 18. Build assets with `npm run build`.
 19. Hard-refresh and inspect the family routes in both themes.
+20. Check the screen in `compact`, `comfortable` and `touch` density and at the
+    `xlarge` text size (Profile → Appearance → Display size) for overflow.
+21. New components: add an example to `/dev/ui` so others can copy it.

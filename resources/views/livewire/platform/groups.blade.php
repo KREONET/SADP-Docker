@@ -1,5 +1,5 @@
 <div>
-    <x-slot:title>{{ __('Groups') }} | {{ __('Platform Admin') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Groups') }} | {{ __('Platform Admin') }} | {{ brand_name() }}</x-slot>
 
     <x-platform.layout>
         <div class="flex min-w-0 flex-col gap-6">

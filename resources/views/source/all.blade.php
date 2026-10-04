@@ -1,6 +1,6 @@
 <x-layout>
     <x-slot:title>
-        {{ __('Sources') }} | Coolify
+        {{ __('Sources') }} | {{ brand_name() }}
     </x-slot>
 
     <div class="application-settings-form w-full">
@@ -8,10 +8,13 @@
             <div class="min-w-0">
                 <h1 class="truncate text-[24px]! leading-7! font-semibold! tracking-tight!">{{ __('Sources') }}</h1>
                 <p class="mt-1 text-[13px] text-neutral-500 dark:text-fg-dim">
-                    {{ $sources->count() === 1 ? __(':count Git source connected to your team', ['count' => $sources->count()]) : __(':count Git sources connected to your team', ['count' => $sources->count()]) }}
+                    @php
+                        $sourceCount = $sources->count() + $forgejoSources->count();
+                    @endphp
+                    {{ $sourceCount === 1 ? __(':count Git source connected to your team', ['count' => $sourceCount]) : __(':count Git sources connected to your team', ['count' => $sourceCount]) }}
                 </p>
             </div>
-            @can('createAnyResource')
+            @can('create', \App\Models\GithubApp::class)
                 <div x-data="{ dropdownOpen: false }" class="relative w-fit shrink-0"
                     @click.outside="dropdownOpen = false" @keydown.escape.window="dropdownOpen = false">
                     <button type="button" @click="dropdownOpen = !dropdownOpen"
@@ -49,7 +52,7 @@
             @endcan
         </header>
 
-        @if ($sources->isEmpty())
+        @if ($sources->isEmpty() && $forgejoSources->isEmpty())
             <x-empty :title="__('No sources yet')"
                 :description="__('Connect a Git provider to deploy applications directly from your repositories.')"
                 icon-name="sources" />
@@ -63,7 +66,12 @@
                         'organization' => $isGithub ? $source->organization : $source->group_name,
                         'status' => $source->isConnected() ? __('Connected') : __('Setup incomplete'),
                     ];
-                })->values();
+                })->concat($forgejoSources->map(fn ($source) => [
+                    'name' => $source->name,
+                    'provider' => 'Forgejo',
+                    'organization' => parse_url($source->html_url, PHP_URL_HOST),
+                    'status' => __('Connected'),
+                ]))->values();
             @endphp
             <div x-data="{
                 search: '', viewMode: localStorage.getItem('coolify-sources-view') || 'table', items: @js($items),
@@ -130,6 +138,28 @@
                         </a>
                     @endif
                 @endforeach
+                @foreach ($forgejoSources as $source)
+                    @php
+                        $forgejoHost = parse_url($source->html_url, PHP_URL_HOST);
+                    @endphp
+                    <div x-show="matches(@js([$source->name, 'Forgejo', $forgejoHost, __('Connected')]))" class="flex min-h-28 flex-col rounded-xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
+                        <div class="flex items-start gap-3">
+                            <div class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-500 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-fg-dim">
+                                <x-git-icon class="size-4" git="App\Models\ForgejoApp" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h2 class="truncate text-[13px]! leading-4! font-semibold! text-black dark:text-fg">{{ $source->name }}</h2>
+                                <p class="mt-0.5 truncate text-[11px] text-neutral-500 dark:text-fg-faint">Forgejo · {{ $forgejoHost }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-auto flex flex-wrap items-center gap-2 pt-4">
+                            <x-status-badge :label="__('Connected')" type="success" />
+                            @can('update', $source)
+                                <a class="text-[11px] underline" {{ wireNavigate() }} href="{{ route('platform.sources') }}">{{ __('Manage') }}</a>
+                            @endcan
+                        </div>
+                    </div>
+                @endforeach
             </div>
             <div x-show="viewMode === 'table'" class="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
                 <div class="grid min-w-[620px] grid-cols-[minmax(0,1fr)_minmax(10rem,.7fr)_9rem] border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-fg-faint"><div>{{ __('Source') }}</div><div>{{ __('Provider') }}</div><div>{{ __('Status') }}</div></div>
@@ -145,6 +175,21 @@
                         <div class="truncate text-neutral-500 dark:text-fg-dim">{{ $organization ? "{$provider} · {$organization}" : $provider }}</div>
                         <div><x-status-badge :label="$source->isConnected() ? __('Connected') : __('Setup incomplete')" :type="$source->isConnected() ? 'success' : 'warning'" /></div>
                     </a>
+                @endforeach
+                @foreach ($forgejoSources as $source)
+                    @php
+                        $forgejoHost = parse_url($source->html_url, PHP_URL_HOST);
+                    @endphp
+                    <div x-show="matches(@js([$source->name, 'Forgejo', $forgejoHost, __('Connected')]))" class="grid min-h-14 min-w-[620px] grid-cols-[minmax(0,1fr)_minmax(10rem,.7fr)_9rem] items-center border-b border-neutral-200 px-4 py-2.5 text-[12px] last:border-b-0 dark:border-white/[0.07]">
+                        <div class="truncate font-semibold text-black dark:text-fg">{{ $source->name }}</div>
+                        <div class="truncate text-neutral-500 dark:text-fg-dim">Forgejo · {{ $forgejoHost }}</div>
+                        <div class="flex items-center gap-2">
+                            <x-status-badge :label="__('Connected')" type="success" />
+                            @can('update', $source)
+                                <a class="text-[11px] underline" {{ wireNavigate() }} href="{{ route('platform.sources') }}">{{ __('Manage') }}</a>
+                            @endcan
+                        </div>
+                    </div>
                 @endforeach
             </div>
             @include('livewire.shared.list-search-empty', ['label' => __('sources')])

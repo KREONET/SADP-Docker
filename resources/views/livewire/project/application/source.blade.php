@@ -79,6 +79,7 @@
                     $currentSourceIsGithub => data_get($currentSource, 'is_public') ? __('Public GitHub') : 'GitHub · '.__('Personal account'),
                     $currentSourceIsGitlab && filled(data_get($currentSource, 'group_name')) => 'GitLab · '.$currentSource->group_name,
                     $currentSourceIsGitlab => 'GitLab · '.__('Personal account'),
+                    $currentSourceMorph === \App\Models\ForgejoApp::class => 'Forgejo · '.parse_url((string) data_get($currentSource, 'html_url'), PHP_URL_HOST),
                     default => __('Connected source'),
                 };
             @endphp

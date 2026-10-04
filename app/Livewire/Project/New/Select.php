@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Project\New;
 
+use App\Models\ForgejoApp;
 use App\Models\Project;
 use App\Models\Server;
 use Carbon\CarbonImmutable;
@@ -180,6 +181,15 @@ class Select extends Component
                 'logo' => asset('svgs/resources/gitlab-app.svg'),
             ],
         ];
+        // Servers that platform admins registered; teams cannot add their own.
+        if (ForgejoApp::ownedByCurrentTeam()->exists() || auth()->user()?->can('create', ForgejoApp::class)) {
+            $gitBasedApplications[] = [
+                'id' => 'private-forgejo-app',
+                'name' => __('Git Repository (with Forgejo)'),
+                'description' => __('Pick a repository and branch from a Forgejo (or Gitea) server your platform admins connected. Pushes redeploy automatically through the instance webhook.'),
+                'logo' => asset('svgs/resources/forgejo-app.svg'),
+            ];
+        }
         $dockerBasedApplications = [
             [
                 'id' => 'dockerfile',

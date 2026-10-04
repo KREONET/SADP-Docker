@@ -6,7 +6,7 @@
     },
 }"
     @close-email-change-modal.window="emailModalOpen = false">
-    <x-slot:title>{{ __('Profile') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Profile') }} | {{ brand_name() }}</x-slot>
     <div class="mt-8 flex w-full max-w-none flex-col gap-6 lg:mt-3">
         <section class="application-settings-section" x-data="{
             preview: null,
@@ -310,6 +310,25 @@
                 @endif
             </div>
         </section>
+
+        @if (auth()->id() !== 0)
+            <x-danger-zone :title="__('Delete account')">
+                <p>{{ __('Withdraw from this platform. Your account is permanently deleted and you are signed out.') }}</p>
+                <p>{{ __('Teams where you are the only member are deleted together with their servers, applications, databases, and services. Ownership of shared teams moves to another member.') }}</p>
+                <x-slot:action>
+                    <x-modal-confirmation :title="__('Delete your account?')" :buttonTitle="__('Delete account')"
+                        isErrorButton submitAction="deleteAccount"
+                        :actions="[
+                            __('Your account, sessions, and API tokens will be permanently deleted.'),
+                            __('Teams where you are the only member will be deleted with all their resources.'),
+                        ]"
+                        confirmationText="{{ auth()->user()->email }}"
+                        :confirmationLabel="__('Enter your email address to confirm account deletion')"
+                        :shortConfirmationLabel="__('Email')"
+                        :step2ButtonText="__('Permanently Delete')" />
+                </x-slot:action>
+            </x-danger-zone>
+        @endif
 
         @if (session()->has('errors'))
             <x-callout type="danger" :title="__('Profile update failed')">

@@ -19,11 +19,12 @@
     $terminalOptions = [];
     if (! $isLoadingContainers && $servers->isNotEmpty()) {
         foreach ($servers as $server) {
+            $serverName = $showsAllTeams && $server->team ? $server->name.' ('.$server->team->name.')' : $server->name;
             $terminalOptions[] = [
                 'value' => $server->uuid,
-                'label' => $server->name.' · '.__('Server'),
-                'name' => $server->name,
-                'server' => $server->name,
+                'label' => $serverName.' · '.__('Server'),
+                'name' => $serverName,
+                'server' => $serverName,
                 'type' => 'server',
             ];
 
@@ -31,9 +32,9 @@
                 if ($container['server_uuid'] === $server->uuid) {
                     $terminalOptions[] = [
                         'value' => $container['uuid'],
-                        'label' => $server->name.' · '.$container['name'],
+                        'label' => $serverName.' · '.$container['name'],
                         'name' => $container['name'],
-                        'server' => $server->name,
+                        'server' => $serverName,
                         'type' => 'container',
                     ];
                 }
@@ -48,7 +49,7 @@
 <div class="{{ $selected_uuid === 'default' ? '' : 'terminal-page' }} application-settings-form"
     x-init="$wire.loadContainers()">
     <x-slot:title>
-        {{ __('Terminal') }} | Coolify
+        {{ __('Terminal') }} | {{ brand_name() }}
     </x-slot>
 
     <header class="terminal-page-header shrink-0">

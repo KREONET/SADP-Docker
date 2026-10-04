@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Team;
 
+use App\Actions\User\DeleteUserAccount;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -79,8 +80,12 @@ class AdminView extends Component
             return $this->dispatch('error', __('User not found'));
         }
 
+        if ($user->id === auth()->id()) {
+            return $this->dispatch('error', __('Delete your own account from your profile.'));
+        }
+
         try {
-            $user->delete();
+            DeleteUserAccount::execute($user, 'admin');
             $this->resetPage();
 
             return true;

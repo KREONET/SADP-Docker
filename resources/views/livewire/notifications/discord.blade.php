@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Discord Notifications') }} | Coolify
+        {{ __('Discord Notifications') }} | {{ brand_name() }}
     </x-slot>
 
     <x-notification.settings-layout>

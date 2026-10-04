@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ data_get_str($storage, 'name')->limit(20) }} | {{ __('S3 Storage') }} | Coolify
+        {{ data_get_str($storage, 'name')->limit(20) }} | {{ __('S3 Storage') }} | {{ brand_name() }}
     </x-slot>
 
     @php

@@ -1,8 +1,10 @@
 <div>
-    <x-slot:title>{{ __('Sources') }} | {{ __('Platform Admin') }} | Coolify</x-slot>
+    <x-slot:title>{{ __('Sources') }} | {{ __('Platform Admin') }} | {{ brand_name() }}</x-slot>
 
     <x-platform.layout>
         <div class="flex min-w-0 flex-col gap-6">
+            <livewire:platform.git-sources />
+
             <form wire:submit="saveAllowlist">
                 <x-application.settings-section :title="__('Allowed sources')"
                     :description="__('When enabled, applications can only be created or deployed from these git hosts and container registries. Each entry is a host or a host/path prefix, one per line.')">
@@ -10,7 +12,8 @@
                         <x-forms.checkbox id="isSourceAllowlistEnabled" :label="__('Only allow the sources below')" />
                         <div class="grid gap-4 lg:grid-cols-2">
                             <x-forms.textarea id="allowedGitSources" :label="__('Allowed git sources')" rows="6"
-                                placeholder="https://git.example.com/&#10;git.example.com/platform-team"
+                                placeholder="https://git.example.com/
+git.example.com/platform-team"
                                 :helper="__('Matches https, ssh and git@host:owner/repo URLs. Ports and .git suffixes are ignored.')" />
                             <x-forms.textarea id="allowedDockerRegistries" :label="__('Allowed container registries')" rows="6"
                                 placeholder="registry.example.com
@@ -80,10 +83,14 @@ docker.io/library"
                         </div>
                     @endif
                     <div class="flex justify-end">
-                        <x-forms.button type="button" wire:click="generateWebhookSecret"
-                            wire:confirm="{{ $hasForgejoWebhookSecret ? __('The current secret stops working immediately. Continue?') : __('Generate a webhook secret?') }}">
-                            {{ $hasForgejoWebhookSecret ? __('Rotate secret') : __('Generate secret') }}
-                        </x-forms.button>
+                        @if ($hasForgejoWebhookSecret)
+                            <x-modal-confirmation :title="__('The current secret stops working immediately. Continue?')"
+                                :buttonTitle="__('Rotate secret')" isErrorButton submitAction="generateWebhookSecret"
+                                :confirmWithText="false" :confirmWithPassword="false"
+                                :actions="[__('Update the webhook in Forgejo with the new secret afterwards.')]" />
+                        @else
+                            <x-forms.button type="button" wire:click="generateWebhookSecret">{{ __('Generate secret') }}</x-forms.button>
+                        @endif
                     </div>
                 </div>
             </x-application.settings-section>

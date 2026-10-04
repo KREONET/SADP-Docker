@@ -10,6 +10,10 @@ use Illuminate\Support\Carbon;
 /**
  * A collected Coolify system log line or application container log line.
  * Rows are kept for InstanceSettings::logRetentionDays() and only shown to instance admins.
+ *
+ * [한국어] 수집된 로그 한 줄(Coolify 시스템 로그 또는 컨테이너 로그)을 저장하는 모델입니다.
+ * `source` 가 system 이면 앱 자체의 경고·오류, container 이면 배포된 앱 컨테이너의 출력입니다.
+ * 보관 기간이 지나면 `pruneOlderThan()` 이 지웁니다. 플랫폼 관리자 화면(/platform/logs)에서만 보입니다.
  */
 class LogEntry extends Model
 {

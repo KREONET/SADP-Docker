@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Authentication') }} | Coolify
+        {{ __('Authentication') }} | {{ brand_name() }}
     </x-slot>
 
     <x-settings.layout>
@@ -126,6 +126,44 @@
                             :label="__('Auto-join new users to Root team')"
                             :helper="__('Add newly-created OAuth users to the Root team as members without creating a personal team.')" />
                     </div>
+
+                    @if ($provider === 'oidc')
+                        <div class="mt-6 border-t border-neutral-200 pt-4 dark:border-white/[0.08]">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="text-sm font-semibold text-black dark:text-fg">{{ __('SCIM provisioning') }}</h3>
+                                    <p class="mt-1 max-w-2xl text-[13px] text-neutral-600 dark:text-fg-dim">
+                                        {{ __('Let the identity provider create and remove users. When the provider deletes or deactivates a user, the account is permanently deleted here, together with teams where that user is the only member.') }}
+                                    </p>
+                                </div>
+                                <div class="flex shrink-0 gap-2">
+                                    <x-forms.button canGate="update" :canResource="$settings" type="button"
+                                        wire:click="generateScimToken">
+                                        {{ $hasScimToken ? __('Regenerate SCIM token') : __('Generate SCIM token') }}
+                                    </x-forms.button>
+                                    @if ($hasScimToken)
+                                        <x-forms.button canGate="update" :canResource="$settings" type="button" isError
+                                            wire:click="revokeScimToken">
+                                            {{ __('Revoke') }}
+                                        </x-forms.button>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                                <x-forms.copy-input :label="__('SCIM base URL')" :text="url('/api/scim/v2')" />
+                                @if ($newScimToken)
+                                    <div>
+                                        <x-forms.copy-input :label="__('SCIM token')" :text="$newScimToken" />
+                                        <p class="mt-1 text-xs text-amber-600 dark:text-warning">{{ __('Copy this token now. It will not be shown again.') }}</p>
+                                    </div>
+                                @elseif ($hasScimToken)
+                                    <p class="self-end text-[13px] text-neutral-600 dark:text-fg-dim">{{ __('A SCIM token is active.') }}</p>
+                                @else
+                                    <p class="self-end text-[13px] text-neutral-600 dark:text-fg-dim">{{ __('SCIM provisioning is off until a token is generated.') }}</p>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </x-application.settings-section>
             @endforeach
         </form>

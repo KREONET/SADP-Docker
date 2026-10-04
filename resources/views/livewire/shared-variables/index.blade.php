@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        {{ __('Shared Variables') }} | Coolify
+        {{ __('Shared Variables') }} | {{ brand_name() }}
     </x-slot>
 
     <x-shared-variables.layout>
