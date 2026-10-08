@@ -11,6 +11,11 @@ class InstanceSettings extends Model
 {
     protected $attributes = [
         'is_dashboard_force_https_enabled' => true,
+        'do_not_track' => true,
+        'is_error_reporting_enabled' => false,
+        'is_changelog_enabled' => false,
+        'is_feedback_forwarding_enabled' => false,
+        'audit_log_retention_days' => 365,
     ];
 
     protected $fillable = [
@@ -88,6 +93,11 @@ class InstanceSettings extends Model
         'loki_last_pushed_at',
         'loki_last_error',
         'default_locale',
+        'is_error_reporting_enabled',
+        'is_changelog_enabled',
+        'is_feedback_forwarding_enabled',
+        'admin_allowed_ips',
+        'audit_log_retention_days',
     ];
 
     protected $hidden = [
@@ -133,6 +143,11 @@ class InstanceSettings extends Model
         'webhook_allow_localhost' => 'boolean',
         'is_dashboard_force_https_enabled' => 'boolean',
         'is_sso_only_login_enabled' => 'boolean',
+        'do_not_track' => 'boolean',
+        'is_error_reporting_enabled' => 'boolean',
+        'is_changelog_enabled' => 'boolean',
+        'is_feedback_forwarding_enabled' => 'boolean',
+        'audit_log_retention_days' => 'integer',
         'is_source_allowlist_enabled' => 'boolean',
         'forgejo_bot_token' => 'encrypted',
         'forgejo_webhook_secret' => 'encrypted',

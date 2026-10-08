@@ -77,6 +77,11 @@ class User extends Authenticatable implements SendsEmail
         'show_boarding' => 'boolean',
         'email_change_code_expires_at' => 'datetime',
         'deactivated_at' => 'datetime',
+        'failed_login_attempts' => 'integer',
+        'locked_until' => 'datetime',
+        'last_login_at' => 'datetime',
+        'password_changed_at' => 'datetime',
+        'is_auditor' => 'boolean',
     ];
 
     /**
@@ -362,6 +367,59 @@ class User extends Authenticatable implements SendsEmail
         });
 
         return $found_root_team->count() > 0;
+    }
+
+    /**
+     * Whether repeated failed logins have locked the account.
+     */
+    public function isLockedOut(): bool
+    {
+        return $this->locked_until !== null && $this->locked_until->isFuture();
+    }
+
+    /**
+     * Count a failed login and lock the account once the configured limit is reached.
+     */
+    public function recordFailedLogin(): void
+    {
+        $attempts = (int) $this->failed_login_attempts + 1;
+        $attributes = ['failed_login_attempts' => $attempts];
+
+        if ($attempts >= (int) config('security.lockout.max_attempts')) {
+            $attributes['locked_until'] = now()->addMinutes((int) config('security.lockout.minutes'));
+        }
+
+        $this->forceFill($attributes)->saveQuietly();
+    }
+
+    public function unlockAccount(): void
+    {
+        $this->forceFill(['failed_login_attempts' => 0, 'locked_until' => null])->saveQuietly();
+    }
+
+    public function recordSuccessfulLogin(): void
+    {
+        $this->forceFill([
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+            'last_login_at' => now(),
+        ])->saveQuietly();
+    }
+
+    /**
+     * Whether the local password is older than the configured maximum age.
+     */
+    public function passwordHasExpired(): bool
+    {
+        $maxAgeDays = (int) config('security.password.expires_after_days');
+
+        if ($maxAgeDays <= 0) {
+            return false;
+        }
+
+        $changedAt = $this->password_changed_at ?? $this->created_at;
+
+        return $changedAt !== null && $changedAt->lt(now()->subDays($maxAgeDays));
     }
 
     public function currentTeam(): ?Team

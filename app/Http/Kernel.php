@@ -12,11 +12,16 @@ use App\Http\Middleware\CanUpdateResource;
 use App\Http\Middleware\CheckForcePasswordReset;
 use App\Http\Middleware\DecideWhatToDoWithUser;
 use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\EnforcePasswordExpiry;
+use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsureMcpEnabled;
 use App\Http\Middleware\EnsureTeamMcpEnabled;
 use App\Http\Middleware\EnsureTokenBelongsToCurrentTeamMember;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\RestrictAdminIps;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetInterfaceLocale;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
@@ -53,6 +58,7 @@ class Kernel extends HttpKernel
     protected $middleware = [
         // Outermost so Server-Timing includes the full middleware + app cost.
         AddServerTimingHeaders::class,
+        SecurityHeaders::class,
         TrustProxies::class,
         HandleCors::class,
         PreventRequestsDuringMaintenance::class,
@@ -77,7 +83,11 @@ class Kernel extends HttpKernel
             SetInterfaceLocale::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            EnforceSessionTimeout::class,
+            RestrictAdminIps::class,
             CheckForcePasswordReset::class,
+            EnforcePasswordExpiry::class,
+            RequireTwoFactor::class,
             DecideWhatToDoWithUser::class,
 
         ],
