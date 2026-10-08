@@ -159,7 +159,8 @@ class ServerTransferController extends Controller
             return response()->json(['message' => 'Server not found.'], 404);
         }
 
-        $this->authorize('view', $server);
+        // The bundle carries the server's private key and secrets, so only server managers may export it.
+        $this->authorize('update', $server);
 
         try {
             $bundle = $this->exporter->export($server, includeSensitive: true);
@@ -391,7 +392,8 @@ class ServerTransferController extends Controller
             return response()->json(['message' => 'Server not found.'], 404);
         }
 
-        $this->authorize('view', $server);
+        // The bundle carries the server's private key and secrets, so only server managers may export it.
+        $this->authorize('update', $server);
 
         try {
             $bundle = $this->exporter->export($server, includeSensitive: true);

@@ -14,6 +14,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->server = Server::factory()->create([
@@ -35,6 +36,23 @@ it('PATCH updates connection_timeout via API', function () {
 
     $response->assertStatus(201);
     expect($this->server->settings->fresh()->connection_timeout)->toBe(45);
+});
+
+it('PATCH forbids team owners who are not platform admins from updating connection_timeout', function () {
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $ownerToken = $owner->createToken('write-token', ['write']);
+    $ownerToken->accessToken->forceFill(['team_id' => $this->team->id])->save();
+
+    $response = $this->withHeaders([
+        'Authorization' => 'Bearer '.$ownerToken->plainTextToken,
+        'Content-Type' => 'application/json',
+    ])->patchJson('/api/v1/servers/'.$this->server->uuid, [
+        'connection_timeout' => 45,
+    ]);
+
+    $response->assertForbidden();
+    expect($this->server->settings->fresh()->connection_timeout)->not->toBe(45);
 });
 
 it('PATCH rejects connection_timeout out of range', function () {

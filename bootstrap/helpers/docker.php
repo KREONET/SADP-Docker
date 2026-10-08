@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ApplicationExposureMode;
 use App\Enums\ProxyTypes;
 use App\Models\Application;
 use App\Models\ApplicationPreview;
@@ -731,7 +732,7 @@ function isNoindexDomain(string $domain, ?Collection $noindex_domains): bool
         ->contains(ValidationPatterns::normalizeApplicationDomainUrl($domain));
 }
 
-function fqdnLabelsForCaddy(string $network, string $uuid, Collection $domains, bool $is_force_https_enabled = false, $onlyPort = null, ?Collection $serviceLabels = null, ?bool $is_gzip_enabled = true, ?bool $is_stripprefix_enabled = true, ?string $service_name = null, ?string $image = null, string $redirect_direction = 'both', ?string $predefinedPort = null, bool $is_http_basic_auth_enabled = false, ?string $http_basic_auth_username = null, ?string $http_basic_auth_password = null, ?Collection $noindex_domains = null, bool $is_traffic_analytics_enabled = false, array $domainPortOverrides = [], bool $supports_log_append = false, bool $supports_basic_auth_directive = false)
+function fqdnLabelsForCaddy(string $network, string $uuid, Collection $domains, bool $is_force_https_enabled = false, $onlyPort = null, ?Collection $serviceLabels = null, ?bool $is_gzip_enabled = true, ?bool $is_stripprefix_enabled = true, ?string $service_name = null, ?string $image = null, string $redirect_direction = 'both', ?string $predefinedPort = null, bool $is_http_basic_auth_enabled = false, ?string $http_basic_auth_username = null, ?string $http_basic_auth_password = null, ?Collection $noindex_domains = null, bool $is_traffic_analytics_enabled = false, array $domainPortOverrides = [], bool $supports_log_append = false, bool $supports_basic_auth_directive = false, ?array $access = null)
 {
     $labels = collect([]);
     if ($serviceLabels) {
@@ -746,6 +747,7 @@ function fqdnLabelsForCaddy(string $network, string $uuid, Collection $domains, 
     }
 
     $trafficAppKey = caddyTrafficAppKey($uuid, $service_name);
+    $access_mode = data_get($access, 'mode', 'public');
 
     foreach ($domains as $loop => $domain) {
         $url = Url::fromString($domain);
@@ -780,6 +782,18 @@ function fqdnLabelsForCaddy(string $network, string $uuid, Collection $domains, 
         }
         $labels->push("caddy_{$loop}.try_files={path} /index.html /index.php");
 
+        if ($access_mode === 'internal') {
+            // Named matcher at site level; respond runs before reverse_proxy inside the handle block.
+            $ranges = data_get($access, 'allowed_ranges') ?: [EXPOSURE_DENY_ALL_RANGE];
+            $labels->push("caddy_{$loop}.@outside_internal_network.not.remote_ip=".implode(' ', $ranges));
+            $labels->push("caddy_{$loop}.{$handle}.{$loop}_respond=@outside_internal_network 403");
+        }
+        if ($access_mode === 'login') {
+            // Site-level forward_auth runs before handle_path, so it sees the original request URI.
+            $labels->push("caddy_{$loop}.forward_auth=".data_get($access, 'forward_auth_address_base'));
+            $labels->push("caddy_{$loop}.forward_auth.uri=".data_get($access, 'forward_auth_uri'));
+            $labels->push("caddy_{$loop}.forward_auth.copy_headers=X-Paded-User X-Paded-Email");
+        }
         if ($port) {
             $labels->push("caddy_{$loop}.{$handle}.{$loop}_reverse_proxy={{upstreams $port}}");
         } else {
@@ -872,7 +886,7 @@ function dockerComposeServicePorts(?string $compose, ?string $serviceName): arra
         ->unique()->values()->all();
 }
 
-function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_https_enabled = false, $onlyPort = null, ?Collection $serviceLabels = null, ?bool $is_gzip_enabled = true, ?bool $is_stripprefix_enabled = true, ?string $service_name = null, bool $generate_unique_uuid = false, ?string $image = null, string $redirect_direction = 'both', bool $is_http_basic_auth_enabled = false, ?string $http_basic_auth_username = null, ?string $http_basic_auth_password = null, ?Collection $noindex_domains = null, bool $escape_redirect_replacement_for_compose = true, array $domainPortOverrides = [])
+function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_https_enabled = false, $onlyPort = null, ?Collection $serviceLabels = null, ?bool $is_gzip_enabled = true, ?bool $is_stripprefix_enabled = true, ?string $service_name = null, bool $generate_unique_uuid = false, ?string $image = null, string $redirect_direction = 'both', bool $is_http_basic_auth_enabled = false, ?string $http_basic_auth_username = null, ?string $http_basic_auth_password = null, ?Collection $noindex_domains = null, bool $escape_redirect_replacement_for_compose = true, array $domainPortOverrides = [], ?array $access = null)
 {
     $labels = collect([]);
     $labels->push('traefik.enable=true');
@@ -889,6 +903,21 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
 
     if ($is_http_basic_auth_enabled) {
         $labels->push("traefik.http.middlewares.{$http_basic_auth_label}.basicauth.users={$http_basic_auth_username}:{$hashedPassword}");
+    }
+
+    // Exposure mode restrictions run first on every router, before any rewrite or redirect.
+    $access_middlewares = collect([]);
+    $access_mode = data_get($access, 'mode', 'public');
+    if ($access_mode === 'internal') {
+        $ip_middleware = data_get($access, 'traefik_ip_middleware', 'ipallowlist');
+        $ranges = data_get($access, 'allowed_ranges') ?: [EXPOSURE_DENY_ALL_RANGE];
+        $labels->push("traefik.http.middlewares.internal-only-{$uuid}.{$ip_middleware}.sourcerange=".implode(',', $ranges));
+        $access_middlewares->push("internal-only-{$uuid}");
+    }
+    if ($access_mode === 'login') {
+        $labels->push("traefik.http.middlewares.signed-in-only-{$uuid}.forwardauth.address=".data_get($access, 'forward_auth_address'));
+        $labels->push("traefik.http.middlewares.signed-in-only-{$uuid}.forwardauth.authResponseHeaders=X-Paded-User,X-Paded-Email");
+        $access_middlewares->push("signed-in-only-{$uuid}");
     }
 
     $middlewares_from_labels = collect([]);
@@ -977,7 +1006,7 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                 }
                 if ($path !== '/') {
                     // Middleware handling
-                    $middlewares = collect([]);
+                    $middlewares = collect($access_middlewares);
                     if ($is_stripprefix_enabled && ! str($image)->contains('ghost')) {
                         $labels->push("traefik.http.middlewares.{$https_label}-stripprefix.stripprefix.prefixes={$path}");
                         $middlewares->push("{$https_label}-stripprefix");
@@ -1009,7 +1038,7 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                         $labels->push("traefik.http.routers.{$https_label}.middlewares={$middlewares->join(',')}");
                     }
                 } else {
-                    $middlewares = collect([]);
+                    $middlewares = collect($access_middlewares);
                     if ($is_gzip_enabled) {
                         $middlewares->push('gzip');
                     }
@@ -1068,7 +1097,7 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                     $labels->push("traefik.http.routers.{$http_label}.service={$http_label}");
                 }
                 if ($path !== '/') {
-                    $middlewares = collect([]);
+                    $middlewares = collect($access_middlewares);
                     if ($is_stripprefix_enabled && ! str($image)->contains('ghost')) {
                         $labels->push("traefik.http.middlewares.{$http_label}-stripprefix.stripprefix.prefixes={$path}");
                         $middlewares->push("{$http_label}-stripprefix");
@@ -1101,7 +1130,7 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                         $labels->push("traefik.http.routers.{$http_label}.middlewares={$middlewares}");
                     }
                 } else {
-                    $middlewares = collect([]);
+                    $middlewares = collect($access_middlewares);
                     if ($is_gzip_enabled) {
                         $middlewares->push('gzip');
                     }
@@ -1151,6 +1180,11 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
         $appUuid = $appUuid.'-pr-'.$pull_request_id;
     }
     $labels = collect([]);
+    // Private applications publish no domain: the proxy gets no routing labels at all.
+    if ($application->exposureMode() === ApplicationExposureMode::Private) {
+        return [];
+    }
+    $access = applicationProxyAccess($application);
     if ($pull_request_id === 0) {
         if ($application->fqdn) {
             $domains = str(data_get($application, 'fqdn'))->explode(',');
@@ -1172,6 +1206,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                             http_basic_auth_password: $application->http_basic_auth_password,
                             noindex_domains: $noindexDomains,
                             domainPortOverrides: $application->domain_port_overrides ?? [],
+                            access: $access,
                         ));
                         break;
                     case ProxyTypes::CADDY->value:
@@ -1192,6 +1227,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                             supports_log_append: $application->destination->server->caddySupportsLogAppend(),
                             supports_basic_auth_directive: $application->destination->server->caddySupportsBasicAuthDirective(),
                             domainPortOverrides: $application->domain_port_overrides ?? [],
+                            access: $access,
                         ));
                         break;
                 }
@@ -1210,6 +1246,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                     noindex_domains: $noindexDomains,
                     escape_redirect_replacement_for_compose: false,
                     domainPortOverrides: $application->domain_port_overrides ?? [],
+                    access: $access,
                 ));
                 $labels = $labels->merge(fqdnLabelsForCaddy(
                     network: $application->destination->network,
@@ -1228,6 +1265,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                     supports_log_append: $application->destination->server->caddySupportsLogAppend(),
                     supports_basic_auth_directive: $application->destination->server->caddySupportsBasicAuthDirective(),
                     domainPortOverrides: $application->domain_port_overrides ?? [],
+                    access: $access,
                 ));
             }
         }
@@ -1256,6 +1294,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                         noindex_domains: $noindexDomains,
                         escape_redirect_replacement_for_compose: false,
                         domainPortOverrides: $preview->domain_port_overrides ?? [],
+                        access: $access,
                     ));
                     break;
                 case ProxyTypes::CADDY->value:
@@ -1275,6 +1314,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                         supports_log_append: $application->destination->server->caddySupportsLogAppend(),
                         supports_basic_auth_directive: $application->destination->server->caddySupportsBasicAuthDirective(),
                         domainPortOverrides: $preview->domain_port_overrides ?? [],
+                        access: $access,
                     ));
                     break;
             }
@@ -1292,6 +1332,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                 noindex_domains: $noindexDomains,
                 escape_redirect_replacement_for_compose: false,
                 domainPortOverrides: $preview->domain_port_overrides ?? [],
+                access: $access,
             ));
             $labels = $labels->merge(fqdnLabelsForCaddy(
                 network: $application->destination->network,
@@ -1309,11 +1350,12 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
                 supports_log_append: $application->destination->server->caddySupportsLogAppend(),
                 supports_basic_auth_directive: $application->destination->server->caddySupportsBasicAuthDirective(),
                 domainPortOverrides: $preview->domain_port_overrides ?? [],
+                access: $access,
             ));
         }
     }
 
-    return $labels->all();
+    return applyWildcardCertificateLabels($labels, $application->destination->server)->all();
 }
 
 function isDatabaseImage(?string $image = null, ?array $serviceConfig = null)

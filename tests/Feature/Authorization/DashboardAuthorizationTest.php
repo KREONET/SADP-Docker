@@ -81,8 +81,10 @@ test('member does not see add resource button on dashboard projects', function (
 });
 
 // The "New server" button is only rendered in the empty servers state (a key exists, no servers yet).
-test('admin sees add server button on dashboard', function () {
+// Creating servers is restricted to platform admins (admin/owner of the root team).
+test('platform admin sees add server button on dashboard', function () {
     [$user, $team] = setupDashboardUser('admin');
+    makePlatformAdmin($user);
 
     $this->actingAs($user);
     session(['currentTeam' => $team]);
@@ -92,6 +94,19 @@ test('admin sees add server button on dashboard', function () {
     Livewire::test(Dashboard::class)
         ->assertSee('No servers yet')
         ->assertSee(route('server.create'));
+});
+
+test('team admin who is not a platform admin does not see add server button on dashboard', function () {
+    [$user, $team] = setupDashboardUser('admin');
+
+    $this->actingAs($user);
+    session(['currentTeam' => $team]);
+
+    createPrivateKeyForTeam($team);
+
+    Livewire::test(Dashboard::class)
+        ->assertSee('No servers yet')
+        ->assertDontSee(route('server.create'));
 });
 
 test('member does not see add server button on dashboard', function () {

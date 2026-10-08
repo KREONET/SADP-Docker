@@ -28,7 +28,8 @@ class StandaloneDockerPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        // Destinations are shared infrastructure, so only platform admins change them.
+        return $user->isInstanceAdmin();
     }
 
     /**
@@ -36,7 +37,7 @@ class StandaloneDockerPolicy
      */
     public function update(User $user, StandaloneDocker $standaloneDocker): bool
     {
-        return $user->isAdminOfTeam($standaloneDocker->server->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $standaloneDocker->server->team_id);
     }
 
     /**
@@ -44,7 +45,7 @@ class StandaloneDockerPolicy
      */
     public function delete(User $user, StandaloneDocker $standaloneDocker): bool
     {
-        return $user->isAdminOfTeam($standaloneDocker->server->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $standaloneDocker->server->team_id);
     }
 
     /**

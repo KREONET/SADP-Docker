@@ -9,6 +9,7 @@
 ## DOCKER_ADDRESS_POOL_SIZE - Custom Docker address pool size (default: 24)
 ## DOCKER_POOL_FORCE_OVERRIDE - Force override Docker address pool configuration (default: false)
 ## AUTOUPDATE - Set to "false" to disable auto-updates
+## CONFIGURE_FIREWALL - Set to "false" to skip allowing SSH from the Coolify Docker network through UFW/firewalld
 ## INTERNAL_SIGNUP - "true" keeps the built-in sign-up, "false" creates only a random root account for OIDC sign-in (asked interactively when unset)
 ## REGISTRY_URL - Custom registry URL for Docker images (default: docker.io)
 
@@ -1141,7 +1142,8 @@ else
 fi
 step_done
 
-step_start "Starting Coolify" "v${LATEST_VERSION}"
+step_start "Starting PADED
+" "v${LATEST_VERSION}"
 echo " - Waiting for Coolify to be ready..."
 
 # Wait for upgrade.sh background process to complete
@@ -1209,7 +1211,7 @@ while [ $HEALTH_WAITED -lt $HEALTH_WAIT ]; do
     HEALTH=$(docker inspect --format='{{.State.Health.Status}}' coolify 2>/dev/null || echo "unknown")
     if [ "$HEALTH" = "healthy" ]; then
         log "Coolify container is healthy"
-        echo " - Coolify is ready!"
+        echo " - PADED is ready!"
         break
     fi
     sleep 2
@@ -1220,6 +1222,29 @@ if [ "$HEALTH" != "healthy" ]; then
     echo " - ERROR: Coolify container is not healthy after ${HEALTH_WAIT}s. Status: $HEALTH"
     echo " - Please check: docker logs coolify"
     exit 1
+fi
+
+# Coolify manages this server over SSH from its container (host.docker.internal). A host firewall that
+# drops incoming traffic (UFW, firewalld) makes that time out, so allow SSH from the Coolify network only.
+CONFIGURE_FIREWALL=${CONFIGURE_FIREWALL:-true}
+COOLIFY_SUBNET=$(docker network inspect coolify -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' 2>/dev/null | awk '{print $1}')
+SSH_PORT=$(sshd -T 2>/dev/null | awk '/^port /{print $2; exit}')
+SSH_PORT=${SSH_PORT:-22}
+if [ "$CONFIGURE_FIREWALL" != "false" ] && [ -n "$COOLIFY_SUBNET" ]; then
+    if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+        if ufw allow from "$COOLIFY_SUBNET" to any port "$SSH_PORT" proto tcp comment 'Coolify container to host SSH'; then
+            echo " - UFW: allowed SSH (port $SSH_PORT) from the Coolify network $COOLIFY_SUBNET"
+        else
+            warn "Could not add a UFW rule. Run: ufw allow from $COOLIFY_SUBNET to any port $SSH_PORT proto tcp"
+        fi
+    elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+        RICH_RULE="rule family=ipv4 source address=$COOLIFY_SUBNET port port=$SSH_PORT protocol=tcp accept"
+        if firewall-cmd --permanent --add-rich-rule="$RICH_RULE" && firewall-cmd --reload; then
+            echo " - firewalld: allowed SSH (port $SSH_PORT) from the Coolify network $COOLIFY_SUBNET"
+        else
+            warn "Could not add a firewalld rule. Run: firewall-cmd --permanent --add-rich-rule='$RICH_RULE' && firewall-cmd --reload"
+        fi
+    fi
 fi
 step_done
 
@@ -1245,7 +1270,7 @@ DEFAULT_PRIVATE_IP=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
 PRIVATE_IPS=$(hostname -I 2>/dev/null || ip -o addr show scope global | awk '{print $4}' | cut -d/ -f1)
 set -e
 
-printf '\n  %s%sCoolify is ready!%s  %sInstalled in %s%s\n\n' "$C_BOLD" "$C_PURPLE" "$C_RESET" "$C_DIM" "$(ui_duration $(($(ui_now) - UI_INSTALL_STARTED)))" "$C_RESET" >&3
+printf '\n  %s%sPADED is ready!%s  %sInstalled in %s%s\n\n' "$C_BOLD" "$C_PURPLE" "$C_RESET" "$C_DIM" "$(ui_duration $(($(ui_now) - UI_INSTALL_STARTED)))" "$C_RESET" >&3
 if [ -n "$IPV4_PUBLIC_IP" ]; then
     printf '  Public IPv4   %shttp://%s:8000%s\n' "$C_BOLD" "$IPV4_PUBLIC_IP" "$C_RESET" >&3
 fi

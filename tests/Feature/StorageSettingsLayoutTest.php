@@ -35,6 +35,7 @@ it('renders the danger zone page for a storage destination', function () {
         'key' => 'access',
         'secret' => 'secret',
         'team_id' => $this->team->id,
+        'user_id' => $this->user->id,
         'is_usable' => true,
     ]);
 

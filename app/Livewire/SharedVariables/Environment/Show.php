@@ -4,6 +4,7 @@ namespace App\Livewire\SharedVariables\Environment;
 
 use App\Models\Application;
 use App\Models\Project;
+use App\Models\SharedEnvironmentVariable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -30,6 +31,7 @@ class Show extends Component
     {
         try {
             $this->authorize('update', $this->environment);
+            $this->authorize('create', SharedEnvironmentVariable::class);
 
             $found = $this->environment->environment_variables()->where('key', $data['key'])->first();
             if ($found) {
@@ -97,6 +99,7 @@ class Show extends Component
     {
         try {
             $this->authorize('update', $this->environment);
+            $this->authorize('create', SharedEnvironmentVariable::class);
             $this->handleBulkSubmit();
             $this->getDevView();
         } catch (\Throwable $e) {

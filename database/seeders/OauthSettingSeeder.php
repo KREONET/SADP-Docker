@@ -15,19 +15,7 @@ class OauthSettingSeeder extends Seeder
     public function run(): void
     {
         try {
-            $providers = collect([
-                'azure',
-                'bitbucket',
-                'clerk',
-                'discord',
-                'github',
-                'gitlab',
-                'google',
-                'oidc',
-                'authentik',
-                'infomaniak',
-                'zitadel',
-            ]);
+            $providers = collect(OauthSetting::SUPPORTED_PROVIDERS);
 
             $isOauthSeeded = OauthSetting::count() > 0;
 

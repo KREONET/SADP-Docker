@@ -87,6 +87,7 @@ it('saves the notification interval from the server advanced settings', function
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $team->members()->attach($user, ['role' => 'owner']);
+    makePlatformAdmin($user);
     $server = Server::factory()->create(['team_id' => $team->id]);
 
     $this->actingAs($user);

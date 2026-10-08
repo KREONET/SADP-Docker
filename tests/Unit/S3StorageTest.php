@@ -55,6 +55,7 @@ test('S3Storage model fillable attributes are configured correctly', function ()
 
     expect($s3Storage->getFillable())->toBe([
         'team_id',
+        'user_id',
         'name',
         'description',
         'region',

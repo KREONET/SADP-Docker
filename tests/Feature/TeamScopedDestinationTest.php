@@ -33,6 +33,7 @@ beforeEach(function () {
     $this->userA = User::factory()->create();
     $this->teamA = Team::factory()->create();
     $this->userA->teams()->attach($this->teamA, ['role' => 'owner']);
+    makePlatformAdmin($this->userA);
 
     $this->serverA = Server::factory()->create(['team_id' => $this->teamA->id]);
     $this->projectA = Project::factory()->create(['team_id' => $this->teamA->id]);

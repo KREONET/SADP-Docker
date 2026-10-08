@@ -18,8 +18,18 @@ it('requires the provider-specific fields used by oauth enablement', function (s
             ->toBeFalse("{$provider} must require {$field}");
     }
 })->with([
-    'github' => ['github', ['client_id', 'client_secret']],
-    'azure' => ['azure', ['client_id', 'client_secret', 'tenant']],
+    'oidc' => ['oidc', ['client_id', 'client_secret', 'base_url']],
     'authentik' => ['authentik', ['client_id', 'client_secret', 'base_url']],
-    'clerk' => ['clerk', ['client_id', 'client_secret', 'base_url']],
 ]);
+
+it('never enables a removed login provider', function (string $provider) {
+    $setting = new OauthSetting([
+        'provider' => $provider,
+        'client_id' => 'client-id',
+        'client_secret' => 'client-secret',
+        'tenant' => 'tenant-id',
+        'base_url' => 'https://auth.example.com',
+    ]);
+
+    expect($setting->couldBeEnabled())->toBeFalse();
+})->with(['azure', 'bitbucket', 'clerk', 'discord', 'github', 'gitlab', 'google', 'infomaniak', 'zitadel']);

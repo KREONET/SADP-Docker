@@ -32,6 +32,10 @@ beforeEach(function () {
     $this->member = User::factory()->create();
     $this->member->teams()->attach($this->team, ['role' => 'member']);
 
+    $this->platformAdmin = User::factory()->create();
+    $this->platformAdmin->teams()->attach($this->team, ['role' => 'admin']);
+    makePlatformAdmin($this->platformAdmin);
+
     $keyId = DB::table('private_keys')->insertGetId([
         'uuid' => (string) Str::uuid(),
         'name' => 'Test Key',
@@ -54,8 +58,12 @@ beforeEach(function () {
 
 // --- Server Policy: update ---
 
-test('admin can update server', function () {
-    expect($this->admin->can('update', $this->server))->toBeTrue();
+test('team admin who is not a platform admin cannot update server', function () {
+    expect($this->admin->can('update', $this->server))->toBeFalse();
+});
+
+test('platform admin in the server team can update server', function () {
+    expect($this->platformAdmin->can('update', $this->server))->toBeTrue();
 });
 
 test('member cannot update server', function () {
@@ -82,8 +90,12 @@ test('member cannot invoke server validation write steps', function (string $met
 
 // --- Server Policy: delete ---
 
-test('admin can delete server', function () {
-    expect($this->admin->can('delete', $this->server))->toBeTrue();
+test('team admin who is not a platform admin cannot delete server', function () {
+    expect($this->admin->can('delete', $this->server))->toBeFalse();
+});
+
+test('platform admin in the server team can delete server', function () {
+    expect($this->platformAdmin->can('delete', $this->server))->toBeTrue();
 });
 
 test('member cannot delete server', function () {
@@ -116,8 +128,12 @@ test('the private log drain syncData helper is not remotely callable', function 
 
 // --- Server Policy: manageProxy ---
 
-test('admin can manage proxy', function () {
-    expect($this->admin->can('manageProxy', $this->server))->toBeTrue();
+test('team admin who is not a platform admin cannot manage proxy', function () {
+    expect($this->admin->can('manageProxy', $this->server))->toBeFalse();
+});
+
+test('platform admin in the server team can manage proxy', function () {
+    expect($this->platformAdmin->can('manageProxy', $this->server))->toBeTrue();
 });
 
 test('member cannot manage proxy', function () {
@@ -126,8 +142,12 @@ test('member cannot manage proxy', function () {
 
 // --- Server Policy: manageSentinel ---
 
-test('admin can manage sentinel', function () {
-    expect($this->admin->can('manageSentinel', $this->server))->toBeTrue();
+test('team admin who is not a platform admin cannot manage sentinel', function () {
+    expect($this->admin->can('manageSentinel', $this->server))->toBeFalse();
+});
+
+test('platform admin in the server team can manage sentinel', function () {
+    expect($this->platformAdmin->can('manageSentinel', $this->server))->toBeTrue();
 });
 
 test('member cannot manage sentinel', function () {
@@ -136,8 +156,12 @@ test('member cannot manage sentinel', function () {
 
 // --- Server Policy: manageCaCertificate ---
 
-test('admin can manage CA certificate', function () {
-    expect($this->admin->can('manageCaCertificate', $this->server))->toBeTrue();
+test('team admin who is not a platform admin cannot manage CA certificate', function () {
+    expect($this->admin->can('manageCaCertificate', $this->server))->toBeFalse();
+});
+
+test('platform admin in the server team can manage CA certificate', function () {
+    expect($this->platformAdmin->can('manageCaCertificate', $this->server))->toBeTrue();
 });
 
 test('member cannot manage CA certificate', function () {
@@ -146,8 +170,12 @@ test('member cannot manage CA certificate', function () {
 
 // --- Server Policy: viewSecurity ---
 
-test('admin can view security', function () {
-    expect($this->admin->can('viewSecurity', $this->server))->toBeTrue();
+test('team admin who is not a platform admin cannot view security', function () {
+    expect($this->admin->can('viewSecurity', $this->server))->toBeFalse();
+});
+
+test('platform admin in the server team can view security', function () {
+    expect($this->platformAdmin->can('viewSecurity', $this->server))->toBeTrue();
 });
 
 test('member cannot view security', function () {
@@ -156,8 +184,15 @@ test('member cannot view security', function () {
 
 // --- Server Policy: create ---
 
-test('admin can create server', function () {
+test('team admin who is not a platform admin cannot create server', function () {
     $this->actingAs($this->admin);
+    session(['currentTeam' => $this->team]);
+
+    expect(auth()->user()->can('create', Server::class))->toBeFalse();
+});
+
+test('platform admin can create server', function () {
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     expect(auth()->user()->can('create', Server::class))->toBeTrue();
@@ -170,8 +205,19 @@ test('member cannot create server', function () {
     expect(auth()->user()->can('create', Server::class))->toBeFalse();
 });
 
-test('admin can access new server page', function () {
+test('team admin who is not a platform admin cannot access new server page', function () {
     $this->actingAs($this->admin);
+    session(['currentTeam' => $this->team]);
+
+    $this->get(route('server.create'))
+        ->assertForbidden();
+
+    $this->get(route('server.create.type', ['type' => 'manual']))
+        ->assertForbidden();
+});
+
+test('platform admin can access new server page', function () {
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $this->get(route('server.create'))
@@ -181,7 +227,7 @@ test('admin can access new server page', function () {
 });
 
 test('new server chooser lists providers before rendering a creation form', function () {
-    $this->actingAs($this->admin);
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     Livewire::test(ServerCreate::class)
@@ -199,7 +245,7 @@ test('new server chooser lists providers before rendering a creation form', func
 });
 
 test('new server chooser uses compact mobile provider cards', function () {
-    $this->actingAs($this->admin);
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     Livewire::test(ServerCreate::class)
@@ -215,7 +261,7 @@ test('new server chooser uses compact mobile provider cards', function () {
 });
 
 test('new server provider pages render the selected creation flow', function (string $type, string $heading) {
-    $this->actingAs($this->admin);
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $response = $this->get(route('server.create.type', ['type' => $type]))
@@ -233,7 +279,7 @@ test('new server provider pages render the selected creation flow', function (st
 ]);
 
 test('new server provider pages do not show the new token action in the header', function (string $type, string $heading) {
-    $this->actingAs($this->admin);
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $response = $this->get(route('server.create.type', ['type' => $type]))
@@ -259,7 +305,7 @@ test('new server provider pages do not show the new token action in the header',
 ]);
 
 test('new server provider pages list existing tokens instead of a token action', function (string $type, string $provider, string $heading, string $modalTitle) {
-    $this->actingAs($this->admin);
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $token = CloudProviderToken::factory()->create([
@@ -281,7 +327,7 @@ test('new server provider pages list existing tokens instead of a token action',
 ]);
 
 test('new server manual page does not show the new token action', function () {
-    $this->actingAs($this->admin);
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $this->get(route('server.create.type', ['type' => 'manual']))
@@ -299,12 +345,20 @@ test('member cannot access new server page', function () {
         ->assertForbidden();
 });
 
-test('server index links admins to new server page', function () {
-    $this->actingAs($this->admin);
+test('server index links platform admins to new server page', function () {
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     Livewire::test(ServerIndex::class)
         ->assertSee(route('server.create'));
+});
+
+test('server index does not link team admins who are not platform admins to new server page', function () {
+    $this->actingAs($this->admin);
+    session(['currentTeam' => $this->team]);
+
+    Livewire::test(ServerIndex::class)
+        ->assertDontSee(route('server.create'));
 });
 
 test('server index does not link members to new server page', function () {
@@ -331,6 +385,16 @@ test('user from different team cannot update server', function () {
     $otherUser->teams()->attach($otherTeam, ['role' => 'admin']);
 
     expect($otherUser->can('update', $this->server))->toBeFalse();
+});
+
+test('platform admin outside the server team cannot update or delete server', function () {
+    $otherTeam = Team::factory()->create();
+    $otherUser = User::factory()->create();
+    $otherUser->teams()->attach($otherTeam, ['role' => 'admin']);
+    makePlatformAdmin($otherUser);
+
+    expect($otherUser->can('update', $this->server))->toBeFalse()
+        ->and($otherUser->can('delete', $this->server))->toBeFalse();
 });
 
 // --- Navbar Livewire component actions ---
@@ -403,8 +467,19 @@ test('member can access server page', function () {
     $this->get("/server/{$this->server->uuid}")->assertSuccessful();
 });
 
-test('admin can access sentinel configuration and logs pages', function () {
+test('team admin who is not a platform admin cannot access sentinel configuration and logs pages', function () {
     $this->actingAs($this->admin);
+    session(['currentTeam' => $this->team]);
+
+    $this->get(route('server.sentinel', ['server_uuid' => $this->server->uuid]))
+        ->assertForbidden();
+
+    $this->get(route('server.sentinel.logs', ['server_uuid' => $this->server->uuid]))
+        ->assertForbidden();
+});
+
+test('platform admin can access sentinel configuration and logs pages', function () {
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $this->get(route('server.sentinel', ['server_uuid' => $this->server->uuid]))
@@ -425,7 +500,7 @@ test('member cannot access sentinel configuration and logs pages', function () {
         ->assertForbidden();
 });
 
-test('sentinel navigation is only visible to team admins', function () {
+test('sentinel navigation is only visible to platform admins', function () {
     $this->actingAs($this->member);
     session(['currentTeam' => $this->team]);
 
@@ -434,6 +509,13 @@ test('sentinel navigation is only visible to team admins', function () {
         ->assertDontSee(route('server.sentinel', ['server_uuid' => $this->server->uuid]));
 
     $this->actingAs($this->admin);
+    session(['currentTeam' => $this->team]);
+
+    $this->get("/server/{$this->server->uuid}")
+        ->assertSuccessful()
+        ->assertDontSee(route('server.sentinel', ['server_uuid' => $this->server->uuid]));
+
+    $this->actingAs($this->platformAdmin);
     session(['currentTeam' => $this->team]);
 
     $this->get("/server/{$this->server->uuid}")

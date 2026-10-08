@@ -3324,7 +3324,7 @@ function parseDockerComposeFile(Service|Application $resource, bool $isNew = fal
                         });
                     }
                 }
-                data_set($service, 'labels', $serviceLabels->toArray());
+                data_set($service, 'labels', applyWildcardCertificateLabels($serviceLabels, $resource->server)->toArray());
                 data_forget($service, 'is_database');
                 if (! data_get($service, 'restart')) {
                     data_set($service, 'restart', RESTART_MODE);
@@ -4167,7 +4167,7 @@ function parseDockerComposeFile(Service|Application $resource, bool $isNew = fal
                     });
                 }
             }
-            data_set($service, 'labels', $serviceLabels->toArray());
+            data_set($service, 'labels', applyWildcardCertificateLabels($serviceLabels, $server)->toArray());
             data_forget($service, 'is_database');
             if (! data_get($service, 'restart')) {
                 data_set($service, 'restart', RESTART_MODE);

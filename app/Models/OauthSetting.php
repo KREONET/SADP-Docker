@@ -10,6 +10,13 @@ use Illuminate\Support\Str;
 
 class OauthSetting extends Model
 {
+    /**
+     * Login providers PADED offers. Other providers were removed and their settings deleted.
+     *
+     * @var list<string>
+     */
+    public const SUPPORTED_PROVIDERS = ['oidc', 'authentik'];
+
     use HasFactory;
 
     protected $fillable = ['provider', 'client_id', 'client_secret', 'redirect_uri', 'tenant', 'base_url', 'enabled', 'custom_label', 'scopes', 'allow_registration', 'auto_join_root_team', 'require_email_verified', 'use_pkce', 'clock_skew_seconds'];
@@ -41,16 +48,16 @@ class OauthSetting extends Model
 
     public function couldBeEnabled(): bool
     {
-        switch ($this->provider) {
-            case 'azure':
-                return filled($this->client_id) && filled($this->client_secret) && filled($this->tenant);
-            case 'authentik':
-            case 'clerk':
-            case 'oidc':
-                return filled($this->client_id) && filled($this->client_secret) && filled($this->base_url);
-            default:
-                return filled($this->client_id) && filled($this->client_secret);
-        }
+        return static::isSupported($this->provider)
+            && filled($this->client_id) && filled($this->client_secret) && filled($this->base_url);
+    }
+
+    /**
+     * PADED signs users in only through OpenID Connect and Authentik.
+     */
+    public static function isSupported(?string $provider): bool
+    {
+        return in_array($provider, self::SUPPORTED_PROVIDERS, true);
     }
 
     /**

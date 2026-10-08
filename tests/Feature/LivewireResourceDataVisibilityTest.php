@@ -24,6 +24,8 @@ beforeEach(function () {
     $this->admin = User::factory()->create();
     $this->team->members()->attach($this->member, ['role' => 'member']);
     $this->team->members()->attach($this->admin, ['role' => 'admin']);
+    // Server secrets are only revealed to users who can manage the server (platform admins).
+    makePlatformAdmin($this->admin);
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
     $this->server->settings->updateQuietly([
         'sentinel_token' => 'SENTINEL-MARKER-SECRET',
@@ -124,6 +126,20 @@ test('the dedicated Sentinel page denies members and cross-team users', function
         'environment_uuid' => $this->environment->uuid,
         'application_uuid' => $this->application->uuid,
     ]))->assertNotFound();
+});
+
+test('team admins who are not platform admins get redacted server secrets and no Sentinel page', function () {
+    $teamAdmin = User::factory()->create();
+    $this->team->members()->attach($teamAdmin, ['role' => 'admin']);
+    useSecretExposureUser($teamAdmin, $this->team);
+
+    Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])
+        ->assertSuccessful()->assertSet('sentinelToken', '')->assertSet('sentinelCustomUrl', null);
+    Livewire::test(LogDrains::class, ['server_uuid' => $this->server->uuid])
+        ->assertSuccessful()->assertSet('logDrainNewRelicLicenseKey', null)->assertSet('logDrainAxiomApiKey', null)
+        ->assertSet('logDrainCustomConfig', null)->assertSet('logDrainCustomConfigParser', null);
+    $this->get(route('server.sentinel', ['server_uuid' => $this->server->uuid]))->assertForbidden();
+    Livewire::test(Sentinel::class, ['server' => $this->server])->assertForbidden();
 });
 
 test('model serialization keeps the three secrets hidden', function () {

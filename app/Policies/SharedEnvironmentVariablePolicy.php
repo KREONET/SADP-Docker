@@ -28,7 +28,8 @@ class SharedEnvironmentVariablePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        // Shared variables are shared infrastructure, so only platform admins change them.
+        return $user->isInstanceAdmin();
     }
 
     /**
@@ -36,7 +37,7 @@ class SharedEnvironmentVariablePolicy
      */
     public function update(User $user, SharedEnvironmentVariable $sharedEnvironmentVariable): bool
     {
-        return $user->isAdminOfTeam($sharedEnvironmentVariable->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $sharedEnvironmentVariable->team_id);
     }
 
     /**
@@ -44,7 +45,7 @@ class SharedEnvironmentVariablePolicy
      */
     public function delete(User $user, SharedEnvironmentVariable $sharedEnvironmentVariable): bool
     {
-        return $user->isAdminOfTeam($sharedEnvironmentVariable->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $sharedEnvironmentVariable->team_id);
     }
 
     /**
@@ -68,6 +69,6 @@ class SharedEnvironmentVariablePolicy
      */
     public function manageEnvironment(User $user, SharedEnvironmentVariable $sharedEnvironmentVariable): bool
     {
-        return $user->isAdminOfTeam($sharedEnvironmentVariable->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $sharedEnvironmentVariable->team_id);
     }
 }

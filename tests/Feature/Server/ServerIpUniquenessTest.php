@@ -17,6 +17,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team = Team::factory()->create();
     $this->user->teams()->attach($this->team, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 
@@ -115,4 +116,21 @@ it('enforces global uniqueness not just team-scoped', function () {
         ->where('ip', '9.8.7.6')
         ->first();
     expect($teamScopedServer)->toBeNull();
+});
+
+it('does not let a team owner who is not a platform admin add a server', function () {
+    $owner = User::factory()->create();
+    $owner->teams()->attach($this->team, ['role' => 'owner']);
+    $this->actingAs($owner);
+
+    Livewire::test(ByIp::class, [
+        'private_keys' => collect([$this->privateKey]),
+        'limit_reached' => false,
+    ])
+        ->set('name', 'not-allowed')
+        ->set('ip', '10.20.30.41')
+        ->set('private_key_id', $this->privateKey->id)
+        ->call('submit');
+
+    expect(Server::where('ip', '10.20.30.41')->exists())->toBeFalse();
 });

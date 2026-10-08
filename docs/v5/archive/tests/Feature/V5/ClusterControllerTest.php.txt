@@ -32,7 +32,8 @@ it('returns fresh v5 cluster bootstrap state for realtime fallback refreshes', f
         'builder_capacity' => 0,
         'last_bootstrap_action' => 'bootstrap',
         'last_bootstrap_status' => 'running',
-        'last_bootstrap_output' => 'Starting Coolify CLI bootstrap for prod-01...',
+        'last_bootstrap_output' => 'Starting PADED
+ CLI bootstrap for prod-01...',
         'last_bootstrap_ran_at' => now(),
     ]);
 
@@ -44,7 +45,8 @@ it('returns fresh v5 cluster bootstrap state for realtime fallback refreshes', f
         ->assertJsonPath('cluster.id', $cluster->uuid)
         ->assertJsonPath('cluster.servers.0.id', $server->uuid)
         ->assertJsonPath('cluster.servers.0.lastBootstrapStatus', 'running')
-        ->assertJsonPath('cluster.servers.0.lastBootstrapOutput', 'Starting Coolify CLI bootstrap for prod-01...');
+        ->assertJsonPath('cluster.servers.0.lastBootstrapOutput', 'Starting PADED
+ CLI bootstrap for prod-01...');
 });
 
 it('shows v5 clusters with their servers on the cluster page', function () {

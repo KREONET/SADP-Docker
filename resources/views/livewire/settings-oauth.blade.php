@@ -89,22 +89,9 @@
                                 :label="__('Client secret')" autocomplete="new-password" required />
                         @endif
 
-                        @if ($provider === 'azure')
+                        @if ($provider === 'authentik')
                             <x-forms.input canGate="update" :canResource="$settings"
-                                id="oauth_settings_map.{{ $provider }}.tenant" :label="__('Tenant')" required />
-                        @endif
-
-                        @if ($provider === 'google')
-                            <x-forms.input canGate="update" :canResource="$settings"
-                                id="oauth_settings_map.{{ $provider }}.tenant"
-                                :helper="__('Optional hosted domain supplied to Google as a login hint.')"
-                                :label="__('Hosted domain')" />
-                        @endif
-
-                        @if (in_array($provider, ['authentik', 'clerk', 'zitadel', 'gitlab'], true))
-                            <x-forms.input canGate="update" :canResource="$settings"
-                                id="oauth_settings_map.{{ $provider }}.base_url" :label="__('Base URL')"
-                                :required="in_array($provider, ['authentik', 'clerk'], true)" />
+                                id="oauth_settings_map.{{ $provider }}.base_url" :label="__('Base URL')" required />
                         @endif
 
                     </div>

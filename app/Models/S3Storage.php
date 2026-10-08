@@ -6,6 +6,7 @@ use App\Rules\SafeWebhookUrl;
 use App\Rules\ValidS3BucketName;
 use App\Traits\Auditable;
 use App\Traits\HasSafeStringAttribute;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -23,6 +24,7 @@ class S3Storage extends BaseModel
 
     protected $fillable = [
         'team_id',
+        'user_id',
         'name',
         'description',
         'region',
@@ -87,14 +89,36 @@ class S3Storage extends BaseModel
     {
         $selectArray = collect($select)->concat(['id']);
 
-        return S3Storage::whereTeamId(currentTeam()->id)->select($selectArray->all())->orderBy('name');
+        return S3Storage::whereTeamId(currentTeam()->id)->visibleTo(auth()->user())->select($selectArray->all())->orderBy('name');
     }
 
     public static function ownedByCurrentTeamAPI(int $teamId, array $select = ['*'])
     {
         $selectArray = collect($select)->concat(['id']);
 
-        return S3Storage::whereTeamId($teamId)->select($selectArray->all())->orderBy('name');
+        return S3Storage::whereTeamId($teamId)->visibleTo(auth()->user())->select($selectArray->all())->orderBy('name');
+    }
+
+    /**
+     * Limit storages to the ones the user may see: platform administrators see
+     * every storage, other users only the storages they created themselves.
+     */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if ($user === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->isInstanceAdmin()) {
+            return $query;
+        }
+
+        return $query->where('user_id', $user->id);
+    }
+
+    public function isCreatedBy(User $user): bool
+    {
+        return $this->user_id !== null && (int) $this->user_id === (int) $user->id;
     }
 
     public function isUsable()
@@ -105,6 +129,11 @@ class S3Storage extends BaseModel
     public function team()
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function scheduledBackups()

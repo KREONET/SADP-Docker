@@ -73,6 +73,7 @@ class Resources extends Component
 
         $newStorage = S3Storage::where('id', $newStorageId)
             ->where('team_id', $this->storage->team_id)
+            ->visibleTo(auth()->user())
             ->first();
 
         if (! $newStorage) {
@@ -128,6 +129,7 @@ class Resources extends Component
         $newStorage = S3Storage::query()
             ->where('id', $newStorageId)
             ->where('team_id', $this->storage->team_id)
+            ->visibleTo(auth()->user())
             ->first();
 
         if (! $newStorage) {
@@ -154,6 +156,7 @@ class Resources extends Component
             ->groupBy(fn ($backup) => $backup->database_type.'-'.$backup->database_id);
 
         $allStorages = S3Storage::where('team_id', $this->storage->team_id)
+            ->visibleTo(auth()->user())
             ->orderBy('name')
             ->get(['id', 'name', 'is_usable']);
 

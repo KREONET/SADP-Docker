@@ -12,6 +12,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team = $this->user->teams()->first();
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 });
@@ -36,6 +37,23 @@ it('saves metrics collection settings from the server metrics page', function ()
     expect($settings->sentinel_metrics_refresh_rate_seconds)->toBe(15)
         ->and($settings->sentinel_metrics_history_days)->toBe(14)
         ->and($settings->sentinel_push_interval_seconds)->toBe(90);
+});
+
+it('forbids team owners who are not platform admins from saving metrics settings', function () {
+    $owner = User::factory()->create();
+    $team = $owner->teams()->first();
+    $this->actingAs($owner);
+    session(['currentTeam' => $team]);
+
+    $server = Server::factory()->create(['team_id' => $team->id]);
+    $originalRefreshRate = $server->settings->sentinel_metrics_refresh_rate_seconds;
+
+    Livewire::test(Charts::class, ['server_uuid' => $server->uuid])
+        ->set('sentinelMetricsRefreshRateSeconds', 15)
+        ->call('saveMetricsSettings')
+        ->assertNotDispatched('success');
+
+    expect($server->settings->fresh()->sentinel_metrics_refresh_rate_seconds)->toBe($originalRefreshRate);
 });
 
 it('validates metrics collection settings on the server metrics page', function () {

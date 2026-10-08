@@ -11,7 +11,9 @@ use App\Models\Server;
 use App\Models\StandaloneDocker;
 use App\Models\StandalonePostgresql;
 use App\Models\Team;
+use App\Models\User;
 use App\Support\DatabaseImport\DatabaseImportCleanup;
+use App\Support\DatabaseImport\DatabaseImportException;
 use App\Support\DatabaseImport\DatabaseImportSource;
 use App\Support\RemoteProcessCommand;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -59,6 +61,10 @@ beforeEach(function () {
 test('s3 import activity command does not contain storage key or secret', function () {
     $accessKey = 'AKIA_TEST_ACCESS_KEY_LEAK';
     $secret = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYTESTSECRET';
+    $user = User::factory()->create();
+    $user->teams()->attach($this->team, ['role' => 'member']);
+    $this->actingAs($user);
+
     $storage = S3Storage::create([
         'name' => 'Import S3',
         'region' => 'us-east-1',
@@ -68,6 +74,7 @@ test('s3 import activity command does not contain storage key or secret', functi
         'endpoint' => 'https://8.8.8.8',
         'is_usable' => true,
         'team_id' => $this->team->id,
+        'user_id' => $user->id,
     ]);
 
     $disk = Mockery::mock(FilesystemAdapter::class);
@@ -109,6 +116,10 @@ test('s3 import activity stores the cleanup names and paths but no credential va
     $accessKey = 'AKIA_STORED_CLEANUP_KEY';
     $secret = 'stored/cleanup/SECRET/value';
     $endpoint = 'https://8.8.4.4';
+    $user = User::factory()->create();
+    $user->teams()->attach($this->team, ['role' => 'member']);
+    $this->actingAs($user);
+
     $storage = S3Storage::create([
         'name' => 'Import S3',
         'region' => 'us-east-1',
@@ -118,6 +129,7 @@ test('s3 import activity stores the cleanup names and paths but no credential va
         'endpoint' => $endpoint,
         'is_usable' => true,
         'team_id' => $this->team->id,
+        'user_id' => $user->id,
     ]);
 
     $disk = Mockery::mock(FilesystemAdapter::class);
@@ -156,4 +168,35 @@ test('s3 import activity stores the cleanup names and paths but no credential va
         ->not->toContain('S3_ACCESS_KEY=');
 
     Queue::assertPushed(CoolifyTask::class, fn (CoolifyTask $job) => $job->call_event_data === $stored);
+});
+
+test('s3 import rejects a storage created by another team member', function () {
+    $user = User::factory()->create();
+    $user->teams()->attach($this->team, ['role' => 'member']);
+    $teammate = User::factory()->create();
+    $teammate->teams()->attach($this->team, ['role' => 'member']);
+    $this->actingAs($user);
+
+    $storage = S3Storage::create([
+        'name' => 'Teammate S3',
+        'region' => 'us-east-1',
+        'key' => 'teammate-key',
+        'secret' => 'teammate-secret',
+        'bucket' => 'test-bucket',
+        'endpoint' => 'https://8.8.8.8',
+        'is_usable' => true,
+        'team_id' => $this->team->id,
+        'user_id' => $teammate->id,
+    ]);
+
+    Process::fake();
+    Queue::fake();
+
+    expect(fn () => app(StartDatabaseImport::class)->handle(
+        $this->database,
+        new DatabaseImportSource('s3', path: 'backups/restore.sql', s3StorageUuid: $storage->uuid),
+        $this->team->id,
+    ))->toThrow(DatabaseImportException::class, 'S3 storage was not found');
+
+    Queue::assertNotPushed(CoolifyTask::class);
 });

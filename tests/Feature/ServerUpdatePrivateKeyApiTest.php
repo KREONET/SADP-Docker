@@ -19,6 +19,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->oldPrivateKey = createServerUpdatePrivateKeyApiKey($this->team, 'Old Key');
@@ -58,6 +59,26 @@ function postServerApi(object $test, string $bearerToken, array $payload): TestR
         'Content-Type' => 'application/json',
     ])->postJson('/api/v1/servers', $payload);
 }
+
+it('does not let a team owner who is not a platform admin update or create servers', function () {
+    $regularOwner = User::factory()->create();
+    $this->team->members()->attach($regularOwner->id, ['role' => 'owner']);
+    $token = $regularOwner->createToken('regular-write-token', ['write']);
+    $token->accessToken->forceFill(['team_id' => $this->team->id])->save();
+
+    patchServerUpdatePrivateKeyApi($this, $this->server, $token->plainTextToken, [
+        'private_key_uuid' => $this->newPrivateKey->uuid,
+    ])->assertForbidden();
+
+    postServerApi($this, $token->plainTextToken, [
+        'name' => 'Regular Owner Server',
+        'ip' => '192.0.2.56',
+        'private_key_uuid' => $this->oldPrivateKey->uuid,
+    ])->assertForbidden();
+
+    expect($this->server->fresh()->private_key_id)->toBe($this->oldPrivateKey->id)
+        ->and(Server::where('ip', '192.0.2.56')->exists())->toBeFalse();
+});
 
 it('updates the server private key from private_key_uuid', function () {
     patchServerUpdatePrivateKeyApi($this, $this->server, $this->bearerToken, [

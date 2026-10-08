@@ -122,6 +122,21 @@
             </x-application.settings-section>
         </form>
 
+        <form wire:submit="saveInternalNetworks" class="application-settings-form flex w-full min-w-0 flex-col gap-6">
+            <x-application.settings-section :title="__('Internal network')"
+                :helper="__('Clients from these ranges can open applications whose exposure is set to internal network only.')">
+                <x-slot:actions>
+                    <x-forms.button type="submit" canGate="update" :canResource="$settings">
+                        {{ __('Save') }}
+                    </x-forms.button>
+                </x-slot:actions>
+                <x-forms.textarea canGate="update" :canResource="$settings" id="internal_network_cidrs"
+                    :label="__('Allowed IP addresses and ranges')" rows="4"
+                    placeholder="10.0.0.0/8&#10;192.168.0.0/16&#10;2001:db8::/32"
+                    :helper="__('One IP address or CIDR range per line (commas also work). When the list is empty, nobody can open internal network only applications.')" />
+            </x-application.settings-section>
+        </form>
+
     <x-domain-conflict-modal :conflicts="$domainConflicts" :showModal="$showDomainConflictModal"
         confirmAction="confirmDomainUsage">
         <x-slot:consequences>

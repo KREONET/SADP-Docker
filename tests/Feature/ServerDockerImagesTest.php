@@ -71,6 +71,7 @@ it('lists images and marks the ones no container uses', function () use ($fakeDo
 });
 
 it('deletes an unused image', function () use ($fakeDocker, $nginxId, $danglingId) {
+    makePlatformAdmin($this->user);
     $fakeDocker($nginxId, $danglingId);
 
     Livewire::test(DockerImages::class, ['server_uuid' => $this->server->uuid])
@@ -81,13 +82,28 @@ it('deletes an unused image', function () use ($fakeDocker, $nginxId, $danglingI
     Process::assertRan(fn ($process) => str_contains($process->command, "docker image rm '{$danglingId}'"));
 });
 
+it('does not let a team owner who is not a platform admin delete an image', function () use ($fakeDocker, $nginxId, $danglingId) {
+    $fakeDocker($nginxId, $danglingId);
+
+    expect($this->user->can('update', $this->server))->toBeFalse();
+
+    Livewire::test(DockerImages::class, ['server_uuid' => $this->server->uuid])
+        ->call('load')
+        ->assertSet('loaded', true)
+        ->call('delete', $danglingId)
+        ->assertNotDispatched('success');
+
+    Process::assertNotRan(fn ($process) => str_contains($process->command, 'docker image rm'));
+});
+
 it('refuses to delete an image that a container is using', function () use ($fakeDocker, $nginxId, $danglingId) {
+    makePlatformAdmin($this->user);
     $fakeDocker($nginxId, $danglingId);
 
     Livewire::test(DockerImages::class, ['server_uuid' => $this->server->uuid])
         ->call('load')
         ->call('delete', 'nginx:1.27')
-        ->assertDispatched('error');
+        ->assertDispatched('error', 'This image is used by web. Remove those containers first.');
 
     Process::assertNotRan(fn ($process) => str_contains($process->command, 'docker image rm'));
 });

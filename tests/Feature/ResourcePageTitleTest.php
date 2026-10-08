@@ -85,6 +85,7 @@ it('shows the s3 storage name and description on the storage page', function () 
         'bucket' => 'coolify-backups',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $this->team->id,
+        'user_id' => $this->user->id,
         'is_usable' => true,
     ]);
 

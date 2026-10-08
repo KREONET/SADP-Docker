@@ -36,6 +36,11 @@ return [
         'cache_key' => 'coolify:service-templates-bundle',
     ],
 
+    'proxy_auth' => [
+        // Address the proxy on the Coolify host uses to reach this panel for "signed-in users only" applications.
+        'internal_url' => env('PROXY_AUTH_INTERNAL_URL', 'http://coolify:8080'),
+    ],
+
     'terminal' => [
         'protocol' => env('TERMINAL_PROTOCOL'),
         'host' => env('TERMINAL_HOST'),

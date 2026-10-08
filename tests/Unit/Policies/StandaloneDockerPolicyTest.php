@@ -41,25 +41,28 @@ it('denies user from viewing another team standalone docker', function () {
     expect($policy->view($user, $standaloneDocker))->toBeFalse();
 });
 
-it('allows admin to create standalone docker', function () {
+it('allows platform admin to create standalone docker', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $policy = new StandaloneDockerPolicy;
     expect($policy->create($user))->toBeTrue();
 });
 
-it('denies non-admin from creating standalone docker', function () {
+it('denies non platform admin from creating standalone docker', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $policy = new StandaloneDockerPolicy;
     expect($policy->create($user))->toBeFalse();
 });
 
-it('allows team admin to update standalone docker', function () {
+it('allows platform admin to update standalone docker', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $standaloneDocker = Mockery::mock(StandaloneDocker::class)->makePartial();
     $standaloneDocker->shouldReceive('getAttribute')->with('server')->andReturn((object) ['team_id' => 1]);
@@ -68,9 +71,10 @@ it('allows team admin to update standalone docker', function () {
     expect($policy->update($user, $standaloneDocker))->toBeTrue();
 });
 
-it('denies non-admin from updating standalone docker', function () {
+it('denies non platform admin from updating standalone docker', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $standaloneDocker = Mockery::mock(StandaloneDocker::class)->makePartial();
     $standaloneDocker->shouldReceive('getAttribute')->with('server')->andReturn((object) ['team_id' => 1]);
@@ -79,9 +83,10 @@ it('denies non-admin from updating standalone docker', function () {
     expect($policy->update($user, $standaloneDocker))->toBeFalse();
 });
 
-it('allows team admin to delete standalone docker', function () {
+it('allows platform admin to delete standalone docker', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $standaloneDocker = Mockery::mock(StandaloneDocker::class)->makePartial();
     $standaloneDocker->shouldReceive('getAttribute')->with('server')->andReturn((object) ['team_id' => 1]);
@@ -90,9 +95,10 @@ it('allows team admin to delete standalone docker', function () {
     expect($policy->delete($user, $standaloneDocker))->toBeTrue();
 });
 
-it('denies non-admin from deleting standalone docker', function () {
+it('denies non platform admin from deleting standalone docker', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $standaloneDocker = Mockery::mock(StandaloneDocker::class)->makePartial();
     $standaloneDocker->shouldReceive('getAttribute')->with('server')->andReturn((object) ['team_id' => 1]);
@@ -119,4 +125,33 @@ it('denies force delete for standalone docker', function () {
 
     $policy = new StandaloneDockerPolicy;
     expect($policy->forceDelete($user, $standaloneDocker))->toBeFalse();
+});
+
+it('denies a team owner who is not a platform admin from changing their team standalone docker', function () {
+    $user = Mockery::mock(User::class)->makePartial();
+    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
+
+    $standaloneDocker = Mockery::mock(StandaloneDocker::class)->makePartial();
+    $standaloneDocker->shouldReceive('getAttribute')->with('server')->andReturn((object) ['team_id' => 1]);
+
+    $policy = new StandaloneDockerPolicy;
+    expect($policy->create($user))->toBeFalse();
+    expect($policy->update($user, $standaloneDocker))->toBeFalse();
+    expect($policy->delete($user, $standaloneDocker))->toBeFalse();
+});
+
+it('denies a platform admin from changing a StandaloneDocker of a team they are not in', function () {
+    $user = Mockery::mock(User::class)->makePartial();
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
+
+    $standaloneDocker = Mockery::mock(StandaloneDocker::class)->makePartial();
+    $standaloneDocker->shouldReceive('getAttribute')->with('server')->andReturn((object) ['team_id' => 2]);
+
+    $policy = new StandaloneDockerPolicy;
+    expect($policy->update($user, $standaloneDocker))->toBeFalse();
+    expect($policy->delete($user, $standaloneDocker))->toBeFalse();
 });

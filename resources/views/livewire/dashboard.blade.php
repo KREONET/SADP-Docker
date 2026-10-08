@@ -146,7 +146,7 @@
                     <x-empty :title="__('No servers yet')"
                         :description="__('Connect infrastructure for your deployments.')"
                         icon-name="servers" size="sm">
-                        @can('createAnyResource')
+                        @can('create', App\Models\Server::class)
                             <x-slot:contents>
                                 <a href="{{ route('server.create') }}" {{ wireNavigate() }}
                                     class="button button-highlighted">

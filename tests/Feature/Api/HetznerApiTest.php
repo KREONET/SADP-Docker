@@ -346,6 +346,37 @@ describe('GET /api/v1/hetzner/networks', function () {
 });
 
 describe('POST /api/v1/servers/hetzner', function () {
+    beforeEach(function () {
+        makePlatformAdmin($this->user);
+    });
+
+    test('team owner who is not a platform admin cannot create a Hetzner server', function () {
+        $regularOwner = User::factory()->create();
+        $this->team->members()->attach($regularOwner->id, ['role' => 'owner']);
+        session(['currentTeam' => $this->team]);
+        $regularToken = $regularOwner->createToken('regular-token', ['*'])->plainTextToken;
+
+        Http::fake();
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$regularToken,
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/v1/servers/hetzner', [
+            'cloud_provider_token_id' => $this->hetznerToken->uuid,
+            'location' => 'nbg1',
+            'server_type' => 'cx11',
+            'image' => 15512617,
+            'name' => 'test-server',
+            'private_key_uuid' => $this->privateKey->uuid,
+            'enable_ipv4' => true,
+            'enable_ipv6' => true,
+        ]);
+
+        $response->assertForbidden();
+        Http::assertNothingSent();
+        $this->assertDatabaseMissing('servers', ['name' => 'test-server']);
+    });
+
     test('creates a Hetzner server', function () {
         // Mock Hetzner API calls
         Http::fake([

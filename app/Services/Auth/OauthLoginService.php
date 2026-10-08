@@ -28,6 +28,12 @@ class OauthLoginService
             ? $this->resolveOidcUser($oauthUser, $oauthSetting, $email)
             : $this->resolveOauthUser($oauthUser, $oauthSetting, $email);
 
+        if ($user->isDeactivated()) {
+            auditLog('auth.oauth_login.blocked_deactivated', ['user_id' => $user->id, 'provider' => $provider], 'warning');
+
+            throw new HttpException(403, 'This account has been deactivated.');
+        }
+
         $team = $user->currentTeam() ?? $user->teams()->first() ?? $user->recreate_personal_team();
         session(['currentTeam' => $team]);
 
@@ -74,10 +80,6 @@ class OauthLoginService
         $providerUserId = (string) $providerUserId;
         $rawClaims = is_array($oauthUser->user ?? null) ? $oauthUser->user : [];
 
-        if ($provider === 'google' && filled($oauthSetting->tenant) && data_get($rawClaims, 'hd') !== $oauthSetting->tenant) {
-            throw new HttpException(403, 'Google account is not in the configured Workspace');
-        }
-
         $identityKey = [
             'provider' => $provider,
             'issuer' => $provider,
@@ -106,7 +108,7 @@ class OauthLoginService
                 // Before OAuth identities existed, OAuth sign-in matched users by email only.
                 // Users from that time keep signing in without email delivery, so their
                 // first identity links without a provider verification claim.
-                if ($user?->created_before_oauth_identities !== true && ! $this->hasVerifiedEmail($provider, $rawClaims, $email)) {
+                if ($user?->created_before_oauth_identities !== true && ! $this->hasVerifiedEmail($rawClaims)) {
                     throw new HttpException(403, 'OAuth provider did not verify the email address');
                 }
 
@@ -140,24 +142,13 @@ class OauthLoginService
     }
 
     /**
-     * GitHub and Bitbucket select only verified primary email addresses in
-     * their Socialite providers. Microsoft Graph has no verification flag, but
-     * Entra ID only issues a user principal name in a domain the tenant
-     * verified, so only that name is trusted. GitLab confirms the primary
-     * email of an account. Other providers must return an explicit boolean
-     * verification claim in the raw provider response.
+     * OIDC and Authentik return an explicit boolean verification claim in the raw provider response.
      *
      * @param  array<string, mixed>  $rawClaims
      */
-    private function hasVerifiedEmail(string $provider, array $rawClaims, string $email): bool
+    private function hasVerifiedEmail(array $rawClaims): bool
     {
-        return match ($provider) {
-            'github', 'bitbucket' => true,
-            'discord' => data_get($rawClaims, 'verified') === true,
-            'azure' => strtolower((string) data_get($rawClaims, 'userPrincipalName')) === $email,
-            'gitlab' => filled(data_get($rawClaims, 'confirmed_at')),
-            default => data_get($rawClaims, 'email_verified') === true,
-        };
+        return data_get($rawClaims, 'email_verified') === true;
     }
 
     private function resolveOidcUser(object $oauthUser, OauthSetting $oauthSetting, string $email): User

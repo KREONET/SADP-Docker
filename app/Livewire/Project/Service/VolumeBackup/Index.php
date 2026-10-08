@@ -65,7 +65,7 @@ class Index extends Component
     {
         $this->authorize('update', $this->service);
         $this->loadSelectedSchedule($backupUuid);
-        $this->s3s = currentTeam()->s3s;
+        $this->s3s = currentTeam()->s3s()->visibleTo(auth()->user())->get();
         $this->scheduleModalOpen = true;
     }
 

@@ -13,25 +13,13 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use SocialiteProviders\Authentik\AuthentikExtendSocialite;
-use SocialiteProviders\Azure\AzureExtendSocialite;
-use SocialiteProviders\Clerk\ClerkExtendSocialite;
-use SocialiteProviders\Discord\DiscordExtendSocialite;
-use SocialiteProviders\Google\GoogleExtendSocialite;
-use SocialiteProviders\Infomaniak\InfomaniakExtendSocialite;
 use SocialiteProviders\Manager\SocialiteWasCalled;
-use SocialiteProviders\Zitadel\ZitadelExtendSocialite;
 
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
         SocialiteWasCalled::class => [
-            AzureExtendSocialite::class.'@handle',
             AuthentikExtendSocialite::class.'@handle',
-            ClerkExtendSocialite::class.'@handle',
-            DiscordExtendSocialite::class.'@handle',
-            GoogleExtendSocialite::class.'@handle',
-            InfomaniakExtendSocialite::class.'@handle',
-            ZitadelExtendSocialite::class.'@handle',
         ],
     ];
 

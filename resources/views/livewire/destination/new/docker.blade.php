@@ -1,4 +1,4 @@
-@can('createAnyResource')
+@can('create', App\Models\StandaloneDocker::class)
     <div class="w-full">
         <form class="flex w-full flex-col gap-4" wire:submit="submit">
             <div class="grid gap-4 sm:grid-cols-2">

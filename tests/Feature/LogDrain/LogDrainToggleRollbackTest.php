@@ -14,6 +14,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team = $this->user->teams()->first();
+    makePlatformAdmin($this->user);
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
 
     $this->actingAs($this->user);

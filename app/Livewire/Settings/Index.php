@@ -56,6 +56,9 @@ class Index extends Component
     /** Pending logo upload; stored by uploadLogo(). */
     public $logo;
 
+    /** IP addresses and CIDR ranges allowed to open "internal network only" applications; saved by saveInternalNetworks(). */
+    public ?string $internal_network_cidrs = null;
+
     public array $domainConflicts = [];
 
     public bool $showDomainConflictModal = false;
@@ -96,6 +99,26 @@ class Index extends Component
         $this->default_locale = InterfaceLocale::instanceDefault();
         $this->dev_helper_version = $this->settings->dev_helper_version;
         $this->brand_name = $this->settings->brand_name;
+        $this->internal_network_cidrs = $this->settings->internal_network_cidrs;
+    }
+
+    public function saveInternalNetworks(): void
+    {
+        $this->authorize('update', $this->settings);
+        $this->validate(['internal_network_cidrs' => ['nullable', 'string', 'max:5000']]);
+
+        $ranges = parseNetworkRanges($this->internal_network_cidrs);
+        $invalid = array_values(array_filter($ranges, fn (string $range) => ! isValidIpOrCidr($range)));
+        if ($invalid !== []) {
+            $this->addError('internal_network_cidrs', __('Not an IP address or CIDR range: :ranges', ['ranges' => implode(', ', $invalid)]));
+
+            return;
+        }
+
+        $this->settings->update(['internal_network_cidrs' => $ranges === [] ? null : implode("\n", $ranges)]);
+        $this->internal_network_cidrs = $this->settings->internal_network_cidrs;
+        auditLog('ui.instance.internal_network_ranges_updated', ['ranges' => $ranges]);
+        $this->dispatch('success', __('Internal network ranges saved. Restart internal network only applications to apply them.'));
     }
 
     public function saveBranding()

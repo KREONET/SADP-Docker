@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ApplicationDeploymentStatus;
+use App\Enums\ApplicationExposureMode;
 use App\Enums\BuildPackTypes;
 use App\Enums\ProxyTypes;
 use App\Exceptions\DeploymentException;
@@ -127,6 +128,7 @@ use Symfony\Component\Yaml\Yaml;
         'is_http_basic_auth_enabled' => ['type' => 'boolean', 'description' => 'HTTP Basic Authentication enabled.'],
         'http_basic_auth_username' => ['type' => 'string', 'nullable' => true, 'description' => 'Username for HTTP Basic Authentication'],
         'http_basic_auth_password' => ['type' => 'string', 'nullable' => true, 'description' => 'Password for HTTP Basic Authentication'],
+        'exposure_mode' => ['type' => 'string', 'description' => 'Who can reach the application through the proxy.', 'enum' => ['public', 'internal', 'login', 'private']],
         new OA\Property(property: 'settings', ref: '#/components/schemas/ApplicationSetting'),
     ]
 )]
@@ -222,6 +224,7 @@ class Application extends BaseModel
         'is_http_basic_auth_enabled',
         'http_basic_auth_username',
         'http_basic_auth_password',
+        'exposure_mode',
         'connect_to_docker_network',
         'force_domain_override',
         'is_container_label_escape_enabled',
@@ -655,6 +658,28 @@ class Application extends BaseModel
         }
 
         return false;
+    }
+
+    public function exposureMode(): ApplicationExposureMode
+    {
+        return ApplicationExposureMode::tryFrom((string) $this->exposure_mode) ?? ApplicationExposureMode::Public;
+    }
+
+    /**
+     * Every host the application answers on: its domains and its preview deployment domains.
+     *
+     * @return Collection<int, string>
+     */
+    public function exposureHosts(): Collection
+    {
+        return collect([$this->fqdn])
+            ->merge($this->previews()->pluck('fqdn'))
+            ->filter()
+            ->flatMap(fn (string $fqdns) => explode(',', $fqdns))
+            ->map(fn (string $domain) => strtolower((string) parse_url(trim($domain), PHP_URL_HOST)))
+            ->filter()
+            ->unique()
+            ->values();
     }
 
     public function isForceHttpsEnabled()

@@ -30,6 +30,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
 
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
@@ -285,6 +286,26 @@ it('prevents members from starting a Vultr instance', function () {
     $member = User::factory()->create();
     $this->team->members()->attach($member->id, ['role' => 'member']);
     $this->actingAs($member);
+    session(['currentTeam' => $this->team]);
+
+    Http::fake([
+        'https://api.vultr.com/v2/instances/instance-1/start' => Http::response([], 204),
+    ]);
+
+    Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])
+        ->call('startVultrInstance')
+        ->assertDispatched('error');
+
+    expect($this->server->fresh()->vultr_instance_status)->toBe('stopped');
+    Http::assertNothingSent();
+});
+
+it('prevents team owners who are not platform admins from starting a Vultr instance', function () {
+    $this->server->update(['vultr_instance_status' => 'stopped']);
+
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $this->actingAs($owner);
     session(['currentTeam' => $this->team]);
 
     Http::fake([

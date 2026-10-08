@@ -11,6 +11,7 @@ use App\Models\Server;
 use App\Models\StandaloneDocker;
 use App\Models\StandalonePostgresql;
 use App\Models\Team;
+use App\Models\User;
 use App\Support\DatabaseImport\DatabaseImportSource;
 use App\Support\RemoteProcessCommand;
 use App\Support\ResourceStartActivity;
@@ -127,6 +128,10 @@ test('uploaded backups use the same preparation as server backups', function (st
 ]);
 
 test('s3 backups are prepared in the s3 helper and streamed into the database container', function () {
+    $user = User::factory()->create();
+    $user->teams()->attach($this->team, ['role' => 'member']);
+    $this->actingAs($user);
+
     $storage = S3Storage::create([
         'name' => 'Import S3',
         'region' => 'us-east-1',
@@ -136,6 +141,7 @@ test('s3 backups are prepared in the s3 helper and streamed into the database co
         'endpoint' => 'https://8.8.8.8',
         'is_usable' => true,
         'team_id' => $this->team->id,
+        'user_id' => $user->id,
     ]);
     $disk = Mockery::mock(FilesystemAdapter::class);
     $disk->shouldReceive('exists')->once()->with('backups/restore.sql.xz')->andReturn(true);

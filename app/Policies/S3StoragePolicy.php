@@ -20,7 +20,7 @@ class S3StoragePolicy
      */
     public function view(User $user, S3Storage $storage): bool
     {
-        return $user->teams->contains('id', $storage->team_id);
+        return $this->canManage($user, $storage);
     }
 
     /**
@@ -28,7 +28,8 @@ class S3StoragePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        // Every user may add their own storage; it stays private to its creator.
+        return $user->currentTeam() !== null;
     }
 
     /**
@@ -36,7 +37,7 @@ class S3StoragePolicy
      */
     public function update(User $user, S3Storage $storage): bool
     {
-        return $user->teams->contains('id', $storage->team_id) && $user->isAdminOfTeam($storage->team_id);
+        return $this->canManage($user, $storage);
     }
 
     /**
@@ -44,7 +45,7 @@ class S3StoragePolicy
      */
     public function delete(User $user, S3Storage $storage): bool
     {
-        return $user->teams->contains('id', $storage->team_id) && $user->isAdminOfTeam($storage->team_id);
+        return $this->canManage($user, $storage);
     }
 
     /**
@@ -68,6 +69,19 @@ class S3StoragePolicy
      */
     public function validateConnection(User $user, S3Storage $storage): bool
     {
-        return $user->teams->contains('id', $storage->team_id) && $user->isAdminOfTeam($storage->team_id);
+        return $this->canManage($user, $storage);
+    }
+
+    /**
+     * Platform administrators manage every storage of their teams; other users
+     * only the storages they created.
+     */
+    private function canManage(User $user, S3Storage $storage): bool
+    {
+        if (! $user->teams->contains('id', $storage->team_id)) {
+            return false;
+        }
+
+        return $user->isInstanceAdmin() || $storage->isCreatedBy($user);
     }
 }

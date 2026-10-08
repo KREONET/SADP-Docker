@@ -259,7 +259,8 @@ rollback_postgres() {
         rm -f "$OVERRIDE_FILE"
     fi
 
-    log "Starting Coolify stack with rollback database volume."
+    log "Starting PADED
+ stack with rollback database volume."
     start_stack "$CURRENT_COOLIFY_IMAGE_TAG" >>"$LOGFILE" 2>&1 || fail "Could not start Coolify stack after rollback. See ${LOGFILE}."
 
     log "Rollback completed successfully."
@@ -276,7 +277,8 @@ upgrade_postgres() {
     TARGET_MOUNT_PATH=$(mount_path_for_major "$TARGET_MAJOR")
     validate_common_requirements
 
-    log "Starting Coolify internal PostgreSQL major upgrade."
+    log "Starting PADED
+ internal PostgreSQL major upgrade."
     log "Target major: ${TARGET_MAJOR}"
     log "Target image: ${TARGET_IMAGE}"
     log "Target volume: ${TARGET_VOLUME}"
@@ -377,7 +379,8 @@ upgrade_postgres() {
     log "Stopping old coolify-db container. Previous volume '${PREVIOUS_VOLUME}' will be kept for rollback."
     docker rm -f coolify-db >>"$LOGFILE" 2>&1 || true
 
-    log "Starting Coolify stack with PostgreSQL ${TARGET_MAJOR}."
+    log "Starting PADED
+ stack with PostgreSQL ${TARGET_MAJOR}."
     start_stack "$CURRENT_COOLIFY_IMAGE_TAG" >>"$LOGFILE" 2>&1 || fail "Could not start Coolify stack with upgraded PostgreSQL. See ${LOGFILE}."
 
     log "Coolify internal PostgreSQL upgrade completed successfully."

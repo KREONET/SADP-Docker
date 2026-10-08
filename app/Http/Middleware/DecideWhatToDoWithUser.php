@@ -12,6 +12,14 @@ class DecideWhatToDoWithUser
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if (auth()->user()?->isDeactivated()) {
+            auth()->guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors(['email' => __('This account has been deactivated.')]);
+        }
+
         if (auth()?->user()?->teams?->count() === 0) {
             $currentTeam = auth()->user()?->recreate_personal_team();
             refreshSession($currentTeam);

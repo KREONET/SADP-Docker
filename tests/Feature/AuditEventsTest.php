@@ -941,6 +941,8 @@ test('updating team settings records an audit event', function () {
 });
 
 test('updating an environment variable records an event without its value', function () {
+    makePlatformAdmin($this->user);
+
     $variable = SharedEnvironmentVariable::create([
         'team_id' => $this->team->id,
         'type' => 'team',

@@ -24,6 +24,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
 
     session(['currentTeam' => $this->team]);
 
@@ -119,6 +120,26 @@ it('only accepts a private key from the current team when adding a server', func
         ->assertHasNoErrors();
 
     expect(Server::where('ip', '192.0.2.61')->value('private_key_id'))->toBe($this->existingPrivateKey->id);
+});
+
+it('does not let a team owner who is not a platform admin add a server', function () {
+    $regularOwner = User::factory()->create();
+    $this->team->members()->attach($regularOwner->id, ['role' => 'owner']);
+    $this->actingAs($regularOwner);
+    session(['currentTeam' => $this->team]);
+
+    Livewire::test(ByIp::class, [
+        'private_keys' => collect([$this->existingPrivateKey]),
+        'limit_reached' => false,
+    ])
+        ->set('ip', '192.0.2.62')
+        ->set('private_key_id', $this->existingPrivateKey->id)
+        ->call('submit')
+        ->assertDispatched('error');
+
+    expect($regularOwner->can('create', Server::class))->toBeFalse();
+
+    expect(Server::where('ip', '192.0.2.62')->exists())->toBeFalse();
 });
 
 it('ssh configuration only uses a private key from the server team', function () {

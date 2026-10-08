@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\User\DeleteUserAccount;
+use App\Jobs\DeleteResourceJob;
 use App\Livewire\Profile\Index as ProfileIndex;
 use App\Models\Application;
 use App\Models\Environment;
@@ -13,6 +14,7 @@ use App\Models\StandaloneDocker;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Once;
 use Livewire\Livewire;
@@ -20,6 +22,7 @@ use Livewire\Livewire;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Bus::fake([DeleteResourceJob::class]);
     InstanceSettings::forceCreate(['id' => 0]);
     Once::flush();
     $this->rootTeam = Team::factory()->create(['id' => 0, 'name' => 'Root Team']);

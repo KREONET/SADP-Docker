@@ -111,6 +111,12 @@ test('StandaloneDockerPolicy denies update for cross-team user', function () {
     expect($this->userA->can('update', $this->destinationB))->toBeFalse();
 });
 
-test('StandaloneDockerPolicy allows update for same-team user', function () {
+test('StandaloneDockerPolicy denies update for same-team owner who is not a platform admin', function () {
+    expect($this->userA->can('update', $this->destinationA))->toBeFalse();
+});
+
+test('StandaloneDockerPolicy allows update for platform admin', function () {
+    makePlatformAdmin($this->userA);
+
     expect($this->userA->can('update', $this->destinationA))->toBeTrue();
 });

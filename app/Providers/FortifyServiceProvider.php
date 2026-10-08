@@ -58,7 +58,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::loginView(function () {
             $settings = instanceSettings();
-            $enabled_oauth_providers = OauthSetting::where('enabled', true)->get();
+            $enabled_oauth_providers = OauthSetting::where('enabled', true)->whereIn('provider', OauthSetting::SUPPORTED_PROVIDERS)->get();
             $users = User::count();
             if ($users == 0 && $settings->isPasswordRegistrationAllowed()) {
                 // If there are no users and password registration is allowed, redirect to registration.
@@ -79,6 +79,13 @@ class FortifyServiceProvider extends ServiceProvider
                 $user &&
                 Hash::check($request->password, $user->password)
             ) {
+                if ($user->isDeactivated()) {
+                    auditLog('auth.password_login.blocked_deactivated', ['user_id' => $user->id], 'warning');
+
+                    throw ValidationException::withMessages([
+                        Fortify::username() => __('This account has been deactivated.'),
+                    ]);
+                }
                 if (! instanceSettings()->isPasswordLoginAllowedFor($user)) {
                     auditLog('auth.password_login.blocked_sso_only', ['user_id' => $user->id], 'warning');
 

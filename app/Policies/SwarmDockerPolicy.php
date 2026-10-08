@@ -28,7 +28,8 @@ class SwarmDockerPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        // Destinations are shared infrastructure, so only platform admins change them.
+        return $user->isInstanceAdmin();
     }
 
     /**
@@ -36,7 +37,7 @@ class SwarmDockerPolicy
      */
     public function update(User $user, SwarmDocker $swarmDocker): bool
     {
-        return $user->isAdminOfTeam($swarmDocker->server->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $swarmDocker->server->team_id);
     }
 
     /**
@@ -44,7 +45,7 @@ class SwarmDockerPolicy
      */
     public function delete(User $user, SwarmDocker $swarmDocker): bool
     {
-        return $user->isAdminOfTeam($swarmDocker->server->team_id);
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $swarmDocker->server->team_id);
     }
 
     /**

@@ -34,7 +34,7 @@ class SettingsOauth extends Component
 
     private function validationRules(?string $provider = null): array
     {
-        $rules = OauthSetting::all()->reduce(function ($carry, $setting) use ($provider) {
+        $rules = OauthSetting::query()->whereIn('provider', OauthSetting::SUPPORTED_PROVIDERS)->get()->reduce(function ($carry, $setting) use ($provider) {
             if ($provider !== null && $setting->provider !== $provider) {
                 return $carry;
             }
@@ -70,7 +70,7 @@ class SettingsOauth extends Component
         $this->settings = instanceSettings();
         $this->selectedProvider = $provider;
         $this->disable_registration_when_oauth_enabled = (bool) $this->settings->disable_registration_when_oauth_enabled;
-        $this->oauth_settings_map = OauthSetting::all()
+        $this->oauth_settings_map = OauthSetting::query()->whereIn('provider', OauthSetting::SUPPORTED_PROVIDERS)->get()
             ->sortBy(fn (OauthSetting $setting): string => $setting->isOidc() ? '' : $setting->provider)
             ->reduce(function ($carry, $setting) {
                 $carry[$setting->provider] = $this->oauthSettingToArray($setting);

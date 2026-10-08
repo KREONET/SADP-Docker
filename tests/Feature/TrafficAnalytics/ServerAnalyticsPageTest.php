@@ -86,6 +86,7 @@ it('does not render a skeleton placeholder for a disabled scoped server', functi
 
 it('saves traffic analytics settings from the server analytics page', function () {
     Queue::fake();
+    makePlatformAdmin($this->user);
 
     $server = Server::factory()->create(['team_id' => $this->team->id]);
     $server->settings->is_traffic_analytics_enabled = false;

@@ -9,6 +9,9 @@
         @if ($server->isFunctional())
             <div class="w-full">
                 <livewire:server.proxy :server="$server" />
+                @if (in_array($server->proxyType(), [\App\Enums\ProxyTypes::TRAEFIK->value, \App\Enums\ProxyTypes::CADDY->value], true))
+                    <livewire:server.proxy.wildcard-certificate :server="$server" />
+                @endif
             </div>
         @else
             <div class="application-settings-form w-full">

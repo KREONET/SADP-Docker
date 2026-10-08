@@ -274,6 +274,8 @@ it('shows ssl mode even when ssl is disabled, as a disabled control', function (
 });
 
 it('does not clobber server form text inputs when sentinel restarts', function () {
+    makePlatformAdmin($this->user);
+
     $server = Server::factory()->create([
         'team_id' => $this->team->id,
         'name' => 'persisted-server-name',

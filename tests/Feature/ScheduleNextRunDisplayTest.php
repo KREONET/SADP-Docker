@@ -71,6 +71,7 @@ function nextRunDisplaySetCleanupNextRun(Server $server, ?Carbon $nextRunAt): vo
 }
 
 it('shows the next Docker cleanup in the server timezone and refreshes it after saving a new frequency', function () {
+    makePlatformAdmin($this->user);
     $this->server->settings->update(['docker_cleanup_frequency' => '0 2 * * *']);
 
     Livewire::test(DockerCleanup::class, ['server_uuid' => $this->server->uuid])

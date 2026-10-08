@@ -18,6 +18,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
 
     $this->actingAs($this->user);

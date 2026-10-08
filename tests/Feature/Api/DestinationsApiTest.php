@@ -31,6 +31,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->bearerToken = destinationsApiToken($this->user, $this->team, ['*']);
@@ -145,6 +146,20 @@ describe('POST /api/v1/servers/{server_uuid}/destinations', function () {
 
         $response->assertForbidden();
         expect(StandaloneDocker::where('server_id', $this->server->id)->where('network', 'member-network')->exists())->toBeFalse();
+    });
+
+    test('rejects create requests from team owners who are not platform admins', function () {
+        $teamOwner = User::factory()->create();
+        $this->team->members()->attach($teamOwner->id, ['role' => 'owner']);
+        $ownerToken = destinationsApiToken($teamOwner, $this->team, ['*']);
+
+        $response = $this->withHeaders(destinationsApiHeaders($ownerToken))
+            ->postJson("/api/v1/servers/{$this->server->uuid}/destinations", [
+                'network' => 'team-owner-network',
+            ]);
+
+        $response->assertForbidden();
+        expect(StandaloneDocker::where('server_id', $this->server->id)->where('network', 'team-owner-network')->exists())->toBeFalse();
     });
 
     test('rejects non-json requests before creating a destination', function () {

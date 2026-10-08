@@ -7,6 +7,8 @@ use App\Actions\User\DeleteUserAccount;
 use App\Actions\User\DeleteUserResources;
 use App\Actions\User\DeleteUserServers;
 use App\Actions\User\DeleteUserTeams;
+use App\Models\Application;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -411,9 +413,9 @@ class AdminDeleteUser extends Command
             foreach ($servers as $server) {
                 $resources = $server->definedResources();
                 foreach ($resources as $resource) {
-                    if ($resource instanceof \App\Models\Application) {
+                    if ($resource instanceof Application) {
                         $allApplications->push($resource);
-                    } elseif ($resource instanceof \App\Models\Service) {
+                    } elseif ($resource instanceof Service) {
                         $allServices->push($resource);
                     } else {
                         $allDatabases->push($resource);

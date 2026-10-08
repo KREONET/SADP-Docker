@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Shared\MigrateResourceToDestination;
+use App\Enums\ApplicationExposureMode;
 use App\Enums\BuildPackTypes;
 use App\Enums\RedirectTypes;
 use App\Enums\StaticImageTypes;
@@ -152,6 +153,7 @@ function sharedDataApplications()
         'noindex_domains' => 'array|nullable',
         'noindex_domains.*' => 'string',
         'redirect' => Rule::enum(RedirectTypes::class),
+        'exposure_mode' => Rule::enum(ApplicationExposureMode::class),
         'git_commit_sha' => ['string', 'regex:/^[a-zA-Z0-9][a-zA-Z0-9._\-\/]*$/'],
         'docker_registry_image_name' => ValidationPatterns::dockerImageNameRules(),
         'docker_registry_image_tag' => ValidationPatterns::dockerImageTagRules(),

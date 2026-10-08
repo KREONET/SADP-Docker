@@ -72,6 +72,35 @@ describe('GET /api/v1/digitalocean/regions', function () {
 });
 
 describe('POST /api/v1/servers/digitalocean', function () {
+    beforeEach(function () {
+        makePlatformAdmin($this->user);
+    });
+
+    test('team owner who is not a platform admin cannot create a DigitalOcean droplet server', function () {
+        $regularOwner = User::factory()->create();
+        $this->team->members()->attach($regularOwner->id, ['role' => 'owner']);
+        session(['currentTeam' => $this->team]);
+        $regularToken = $regularOwner->createToken('regular-token', ['*'])->plainTextToken;
+
+        Http::fake();
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$regularToken,
+            'Content-Type' => 'application/json',
+        ])->postJson('/api/v1/servers/digitalocean', [
+            'cloud_provider_token_id' => $this->digitalOceanToken->uuid,
+            'region' => 'nyc1',
+            'size' => 's-1vcpu-1gb',
+            'image' => 'ubuntu-24-04-x64',
+            'name' => 'test-server',
+            'private_key_uuid' => $this->privateKey->uuid,
+        ]);
+
+        $response->assertForbidden();
+        Http::assertNothingSent();
+        $this->assertDatabaseMissing('servers', ['name' => 'test-server']);
+    });
+
     test('creates a DigitalOcean droplet server', function () {
         Http::fake([
             'https://api.digitalocean.com/v2/account/keys' => Http::response([

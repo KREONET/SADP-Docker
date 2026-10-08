@@ -865,7 +865,7 @@ it('enables and disables volume backups from the title action', function () {
 
 it('enables and disables volume S3 backups from the S3 title action', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $s3Storage = S3Storage::create([
         'name' => 'Volume backups',
@@ -875,6 +875,7 @@ it('enables and disables volume S3 backups from the S3 title action', function (
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $backup = $volume->scheduledBackups()->create([
@@ -903,7 +904,7 @@ it('enables and disables volume S3 backups from the S3 title action', function (
 
 it('persists S3 settings the first time when a volume backup schedule does not exist yet', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $s3Storage = S3Storage::create([
         'name' => 'Volume backups',
@@ -913,6 +914,7 @@ it('persists S3 settings the first time when a volume backup schedule does not e
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
 
@@ -935,7 +937,7 @@ it('persists S3 settings the first time when a volume backup schedule does not e
 
 it('persists the selected S3 storage when a volume backup schedule does not exist yet', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $s3Storage = S3Storage::create([
         'name' => 'Volume backups',
@@ -945,6 +947,7 @@ it('persists the selected S3 storage when a volume backup schedule does not exis
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
 
@@ -1008,7 +1011,7 @@ it('allows team owners to edit volume backup retention settings', function () {
 
 it('does not enable S3 backups when another volume backup setting is invalid', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $s3Storage = S3Storage::create([
         'name' => 'Volume backups',
@@ -1018,6 +1021,7 @@ it('does not enable S3 backups when another volume backup setting is invalid', f
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $backup = $volume->scheduledBackups()->create([
@@ -1042,7 +1046,7 @@ it('does not enable S3 backups when another volume backup setting is invalid', f
 
 it('does not change S3 storage when another volume backup setting is invalid', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $firstS3Storage = S3Storage::create([
         'name' => 'First storage',
@@ -1052,6 +1056,7 @@ it('does not change S3 storage when another volume backup setting is invalid', f
         'bucket' => 'first-bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $secondS3Storage = S3Storage::create([
@@ -1062,6 +1067,7 @@ it('does not change S3 storage when another volume backup setting is invalid', f
         'bucket' => 'second-bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $backup = $volume->scheduledBackups()->create([
@@ -1190,9 +1196,37 @@ it('only accepts a usable S3 storage owned by the current team', function () {
     expect(ScheduledVolumeBackup::query()->count())->toBe(0);
 });
 
-it('saves the database-style S3 backup controls immediately', function () {
+it('does not accept an S3 storage created by another team member', function () {
     $team = Team::factory()->create();
     signInForVolumeBackups($this, $team);
+    [$application, $volume] = createVolumeBackupApplication($team);
+    $teammate = User::factory()->create();
+    $teammate->teams()->attach($team, ['role' => 'member']);
+    $teammateStorage = S3Storage::create([
+        'name' => 'Teammate S3',
+        'region' => 'us-east-1',
+        'key' => 'key',
+        'secret' => 'secret',
+        'bucket' => 'bucket',
+        'endpoint' => 'https://s3.example.com',
+        'team_id' => $team->id,
+        'user_id' => $teammate->id,
+        'is_usable' => true,
+    ]);
+
+    Livewire::test(VolumeBackups::class, ['storage' => $volume, 'resource' => $application])
+        ->set('frequency', 'daily')
+        ->set('saveToS3', true)
+        ->set('s3StorageId', $teammateStorage->id)
+        ->call('save')
+        ->assertHasErrors('s3StorageId');
+
+    expect(ScheduledVolumeBackup::query()->count())->toBe(0);
+});
+
+it('saves the database-style S3 backup controls immediately', function () {
+    $team = Team::factory()->create();
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $s3Storage = S3Storage::create([
         'name' => 'Volume backups',
@@ -1202,6 +1236,7 @@ it('saves the database-style S3 backup controls immediately', function () {
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $volume->scheduledBackups()->create([
@@ -1236,7 +1271,7 @@ it('saves the database-style S3 backup controls immediately', function () {
 
 it('saves the selected volume backup S3 storage immediately while S3 is disabled', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $firstS3Storage = S3Storage::create([
         'name' => 'First storage',
@@ -1246,6 +1281,7 @@ it('saves the selected volume backup S3 storage immediately while S3 is disabled
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $secondS3Storage = S3Storage::create([
@@ -1256,6 +1292,7 @@ it('saves the selected volume backup S3 storage immediately while S3 is disabled
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $volume->scheduledBackups()->create([
@@ -1276,7 +1313,7 @@ it('saves the selected volume backup S3 storage immediately while S3 is disabled
 
 it('saves the archive behavior immediately and the local copy with the S3 form', function () {
     $team = Team::factory()->create();
-    signInForVolumeBackups($this, $team);
+    $user = signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
     $s3Storage = S3Storage::create([
         'name' => 'Volume backups',
@@ -1286,6 +1323,7 @@ it('saves the archive behavior immediately and the local copy with the S3 form',
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $team->id,
+        'user_id' => $user->id,
         'is_usable' => true,
     ]);
     $backup = $volume->scheduledBackups()->create([

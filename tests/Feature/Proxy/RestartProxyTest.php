@@ -18,11 +18,15 @@ beforeEach(function () {
     InstanceSettings::forceCreate(['id' => 0]);
 });
 
-function setupProxyUser(string $role): array
+function setupProxyUser(string $role, bool $platformAdmin = false): array
 {
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $user->teams()->attach($team, ['role' => $role]);
+
+    if ($platformAdmin) {
+        makePlatformAdmin($user);
+    }
 
     $server = Server::factory()->create([
         'team_id' => $team->id,
@@ -61,8 +65,8 @@ test('member cannot see proxy restart and stop buttons', function () {
         ->assertDontSee('Stop Proxy');
 });
 
-test('admin can see proxy restart and stop buttons', function () {
-    [$user, $team, $server] = setupProxyUser('admin');
+test('platform admin can see proxy restart and stop buttons', function () {
+    [$user, $team, $server] = setupProxyUser('admin', platformAdmin: true);
     makeServerProxyRunning($server);
 
     $mock = Mockery::mock($server)->makePartial();
@@ -76,8 +80,23 @@ test('admin can see proxy restart and stop buttons', function () {
         ->assertSee('Stop Proxy');
 });
 
-test('running proxy shows pending configuration warning when saved settings differ from applied settings', function () {
+test('team admin who is not a platform admin cannot see proxy restart and stop buttons', function () {
     [$user, $team, $server] = setupProxyUser('admin');
+    makeServerProxyRunning($server);
+
+    $mock = Mockery::mock($server)->makePartial();
+    $mock->shouldReceive('proxySet')->andReturn(true);
+
+    $this->actingAs($user);
+    session(['currentTeam' => $team]);
+
+    Livewire::test('server.navbar', ['server' => $mock])
+        ->assertDontSee('Restart Proxy')
+        ->assertDontSee('Stop Proxy');
+});
+
+test('running proxy shows pending configuration warning when saved settings differ from applied settings', function () {
+    [$user, $team, $server] = setupProxyUser('admin', platformAdmin: true);
     makeServerProxyRunning($server);
     $server->proxy->last_saved_settings = 'saved-hash';
     $server->proxy->last_applied_settings = 'applied-hash';
@@ -155,8 +174,8 @@ test('navbar tells the sidebar when the proxy is not running', function () {
         ->assertDispatched('proxy-configuration-state-changed', proxyNotRunning: true);
 });
 
-test('admin can stop a proxy while it is starting', function () {
-    [$user, $team, $server] = setupProxyUser('admin');
+test('platform admin can stop a proxy while it is starting', function () {
+    [$user, $team, $server] = setupProxyUser('admin', platformAdmin: true);
 
     $server->proxy->status = 'starting';
     $server->proxy->type = ProxyTypes::TRAEFIK->value;
@@ -193,7 +212,7 @@ test('member cannot see start proxy button', function () {
 });
 
 test('starting a proxy records a team audit event', function () {
-    [$user, $team, $server] = setupProxyUser('admin');
+    [$user, $team, $server] = setupProxyUser('admin', platformAdmin: true);
     $activity = Activity::create([
         'description' => 'proxy start',
         'properties' => ['team_id' => $team->id],

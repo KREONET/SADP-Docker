@@ -67,6 +67,7 @@ beforeEach(function () {
         'bucket' => 'test-bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $this->team->id,
+        'user_id' => $this->user->id,
         'is_usable' => true,
     ]);
 });
@@ -284,6 +285,31 @@ describe('POST /api/v1/databases/{uuid}/backups', function () {
                 'frequency' => '0 2 * * 0',
                 'save_s3' => true,
                 's3_storage_uuid' => $otherS3->uuid,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['s3_storage_uuid']);
+    });
+    test('rejects s3_storage_uuid created by another team member', function () {
+        $teammate = User::factory()->create();
+        $this->team->members()->attach($teammate->id, ['role' => 'member']);
+        $teammateS3 = S3Storage::create([
+            'name' => 'teammate-s3',
+            'region' => 'us-east-1',
+            'key' => 'teammate-key',
+            'secret' => 'teammate-secret',
+            'bucket' => 'teammate-bucket',
+            'endpoint' => 'https://s3.example.com',
+            'team_id' => $this->team->id,
+            'user_id' => $teammate->id,
+            'is_usable' => true,
+        ]);
+
+        $response = $this->withHeaders(backupHeaders())
+            ->postJson("/api/v1/databases/{$this->database->uuid}/backups", [
+                'frequency' => '0 2 * * 0',
+                'save_s3' => true,
+                's3_storage_uuid' => $teammateS3->uuid,
             ]);
 
         $response->assertStatus(422);

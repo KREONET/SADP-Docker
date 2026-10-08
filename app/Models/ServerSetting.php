@@ -135,6 +135,12 @@ class ServerSetting extends Model
         'docker_version_checked_at',
         'compose_version',
         'compose_version_checked_at',
+        'is_dns_challenge_enabled',
+        'dns_challenge_domain',
+        'dns_challenge_provider',
+        'dns_challenge_credentials',
+        'dns_challenge_email',
+        'dns_challenge_resolvers',
     ];
 
     /**
@@ -145,6 +151,7 @@ class ServerSetting extends Model
      */
     protected $attributes = [
         'is_traffic_analytics_enabled' => false,
+        'is_dns_challenge_enabled' => false,
     ];
 
     protected $casts = [
@@ -172,6 +179,8 @@ class ServerSetting extends Model
         'backup_compression_cpu_percentage' => 'integer',
         'docker_cleanup_next_run_at' => 'datetime',
         'server_disk_usage_notification_interval_hours' => 'integer',
+        'is_dns_challenge_enabled' => 'boolean',
+        'dns_challenge_credentials' => 'encrypted:array',
     ];
 
     /**
@@ -188,6 +197,7 @@ class ServerSetting extends Model
         'logdrain_custom_config',
         'logdrain_custom_config_parser',
         'geoip_maxmind_license_key',
+        'dns_challenge_credentials',
     ];
 
     protected static function booted()

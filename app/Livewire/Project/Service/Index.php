@@ -128,7 +128,7 @@ class Index extends Component
                 $this->serviceApplication = null;
                 $this->resourceType = 'database';
                 $this->initializeDatabaseProperties();
-                $this->s3s = currentTeam()->s3s;
+                $this->s3s = currentTeam()->s3s()->visibleTo(auth()->user())->get();
 
                 return;
             }
@@ -146,7 +146,7 @@ class Index extends Component
                 $this->serviceApplication = $serviceApplication;
                 $this->resourceType = 'application';
                 $this->initializeApplicationProperties();
-                $this->s3s = currentTeam()->s3s;
+                $this->s3s = currentTeam()->s3s()->visibleTo(auth()->user())->get();
 
                 return;
             }
@@ -189,7 +189,7 @@ class Index extends Component
                 $this->serviceDatabase->getFilesFromServer();
                 $this->initializeDatabaseProperties();
             }
-            $this->s3s = currentTeam()->s3s;
+            $this->s3s = currentTeam()->s3s()->visibleTo(auth()->user())->get();
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

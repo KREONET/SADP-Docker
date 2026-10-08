@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Server;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Support\Once;
 use Livewire\Features\SupportTesting\Testable;
 use Tests\TestCase;
@@ -105,6 +107,23 @@ function loginAndSkipBoarding(string $email = 'test@example.com', string $passwo
     $page->wait(1.5);
 
     return $page;
+}
+
+/**
+ * Make the user a platform administrator (admin/owner of the root team), who
+ * alone may change shared infrastructure such as servers and destinations.
+ */
+function makePlatformAdmin(User $user, string $role = 'owner'): User
+{
+    $rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0]);
+
+    if (! $user->teams()->whereKey(0)->exists()) {
+        $user->teams()->attach($rootTeam->id, ['role' => $role]);
+    }
+
+    $user->unsetRelation('teams');
+
+    return $user;
 }
 
 /*

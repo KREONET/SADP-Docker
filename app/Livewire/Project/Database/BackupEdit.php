@@ -386,6 +386,7 @@ class BackupEdit extends Component
         return S3Storage::query()
             ->whereKey($storageIds)
             ->whereIn('team_id', $teamIds)
+            ->visibleTo(auth()->user())
             ->where('is_usable', true)
             ->pluck('id');
     }

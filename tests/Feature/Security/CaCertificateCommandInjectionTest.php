@@ -20,6 +20,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team = Team::factory()->create();
     $this->user->teams()->attach($this->team, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 
@@ -96,4 +97,29 @@ test('saveCaCertificate rejects empty certificate content', function () {
         ->set('certificateContent', '')
         ->call('saveCaCertificate')
         ->assertDispatched('error');
+});
+
+test('saveCaCertificate is not allowed for a team owner who is not a platform admin', function () {
+    $caCert = SslCertificate::create([
+        'server_id' => $this->server->id,
+        'is_ca_certificate' => true,
+        'ssl_certificate' => 'placeholder',
+        'ssl_private_key' => 'test-key',
+        'common_name' => 'Coolify CA Certificate',
+        'valid_until' => now()->addYears(10),
+    ]);
+
+    $regularOwner = User::factory()->create();
+    $regularOwner->teams()->attach($this->team, ['role' => 'owner']);
+    $this->actingAs($regularOwner);
+    session(['currentTeam' => $this->team]);
+
+    expect($regularOwner->can('manageCaCertificate', $this->server))->toBeFalse();
+
+    Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])
+        ->set('certificateContent', generateSelfSignedCert())
+        ->call('saveCaCertificate')
+        ->assertNotDispatched('success');
+
+    expect($caCert->fresh()->ssl_certificate)->toBe('placeholder');
 });

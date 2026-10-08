@@ -41,7 +41,8 @@ class UpdateCoolifyJob implements ShouldBeEncrypted, ShouldQueue
                 return;
             }
 
-            Log::info('Starting Coolify update process...');
+            Log::info('Starting PADED
+ update process...');
             UpdateCoolify::run(false); // false means it's not a manual update
 
             $settings->update(['new_version_available' => false]);

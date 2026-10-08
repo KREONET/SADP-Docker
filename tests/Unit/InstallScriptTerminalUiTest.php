@@ -42,7 +42,8 @@ it('renders aligned step lines, warnings and failures without a terminal', funct
         step_start "Pulling images" "coolify · postgres · redis · helper"
         warn "SSH PermitRootLogin is disabled."
         step_done
-        step_start "Starting Coolify" "v4.0.0"
+        step_start "Starting PADED
+" "v4.0.0"
         echo "ERROR: Coolify container is not healthy"
         exit 1
         BASH;
@@ -58,7 +59,8 @@ it('renders aligned step lines, warnings and failures without a terminal', funct
         ->toContain('1/9  Installing required packages  curl wget git jq openssl')
         ->toContain('2/9  Pulling images  coolify · postgres · redis · helper')
         ->toContain('! SSH PermitRootLogin is disabled.')
-        ->toContain('3/9  Starting Coolify  v4.0.0')
+        ->toContain('3/9  Starting PADED
+  v4.0.0')
         ->toContain('Installation failed.')
         ->toContain('ERROR: Coolify container is not healthy')
         ->and($stepLines)->toHaveCount(3)

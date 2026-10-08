@@ -232,6 +232,7 @@ class VolumeBackupsController extends Controller
         if ($saveToS3) {
             $s3Storage = S3Storage::query()
                 ->where('team_id', $teamId)
+                ->visibleTo($request->user())
                 ->where('is_usable', true)
                 ->where('uuid', $request->input('s3_storage_uuid'))
                 ->first();

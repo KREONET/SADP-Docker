@@ -64,10 +64,10 @@ function validS3StoragePayload(array $overrides = []): array
 }
 
 describe('GET /api/v1/s3-storages', function () {
-    test('lists all s3 storages for the team', function () {
-        createS3StorageForTeam($this->team, ['name' => 'Storage One', 'bucket' => 'bucket-one']);
-        createS3StorageForTeam($this->team, ['name' => 'Storage Two', 'bucket' => 'bucket-two']);
-        createS3StorageForTeam($this->team, ['name' => 'Storage Three', 'bucket' => 'bucket-three']);
+    test('lists the s3 storages the user created', function () {
+        createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'Storage One', 'bucket' => 'bucket-one']);
+        createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'Storage Two', 'bucket' => 'bucket-two']);
+        createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'Storage Three', 'bucket' => 'bucket-three']);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$this->bearerToken,
@@ -82,7 +82,7 @@ describe('GET /api/v1/s3-storages', function () {
     });
 
     test('does not include storages from other teams', function () {
-        createS3StorageForTeam($this->team);
+        createS3StorageForTeam($this->team, ['user_id' => $this->user->id]);
 
         $otherTeam = Team::factory()->create();
         createS3StorageForTeam($otherTeam, ['name' => 'Other Team Storage', 'bucket' => 'other-bucket']);
@@ -97,6 +97,44 @@ describe('GET /api/v1/s3-storages', function () {
         $response->assertJsonCount(1);
     });
 
+    test('does not include storages created by other team members', function () {
+        createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'My Storage', 'bucket' => 'my-bucket']);
+
+        $teammate = User::factory()->create();
+        $this->team->members()->attach($teammate->id, ['role' => 'member']);
+        createS3StorageForTeam($this->team, ['user_id' => $teammate->id, 'name' => 'Teammate Storage', 'bucket' => 'teammate-bucket']);
+        createS3StorageForTeam($this->team, ['user_id' => null, 'name' => 'Legacy Storage', 'bucket' => 'legacy-bucket']);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$this->bearerToken,
+            'Content-Type' => 'application/json',
+        ])->getJson('/api/v1/s3-storages');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1);
+        $response->assertJsonFragment(['name' => 'My Storage']);
+        $response->assertJsonMissing(['name' => 'Teammate Storage']);
+        $response->assertJsonMissing(['name' => 'Legacy Storage']);
+    });
+
+    test('platform admin lists every storage of the team', function () {
+        makePlatformAdmin($this->user);
+
+        $teammate = User::factory()->create();
+        $this->team->members()->attach($teammate->id, ['role' => 'member']);
+        createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'My Storage', 'bucket' => 'my-bucket']);
+        createS3StorageForTeam($this->team, ['user_id' => $teammate->id, 'name' => 'Teammate Storage', 'bucket' => 'teammate-bucket']);
+        createS3StorageForTeam($this->team, ['user_id' => null, 'name' => 'Legacy Storage', 'bucket' => 'legacy-bucket']);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$this->bearerToken,
+            'Content-Type' => 'application/json',
+        ])->getJson('/api/v1/s3-storages');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3);
+    });
+
     test('rejects request without authentication', function () {
         $response = $this->getJson('/api/v1/s3-storages');
         $response->assertStatus(401);
@@ -104,6 +142,7 @@ describe('GET /api/v1/s3-storages', function () {
 
     test('read token does not include key and secret values', function () {
         createS3StorageForTeam($this->team, [
+            'user_id' => $this->user->id,
             'key' => 'hidden-access-key',
             'secret' => 'hidden-secret-key',
         ]);
@@ -124,6 +163,7 @@ describe('GET /api/v1/s3-storages', function () {
 
     test('read sensitive token includes key and secret values', function () {
         createS3StorageForTeam($this->team, [
+            'user_id' => $this->user->id,
             'key' => 'visible-access-key',
             'secret' => 'visible-secret-key',
         ]);
@@ -144,6 +184,7 @@ describe('GET /api/v1/s3-storages', function () {
 
     test('root token includes key and secret values', function () {
         createS3StorageForTeam($this->team, [
+            'user_id' => $this->user->id,
             'key' => 'root-access-key',
             'secret' => 'root-secret-key',
         ]);
@@ -166,6 +207,7 @@ describe('GET /api/v1/s3-storages', function () {
 describe('GET /api/v1/s3-storages/{uuid}', function () {
     test('gets s3 storage by UUID', function () {
         $storage = createS3StorageForTeam($this->team, [
+            'user_id' => $this->user->id,
             'name' => 'Primary Backup',
             'bucket' => 'primary-backup',
         ]);
@@ -204,8 +246,22 @@ describe('GET /api/v1/s3-storages/{uuid}', function () {
         $response->assertStatus(404);
     });
 
+    test('cannot access storage created by another team member', function () {
+        $teammate = User::factory()->create();
+        $this->team->members()->attach($teammate->id, ['role' => 'member']);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $teammate->id]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$this->bearerToken,
+            'Content-Type' => 'application/json',
+        ])->getJson("/api/v1/s3-storages/{$storage->uuid}");
+
+        $response->assertStatus(404);
+    });
+
     test('read token does not include key and secret by UUID', function () {
         $storage = createS3StorageForTeam($this->team, [
+            'user_id' => $this->user->id,
             'key' => 'hidden-detail-key',
             'secret' => 'hidden-detail-secret',
         ]);
@@ -224,6 +280,7 @@ describe('GET /api/v1/s3-storages/{uuid}', function () {
 
     test('read sensitive token includes key and secret by UUID', function () {
         $storage = createS3StorageForTeam($this->team, [
+            'user_id' => $this->user->id,
             'key' => 'visible-detail-key',
             'secret' => 'visible-detail-secret',
         ]);
@@ -255,6 +312,7 @@ describe('POST /api/v1/s3-storages', function () {
 
         $this->assertDatabaseHas('s3_storages', [
             'team_id' => $this->team->id,
+            'user_id' => $this->user->id,
             'name' => 'My S3 Storage',
             'bucket' => 'coolify-backups',
             'region' => 'us-east-1',
@@ -338,7 +396,7 @@ describe('POST /api/v1/s3-storages', function () {
 
 describe('PATCH /api/v1/s3-storages/{uuid}', function () {
     test('updates s3 storage name', function () {
-        $storage = createS3StorageForTeam($this->team, ['name' => 'Old Name']);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'Old Name']);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$this->bearerToken,
@@ -356,7 +414,7 @@ describe('PATCH /api/v1/s3-storages/{uuid}', function () {
     });
 
     test('updates multiple fields', function () {
-        $storage = createS3StorageForTeam($this->team);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$this->bearerToken,
@@ -378,7 +436,7 @@ describe('PATCH /api/v1/s3-storages/{uuid}', function () {
     });
 
     test('rejects empty body', function () {
-        $storage = createS3StorageForTeam($this->team);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$this->bearerToken,
@@ -390,6 +448,22 @@ describe('PATCH /api/v1/s3-storages/{uuid}', function () {
             'message' => 'Invalid request.',
             'error' => 'Invalid JSON.',
         ]);
+    });
+
+    test('cannot update storage created by another team member', function () {
+        $teammate = User::factory()->create();
+        $this->team->members()->attach($teammate->id, ['role' => 'member']);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $teammate->id, 'name' => 'Teammate Storage']);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$this->bearerToken,
+            'Content-Type' => 'application/json',
+        ])->patchJson("/api/v1/s3-storages/{$storage->uuid}", [
+            'name' => 'Hijacked',
+        ]);
+
+        $response->assertStatus(404);
+        expect($storage->fresh()->name)->toBe('Teammate Storage');
     });
 
     test('cannot update storage from another team', function () {
@@ -407,7 +481,7 @@ describe('PATCH /api/v1/s3-storages/{uuid}', function () {
     });
 
     test('rejects extra fields on update', function () {
-        $storage = createS3StorageForTeam($this->team);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$this->bearerToken,
@@ -423,7 +497,7 @@ describe('PATCH /api/v1/s3-storages/{uuid}', function () {
 
 describe('DELETE /api/v1/s3-storages/{uuid}', function () {
     test('deletes s3 storage', function () {
-        $storage = createS3StorageForTeam($this->team);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer '.$this->bearerToken,
@@ -462,7 +536,7 @@ describe('DELETE /api/v1/s3-storages/{uuid}', function () {
 
 describe('POST /api/v1/s3-storages/{uuid}/validate', function () {
     test('validates a working s3 storage connection', function () {
-        $storage = createS3StorageForTeam($this->team);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id]);
 
         $disk = Mockery::mock(FilesystemAdapter::class);
         $disk->expects('files')->once()->andReturn([]);
@@ -483,7 +557,7 @@ describe('POST /api/v1/s3-storages/{uuid}/validate', function () {
     });
 
     test('detects an invalid s3 storage connection', function () {
-        $storage = createS3StorageForTeam($this->team, ['is_usable' => true]);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'is_usable' => true]);
 
         $disk = Mockery::mock(FilesystemAdapter::class);
         $disk->expects('files')
@@ -518,7 +592,7 @@ describe('POST /api/v1/s3-storages/{uuid}/validate', function () {
     });
 
     test('writes an audit log entry when validating storage', function () {
-        $storage = createS3StorageForTeam($this->team, ['name' => 'Audit Storage']);
+        $storage = createS3StorageForTeam($this->team, ['user_id' => $this->user->id, 'name' => 'Audit Storage']);
 
         $disk = Mockery::mock(FilesystemAdapter::class);
         $disk->expects('files')->once()->andReturn([]);

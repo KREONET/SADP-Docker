@@ -41,25 +41,28 @@ it('denies non-member to view another team server', function () {
     expect($policy->view($user, $server))->toBeFalse();
 });
 
-it('allows admin to create a server', function () {
+it('allows platform admin to create a server', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $policy = new ServerPolicy;
     expect($policy->create($user))->toBeTrue();
 });
 
-it('denies member to create a server', function () {
+it('denies non platform admin to create a server', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $policy = new ServerPolicy;
     expect($policy->create($user))->toBeFalse();
 });
 
-it('allows team admin to update their own team server', function () {
+it('allows platform admin to update their own team server', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -68,9 +71,10 @@ it('allows team admin to update their own team server', function () {
     expect($policy->update($user, $server))->toBeTrue();
 });
 
-it('denies team member to update their own team server', function () {
+it('denies non platform admin to update their own team server', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -79,9 +83,10 @@ it('denies team member to update their own team server', function () {
     expect($policy->update($user, $server))->toBeFalse();
 });
 
-it('allows team admin to delete their own team server', function () {
+it('allows platform admin to delete their own team server', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -90,9 +95,10 @@ it('allows team admin to delete their own team server', function () {
     expect($policy->delete($user, $server))->toBeTrue();
 });
 
-it('denies team member to delete their own team server', function () {
+it('denies non platform admin to delete their own team server', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -121,9 +127,10 @@ it('denies force delete for any user', function () {
     expect($policy->forceDelete($user, $server))->toBeFalse();
 });
 
-it('allows team admin to manage proxy', function () {
+it('allows platform admin to manage proxy', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -132,9 +139,10 @@ it('allows team admin to manage proxy', function () {
     expect($policy->manageProxy($user, $server))->toBeTrue();
 });
 
-it('denies team member to manage proxy', function () {
+it('denies non platform admin to manage proxy', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -143,9 +151,10 @@ it('denies team member to manage proxy', function () {
     expect($policy->manageProxy($user, $server))->toBeFalse();
 });
 
-it('allows team admin to manage sentinel, ca certificate, and view security', function () {
+it('allows platform admin to manage sentinel, ca certificate, and view security', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
@@ -157,13 +166,45 @@ it('allows team admin to manage sentinel, ca certificate, and view security', fu
     expect($policy->viewSecurity($user, $server))->toBeTrue();
 });
 
-it('denies team member to view sentinel', function () {
+it('denies non platform admin to view sentinel', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(false);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
 
     $server = Mockery::mock(Server::class)->makePartial();
     $server->team_id = 1;
 
     $policy = new ServerPolicy;
     expect($policy->viewSentinel($user, $server))->toBeFalse();
+});
+
+it('denies a team owner who is not a platform admin from changing their team server', function () {
+    $user = Mockery::mock(User::class)->makePartial();
+    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $user->shouldReceive('isInstanceAdmin')->andReturn(false);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
+
+    $server = Mockery::mock(Server::class)->makePartial();
+    $server->team_id = 1;
+
+    $policy = new ServerPolicy;
+    expect($policy->create($user))->toBeFalse();
+    expect($policy->update($user, $server))->toBeFalse();
+    expect($policy->delete($user, $server))->toBeFalse();
+    expect($policy->manageProxy($user, $server))->toBeFalse();
+});
+
+it('denies a platform admin from changing a server of a team they are not in', function () {
+    $user = Mockery::mock(User::class)->makePartial();
+    $user->shouldReceive('isInstanceAdmin')->andReturn(true);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(collect([(object) ['id' => 1]]));
+
+    $server = Mockery::mock(Server::class)->makePartial();
+    $server->team_id = 2;
+
+    $policy = new ServerPolicy;
+    expect($policy->update($user, $server))->toBeFalse();
+    expect($policy->delete($user, $server))->toBeFalse();
+    expect($policy->manageProxy($user, $server))->toBeFalse();
 });

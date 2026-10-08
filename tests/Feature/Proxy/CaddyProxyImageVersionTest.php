@@ -16,6 +16,7 @@ beforeEach(function () {
     InstanceSettings::forceCreate(['id' => 0]);
     $this->user = User::factory()->create();
     $this->team = $this->user->teams()->first();
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 });

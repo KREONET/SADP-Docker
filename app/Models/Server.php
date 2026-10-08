@@ -1118,6 +1118,23 @@ $siteAddress {
         return $this->settings->is_metrics_enabled;
     }
 
+    /**
+     * Base domain of the wildcard certificate Traefik requests through ACME DNS-01, or null when
+     * DNS-01 is off, incomplete, or the proxy is not Traefik.
+     */
+    public function wildcardCertificateDomain(): ?string
+    {
+        $settings = $this->settings;
+        if (! $settings?->is_dns_challenge_enabled
+            || blank($settings->dns_challenge_domain)
+            || blank($settings->dns_challenge_provider)
+            || $this->proxyType() !== ProxyTypes::TRAEFIK->value) {
+            return null;
+        }
+
+        return strtolower($settings->dns_challenge_domain);
+    }
+
     public function isTrafficAnalyticsEnabled(): bool
     {
         return (bool) data_get($this, 'settings.is_traffic_analytics_enabled', false);
@@ -1842,8 +1859,33 @@ $siteAddress {
                 ServerReachabilityChanged::dispatch($this);
             }
 
-            return ['uptime' => false, 'error' => $e->getMessage()];
+            $hint = $this->connectionErrorHint($e->getMessage());
+
+            return ['uptime' => false, 'error' => $hint ? $e->getMessage()."\n\n".$hint : $e->getMessage()];
         }
+    }
+
+    /**
+     * Explains an SSH timeout, which retries cannot fix: a firewall is dropping the connection.
+     * For this Coolify host the usual cause is a host firewall (UFW, firewalld) that does not
+     * allow SSH from the Coolify Docker network.
+     */
+    public function connectionErrorHint(string $error): ?string
+    {
+        if (! str_contains(strtolower($error), 'timed out')) {
+            return null;
+        }
+
+        if ($this->isLocalhost() || (string) $this->ip === 'host.docker.internal') {
+            return __('The host firewall is probably dropping SSH from the Coolify container. Allow SSH from the Coolify Docker network on the host, for example: :command', [
+                'command' => "sudo ufw allow from \$(docker network inspect coolify -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}') to any port {$this->port} proto tcp",
+            ]);
+        }
+
+        return __('Port :port on :ip did not answer. Make sure the server firewall allows SSH from this Coolify server.', [
+            'port' => $this->port,
+            'ip' => $this->ip,
+        ]);
     }
 
     public function installDocker()

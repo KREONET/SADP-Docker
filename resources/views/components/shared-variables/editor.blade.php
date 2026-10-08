@@ -80,7 +80,7 @@
                             </button>
                     </x-table.dropdown>
 
-                    @can('update', $resource)
+                    @can('create', App\Models\SharedEnvironmentVariable::class)
                         <x-modal-input :title="__('New Shared Variable')">
                             <x-slot:content>
                                 <button type="button"
@@ -150,7 +150,7 @@
             @endif
             <form wire:submit="submit" class="p-4">
                 <x-unsaved-bar action="submit" />
-                <x-forms.textarea canGate="update" :canResource="$resource" rows="20"
+                <x-forms.textarea canGate="create" :canResource="App\Models\SharedEnvironmentVariable::class" rows="20"
                     class="whitespace-pre-wrap" id="variables" wire:model="variables" monospace
                     :label="$variablesLabel" />
             </form>

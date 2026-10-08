@@ -202,7 +202,24 @@ test('an owner can resume onboarding with an existing resource', function () {
     expect($component->get('createdPrivateKey')->getAttributes())->not->toHaveKey('private_key');
 });
 
-test('an owner can create a server from an existing onboarding resource', function () {
+test('a team owner who is not a platform admin cannot create a server during onboarding', function () {
+    actAsBoardingUser($this->otherOwner, $this->otherTeam);
+
+    Livewire::test(Index::class)
+        ->set('selectedExistingPrivateKey', $this->otherKey->id)
+        ->call('selectExistingPrivateKey')
+        ->set('remoteServerName', 'Existing key server')
+        ->set('remoteServerHost', '192.0.2.51')
+        ->set('remoteServerPort', 22)
+        ->set('remoteServerUser', 'root')
+        ->call('saveServer')
+        ->assertForbidden();
+
+    expect(Server::query()->where('ip', '192.0.2.51')->exists())->toBeFalse();
+});
+
+test('a platform admin owner can create a server from an existing onboarding resource', function () {
+    makePlatformAdmin($this->otherOwner);
     actAsBoardingUser($this->otherOwner, $this->otherTeam);
 
     Livewire::test(Index::class)

@@ -76,6 +76,7 @@ class User extends Authenticatable implements SendsEmail
         'force_password_reset' => 'boolean',
         'show_boarding' => 'boolean',
         'email_change_code_expires_at' => 'datetime',
+        'deactivated_at' => 'datetime',
     ];
 
     /**
@@ -299,6 +300,15 @@ class User extends Authenticatable implements SendsEmail
     public function sendPasswordResetNotification($token): void
     {
         $this?->notify(new TransactionalEmailsResetPassword($token));
+    }
+
+    /**
+     * Whether the identity provider deactivated this account (SCIM `active: false`).
+     * A deactivated account keeps its data but cannot sign in.
+     */
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
     }
 
     public function isAdmin()

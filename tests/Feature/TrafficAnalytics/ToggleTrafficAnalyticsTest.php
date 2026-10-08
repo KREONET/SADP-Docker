@@ -17,6 +17,7 @@ beforeEach(function () {
     InstanceSettings::forceCreate(['id' => 0]);
     $this->user = User::factory()->create();
     $this->team = $this->user->teams()->first();
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 });
@@ -221,6 +222,26 @@ it('does not let a team member toggle traffic analytics', function () {
     $member = User::factory()->create();
     $this->team->members()->attach($member->id, ['role' => 'member']);
     $this->actingAs($member);
+    session(['currentTeam' => $this->team]);
+
+    Livewire::test(TrafficAnalyticsSettings::class, ['server' => $server])
+        ->assertForbidden();
+
+    expect($server->fresh()->isTrafficAnalyticsEnabled())->toBeFalse();
+});
+
+it('does not let a team owner who is not a platform admin toggle traffic analytics', function () {
+    ConfigureTrafficAnalytics::partialMock()->shouldReceive('handle')->never();
+
+    $server = Server::factory()->create(['team_id' => $this->team->id]);
+    $server->proxy->set('type', 'TRAEFIK');
+    $server->save();
+    $server->settings->is_traffic_analytics_enabled = false;
+    $server->settings->save();
+
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $this->actingAs($owner);
     session(['currentTeam' => $this->team]);
 
     Livewire::test(TrafficAnalyticsSettings::class, ['server' => $server])

@@ -72,7 +72,8 @@ class V5BootstrapServerJob implements ShouldBeEncrypted, ShouldBeUnique, ShouldQ
             ->update([
                 'last_bootstrap_action' => $action,
                 'last_bootstrap_status' => 'running',
-                'last_bootstrap_output' => "Starting Coolify CLI {$action} for {$server->name}...",
+                'last_bootstrap_output' => "Starting PADED
+ CLI {$action} for {$server->name}...",
                 'last_bootstrap_ran_at' => now(),
             ]);
 

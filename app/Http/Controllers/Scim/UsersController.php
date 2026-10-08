@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Scim;
 
+use App\Actions\User\DeactivateUserAccount;
 use App\Actions\User\DeleteUserAccount;
 use App\Http\Controllers\Controller;
 use App\Models\OauthSetting;
@@ -19,9 +20,10 @@ use Throwable;
 /**
  * SCIM 2.0 Users resource (RFC 7643/7644) so the identity provider can provision and deprovision accounts.
  *
- * The identity provider deprovisions a user with DELETE, or with PUT/PATCH setting `active` to false.
- * Both permanently delete the account through {@see DeleteUserAccount}. The root user (id 0) is never
- * listed and cannot be changed.
+ * DELETE permanently deletes the account through {@see DeleteUserAccount}. PUT/PATCH setting `active`
+ * to false only deactivates it through {@see DeactivateUserAccount} (signed out, cannot sign in, data
+ * kept), because identity providers also send that for suspensions and app unassignments that may be
+ * undone; `active: true` reactivates it. The root user (id 0) is never listed and cannot be changed.
  */
 class UsersController extends Controller
 {
@@ -86,6 +88,11 @@ class UsersController extends Controller
 
         auditLog('scim.user.created', ['resource' => 'user', 'scim_user_id' => $user->id, 'scim_user_email' => $user->email]);
 
+        if ($request->has('active') && $this->parseBoolean($request->input('active')) === false) {
+            DeactivateUserAccount::execute($user, 'scim');
+            $user->refresh();
+        }
+
         return ScimResponse::json($this->representation($user), 201, ['Location' => $this->location($user)]);
     }
 
@@ -96,16 +103,14 @@ class UsersController extends Controller
             return $user;
         }
 
-        if ($request->has('active') && $this->parseBoolean($request->input('active')) === false) {
-            return $this->deprovision($user);
-        }
-
         $attributes = $this->userAttributes($request->all());
         if ($attributes instanceof JsonResponse) {
             return $attributes;
         }
 
-        return $this->applyChanges($user, $attributes);
+        $active = $request->has('active') ? $this->parseBoolean($request->input('active')) : null;
+
+        return $this->applyChanges($user, $attributes, $active);
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -136,16 +141,14 @@ class UsersController extends Controller
             $changes = array_replace_recursive($changes, $values);
         }
 
-        if (array_key_exists('active', $changes) && $this->parseBoolean($changes['active']) === false) {
-            return $this->deprovision($user);
-        }
-
         $attributes = $this->userAttributes($changes, $user);
         if ($attributes instanceof JsonResponse) {
             return $attributes;
         }
 
-        return $this->applyChanges($user, $attributes);
+        $active = array_key_exists('active', $changes) ? $this->parseBoolean($changes['active']) : null;
+
+        return $this->applyChanges($user, $attributes, $active);
     }
 
     public function destroy(string $id): Response|JsonResponse
@@ -164,23 +167,10 @@ class UsersController extends Controller
         return response()->noContent();
     }
 
-    private function deprovision(User $user): JsonResponse
-    {
-        $representation = array_merge($this->representation($user), ['active' => false]);
-
-        try {
-            DeleteUserAccount::execute($user, 'scim');
-        } catch (Throwable $e) {
-            return ScimResponse::error(500, 'The user could not be deleted: '.$e->getMessage());
-        }
-
-        return ScimResponse::json($representation);
-    }
-
     /**
      * @param  array{name: string, email: string}  $attributes
      */
-    private function applyChanges(User $user, array $attributes): JsonResponse
+    private function applyChanges(User $user, array $attributes, ?bool $active = null): JsonResponse
     {
         if ($attributes['email'] !== $user->email
             && User::query()->where('email', $attributes['email'])->whereKeyNot($user->id)->exists()) {
@@ -193,6 +183,12 @@ class UsersController extends Controller
 
         if ($changedFields !== []) {
             auditLog('scim.user.updated', ['resource' => 'user', 'scim_user_id' => $user->id, 'changed_fields' => $changedFields]);
+        }
+
+        if ($active === false) {
+            DeactivateUserAccount::execute($user, 'scim');
+        } elseif ($active === true) {
+            DeactivateUserAccount::reactivate($user, 'scim');
         }
 
         return ScimResponse::json($this->representation($user->fresh()));
@@ -313,7 +309,7 @@ class UsersController extends Controller
             'displayName' => $user->name,
             'name' => ['formatted' => $user->name],
             'emails' => [['value' => $user->email, 'type' => 'work', 'primary' => true]],
-            'active' => true,
+            'active' => ! $user->isDeactivated(),
             'meta' => [
                 'resourceType' => 'User',
                 'created' => $user->created_at?->toIso8601String(),

@@ -22,6 +22,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team = Team::factory()->create();
     $this->user->teams()->attach($this->team, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
 
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);

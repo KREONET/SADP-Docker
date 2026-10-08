@@ -14,11 +14,15 @@ beforeEach(function () {
     InstanceSettings::create(['id' => 0]);
 });
 
-function makeNavbarServer(bool $isFunctional): array
+function makeNavbarServer(bool $isFunctional, bool $platformAdmin = true): array
 {
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $user->teams()->attach($team, ['role' => 'admin']);
+
+    if ($platformAdmin) {
+        makePlatformAdmin($user);
+    }
 
     $server = Server::factory()->create([
         'team_id' => $team->id,
@@ -52,6 +56,17 @@ it('shows sentinel sync status after the server is validated', function () {
     Livewire::test('server.navbar', ['server' => $server])
         ->assertSee('Sentinel')
         ->assertSee('In sync');
+});
+
+it('does not show sentinel sync status to a team admin who is not a platform admin', function () {
+    [$server, $user] = makeNavbarServer(isFunctional: true, platformAdmin: false);
+
+    expect($user->can('viewSentinel', $server))->toBeFalse();
+
+    Livewire::test('server.navbar', ['server' => $server])
+        ->assertOk()
+        ->assertDontSee('In sync')
+        ->assertDontSee('Out of sync');
 });
 
 it('shows the first Sentinel report as pending instead of requiring attention', function () {

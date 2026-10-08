@@ -102,6 +102,7 @@ class Create extends Component
                 $this->storage->endpoint = $this->endpoint;
             }
             $this->storage->team_id = currentTeam()->id;
+            $this->storage->user_id = auth()->id();
             $this->storage->testConnection();
             $this->storage->save();
 

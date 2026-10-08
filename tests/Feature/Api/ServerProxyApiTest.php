@@ -30,6 +30,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->bearerToken = serverProxyApiToken($this->user, $this->team, ['*']);
@@ -249,6 +250,22 @@ test('POST /api/v1/servers/{uuid}/proxy/restart queues RestartProxyJob', functio
         RestartProxyJob::class,
         fn (RestartProxyJob $job): bool => $job->server->is($this->server)
     );
+});
+
+test('proxy management endpoints forbid team owners who are not platform admins', function () {
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $ownerToken = serverProxyApiToken($owner, $this->team, ['*']);
+
+    $this->withHeaders(serverProxyApiHeaders($ownerToken))
+        ->patchJson("/api/v1/servers/{$this->server->uuid}/proxy", ['redirect_enabled' => false])
+        ->assertForbidden();
+
+    $this->withHeaders(serverProxyApiHeaders($ownerToken))
+        ->postJson("/api/v1/servers/{$this->server->uuid}/proxy/restart")
+        ->assertForbidden();
+
+    expect($this->server->fresh()->proxy->redirect_enabled)->toBeTrue();
 });
 
 test('proxy endpoints require authentication', function () {

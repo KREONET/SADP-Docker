@@ -43,7 +43,7 @@ class Execution extends Component
         $this->database = $database;
         $this->backup = $backup;
         $this->executions = $executions;
-        $this->s3s = currentTeam()->s3s;
+        $this->s3s = currentTeam()->s3s()->visibleTo(auth()->user())->get();
         $this->parameters = get_route_parameters();
         $this->section = match (request()->route()?->getName()) {
             'project.database.backup.s3' => 's3',

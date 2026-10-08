@@ -68,6 +68,7 @@ beforeEach(function () {
         'bucket' => 'bucket',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $this->team->id,
+        'user_id' => $this->user->id,
         'is_usable' => true,
     ]);
 });
@@ -308,6 +309,33 @@ it('rejects an s3 storage owned by another team', function () {
             'frequency' => 'daily',
             'save_s3' => true,
             's3_storage_uuid' => $otherS3Storage->uuid,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['s3_storage_uuid']);
+
+    expect(ScheduledVolumeBackup::query()->count())->toBe(0);
+});
+
+it('rejects an s3 storage created by another team member', function () {
+    $teammate = User::factory()->create();
+    $this->team->members()->attach($teammate, ['role' => 'member']);
+    $teammateS3Storage = S3Storage::create([
+        'name' => 'teammate-s3',
+        'region' => 'us-east-1',
+        'key' => 'key',
+        'secret' => 'secret',
+        'bucket' => 'bucket',
+        'endpoint' => 'https://s3.example.com',
+        'team_id' => $this->team->id,
+        'user_id' => $teammate->id,
+        'is_usable' => true,
+    ]);
+
+    $this->withHeaders($this->headers)
+        ->putJson("/api/v1/applications/{$this->application->uuid}/storages/{$this->volume->uuid}/backups", [
+            'frequency' => 'daily',
+            'save_s3' => true,
+            's3_storage_uuid' => $teammateS3Storage->uuid,
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['s3_storage_uuid']);

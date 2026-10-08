@@ -3,6 +3,7 @@
 namespace App\Livewire\SharedVariables\Server;
 
 use App\Models\Server;
+use App\Models\SharedEnvironmentVariable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -23,6 +24,7 @@ class Show extends Component
     {
         try {
             $this->authorize('update', $this->server);
+            $this->authorize('create', SharedEnvironmentVariable::class);
 
             if (in_array($data['key'], ['COOLIFY_SERVER_UUID', 'COOLIFY_SERVER_NAME'])) {
                 throw new \Exception(__('Cannot create predefined variable.'));
@@ -96,6 +98,7 @@ class Show extends Component
     {
         try {
             $this->authorize('update', $this->server);
+            $this->authorize('create', SharedEnvironmentVariable::class);
             $this->handleBulkSubmit();
             $this->getDevView();
         } catch (\Throwable $e) {

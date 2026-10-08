@@ -1,17 +1,21 @@
 <?php
 
+use App\Jobs\DeleteResourceJob;
 use App\Livewire\SettingsOauth;
 use App\Models\InstanceSettings;
 use App\Models\OauthSetting;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Once;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Bus::fake([DeleteResourceJob::class]);
     InstanceSettings::forceCreate(['id' => 0]);
     Once::flush();
     $this->rootTeam = Team::factory()->create(['id' => 0, 'name' => 'Root Team']);
@@ -104,30 +108,47 @@ it('updates the display name with a patch operation', function () {
     expect($user->fresh()->name)->toBe('New Name');
 });
 
-it('deletes the user when the identity provider deactivates it', function (array $operation) {
-    $user = User::factory()->create(['name' => 'Leaving', 'email' => 'leaving@example.com']);
+it('deactivates the user without deleting anything when the identity provider sets active to false', function (array $operation) {
+    $user = User::factory()->create(['name' => 'Paused', 'email' => 'paused@example.com']);
     $team = $user->teams()->first();
+    DB::table('sessions')->insert(['id' => 'paused-device', 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->timestamp]);
 
     scim('PATCH', "/Users/{$user->id}", [
         'schemas' => ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
         'Operations' => [$operation],
     ], $this->token)->assertOk()->assertJsonPath('active', false);
 
-    expect(User::find($user->id))->toBeNull()
-        ->and(Team::find($team->id))->toBeNull();
+    expect($user->fresh()->isDeactivated())->toBeTrue()
+        ->and(Team::find($team->id))->not->toBeNull()
+        ->and(DB::table('sessions')->where('user_id', $user->id)->exists())->toBeFalse();
+    Bus::assertNothingDispatched();
+    scim('GET', "/Users/{$user->id}", [], $this->token)->assertOk()->assertJsonPath('active', false);
 })->with([
     'path form' => [['op' => 'replace', 'path' => 'active', 'value' => false]],
     'value object form' => [['op' => 'replace', 'value' => ['active' => false]]],
     'string value' => [['op' => 'Replace', 'path' => 'active', 'value' => 'False']],
 ]);
 
-it('deletes the user when a full replace sets active to false', function () {
-    $user = User::factory()->create(['name' => 'Leaving', 'email' => 'replace@example.com']);
+it('deactivates the user when a full replace sets active to false and applies the other attributes', function () {
+    $user = User::factory()->create(['name' => 'Paused', 'email' => 'replace@example.com']);
 
-    scim('PUT', "/Users/{$user->id}", ['userName' => 'replace@example.com', 'active' => false], $this->token)
-        ->assertOk()->assertJsonPath('active', false);
+    scim('PUT', "/Users/{$user->id}", ['userName' => 'replace@example.com', 'displayName' => 'Renamed', 'active' => false], $this->token)
+        ->assertOk()->assertJsonPath('active', false)->assertJsonPath('displayName', 'Renamed');
 
-    expect(User::find($user->id))->toBeNull();
+    expect($user->fresh())->not->toBeNull()
+        ->and($user->fresh()->isDeactivated())->toBeTrue()
+        ->and($user->fresh()->name)->toBe('Renamed');
+});
+
+it('reactivates a deactivated user when the identity provider sets active to true', function () {
+    $user = User::factory()->create(['email' => 'back@example.com']);
+    $user->forceFill(['deactivated_at' => now()])->save();
+
+    scim('PATCH', "/Users/{$user->id}", [
+        'Operations' => [['op' => 'replace', 'path' => 'active', 'value' => true]],
+    ], $this->token)->assertOk()->assertJsonPath('active', true);
+
+    expect($user->fresh()->isDeactivated())->toBeFalse();
 });
 
 it('deletes the user on DELETE', function () {

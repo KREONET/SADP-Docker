@@ -44,7 +44,8 @@ class StartProxy
             $commands = $commands->merge([
                 "mkdir -p $proxy_path/dynamic",
                 "echo 'Creating required Docker Compose file.'",
-                "echo 'Starting coolify-proxy.'",
+                "echo 'Starting PADED
+-proxy.'",
                 "docker stack deploy --detach=true -c $compose_file coolify-proxy",
                 "echo 'Successfully started coolify-proxy.'",
             ]);
@@ -74,7 +75,8 @@ class StartProxy
             // Ensure required networks exist BEFORE docker compose up (networks are declared as external)
             $commands = $commands->merge(ensureProxyNetworksExist($server));
             $commands = $commands->merge([
-                "echo 'Starting coolify-proxy.'",
+                "echo 'Starting PADED
+-proxy.'",
                 "docker compose -f $compose_file up -d --wait --remove-orphans",
                 "echo 'Successfully started coolify-proxy.'",
             ]);

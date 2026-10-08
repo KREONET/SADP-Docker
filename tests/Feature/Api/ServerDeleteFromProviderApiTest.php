@@ -18,6 +18,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $newToken = $this->user->createToken('write-token', ['write']);
@@ -115,4 +116,17 @@ it('deletes only from Coolify when delete_from_provider is false', function () {
     deleteServerViaApi($this->token, $server->uuid, '?delete_from_provider=false')->assertOk();
 
     DeleteServer::assertPushed(fn ($action, array $params) => $params[0] === $server->id && $params[1] === false);
+});
+
+it('forbids a team owner who is not a platform admin from deleting a server', function () {
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $newToken = $owner->createToken('write-token', ['write']);
+    $newToken->accessToken->forceFill(['team_id' => $this->team->id])->save();
+    $server = Server::factory()->create(['team_id' => $this->team->id]);
+
+    deleteServerViaApi($newToken->plainTextToken, $server->uuid)->assertForbidden();
+
+    DeleteServer::assertNotPushed();
+    expect(Server::find($server->id))->not->toBeNull();
 });

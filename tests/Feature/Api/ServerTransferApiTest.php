@@ -33,6 +33,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->sensitiveToken = $this->user->createToken('transfer-sensitive', ['*', 'read:sensitive'])->plainTextToken;
@@ -100,6 +101,51 @@ function transferHeaders(string $token): array
         'Content-Type' => 'application/json',
     ];
 }
+
+describe('team owner who is not a platform admin', function () {
+    beforeEach(function () {
+        $this->regularOwner = User::factory()->create();
+        $this->team->members()->attach($this->regularOwner->id, ['role' => 'owner']);
+        session(['currentTeam' => $this->team]);
+        $this->regularSensitiveToken = $this->regularOwner->createToken('regular-sensitive', ['*', 'read:sensitive'])->plainTextToken;
+    });
+
+    test('cannot import a server bundle', function () {
+        $export = app(ServerTransferExporter::class)->export($this->server, includeSensitive: true);
+
+        $this->application->forceDelete();
+        $this->server->forceDelete();
+        $this->privateKey->delete();
+        $before = Server::count();
+
+        $this->withHeaders(transferHeaders($this->regularSensitiveToken))
+            ->postJson('/api/v1/servers/import', ['bundle' => $export])
+            ->assertForbidden();
+
+        expect(Server::count())->toBe($before);
+    });
+
+    test('cannot complete a server transfer', function () {
+        $this->withHeaders(transferHeaders($this->regularSensitiveToken))
+            ->postJson("/api/v1/servers/{$this->server->uuid}/transfer/complete", [
+                'export_id' => 'exp-123',
+                'target_instance_url' => 'https://coolify-b.test',
+            ])
+            ->assertForbidden();
+
+        expect($this->server->fresh(['settings'])->settings->force_disabled)->toBeFalsy();
+    });
+
+    test('cannot export a server bundle or write a transfer mailbox', function () {
+        $this->withHeaders(transferHeaders($this->regularSensitiveToken))
+            ->getJson("/api/v1/servers/{$this->server->uuid}/export")
+            ->assertForbidden();
+
+        $this->withHeaders(transferHeaders($this->regularSensitiveToken))
+            ->postJson("/api/v1/servers/{$this->server->uuid}/export/mailbox")
+            ->assertForbidden();
+    });
+});
 
 describe('GET /api/v1/servers/{uuid}/export', function () {
     test('exports bundle with sensitive token', function () {

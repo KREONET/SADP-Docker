@@ -2009,7 +2009,7 @@ function applicationParser(Application $resource, int $pull_request_id = 0, ?int
         $payload = collect($service)->merge([
             'container_name' => $containerName,
             'restart' => $restart->value(),
-            'labels' => $serviceLabels,
+            'labels' => applyWildcardCertificateLabels($serviceLabels, $server),
         ]);
         if (! $use_network_mode) {
             $payload['networks'] = $networks_temp;
@@ -3263,7 +3263,7 @@ function serviceParser(Service $resource): Collection
         $payload = collect($service)->merge([
             'container_name' => $containerName,
             'restart' => $restart->value(),
-            'labels' => $serviceLabels,
+            'labels' => applyWildcardCertificateLabels($serviceLabels, $server),
         ]);
         if (! $use_network_mode) {
             $payload['networks'] = $networks_temp;

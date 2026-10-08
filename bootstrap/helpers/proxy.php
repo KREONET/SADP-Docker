@@ -203,6 +203,196 @@ function applyTrafficAnalyticsToProxyConfigArray(Server $server, array $config):
 }
 
 /**
+ * Server proxy attribute that remembers which Traefik environment variables Coolify added for the
+ * DNS-01 provider, so a provider change or disabling removes exactly those.
+ */
+const TRAEFIK_DNS_CHALLENGE_ENV_KEYS = 'dns_challenge_env_keys';
+
+const TRAEFIK_DNS_CHALLENGE_DEFAULT_RESOLVERS = '1.1.1.1:53,8.8.8.8:53';
+
+/**
+ * Traefik flags for the `dns` ACME resolver that issues the wildcard certificate through DNS-01.
+ * The existing `letsencrypt` HTTP-01 resolver is not touched.
+ *
+ * @return array<int, string>
+ */
+function traefikDnsChallengeCommands(Server $server): array
+{
+    if ($server->wildcardCertificateDomain() === null) {
+        return [];
+    }
+
+    $settings = $server->settings;
+    $resolvers = filled($settings->dns_challenge_resolvers) ? $settings->dns_challenge_resolvers : TRAEFIK_DNS_CHALLENGE_DEFAULT_RESOLVERS;
+    $commands = [
+        '--certificatesresolvers.dns.acme.dnschallenge=true',
+        "--certificatesresolvers.dns.acme.dnschallenge.provider={$settings->dns_challenge_provider}",
+        "--certificatesresolvers.dns.acme.dnschallenge.resolvers={$resolvers}",
+        '--certificatesresolvers.dns.acme.storage=/traefik/acme-dns.json',
+    ];
+    if (filled($settings->dns_challenge_email)) {
+        $commands[] = "--certificatesresolvers.dns.acme.email={$settings->dns_challenge_email}";
+    }
+
+    return $commands;
+}
+
+function isTraefikDnsChallengeCommand(mixed $command): bool
+{
+    return is_string($command) && str_starts_with(strtolower($command), '--certificatesresolvers.dns.');
+}
+
+/**
+ * Adds (or removes, when DNS-01 is off) the `dns` resolver flags and the provider credentials of
+ * the Traefik service. Everything else in the configuration is kept.
+ */
+function applyDnsChallengeToProxyConfigArray(Server $server, array $config): array
+{
+    if ($server->proxyType() !== ProxyTypes::TRAEFIK->value || ! isset($config['services']['traefik'])) {
+        return $config;
+    }
+
+    $commands = data_get($config, 'services.traefik.command', []);
+    if (! is_array($commands)) {
+        throw new RuntimeException('Traefik commands must be a YAML list.');
+    }
+    $commands = array_values(array_filter($commands, fn (mixed $command): bool => ! isTraefikDnsChallengeCommand($command)));
+    data_set($config, 'services.traefik.command', [...$commands, ...traefikDnsChallengeCommands($server)]);
+
+    $previousKeys = $server->proxy->get(TRAEFIK_DNS_CHALLENGE_ENV_KEYS, []);
+    $previousKeys = is_array($previousKeys) ? $previousKeys : [];
+    $credentials = $server->wildcardCertificateDomain() !== null ? (array) ($server->settings->dns_challenge_credentials ?? []) : [];
+
+    $environment = data_get($config, 'services.traefik.environment', []);
+    $environment = is_array($environment) ? $environment : [];
+    $environment = array_is_list($environment) ? traefikEnvironmentListToMap($environment) : $environment;
+    foreach ($previousKeys as $key) {
+        unset($environment[$key]);
+    }
+    foreach ($credentials as $key => $value) {
+        // Docker Compose interpolates `$VAR`, so every `$` in a secret is escaped as `$$`.
+        $environment[$key] = str_replace('$', '$$', (string) $value);
+    }
+
+    if ($environment === []) {
+        unset($config['services']['traefik']['environment']);
+    } else {
+        $config['services']['traefik']['environment'] = $environment;
+    }
+
+    $managedKeys = array_keys($credentials);
+    if ($managedKeys !== $previousKeys) {
+        if ($managedKeys === []) {
+            $server->proxy->forget(TRAEFIK_DNS_CHALLENGE_ENV_KEYS);
+        } else {
+            $server->proxy->set(TRAEFIK_DNS_CHALLENGE_ENV_KEYS, $managedKeys);
+        }
+        $server->save();
+    }
+
+    return $config;
+}
+
+function applyDnsChallengeToProxyConfiguration(Server $server, string $configuration): string
+{
+    $config = Yaml::parse($configuration);
+
+    if (! is_array($config)) {
+        throw new RuntimeException('Proxy configuration must be a YAML mapping.');
+    }
+
+    return Yaml::dump(applyDnsChallengeToProxyConfigArray($server, $config), 12, 2);
+}
+
+/**
+ * Converts a Compose environment list (`KEY=value`) to a map so single keys can be replaced.
+ *
+ * @param  array<int, mixed>  $environment
+ * @return array<string, mixed>
+ */
+function traefikEnvironmentListToMap(array $environment): array
+{
+    $map = [];
+    foreach ($environment as $entry) {
+        if (! is_string($entry) || $entry === '') {
+            continue;
+        }
+        [$key, $value] = array_pad(explode('=', $entry, 2), 2, null);
+        $map[$key] = $value;
+    }
+
+    return $map;
+}
+
+/**
+ * Whether a wildcard certificate for the base domain covers the host: the domain itself or a
+ * host exactly one level below it (a wildcard does not cover `a.b.example.com`).
+ */
+function wildcardCertificateCovers(string $domain, string $host): bool
+{
+    $domain = strtolower(trim($domain, '.'));
+    $host = strtolower(trim($host, '.'));
+
+    if ($domain === '' || $host === '') {
+        return false;
+    }
+    if ($host === $domain) {
+        return true;
+    }
+
+    $suffix = '.'.$domain;
+    if (! str_ends_with($host, $suffix)) {
+        return false;
+    }
+    $label = substr($host, 0, -strlen($suffix));
+
+    return $label !== '' && ! str_contains($label, '.');
+}
+
+/**
+ * Switches Traefik HTTPS routers whose host the server's wildcard certificate covers from the
+ * HTTP-01 `letsencrypt` resolver to the DNS-01 `dns` resolver, requesting the wildcard
+ * certificate (`domain` + `*.domain`) for them. Labels of other routers, and all labels when the
+ * server has no DNS-01 wildcard certificate, are returned unchanged.
+ */
+function applyWildcardCertificateLabels(Collection $labels, ?Server $server): Collection
+{
+    $domain = $server?->wildcardCertificateDomain();
+    if ($domain === null) {
+        return $labels;
+    }
+
+    $routerHosts = [];
+    foreach ($labels as $label) {
+        if (is_string($label) && preg_match('/^traefik\.http\.routers\.([^.=]+)\.rule=Host\(`([^`]+)`\)/', $label, $matches)) {
+            $routerHosts[$matches[1]] = $matches[2];
+        }
+    }
+
+    $result = [];
+    $additions = [];
+    foreach ($labels as $key => $label) {
+        if (is_string($label)
+            && preg_match('/^traefik\.http\.routers\.([^.=]+)\.tls\.certresolver=letsencrypt$/', $label, $matches)
+            && isset($routerHosts[$matches[1]])
+            && wildcardCertificateCovers($domain, $routerHosts[$matches[1]])) {
+            $router = $matches[1];
+            $result[$key] = "traefik.http.routers.{$router}.tls.certresolver=dns";
+            $additions[] = "traefik.http.routers.{$router}.tls.domains[0].main={$domain}";
+            $additions[] = "traefik.http.routers.{$router}.tls.domains[0].sans=*.{$domain}";
+
+            continue;
+        }
+        $result[$key] = $label;
+    }
+    foreach ($additions as $addition) {
+        $result[] = $addition;
+    }
+
+    return collect($result);
+}
+
+/**
  * True for a Caddy volume that mounts to the /traffic access-log directory (short or long syntax).
  */
 function isCaddyTrafficVolume(mixed $volume): bool
@@ -744,6 +934,7 @@ function generateDefaultProxyConfiguration(Server $server, array $custom_command
     }
 
     $config = applyTrafficAnalyticsToProxyConfigArray($server, $config);
+    $config = applyDnsChallengeToProxyConfigArray($server, $config);
     $config = Yaml::dump($config, 12, 2);
     SaveProxyConfiguration::run($server, $config);
 

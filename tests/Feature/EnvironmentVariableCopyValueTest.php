@@ -101,7 +101,9 @@ test('copies literal values without .env-style quoting', function () {
     assertCopiedValue($env, 'pa$$word');
 });
 
-test('copies the value of a shared environment variable row', function () {
+test('copies the value of a shared environment variable row for a platform admin', function () {
+    makePlatformAdmin($this->user);
+
     $shared = SharedEnvironmentVariable::create([
         'key' => 'TEAM_WIDE',
         'value' => 'team-wide-value',
@@ -110,6 +112,17 @@ test('copies the value of a shared environment variable row', function () {
     ]);
 
     assertCopiedValue($shared, 'team-wide-value');
+});
+
+test('team owners who are not platform admins get no value from a shared environment variable row', function () {
+    $shared = SharedEnvironmentVariable::create([
+        'key' => 'TEAM_WIDE',
+        'value' => 'team-wide-value',
+        'type' => 'team',
+        'team_id' => $this->team->id,
+    ]);
+
+    assertCopiedValue($shared, null);
 });
 
 test('members get no copy button and no value', function () {

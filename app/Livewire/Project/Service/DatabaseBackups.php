@@ -77,7 +77,7 @@ class DatabaseBackups extends Component
                 $this->backup = $this->serviceDatabase->scheduledBackups()
                     ->where('uuid', request()->route('backup_uuid'))
                     ->firstOrFail();
-                $this->s3s = currentTeam()->s3s;
+                $this->s3s = currentTeam()->s3s()->visibleTo(auth()->user())->get();
                 $this->backupParameters = [...$this->parameters, 'backup_uuid' => $this->backup->uuid];
                 $this->section = match (request()->route()?->getName()) {
                     'project.service.database.backup.s3' => 's3',

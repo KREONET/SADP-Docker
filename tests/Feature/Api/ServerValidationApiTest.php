@@ -17,6 +17,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
     $this->token = $this->user->createToken('server-validation', ['write'])->plainTextToken;
@@ -54,4 +55,16 @@ it('rejects an invalid install option', function () {
         ->postJson("/api/v1/servers/{$this->server->uuid}/validate", ['install' => 'yes']);
 
     $response->assertUnprocessable()->assertJsonValidationErrors('install');
+});
+
+it('forbids a team owner who is not a platform admin from validating a server', function () {
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $token = $owner->createToken('server-validation', ['write'])->plainTextToken;
+
+    $this->withHeaders(['Authorization' => 'Bearer '.$token])
+        ->postJson("/api/v1/servers/{$this->server->uuid}/validate")
+        ->assertForbidden();
+
+    Queue::assertNothingPushed();
 });

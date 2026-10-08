@@ -18,6 +18,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create(['custom_server_limit' => 1]);
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->privateKey = PrivateKey::factory()->create(['team_id' => $this->team->id]);
@@ -85,6 +86,21 @@ it('does not let a team member create a server through the API', function () {
     $this->withToken($token->plainTextToken)->postJson('/api/v1/servers', [
         'name' => 'Member server',
         'ip' => '192.0.2.103',
+        'private_key_uuid' => $this->privateKey->uuid,
+    ])->assertForbidden();
+
+    expect(Server::where('team_id', $this->team->id)->count())->toBe(0);
+});
+
+it('does not let a team owner who is not a platform admin create a server through the API', function () {
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $token = $owner->createToken('write', ['write']);
+    $token->accessToken->forceFill(['team_id' => $this->team->id])->save();
+
+    $this->withToken($token->plainTextToken)->postJson('/api/v1/servers', [
+        'name' => 'Owner server',
+        'ip' => '192.0.2.105',
         'private_key_uuid' => $this->privateKey->uuid,
     ])->assertForbidden();
 

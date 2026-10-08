@@ -1096,7 +1096,8 @@ else
 fi
 step_done
 
-step_start "Starting Coolify" "v${LATEST_VERSION}"
+step_start "Starting PADED
+" "v${LATEST_VERSION}"
 echo " - Waiting for Coolify to be ready..."
 
 # Wait for upgrade.sh background process to complete
@@ -1164,7 +1165,7 @@ while [ $HEALTH_WAITED -lt $HEALTH_WAIT ]; do
     HEALTH=$(docker inspect --format='{{.State.Health.Status}}' coolify 2>/dev/null || echo "unknown")
     if [ "$HEALTH" = "healthy" ]; then
         log "Coolify container is healthy"
-        echo " - Coolify is ready!"
+        echo " - PADED is ready!"
         break
     fi
     sleep 2
@@ -1200,7 +1201,7 @@ DEFAULT_PRIVATE_IP=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
 PRIVATE_IPS=$(hostname -I 2>/dev/null || ip -o addr show scope global | awk '{print $4}' | cut -d/ -f1)
 set -e
 
-printf '\n  %s%sCoolify is ready!%s  %sInstalled in %s%s\n\n' "$C_BOLD" "$C_PURPLE" "$C_RESET" "$C_DIM" "$(ui_duration $(($(ui_now) - UI_INSTALL_STARTED)))" "$C_RESET" >&3
+printf '\n  %s%sPADED is ready!%s  %sInstalled in %s%s\n\n' "$C_BOLD" "$C_PURPLE" "$C_RESET" "$C_DIM" "$(ui_duration $(($(ui_now) - UI_INSTALL_STARTED)))" "$C_RESET" >&3
 if [ -n "$IPV4_PUBLIC_IP" ]; then
     printf '  Public IPv4   %shttp://%s:8000%s\n' "$C_BOLD" "$IPV4_PUBLIC_IP" "$C_RESET" >&3
 fi

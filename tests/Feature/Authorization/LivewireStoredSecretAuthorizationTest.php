@@ -118,10 +118,11 @@ function createGithubAppWithSecrets(Team $team, bool $isSystemWide = false): Git
     ]);
 }
 
-function createS3StorageWithSecrets(Team $team): S3Storage
+function createS3StorageWithSecrets(Team $team, ?User $creator = null): S3Storage
 {
     return S3Storage::query()->create([
         'team_id' => $team->id,
+        'user_id' => $creator?->id,
         'name' => 'Backup storage',
         'region' => 'us-east-1',
         'key' => 'stored-access-key',
@@ -148,8 +149,8 @@ it('does not serialize S3 credentials for a member after any storage action', fu
         ->assertDontSee('stored-secret-key');
 });
 
-it('keeps S3 credentials available to an owner who can update the storage', function () {
-    $storage = createS3StorageWithSecrets($this->team);
+it('keeps S3 credentials available to the owner who created the storage', function () {
+    $storage = createS3StorageWithSecrets($this->team, $this->owner);
 
     $this->actingAs($this->owner);
     session(['currentTeam' => $this->team]);
@@ -157,4 +158,17 @@ it('keeps S3 credentials available to an owner who can update the storage', func
     Livewire::test(StorageForm::class, ['storage' => $storage])
         ->assertSet('key', 'stored-access-key')
         ->assertSet('secret', 'stored-secret-key');
+});
+
+it('does not serialize S3 credentials for a team owner who did not create the storage', function () {
+    $storage = createS3StorageWithSecrets($this->team, $this->member);
+
+    $this->actingAs($this->owner);
+    session(['currentTeam' => $this->team]);
+
+    Livewire::test(StorageForm::class, ['storage' => $storage])
+        ->assertSet('key', '')
+        ->assertSet('secret', '')
+        ->assertDontSee('stored-access-key')
+        ->assertDontSee('stored-secret-key');
 });

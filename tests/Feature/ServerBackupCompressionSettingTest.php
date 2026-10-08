@@ -13,6 +13,7 @@ it('defaults and saves the server backup compression CPU preset', function () {
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $team->members()->attach($user, ['role' => 'owner']);
+    makePlatformAdmin($user);
     $server = Server::factory()->create(['team_id' => $team->id]);
 
     $this->actingAs($user);
@@ -38,6 +39,7 @@ it('rejects unsupported server backup compression CPU percentages', function () 
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $team->members()->attach($user, ['role' => 'owner']);
+    makePlatformAdmin($user);
     $server = Server::factory()->create(['team_id' => $team->id]);
 
     $this->actingAs($user);

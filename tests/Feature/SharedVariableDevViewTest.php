@@ -48,6 +48,8 @@ afterEach(function () {
 });
 
 test('environment shared variable dev view saves without openssl_encrypt error', function () {
+    makePlatformAdmin($this->user);
+
     Livewire::test(Show::class, [
         'project_uuid' => $this->project->uuid,
         'environment_uuid' => $this->environment->uuid,
@@ -64,6 +66,8 @@ test('environment shared variable dev view saves without openssl_encrypt error',
 });
 
 test('project shared variable dev view saves without openssl_encrypt error', function () {
+    makePlatformAdmin($this->user);
+
     Livewire::test(App\Livewire\SharedVariables\Project\Show::class, [
         'project_uuid' => $this->project->uuid,
     ])
@@ -77,6 +81,8 @@ test('project shared variable dev view saves without openssl_encrypt error', fun
 });
 
 test('team shared variable dev view saves without openssl_encrypt error', function () {
+    makePlatformAdmin($this->user);
+
     Livewire::test(Index::class)
         ->set('variables', 'TEAM_VAR=team_value')
         ->call('submit')
@@ -88,6 +94,8 @@ test('team shared variable dev view saves without openssl_encrypt error', functi
 });
 
 test('environment shared variable dev view updates existing variable', function () {
+    makePlatformAdmin($this->user);
+
     SharedEnvironmentVariable::create([
         'key' => 'EXISTING_VAR',
         'value' => 'old_value',
@@ -110,6 +118,8 @@ test('environment shared variable dev view updates existing variable', function 
 });
 
 test('server shared variable dev view saves without openssl_encrypt error', function () {
+    makePlatformAdmin($this->user);
+
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
 
     Livewire::test(App\Livewire\SharedVariables\Server\Show::class, [
@@ -128,6 +138,8 @@ test('server shared variable dev view saves without openssl_encrypt error', func
 });
 
 test('server shared variable dev view preserves inline comments', function () {
+    makePlatformAdmin($this->user);
+
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
 
     Livewire::test(App\Livewire\SharedVariables\Server\Show::class, [
@@ -145,6 +157,8 @@ test('server shared variable dev view preserves inline comments', function () {
 });
 
 test('server shared variable dev view updates existing variable', function () {
+    makePlatformAdmin($this->user);
+
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
 
     SharedEnvironmentVariable::create([
@@ -170,6 +184,8 @@ test('server shared variable dev view updates existing variable', function () {
 });
 
 test('server shared variables display built-ins as read-only rows', function () {
+    makePlatformAdmin($this->user);
+
     $server = Server::factory()->create(['team_id' => $this->team->id]);
 
     Livewire::test(App\Livewire\SharedVariables\Server\Show::class, ['server_uuid' => $server->uuid])
@@ -227,4 +243,20 @@ test('server shared variable values are only visible to admins', function () {
         ->assertSet('variables', 'SERVER_TOKEN=(Hidden, only admins can view)');
 
     expect(json_encode($component->snapshot).$component->html())->not->toContain('stored-server-variable-value');
+});
+
+test('team admin who is not a platform admin cannot save shared variables from dev view', function () {
+    Livewire::test(Index::class)
+        ->set('variables', 'TEAM_VAR=team_value')
+        ->call('submit');
+
+    Livewire::test(Show::class, [
+        'project_uuid' => $this->project->uuid,
+        'environment_uuid' => $this->environment->uuid,
+    ])
+        ->set('variables', 'ENV_VAR=env_value')
+        ->call('submit');
+
+    expect($this->team->environment_variables()->where('key', 'TEAM_VAR')->exists())->toBeFalse()
+        ->and($this->environment->environment_variables()->where('key', 'ENV_VAR')->exists())->toBeFalse();
 });

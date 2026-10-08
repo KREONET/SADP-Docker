@@ -20,6 +20,7 @@ beforeEach(function () {
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $team->members()->attach($user->id, ['role' => 'owner']);
+    makePlatformAdmin($user);
     session(['currentTeam' => $team]);
     $this->actingAs($user);
 
@@ -93,6 +94,26 @@ it('does not let team members restore Sentinel defaults', function () {
         ->assertForbidden();
 
     expect($member->can('manageSentinel', $this->server))->toBeFalse()
+        ->and($this->server->settings->fresh()->getAttributes())->toBe($before);
+});
+
+it('does not let team owners who are not platform admins restore Sentinel defaults', function () {
+    $owner = User::factory()->create();
+    $this->server->team->members()->attach($owner->id, ['role' => 'owner']);
+    $before = $this->server->settings->fresh()->getAttributes();
+    Queue::fake();
+
+    $component = Livewire::test(Sentinel::class, ['server' => $this->server]);
+    $this->actingAs($owner);
+    session(['currentTeam' => $this->server->team]);
+    $component->call('restoreDefaultConfiguration');
+
+    Queue::assertNothingPushed();
+
+    Livewire::test(Sentinel::class, ['server' => $this->server])
+        ->assertForbidden();
+
+    expect($owner->can('manageSentinel', $this->server))->toBeFalse()
         ->and($this->server->settings->fresh()->getAttributes())->toBe($before);
 });
 

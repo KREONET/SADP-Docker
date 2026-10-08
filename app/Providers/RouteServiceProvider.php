@@ -55,6 +55,17 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->user()?->id ?: auth_rate_limit_ip($request));
         });
 
+        // The proxy calls verify for every request of a "signed-in users only" application,
+        // so the limit is per visitor (first X-Forwarded-For entry), not per proxy.
+        RateLimiter::for('proxy-auth-verify', function (Request $request) {
+            $visitor = trim(explode(',', (string) $request->header('X-Forwarded-For'))[0]);
+
+            return Limit::perMinute(1200)->by('proxy-auth-verify:'.($visitor !== '' ? $visitor : auth_rate_limit_ip($request)));
+        });
+        RateLimiter::for('proxy-auth-login', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: auth_rate_limit_ip($request));
+        });
+
         RateLimiter::for('feedback', function (Request $request) {
             return Limit::perMinute(3)->by($request->user()?->id ?: auth_rate_limit_ip($request));
         });

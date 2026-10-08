@@ -12,10 +12,11 @@ use Livewire\Livewire;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    InstanceSettings::create(['id' => 0]);
+    InstanceSettings::forceCreate(['id' => 0]);
     $team = Team::factory()->create();
     $user = User::factory()->create();
     $team->members()->attach($user->id, ['role' => 'owner']);
+    makePlatformAdmin($user);
     session(['currentTeam' => $team]);
     $this->actingAs($user);
     $this->server = Server::factory()->create(['team_id' => $team->id]);

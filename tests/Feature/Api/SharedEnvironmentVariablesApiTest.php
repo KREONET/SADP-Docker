@@ -43,6 +43,8 @@ function sharedEnvHeaders(string $bearerToken): array
 
 describe('Team shared environment variables API', function () {
     test('creates lists updates and deletes team shared envs', function () {
+        makePlatformAdmin($this->user);
+
         $create = $this->withHeaders(sharedEnvHeaders($this->bearerToken))
             ->postJson('/api/v1/team/envs', [
                 'key' => 'TEAM_API_KEY',
@@ -104,6 +106,8 @@ describe('Team shared environment variables API', function () {
     });
 
     test('returns 409 when creating duplicate team key', function () {
+        makePlatformAdmin($this->user);
+
         SharedEnvironmentVariable::create([
             'key' => 'DUP_KEY',
             'value' => 'one',
@@ -119,10 +123,41 @@ describe('Team shared environment variables API', function () {
 
         $response->assertStatus(409);
     });
+
+    test('team owner who is not a platform admin cannot create update or delete team shared envs', function () {
+        $existing = SharedEnvironmentVariable::create([
+            'key' => 'EXISTING_TEAM_VAR',
+            'value' => 'original',
+            'type' => 'team',
+            'team_id' => $this->team->id,
+        ]);
+
+        $this->withHeaders(sharedEnvHeaders($this->bearerToken))
+            ->postJson('/api/v1/team/envs', [
+                'key' => 'NOT_ALLOWED',
+                'value' => 'secret-value',
+            ])
+            ->assertStatus(403);
+
+        $this->withHeaders(sharedEnvHeaders($this->bearerToken))
+            ->patchJson("/api/v1/team/envs/{$existing->id}", [
+                'value' => 'changed',
+            ])
+            ->assertStatus(403);
+
+        $this->withHeaders(sharedEnvHeaders($this->bearerToken))
+            ->deleteJson("/api/v1/team/envs/{$existing->id}")
+            ->assertStatus(403);
+
+        expect(SharedEnvironmentVariable::query()->where('key', 'NOT_ALLOWED')->exists())->toBeFalse()
+            ->and($existing->fresh()->value)->toBe('original');
+    });
 });
 
 describe('Project shared environment variables API', function () {
     test('creates and lists project shared envs', function () {
+        makePlatformAdmin($this->user);
+
         $create = $this->withHeaders(sharedEnvHeaders($this->bearerToken))
             ->postJson("/api/v1/projects/{$this->project->uuid}/envs", [
                 'key' => 'PROJECT_VAR',

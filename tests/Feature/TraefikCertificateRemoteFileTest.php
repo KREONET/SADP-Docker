@@ -95,6 +95,7 @@ it('shows the restart warning after deleting a certificate from the proxy page',
     InstanceSettings::forceCreate(['id' => 0]);
     $user = User::factory()->create();
     $user->teams()->attach($this->server->team_id, ['role' => 'admin']);
+    makePlatformAdmin($user);
     $this->actingAs($user);
     session(['currentTeam' => $this->server->team]);
     $certificateId = GetTraefikCertificates::run($this->server)[0]['id'];
@@ -106,20 +107,23 @@ it('shows the restart warning after deleting a certificate from the proxy page',
         ->assertSee('Restart the proxy to stop serving deleted TLS certificates.');
 });
 
-function actingAsTraefikCertificateUser(Team $team, string $role): User
+function actingAsTraefikCertificateUser(Team $team, string $role, bool $platformAdmin = false): User
 {
     InstanceSettings::forceCreate(['id' => 0]);
     $user = User::factory()->create();
     $user->teams()->attach($team->id, ['role' => $role]);
+    if ($platformAdmin) {
+        makePlatformAdmin($user);
+    }
     test()->actingAs($user);
     session(['currentTeam' => $team]);
 
     return $user;
 }
 
-it('lets an admin delete a certificate and records an audit event', function () {
+it('lets a platform admin delete a certificate and records an audit event', function () {
     $this->withoutDefer();
-    actingAsTraefikCertificateUser($this->server->team, 'admin');
+    actingAsTraefikCertificateUser($this->server->team, 'admin', platformAdmin: true);
     $certificate = GetTraefikCertificates::run($this->server)[0];
 
     Livewire::test(Proxy::class, ['server' => $this->server])
@@ -143,6 +147,21 @@ it('lets a member list certificates but not delete them', function () {
     Livewire::test(Proxy::class, ['server' => $this->server])
         ->call('loadTraefikCertificates')
         ->assertSet('traefikCertificates', fn (array $certificates): bool => count($certificates) === 40)
+        ->assertDontSeeHtml('submitAction="deleteTraefikCertificate')
+        ->call('deleteTraefikCertificate', $certificateId)
+        ->assertDispatched('error')
+        ->assertNotDispatched('success');
+
+    expect($this->uploadedContents)->toBeNull()
+        ->and($this->server->fresh()->hasPendingProxyConfiguration())->toBeFalse()
+        ->and(AuditEvent::query()->where('event', 'ui.proxy.certificate_deleted')->exists())->toBeFalse();
+});
+
+it('does not let a team admin who is not a platform admin delete certificates', function () {
+    actingAsTraefikCertificateUser($this->server->team, 'admin');
+    $certificateId = GetTraefikCertificates::run($this->server)[0]['id'];
+
+    Livewire::test(Proxy::class, ['server' => $this->server])
         ->assertDontSeeHtml('submitAction="deleteTraefikCertificate')
         ->call('deleteTraefikCertificate', $certificateId)
         ->assertDispatched('error')

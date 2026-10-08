@@ -43,7 +43,8 @@ class ServerPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        // Servers are shared infrastructure, so only platform admins change them.
+        return $user->isInstanceAdmin();
     }
 
     /**
@@ -51,7 +52,7 @@ class ServerPolicy
      */
     public function update(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
     }
 
     /**
@@ -59,7 +60,7 @@ class ServerPolicy
      */
     public function delete(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
     }
 
     /**
@@ -83,7 +84,7 @@ class ServerPolicy
      */
     public function manageProxy(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
     }
 
     /**
@@ -91,7 +92,7 @@ class ServerPolicy
      */
     public function manageSentinel(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
     }
 
     /**
@@ -99,7 +100,7 @@ class ServerPolicy
      */
     public function viewSentinel(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
     }
 
     /**
@@ -107,7 +108,7 @@ class ServerPolicy
      */
     public function manageCaCertificate(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
     }
 
     /**
@@ -115,6 +116,14 @@ class ServerPolicy
      */
     public function viewSecurity(User $user, Server $server): bool
     {
-        return $user->isAdminOfTeam($server->team_id);
+        return $this->isPlatformAdminOfTeam($user, $server);
+    }
+
+    /**
+     * Platform administrators manage the servers of the teams they belong to.
+     */
+    private function isPlatformAdminOfTeam(User $user, Server $server): bool
+    {
+        return $user->isInstanceAdmin() && $user->teams->contains('id', $server->team_id);
     }
 }

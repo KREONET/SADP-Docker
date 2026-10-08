@@ -43,6 +43,7 @@ class InstanceSettings extends Model
         'instance_name',
         'brand_name',
         'brand_logo_path',
+        'internal_network_cidrs',
         'is_api_enabled',
         'allowed_ips',
         'auto_update_frequency',
@@ -202,7 +203,7 @@ class InstanceSettings extends Model
             return true;
         }
 
-        return ! OauthSetting::where('enabled', true)->exists();
+        return ! OauthSetting::where('enabled', true)->whereIn('provider', OauthSetting::SUPPORTED_PROVIDERS)->exists();
     }
 
     /**
@@ -215,7 +216,7 @@ class InstanceSettings extends Model
             return false;
         }
 
-        return OauthSetting::where('enabled', true)->exists();
+        return OauthSetting::where('enabled', true)->whereIn('provider', OauthSetting::SUPPORTED_PROVIDERS)->exists();
     }
 
     /**

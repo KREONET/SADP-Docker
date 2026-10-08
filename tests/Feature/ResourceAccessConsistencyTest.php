@@ -46,6 +46,8 @@ beforeEach(function () {
 });
 
 test('server creation returns a consistent duplicate address response', function () {
+    makePlatformAdmin($this->user);
+
     $ownServer = Server::factory()->create([
         'ip' => '192.0.2.10',
         'team_id' => $this->team->id,

@@ -289,6 +289,7 @@ class S3StoragesController extends Controller
 
         $storage = S3Storage::create([
             'team_id' => $teamId,
+            'user_id' => $request->user()->id,
             'name' => $body['name'],
             'description' => $body['description'] ?? null,
             'endpoint' => $body['endpoint'],

@@ -37,6 +37,7 @@ beforeEach(function () {
         'bucket' => 'bucket-a',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $this->teamA->id,
+        'user_id' => $this->userA->id,
     ]));
 
     $this->storageB = S3Storage::unguarded(fn () => S3Storage::create([
@@ -48,6 +49,7 @@ beforeEach(function () {
         'bucket' => 'bucket-b',
         'endpoint' => 'https://s3.example.com',
         'team_id' => $this->teamB->id,
+        'user_id' => $this->userB->id,
     ]));
 
     $this->backupA = ScheduledDatabaseBackup::create([
@@ -103,6 +105,7 @@ describe('Storage/Resources team-scoped backup access', function () {
             'bucket' => 'bucket-c',
             'endpoint' => 'https://s3.example.com',
             'team_id' => $this->teamA->id,
+            'user_id' => $this->userA->id,
             'is_usable' => true,
         ]));
 

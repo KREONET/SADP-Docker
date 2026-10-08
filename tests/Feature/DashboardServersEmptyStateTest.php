@@ -33,7 +33,9 @@ it('shows an add private key button when no private keys exist', function () {
         ->assertSee(route('security.private-key.index'), false);
 });
 
-it('shows a new server button when private keys exist but servers do not', function () {
+it('shows a new server button to platform admins when private keys exist but servers do not', function () {
+    makePlatformAdmin($this->user);
+
     PrivateKey::factory()->create([
         'team_id' => $this->team->id,
         'name' => 'Deploy Key',
@@ -46,6 +48,17 @@ it('shows a new server button when private keys exist but servers do not', funct
         ->assertSee(route('server.create'), false)
         ->assertDontSee('A private key is required')
         ->assertDontSee('Add private key');
+});
+
+it('hides the new server button from team owners who are not platform admins', function () {
+    PrivateKey::factory()->create([
+        'team_id' => $this->team->id,
+    ]);
+
+    Livewire::test(Dashboard::class)
+        ->assertSee('No servers yet')
+        ->assertDontSee('New server')
+        ->assertDontSee(route('server.create'), false);
 });
 
 it('does not show server empty state when servers exist', function () {

@@ -547,6 +547,25 @@
                         </x-slot:contents>
                     </x-empty>
                     @else
+                    @php
+                        $currentExposureMode = \App\Enums\ApplicationExposureMode::tryFrom($exposureMode) ?? \App\Enums\ApplicationExposureMode::Public;
+                    @endphp
+                    <div class="mb-5 border-b border-neutral-200 pb-5 dark:border-white/[0.07]">
+                        <x-forms.listbox id="exposureMode" :label="__('Exposure')" onChange="instantSave"
+                            :helper="__('Who can open this application through its domains. Restart the application to apply a change.')"
+                            :options="\App\Enums\ApplicationExposureMode::options()" x-bind:disabled="!canUpdate" />
+                        <p class="mt-2 text-[12px] text-neutral-500 dark:text-fg-dim">{{ $currentExposureMode->description() }}</p>
+                        @if ($currentExposureMode === \App\Enums\ApplicationExposureMode::Internal && internalNetworkRanges() === [])
+                            <x-callout type="warning" :title="__('No internal network ranges are set')" class="mt-3">
+                                {{ __('Until a platform administrator sets the internal network ranges in Settings, nobody can open this application.') }}
+                            </x-callout>
+                        @endif
+                        @if ($currentExposureMode === \App\Enums\ApplicationExposureMode::Private && filled($fqdn))
+                            <x-callout type="info" :title="__('Domains are ignored')" class="mt-3">
+                                {{ __('The domains of this application are not published while it is private.') }}
+                            </x-callout>
+                        @endif
+                    </div>
                     <x-forms.listbox id="isHttpBasicAuthEnabled" :label="__('Authentication')" onChange="instantSave"
                         :helper="__('HTTP Basic Authentication adds the required authentication labels to the proxy. Coolify currently supports a single username and password.')"
                         :options="[

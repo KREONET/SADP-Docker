@@ -640,7 +640,8 @@ up() {
     echo "==> COOLIFY_COOLD_VM_ENABLED=false; skipping coold VM."
   fi
 
-  echo "==> Starting Coolify Docker stack with Docker Compose..."
+  echo "==> Starting PADED
+ Docker stack with Docker Compose..."
   prepare_coold_asset_cache_bust
   if [ "$COOLD_ASSETS_CHANGED" = "changed" ]; then
     echo "==> Coold nightly assets changed; rebuilding the Coolify dev image..."

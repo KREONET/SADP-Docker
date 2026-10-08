@@ -11,7 +11,7 @@
             </p>
         </div>
         @if ($servers->count() > 0)
-            @can('createAnyResource')
+            @can('create', App\Models\StandaloneDocker::class)
                 <div class="w-fit shrink-0">
                     <x-modal-input :title="__('New Destination')">
                         <x-slot:content>

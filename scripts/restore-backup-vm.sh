@@ -268,7 +268,8 @@ else
     scp "${SSH_OPTS[@]}" "$BACKUP_FILE" "root@$VM_IP:/root/coolify-backup.dmp"
 fi
 
-log "Restoring the backup and starting Coolify (migrations run on start)"
+log "Restoring the backup and Starting PADED
+ (migrations run on start)"
 # Send APP_KEY through stdin, so it does not show in the process list of this host or the VM.
 {
     printf 'APP_KEY=%q\n' "$APP_KEY"
@@ -307,7 +308,8 @@ docker exec coolify-redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning FLUSH
 COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
 [ -f docker-compose.custom.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.custom.yml"
 [ -f docker-compose.postgres-upgrade.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.postgres-upgrade.yml"
-echo "Starting Coolify $LATEST_IMAGE..."
+echo "Starting PADED
+ $LATEST_IMAGE..."
 # --pull never: the VM is offline, all images come from the base image.
 # shellcheck disable=SC2086
 LATEST_IMAGE=$LATEST_IMAGE docker compose --env-file .env $COMPOSE_FILES up -d --pull never --wait --wait-timeout 600

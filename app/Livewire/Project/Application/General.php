@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Project\Application;
 
+use App\Enums\ApplicationExposureMode;
 use App\Enums\StaticImageTypes;
 use App\Jobs\ApplicationDeploymentJob;
 use App\Livewire\Project\Service\Storage;
@@ -115,6 +116,9 @@ class General extends Component
 
     public ?string $httpBasicAuthPassword = null;
 
+    /** Who can reach the application through the proxy; see ApplicationExposureMode. */
+    public string $exposureMode = 'public';
+
     public ?string $watchPaths = null;
 
     public string $redirect;
@@ -191,6 +195,7 @@ class General extends Component
             'isHttpBasicAuthEnabled' => 'boolean|required',
             'httpBasicAuthUsername' => 'string|nullable',
             'httpBasicAuthPassword' => 'string|nullable',
+            'exposureMode' => ['required', Rule::enum(ApplicationExposureMode::class)],
             'watchPaths' => 'nullable',
             'redirect' => 'string|required',
         ];
@@ -404,6 +409,7 @@ class General extends Component
             $this->application->is_http_basic_auth_enabled = $this->isHttpBasicAuthEnabled;
             $this->application->http_basic_auth_username = $this->httpBasicAuthUsername;
             $this->application->http_basic_auth_password = $this->httpBasicAuthPassword;
+            $this->application->exposure_mode = $this->exposureMode;
             $this->application->watch_paths = $this->watchPaths;
             $this->application->redirect = $this->redirect;
 
@@ -457,6 +463,7 @@ class General extends Component
             $this->httpBasicAuthPassword = auth()->user()->can('update', $this->application)
                 ? $this->application->http_basic_auth_password
                 : null;
+            $this->exposureMode = $this->application->exposureMode()->value;
             $this->watchPaths = $this->application->watch_paths;
             $this->redirect = $this->application->redirect;
 
@@ -488,13 +495,14 @@ class General extends Component
             $oldIsPreserveRepositoryEnabled = $this->application->settings->is_preserve_repository_enabled;
             $oldIsSpa = $this->application->settings->is_spa;
             $oldIsHttpBasicAuthEnabled = $this->application->is_http_basic_auth_enabled;
+            $oldExposureMode = $this->application->exposureMode()->value;
 
             $this->syncData(toModel: true);
 
             if ($oldIsSpa !== $this->isSpa) {
                 $this->generateNginxConfiguration($this->isSpa ? 'spa' : 'static');
             }
-            if ($oldIsHttpBasicAuthEnabled !== $this->isHttpBasicAuthEnabled) {
+            if ($oldIsHttpBasicAuthEnabled !== $this->isHttpBasicAuthEnabled || $oldExposureMode !== $this->exposureMode) {
                 $this->application->save();
             }
 

@@ -60,7 +60,7 @@ class OauthController extends Controller
 
     private function enabledProvider(string $provider): OauthSetting
     {
-        $oauthSetting = OauthSetting::where('provider', $provider)->first();
+        $oauthSetting = OauthSetting::isSupported($provider) ? OauthSetting::where('provider', $provider)->first() : null;
         if (! $oauthSetting || ! $oauthSetting->enabled || ! $oauthSetting->couldBeEnabled()) {
             throw new HttpException(403, 'OAuth provider is not enabled');
         }

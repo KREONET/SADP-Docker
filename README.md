@@ -91,34 +91,34 @@ sudo bash scripts/install.sh
 
 > root 계정은 **PADED 이미지로 교체한 뒤** 처음 시작될 때 만들어집니다. 원본 Coolify 이미지도 같은 방식으로 root를 만들기 때문에, 1단계에서 이미 만들어질 수도 있습니다.
 
-### 2. PADED 이미지 빌드 후 교체
+### 2. PADED 이미지 빌드 후 교체 (필수)
+
+**이 단계를 하지 않으면 저장소에서 고친 내용이 하나도 반영되지 않습니다.** 1단계에서 실행된 것은 공식 Coolify 이미지입니다.
 
 ```bash
 cd /opt/paded
-sudo docker build -f docker/production/Dockerfile -t coollabsio/coolify:paded .
-
-sudo cp docker-compose.yml docker-compose.prod.yml /data/coolify/source/
-cd /data/coolify/source
-sudo LATEST_IMAGE=paded docker compose --env-file .env \
-  -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+sudo bash scripts/paded-deploy.sh
 ```
 
-- DB 마이그레이션은 컨테이너가 시작될 때 자동으로 실행됩니다.
-- `http://<서버 IP>:8000`에 접속합니다. 내부 회원가입을 켰다면 첫 관리자 계정을 만들고(이 계정이 플랫폼 관리자가 됩니다), 껐다면 설치 끝에 표시된 root 계정으로 로그인합니다.
+이 스크립트가 하는 일:
+- 이 저장소의 코드로 `coollabsio/coolify:paded` 이미지를 빌드합니다. 처음에는 몇 분 걸립니다.
+- 저장소의 compose 파일을 `/data/coolify/source/`에 복사합니다.
+- `.env`에 `LATEST_IMAGE=paded`, `AUTOUPDATE=false`를 기록합니다. 그래서 재시작해도 PADED 이미지가 유지되고, 자동 업데이트가 공식 이미지로 덮어쓰지 않습니다.
+- 컨테이너를 교체해 실행합니다. DB 마이그레이션은 컨테이너가 시작될 때 자동으로 실행됩니다.
 
-### 3. 자동 업데이트 끄기 (필수)
+교체가 끝나면 `http://<서버 IP>:8000`에 접속합니다. 내부 회원가입을 켰다면 첫 관리자 계정을 만들고(이 계정이 플랫폼 관리자가 됩니다), 껐다면 설치 끝에 표시된 root 계정으로 로그인합니다.
 
-**설정 → Updates**에서 자동 업데이트를 끄세요. 화면의 **Upgrade** 버튼도 누르면 안 됩니다. 둘 다 Coolify 공식 이미지를 받아와서 PADED를 원본 Coolify로 덮어씁니다.
+반영됐는지 확인하려면: `docker inspect coolify -f '{{.Config.Image}}'`가 `docker.io/coollabsio/coolify:paded`여야 합니다.
+
+### 3. Upgrade 버튼 누르지 않기
+
+화면의 **Upgrade** 버튼을 누르면 공식 Coolify 이미지를 받아 와서 PADED를 덮어씁니다. 실수로 눌렀다면 `sudo bash scripts/paded-deploy.sh`를 다시 실행하세요.
 
 ### PADED 새 버전으로 올리기
 
 ```bash
 cd /opt/paded && git pull
-sudo docker build -f docker/production/Dockerfile -t coollabsio/coolify:paded .
-sudo cp docker-compose.yml docker-compose.prod.yml /data/coolify/source/
-cd /data/coolify/source
-sudo LATEST_IMAGE=paded docker compose --env-file .env \
-  -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+sudo bash scripts/paded-deploy.sh
 ```
 
 올리기 전에 **설정 → Backup**에서 인스턴스 백업을 먼저 받아 두세요.

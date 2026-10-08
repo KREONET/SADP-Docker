@@ -5,7 +5,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\OauthController;
 use App\Http\Controllers\ProfileAvatarController;
 use App\Http\Controllers\ProjectIconController;
+use App\Http\Controllers\ProxyAuthController;
 use App\Http\Controllers\UploadController;
+use App\Http\Middleware\CheckForcePasswordReset;
+use App\Http\Middleware\DecideWhatToDoWithUser;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\SetInterfaceLocale;
+use App\Http\Middleware\VerifyCsrfToken;
 use App\Livewire\Admin\Index as AdminIndex;
 use App\Livewire\Analytics;
 use App\Livewire\Boarding\Index as BoardingIndex;
@@ -123,8 +129,11 @@ use App\Models\Server;
 use App\Models\ServiceDatabase;
 use App\Providers\RouteServiceProvider;
 use App\Services\TerminalSessionService;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 
 Route::post('/forgot-password', [Controller::class, 'forgot_password'])->name('password.forgot')->middleware('throttle:forgot-password');
@@ -135,6 +144,16 @@ Route::get('/auth/link', [Controller::class, 'link'])->name('auth.link');
 Route::post('/auth/link', [Controller::class, 'acceptLink'])->middleware('throttle:magic-link')->name('auth.link.accept');
 
 Route::get('/branding/logo', BrandingLogoController::class)->name('branding.logo');
+
+// Sign-in gate for "signed-in users only" applications. The proxy calls verify on every request,
+// so it runs without the session and cookie middleware: no panel cookie may reach the application's domain.
+Route::get('/proxy-auth/verify', [ProxyAuthController::class, 'check'])
+    ->withoutMiddleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class, ShareErrorsFromSession::class, VerifyCsrfToken::class, SetInterfaceLocale::class, CheckForcePasswordReset::class, DecideWhatToDoWithUser::class])
+    ->middleware('throttle:proxy-auth-verify')
+    ->name('proxy-auth.verify');
+Route::get('/proxy-auth/login', [ProxyAuthController::class, 'signIn'])
+    ->middleware(['auth', 'verified', 'throttle:proxy-auth-login'])
+    ->name('proxy-auth.login');
 
 Route::get('/auth/{provider}/redirect', [OauthController::class, 'redirect'])->name('auth.redirect');
 Route::get('/auth/{provider}/callback', [OauthController::class, 'callback'])->name('auth.callback');

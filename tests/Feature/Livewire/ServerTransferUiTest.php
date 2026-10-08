@@ -22,6 +22,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 
@@ -100,6 +101,17 @@ test('export bundle streams download from livewire', function () {
         ->assertFileDownloaded('server-transfer-'.$this->server->uuid.'.json');
 });
 
+test('export bundle is refused for a team owner who is not a platform admin', function () {
+    $regularOwner = User::factory()->create();
+    $this->team->members()->attach($regularOwner->id, ['role' => 'owner']);
+    $this->actingAs($regularOwner);
+    session(['currentTeam' => $this->team]);
+
+    Livewire::test(Transfer::class, ['server_uuid' => $this->server->uuid])
+        ->call('exportBundle')
+        ->assertNoFileDownloaded();
+});
+
 test('transfer page badge shows the management state of the server', function (string $state, string $label, array $hidden) {
     $claimer = app(ServerTransferClaimer::class);
     match ($state) {
@@ -161,4 +173,12 @@ test('import creates server after source removal', function () {
     $server = Server::where('uuid', $uuid)->first();
     expect($server)->not->toBeNull()
         ->and(data_get($server->server_metadata, 'transfer.status'))->toBe('claimed');
+});
+
+test('transfer import page is forbidden for a team owner who is not a platform admin', function () {
+    $owner = User::factory()->create();
+    $this->team->members()->attach($owner->id, ['role' => 'owner']);
+    $this->actingAs($owner);
+
+    $this->get('/servers/import')->assertForbidden();
 });

@@ -405,6 +405,7 @@ class VolumeBackups extends Component
             && S3Storage::query()
                 ->whereKey($this->s3StorageId)
                 ->where('team_id', currentTeam()->id)
+                ->visibleTo(auth()->user())
                 ->where('is_usable', true)
                 ->exists();
     }

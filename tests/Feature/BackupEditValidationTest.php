@@ -48,6 +48,9 @@ function createBackupForEditValidationTest(Team $team, array $overrides = []): S
     ], $overrides));
 }
 
+/**
+ * Storages are created by the acting user, so the non-admin test user may select them.
+ */
 function createS3StorageForBackupEditValidationTest(Team|int $team, string $name = 'Backup Edit S3'): S3Storage
 {
     return S3Storage::create([
@@ -59,6 +62,7 @@ function createS3StorageForBackupEditValidationTest(Team|int $team, string $name
         'endpoint' => 'https://s3.example.com',
         'is_usable' => true,
         'team_id' => $team instanceof Team ? $team->id : $team,
+        'user_id' => auth()->id(),
     ]);
 }
 
@@ -413,6 +417,27 @@ it('keeps S3 enabled by selecting the only available team storage when none is s
     $backup->refresh();
     expect($backup->save_s3)->toBeTruthy();
     expect($backup->s3_storage_id)->toBe($s3->id);
+});
+
+it('does not select an S3 storage created by another team member', function () {
+    $s3 = createS3StorageForBackupEditValidationTest($this->team, 'Teammate S3');
+    $teammate = User::factory()->create();
+    $teammate->teams()->attach($this->team, ['role' => 'member']);
+    $s3->update(['user_id' => $teammate->id]);
+
+    $backup = createBackupForEditValidationTest($this->team, [
+        'save_s3' => false,
+        's3_storage_id' => null,
+    ]);
+
+    Livewire::test(BackupEdit::class, ['backup' => $backup->fresh(), 'availableS3Storages' => $this->team->s3s])
+        ->set('saveS3', true)
+        ->set('s3StorageId', $s3->id)
+        ->call('instantSave');
+
+    $backup->refresh();
+    expect($backup->save_s3)->toBeFalsy();
+    expect($backup->s3_storage_id)->toBeNull();
 });
 
 it('defaults to the first available storage when multiple storages are available', function () {

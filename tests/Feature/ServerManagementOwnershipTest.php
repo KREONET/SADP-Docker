@@ -22,6 +22,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->owner = User::factory()->create();
     $this->team->members()->attach($this->owner, ['role' => 'owner']);
+    makePlatformAdmin($this->owner);
     $this->privateKey = PrivateKey::factory()->create(['team_id' => $this->team->id]);
     $this->server = Server::factory()->create([
         'team_id' => $this->team->id,
@@ -159,6 +160,20 @@ test('team members cannot change server management ownership', function () {
     $this->team->members()->attach($member, ['role' => 'member']);
 
     $this->actingAs($member);
+    session(['currentTeam' => $this->team]);
+
+    Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])
+        ->call('toggleManagement')
+        ->assertForbidden();
+
+    expect($this->server->fresh()->isTransferredAway())->toBeFalse();
+});
+
+test('team owners who are not platform admins cannot change server management ownership', function () {
+    $teamOwner = User::factory()->create();
+    $this->team->members()->attach($teamOwner, ['role' => 'owner']);
+
+    $this->actingAs($teamOwner);
     session(['currentTeam' => $this->team]);
 
     Livewire::test(Show::class, ['server_uuid' => $this->server->uuid])

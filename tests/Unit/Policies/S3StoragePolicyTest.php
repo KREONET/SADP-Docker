@@ -1,197 +1,123 @@
 <?php
 
 use App\Models\S3Storage;
+use App\Models\Team;
 use App\Models\User;
 use App\Policies\S3StoragePolicy;
 
-it('allows team member to view S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'member']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
+it('allows the creator to view, update, delete and validate their own S3 storage', function () {
+    $user = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: false);
+    $storage = mockS3PolicyStorage(teamId: 1, userId: 5);
 
     $policy = new S3StoragePolicy;
     expect($policy->view($user, $storage))->toBeTrue();
+    expect($policy->update($user, $storage))->toBeTrue();
+    expect($policy->delete($user, $storage))->toBeTrue();
+    expect($policy->validateConnection($user, $storage))->toBeTrue();
 });
 
-it('denies team member to view S3 storage from another team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'owner']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(2);
-    $storage->team_id = 2;
+it('denies a user access to an S3 storage another team member created', function () {
+    $user = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: false);
+    $storage = mockS3PolicyStorage(teamId: 1, userId: 6);
 
     $policy = new S3StoragePolicy;
     expect($policy->view($user, $storage))->toBeFalse();
+    expect($policy->update($user, $storage))->toBeFalse();
+    expect($policy->delete($user, $storage))->toBeFalse();
+    expect($policy->validateConnection($user, $storage))->toBeFalse();
 });
 
-it('allows team admin to update S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'admin']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
+it('denies a team owner access to an S3 storage another team member created', function () {
+    $user = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: false);
+    $user->shouldReceive('isAdminOfTeam')->with(1)->andReturn(true);
+    $storage = mockS3PolicyStorage(teamId: 1, userId: 6);
 
     $policy = new S3StoragePolicy;
-    expect($policy->update($user, $storage))->toBeTrue();
-});
-
-it('denies team member to update S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'member']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
-
-    $policy = new S3StoragePolicy;
+    expect($policy->view($user, $storage))->toBeFalse();
     expect($policy->update($user, $storage))->toBeFalse();
 });
 
-it('denies team admin to update S3 storage from another team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'admin']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(2);
-    $storage->team_id = 2;
+it('denies a non platform admin access to an S3 storage without a creator', function () {
+    $user = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: false);
+    $storage = mockS3PolicyStorage(teamId: 1, userId: null);
 
     $policy = new S3StoragePolicy;
+    expect($policy->view($user, $storage))->toBeFalse();
     expect($policy->update($user, $storage))->toBeFalse();
 });
 
-it('allows team admin to delete S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'admin']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
+it('allows a platform admin to manage every S3 storage of their team', function () {
+    $user = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: true);
 
     $policy = new S3StoragePolicy;
-    expect($policy->delete($user, $storage))->toBeTrue();
+    foreach ([6, null] as $creatorId) {
+        $storage = mockS3PolicyStorage(teamId: 1, userId: $creatorId);
+        expect($policy->view($user, $storage))->toBeTrue();
+        expect($policy->update($user, $storage))->toBeTrue();
+        expect($policy->delete($user, $storage))->toBeTrue();
+        expect($policy->validateConnection($user, $storage))->toBeTrue();
+    }
 });
 
-it('denies team member to delete S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'member']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
-
+it('denies access to an S3 storage from another team, even for its creator or a platform admin', function () {
     $policy = new S3StoragePolicy;
-    expect($policy->delete($user, $storage))->toBeFalse();
+
+    $creator = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: false);
+    $platformAdmin = mockS3PolicyUser(id: 7, teamIds: [1], isPlatformAdmin: true);
+    $storage = mockS3PolicyStorage(teamId: 2, userId: 5);
+
+    expect($policy->view($creator, $storage))->toBeFalse();
+    expect($policy->update($creator, $storage))->toBeFalse();
+    expect($policy->view($platformAdmin, $storage))->toBeFalse();
+    expect($policy->delete($platformAdmin, $storage))->toBeFalse();
 });
 
-it('denies team admin to delete S3 storage from another team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'owner']],
-    ]);
-
+it('allows any user with a current team to create S3 storage', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(2);
-    $storage->team_id = 2;
-
-    $policy = new S3StoragePolicy;
-    expect($policy->delete($user, $storage))->toBeFalse();
-});
-
-it('allows admin to create S3 storage', function () {
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(true);
+    $user->shouldReceive('currentTeam')->andReturn(new Team);
+    $user->shouldReceive('isAdmin')->andReturn(false);
 
     $policy = new S3StoragePolicy;
     expect($policy->create($user))->toBeTrue();
 });
 
-it('denies non-admin to create S3 storage', function () {
+it('denies creating S3 storage without a current team', function () {
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('isAdmin')->andReturn(false);
+    $user->shouldReceive('currentTeam')->andReturn(null);
 
     $policy = new S3StoragePolicy;
     expect($policy->create($user))->toBeFalse();
 });
 
-it('allows team admin to validate connection of S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'admin']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
+it('denies restore and force delete of S3 storage', function () {
+    $user = mockS3PolicyUser(id: 5, teamIds: [1], isPlatformAdmin: true);
+    $storage = mockS3PolicyStorage(teamId: 1, userId: 5);
 
     $policy = new S3StoragePolicy;
-    expect($policy->validateConnection($user, $storage))->toBeTrue();
+    expect($policy->restore($user, $storage))->toBeFalse();
+    expect($policy->forceDelete($user, $storage))->toBeFalse();
 });
 
-it('denies team member to validate connection of S3 storage from their team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'member']],
-    ]);
-
+/**
+ * @param  array<int, int>  $teamIds
+ */
+function mockS3PolicyUser(int $id, array $teamIds, bool $isPlatformAdmin): User
+{
     $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
+    $user->shouldReceive('getAttribute')->with('id')->andReturn($id);
+    $user->shouldReceive('getAttribute')->with('teams')->andReturn(
+        collect($teamIds)->map(fn (int $teamId) => (object) ['id' => $teamId])
+    );
+    $user->shouldReceive('isInstanceAdmin')->andReturn($isPlatformAdmin);
 
+    return $user;
+}
+
+function mockS3PolicyStorage(int $teamId, ?int $userId): S3Storage
+{
     $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(1);
-    $storage->team_id = 1;
+    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn($teamId);
+    $storage->shouldReceive('getAttribute')->with('user_id')->andReturn($userId);
 
-    $policy = new S3StoragePolicy;
-    expect($policy->validateConnection($user, $storage))->toBeFalse();
-});
-
-it('denies team admin to validate connection of S3 storage from another team', function () {
-    $teams = collect([
-        (object) ['id' => 1, 'pivot' => (object) ['role' => 'admin']],
-    ]);
-
-    $user = Mockery::mock(User::class)->makePartial();
-    $user->shouldReceive('getAttribute')->with('teams')->andReturn($teams);
-
-    $storage = Mockery::mock(S3Storage::class)->makePartial();
-    $storage->shouldReceive('getAttribute')->with('team_id')->andReturn(2);
-    $storage->team_id = 2;
-
-    $policy = new S3StoragePolicy;
-    expect($policy->validateConnection($user, $storage))->toBeFalse();
-});
+    return $storage;
+}
