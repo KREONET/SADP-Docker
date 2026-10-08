@@ -30,8 +30,8 @@ it('blocks password registration when oauth registration policy disables it', fu
     app(CreateNewUser::class)->create([
         'name' => 'Password User',
         'email' => 'password@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
+        'password' => 'Str0ng!Pass',
+        'password_confirmation' => 'Str0ng!Pass',
     ]);
 })->throws(HttpException::class);
 
@@ -44,8 +44,8 @@ it('allows password registration when no oauth provider is enabled', function ()
     $user = app(CreateNewUser::class)->create([
         'name' => 'Password User',
         'email' => 'password@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
+        'password' => 'Str0ng!Pass',
+        'password_confirmation' => 'Str0ng!Pass',
     ]);
 
     expect($user->email)->toBe('password@example.com')

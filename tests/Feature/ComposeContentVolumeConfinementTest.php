@@ -293,6 +293,8 @@ test('loading files for a service writes relative content inside the resource di
 });
 
 test('the service stack form rejects a content volume outside the service directory', function () {
+    // Platform admins may mount host paths, so this reaches the content confinement check.
+    makePlatformAdmin($this->user);
     $this->actingAs($this->user);
     $service = contentConfinementService(CONTENT_CONFINEMENT_SAFE_COMPOSE);
 

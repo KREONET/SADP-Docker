@@ -4,6 +4,11 @@ services:
     image: "docker.io/coollabsio/coolify-testing-host:latest"
     pull_policy: always
     container_name: coolify-testing-host
+    # Trust only the key generated at seed time (WindowsDockerDesktopKeySeeder), never the published one.
+    command:
+      - sh
+      - -c
+      - '(while [ ! -s /data/coolify/ssh/windows-docker-desktop.pub ]; do sleep 2; done; cat /data/coolify/ssh/windows-docker-desktop.pub > /root/.ssh/authorized_keys) & exec /usr/sbin/sshd -D -o ListenAddress=0.0.0.0 -o Port=22'
     volumes:
       - //var/run/docker.sock://var/run/docker.sock
       - ./:/data/coolify

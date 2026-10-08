@@ -5,6 +5,7 @@ namespace App\Livewire\Settings;
 use App\Models\InstanceSettings;
 use App\Models\Server;
 use App\Services\BrandingLogoStorageService;
+use App\Support\InstanceSettingsAudit;
 use App\Support\InterfaceLocale;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
@@ -115,7 +116,8 @@ class Index extends Component
             return;
         }
 
-        $this->settings->update(['internal_network_cidrs' => $ranges === [] ? null : implode("\n", $ranges)]);
+        $this->settings->internal_network_cidrs = $ranges === [] ? null : implode("\n", $ranges);
+        InstanceSettingsAudit::save($this->settings);
         $this->internal_network_cidrs = $this->settings->internal_network_cidrs;
         auditLog('ui.instance.internal_network_ranges_updated', ['ranges' => $ranges]);
         $this->dispatch('success', __('Internal network ranges saved. Restart internal network only applications to apply them.'));
@@ -129,7 +131,8 @@ class Index extends Component
         ]);
 
         $brandName = trim((string) $this->brand_name);
-        $this->settings->update(['brand_name' => $brandName !== '' ? $brandName : null]);
+        $this->settings->brand_name = $brandName !== '' ? $brandName : null;
+        InstanceSettingsAudit::save($this->settings);
         auditLog('ui.instance.brand_name_updated', ['brand_name' => $this->settings->brand_name]);
 
         // Reload so the persisted sidebar and the page head show the new name.
@@ -150,7 +153,9 @@ class Index extends Component
             return null;
         }
 
+        $previousLogoPath = $this->settings->brand_logo_path;
         $logoStorage->store($this->settings, $this->logo);
+        InstanceSettingsAudit::record(['brand_logo_path' => ['old' => $previousLogoPath, 'new' => $this->settings->brand_logo_path]]);
         $this->reset('logo');
         auditLog('ui.instance.brand_logo_updated');
 
@@ -161,7 +166,11 @@ class Index extends Component
     {
         $this->authorize('update', $this->settings);
 
+        $previousLogoPath = $this->settings->brand_logo_path;
         $logoStorage->delete($this->settings);
+        if ($previousLogoPath !== null) {
+            InstanceSettingsAudit::record(['brand_logo_path' => ['old' => $previousLogoPath, 'new' => null]]);
+        }
         auditLog('ui.instance.brand_logo_removed');
 
         return $this->redirect(route('settings.index'));
@@ -190,7 +199,7 @@ class Index extends Component
         $this->settings->instance_timezone = $this->instance_timezone;
         $this->settings->dev_helper_version = $this->dev_helper_version;
         if ($isSave) {
-            $this->settings->save();
+            InstanceSettingsAudit::save($this->settings);
             $this->dispatch('success', __('Settings updated!'));
         }
     }
@@ -202,7 +211,8 @@ class Index extends Component
             'default_locale' => ['required', 'in:'.implode(',', array_keys(InterfaceLocale::available()))],
         ]);
 
-        $this->settings->update(['default_locale' => $this->default_locale]);
+        $this->settings->default_locale = $this->default_locale;
+        InstanceSettingsAudit::save($this->settings);
         auditLog('ui.instance.default_locale_updated', ['locale' => $this->default_locale]);
 
         // Reload so this page also renders in the new default when the admin follows it.
@@ -269,7 +279,7 @@ class Index extends Component
 
             $this->instantSave(isSave: false);
 
-            $this->settings->save();
+            InstanceSettingsAudit::save($this->settings);
             if ($this->server) {
                 $this->server->setupDynamicProxyConfiguration();
             }

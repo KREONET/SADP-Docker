@@ -98,7 +98,7 @@ test('audit persistence failures do not fail the action', function () {
         expect(fn () => auditLog('ui.project.updated', ['team_id' => $this->team->id]))
             ->not->toThrow(Throwable::class);
 
-        Log::shouldHaveReceived('warning')->once()->with(
+        Log::shouldHaveReceived('error')->once()->with(
             'Audit event persistence failed',
             Mockery::on(fn (array $context): bool => $context === [
                 'event' => 'ui.project.updated',
@@ -125,7 +125,7 @@ test('audit preparation failures log sanitized diagnostics without failing the a
         'secret' => 'must not be logged',
     ]))->not->toThrow(Throwable::class);
 
-    Log::shouldHaveReceived('warning')->once()->with(
+    Log::shouldHaveReceived('error')->once()->with(
         'Audit event preparation failed',
         Mockery::on(fn (array $context): bool => $context === [
             'event' => 'ui.project.updated',
@@ -568,7 +568,9 @@ test('authentication failures and logout are audited without credentials', funct
     $logout = AuditEvent::query()->where('event', 'auth.user.logged_out')->sole();
 
     expect($failed->level)->toBe('warning')
+        ->and($failed->result)->toBe('failure')
         ->and($failed->metadata)->not->toHaveKey('password')
+        ->and($failed->metadata['attempted_email'])->toBe('p***@example.com')
         ->and($logout->actor_id)->toBe($this->user->id);
 });
 
@@ -994,14 +996,14 @@ test('creating an application environment variable records an audit event', func
         ->and(json_encode($event->metadata))->not->toContain('secret-value');
 });
 
-test('database cleanup removes audit events older than 90 days', function () {
+test('database cleanup removes audit events older than the audit retention period', function () {
     $old = AuditEvent::factory()->create([
         'team_id' => $this->team->id,
-        'created_at' => now()->subDays(91),
+        'created_at' => now()->subDays(366),
     ]);
     $recent = AuditEvent::factory()->create([
         'team_id' => $this->team->id,
-        'created_at' => now()->subDays(89),
+        'created_at' => now()->subDays(364),
     ]);
 
     AuditEvent::pruneExpired();

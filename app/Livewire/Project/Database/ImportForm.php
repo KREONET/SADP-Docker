@@ -4,6 +4,7 @@ namespace App\Livewire\Project\Database;
 
 use App\Actions\Database\StartDatabaseImport;
 use App\Models\S3Storage;
+use App\Models\ScheduledDatabaseBackupExecution;
 use App\Models\Server;
 use App\Models\Service;
 use App\Models\ServiceDatabase;
@@ -12,9 +13,11 @@ use App\Models\StandaloneDragonfly;
 use App\Models\StandaloneKeydb;
 use App\Models\StandaloneRedis;
 use App\Rules\SafeWebhookUrl;
+use App\Support\BackupEncryption;
 use App\Support\DatabaseImport\DatabaseImportCommandBuilder;
 use App\Support\DatabaseImport\DatabaseImportException;
 use App\Support\DatabaseImport\DatabaseImportSource;
+use App\Support\DatabaseImport\ServerImportPath;
 use App\Support\ValidationPatterns;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Storage;
@@ -109,6 +112,13 @@ class ImportForm extends Component
 
         // Allow alphanumerics, dots, dashes, underscores, slashes, and spaces
         return preg_match('/^[a-zA-Z0-9.\-_\/\s]+$/', $path) === 1;
+    }
+
+    private function importPathNotAllowedMessage(): string
+    {
+        return __('The file must be inside an allowed import directory: :directories', [
+            'directories' => implode(', ', ServerImportPath::allowedDirectories()),
+        ]);
     }
 
     public bool $unsupported = false;
@@ -352,11 +362,35 @@ class ImportForm extends Component
                 return;
             }
 
+            if (! ServerImportPath::isWithinAllowedDirectory($this->customLocation)) {
+                $this->dispatch('error', $this->importPathNotAllowedMessage());
+
+                return;
+            }
+
             try {
-                $escapedPath = escapeshellarg($this->customLocation);
+                try {
+                    $resolvedPath = ServerImportPath::resolve($this->customLocation, $this->server);
+                } catch (DatabaseImportException) {
+                    $this->dispatch('error', $this->importPathNotAllowedMessage());
+
+                    return;
+                }
+                if ($resolvedPath === null) {
+                    $this->dispatch('error', __('The file does not exist or has been deleted.'));
+
+                    return;
+                }
+                $escapedPath = escapeshellarg($resolvedPath);
                 $result = instant_remote_process(["ls -l {$escapedPath}"], $this->server, throwError: false);
                 if (blank($result)) {
                     $this->dispatch('error', __('The file does not exist or has been deleted.'));
+
+                    return;
+                }
+                if (BackupEncryption::isEncryptedFilename($resolvedPath)
+                    && ! ScheduledDatabaseBackupExecution::encryptedBackupForTeam($resolvedPath, (int) currentTeam()->id)) {
+                    $this->dispatch('error', __('This encrypted backup was not created by this Coolify instance for your team, so it cannot be decrypted.'));
 
                     return;
                 }
@@ -508,6 +542,13 @@ class ImportForm extends Component
             // Check if file exists
             if (! $disk->exists($cleanPath)) {
                 $this->dispatch('error', __('File not found in S3. Please check the path.'));
+
+                return;
+            }
+
+            if (BackupEncryption::isEncryptedFilename($cleanPath)
+                && ! ScheduledDatabaseBackupExecution::encryptedBackupForTeam($cleanPath, (int) currentTeam()->id)) {
+                $this->dispatch('error', __('This encrypted backup was not created by this Coolify instance for your team, so it cannot be decrypted.'));
 
                 return;
             }

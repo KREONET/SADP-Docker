@@ -11,6 +11,7 @@ use App\Models\Project;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Js;
@@ -286,6 +287,7 @@ test('the edit modal value autocomplete offers the vault scope with lazy key fet
     $this->application->secretManagerLink()->create(['integration_token_id' => $this->token->id]);
     $env = $this->application->environment_variables()->create(['key' => 'MY_VAR', 'value' => 'plain']);
 
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
     $component = Livewire::test(Show::class, ['env' => $env, 'type' => 'application'])
         ->call('loadValues')
         ->assertSeeHtml('hasVaultSource: true');
@@ -309,6 +311,7 @@ test('the edit modal value autocomplete reports secret provider failures', funct
 test('the edit modal value autocomplete has no vault scope without a source', function () {
     $env = $this->application->environment_variables()->create(['key' => 'MY_VAR', 'value' => 'plain']);
 
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
     $component = Livewire::test(Show::class, ['env' => $env, 'type' => 'application'])
         ->call('loadValues')
         ->assertSeeHtml('hasVaultSource: false');

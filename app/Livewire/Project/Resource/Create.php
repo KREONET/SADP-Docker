@@ -4,6 +4,7 @@ namespace App\Livewire\Project\Resource;
 
 use App\Models\EnvironmentVariable;
 use App\Models\Service;
+use App\Support\ContainerPrivilegePolicy;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 
@@ -87,6 +88,10 @@ class Create extends Component
                     });
                 }
                 if ($oneClickService) {
+                    $hostAccessViolation = ContainerPrivilegePolicy::composeViolation(null, base64_decode($oneClickService), auth()->user());
+                    if ($hostAccessViolation !== null) {
+                        abort(403, $hostAccessViolation);
+                    }
                     $service_payload = [
                         'docker_compose_raw' => base64_decode($oneClickService),
                         'environment_id' => $environment->id,

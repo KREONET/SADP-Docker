@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\Service;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -340,6 +341,8 @@ YAML,
 });
 
 it('keeps developer view unfiltered after searching', function () {
+    // Revealing values in the developer view requires a recent re-authentication.
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
     $application = Application::factory()->create([
         'environment_id' => $this->environment->id,
     ]);

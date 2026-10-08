@@ -247,6 +247,8 @@ describe('PATCH /api/v1/services/{uuid}/applications/{app_uuid}', function () {
 
     test('updates the HTTP to HTTPS redirect setting', function () {
         config(['app.maintenance.driver' => 'file']);
+        // Turning the redirect off is reserved for platform administrators.
+        makePlatformAdmin($this->user);
         $ctx = createServiceWithApplicationForApiTest($this);
 
         $response = $this->withHeaders([

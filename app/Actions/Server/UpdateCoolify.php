@@ -121,11 +121,47 @@ class UpdateCoolify
         $registryUrl = coolifyRegistryUrl();
 
         remote_process([
-            "curl -fsSL {$upgradeScriptUrl} -o /data/coolify/source/upgrade.sh",
+            self::downloadUpgradeScriptCommand($upgradeScriptUrl),
             'bash /data/coolify/source/upgrade.sh '.
                 escapeshellarg($this->latestVersion).' '.
                 escapeshellarg($latestHelperImageVersion).' '.
                 escapeshellarg($registryUrl),
         ], $this->server);
+    }
+
+    /**
+     * Downloads upgrade.sh to a temporary file, checks it against "<url>.sha256" and only then
+     * replaces the script that the next line runs.
+     *
+     * - A published checksum that does not match aborts the upgrade.
+     * - Without a published checksum the upgrade continues with a warning, unless the host's
+     *   .env sets COOLIFY_REQUIRE_CHECKSUMS=true.
+     *
+     * It is one `sh -c '...'` line, so the non-root sudo parser runs it as a whole with sudo.
+     */
+    public static function downloadUpgradeScriptCommand(string $upgradeScriptUrl, string $directory = '/data/coolify/source'): string
+    {
+        $script = implode(' ', [
+            'set -e;',
+            'url='.escapeshellarg($upgradeScriptUrl).';',
+            'dir='.escapeshellarg($directory).';',
+            'dest="$dir/upgrade.sh";',
+            'tmp="$dir/upgrade.sh.download";',
+            'rm -f "$tmp";',
+            'curl -fsSL "$url" -o "$tmp";',
+            'expected=$(curl -fsSL "$url.sha256" 2>/dev/null | cut -d " " -f 1 | tr -d "\r\n" | tr "A-F" "a-f" || true);',
+            'if printf "%s" "$expected" | grep -Eq "^[0-9a-f]{64}$"; then',
+            'if command -v sha256sum >/dev/null 2>&1; then actual=$(sha256sum "$tmp" | cut -d " " -f 1); else actual=$(openssl dgst -sha256 -r "$tmp" | cut -d " " -f 1); fi;',
+            'if [ "$actual" != "$expected" ]; then rm -f "$tmp"; echo "ERROR: upgrade.sh checksum mismatch (expected $expected, got $actual). Aborting upgrade." >&2; exit 1; fi;',
+            'echo "upgrade.sh checksum verified.";',
+            'elif grep -qs "^COOLIFY_REQUIRE_CHECKSUMS=true" "$dir/.env"; then',
+            'rm -f "$tmp"; echo "ERROR: No checksum published at $url.sha256 and COOLIFY_REQUIRE_CHECKSUMS=true. Aborting upgrade." >&2; exit 1;',
+            'else',
+            'echo "WARNING: No checksum published at $url.sha256. upgrade.sh integrity was not verified.";',
+            'fi;',
+            'mv -f "$tmp" "$dest"',
+        ]);
+
+        return 'sh -c '.escapeshellarg($script);
     }
 }

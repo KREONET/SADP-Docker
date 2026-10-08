@@ -12,6 +12,7 @@ use App\Services\DeploymentConfiguration\ApplicationConfigurationSnapshot;
 use App\Services\DeploymentConfiguration\ConfigurationDiff;
 use App\Services\DeploymentConfiguration\ConfigurationDiffer;
 use App\Services\Platform\SourcePolicy;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
 use App\Traits\Auditable;
@@ -1570,7 +1571,7 @@ class Application extends BaseModel
             ? (str_starts_with($resolvedGitSshCommand, 'GIT_SSH_COMMAND=')
                 ? $resolvedGitSshCommand
                 : 'GIT_SSH_COMMAND="'.$resolvedGitSshCommand.'"')
-            : 'GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"';
+            : 'GIT_SSH_COMMAND="ssh -o LogLevel=ERROR '.gitSshHostKeyOptions().'"';
 
         // Use the explicitly passed commit (e.g. from rollback), falling back to the application's git_commit_sha.
         // Invalid refs will cause the git checkout/fetch command to fail on the remote server.
@@ -1707,7 +1708,7 @@ class Application extends BaseModel
                     $private_key = base64_encode($private_key);
                     $gitlabPort = $gitlabSource->custom_port ?? 22;
                     $escapedCustomRepository = str_replace("'", "'\\''", $customRepository);
-                    $base_command = "GIT_SSH_COMMAND=\"ssh -o ConnectTimeout=30 -p {$gitlabPort} -o Port={$gitlabPort} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {$customSshKeyLocation} -o IdentitiesOnly=yes\" {$base_command} '{$escapedCustomRepository}'";
+                    $base_command = "GIT_SSH_COMMAND=\"ssh -o ConnectTimeout=30 -p {$gitlabPort} -o Port={$gitlabPort} -o LogLevel=ERROR ".gitSshHostKeyOptions()." -i {$customSshKeyLocation} -o IdentitiesOnly=yes\" {$base_command} '{$escapedCustomRepository}'";
 
                     $commands = $this->gitSshKeySetupCommands($deployment_uuid, $private_key, $exec_in_docker);
 
@@ -1756,7 +1757,7 @@ class Application extends BaseModel
             // When used with executeInDocker (which uses bash -c '...'), we need to escape for bash context
             // Replace ' with '\'' to safely escape within single-quoted bash strings
             $escapedCustomRepository = str_replace("'", "'\\''", $customRepository);
-            $base_command = "GIT_SSH_COMMAND=\"ssh -o ConnectTimeout=30 -p {$customPort} -o Port={$customPort} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {$customSshKeyLocation} -o IdentitiesOnly=yes\" {$base_command} '{$escapedCustomRepository}'";
+            $base_command = "GIT_SSH_COMMAND=\"ssh -o ConnectTimeout=30 -p {$customPort} -o Port={$customPort} -o LogLevel=ERROR ".gitSshHostKeyOptions()." -i {$customSshKeyLocation} -o IdentitiesOnly=yes\" {$base_command} '{$escapedCustomRepository}'";
 
             $commands = $this->gitSshKeySetupCommands($deployment_uuid, $private_key, $exec_in_docker);
 
@@ -2013,7 +2014,7 @@ class Application extends BaseModel
                     $private_key = base64_encode($private_key);
                     $gitlabPort = $gitlabSource->custom_port ?? 22;
                     $escapedCustomRepository = escapeshellarg($customRepository);
-                    $gitlabSshCommand = "ssh -o ConnectTimeout=30 -p {$gitlabPort} -o Port={$gitlabPort} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {$customSshKeyLocation} -o IdentitiesOnly=yes";
+                    $gitlabSshCommand = "ssh -o ConnectTimeout=30 -p {$gitlabPort} -o Port={$gitlabPort} -o LogLevel=ERROR ".gitSshHostKeyOptions()." -i {$customSshKeyLocation} -o IdentitiesOnly=yes";
                     $gitlabGitSshCommand = "GIT_SSH_COMMAND=\"{$gitlabSshCommand}\"";
                     $git_clone_command_base = "{$gitlabGitSshCommand} {$git_clone_command} {$escapedCustomRepository} {$escapedBaseDir}";
                     if ($only_checkout) {
@@ -2079,7 +2080,7 @@ class Application extends BaseModel
             }
             $private_key = base64_encode($private_key);
             $escapedCustomRepository = escapeshellarg($customRepository);
-            $deployKeySshCommand = "ssh -o ConnectTimeout=30 -p {$customPort} -o Port={$customPort} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {$customSshKeyLocation} -o IdentitiesOnly=yes";
+            $deployKeySshCommand = "ssh -o ConnectTimeout=30 -p {$customPort} -o Port={$customPort} -o LogLevel=ERROR ".gitSshHostKeyOptions()." -i {$customSshKeyLocation} -o IdentitiesOnly=yes";
             $deployKeyGitSshCommand = "GIT_SSH_COMMAND=\"{$deployKeySshCommand}\"";
             $git_clone_command_base = "{$deployKeyGitSshCommand} {$git_clone_command} {$escapedCustomRepository} {$escapedBaseDir}";
             if ($only_checkout) {
@@ -2136,7 +2137,7 @@ class Application extends BaseModel
                 $git_clone_command = $this->applyGitConfigOptionsToCloneCommand($git_clone_command, $gitConfigOptions);
             }
             $git_clone_command = $this->setGitImportSettings($deployment_uuid, $git_clone_command, public: true, commit: $commit, gitConfigOptions: $gitConfigOptions, baseDir: $baseDir, onlyCheckout: $only_checkout);
-            $otherSshCommand = "ssh -o ConnectTimeout=30 -p {$customPort} -o Port={$customPort} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa";
+            $otherSshCommand = "ssh -o ConnectTimeout=30 -p {$customPort} -o Port={$customPort} -o LogLevel=ERROR ".gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
             if ($pull_request_id !== 0) {
                 $gitCommand = isset($gitConfigOptions) ? "git {$gitConfigOptions}" : 'git';
@@ -2390,6 +2391,18 @@ class Application extends BaseModel
                 throw new DeploymentException(e("The Docker Compose file at {$workdir}{$composeFile} (branch: {$this->git_branch}) is not safe to use, so Coolify did not load it. {$e->getMessage()}"));
             }
 
+            $user = auth()->user();
+            $hostAccessViolation = $user instanceof User
+                ? ContainerPrivilegePolicy::composeViolation($this->docker_compose_raw, $composeFileContent, $user, ContainerPrivilegePolicy::allowedHostDirectories($this))
+                : null;
+            if ($hostAccessViolation !== null) {
+                $this->docker_compose_location = $initialDockerComposeLocation;
+                $this->base_directory = $initialBaseDirectory;
+                $this->save();
+
+                throw new DeploymentException(e($hostAccessViolation));
+            }
+
             $this->docker_compose_raw = $composeFileContent;
             $this->save();
             $parsedServices = $this->parse();
@@ -2472,7 +2485,7 @@ class Application extends BaseModel
         $command = "{$gitCommand} checkout {$escapedTarget}";
 
         if ($this->settings->is_git_submodules_enabled) {
-            $sshCommand = $gitSshCommand ?? 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null';
+            $sshCommand = $gitSshCommand ?? 'ssh -o LogLevel=ERROR '.gitSshHostKeyOptions();
             $command .= " && GIT_SSH_COMMAND=\"{$sshCommand}\" {$gitCommand} submodule update --init --recursive";
         }
 

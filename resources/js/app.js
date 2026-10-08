@@ -4,6 +4,7 @@ import { initializeSettingsSidebarAccordionComponent } from './settings-sidebar-
 import { initializeTerminalComponent } from './terminal.js';
 import './traffic-globe.js';
 import { registerLivewireRequestFailureHandler } from './livewire-request-failure.js';
+import './session-activity.js';
 
 document.addEventListener('livewire:init', () => {
     registerLivewireRequestFailureHandler(window.Livewire);

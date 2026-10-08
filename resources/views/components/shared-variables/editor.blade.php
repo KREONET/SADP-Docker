@@ -148,7 +148,12 @@
                     @endforeach
                 </div>
             @endif
-            <form wire:submit="submit" class="p-4">
+            <form wire:submit="submit" class="flex flex-col gap-4 p-4">
+                @if (data_get($this, 'sensitiveConfirmationRequired', false))
+                    <x-sensitive-confirmation action="confirmSensitiveAccess" wire:key="shared-variables-dev-view-confirm"
+                        :message="__('Values are hidden until you confirm your identity. Hidden values are kept unchanged when you save. You will not be asked again for :minutes minutes.', ['minutes' => \App\Support\Reauthentication::windowMinutes()])"
+                        :buttonText="__('Show values')" />
+                @endif
                 <x-unsaved-bar action="submit" />
                 <x-forms.textarea canGate="create" :canResource="App\Models\SharedEnvironmentVariable::class" rows="20"
                     class="whitespace-pre-wrap" id="variables" wire:model="variables" monospace

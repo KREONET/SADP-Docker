@@ -4,6 +4,7 @@ namespace App\Actions\Service;
 
 use App\Models\ServiceApplication;
 use App\Services\Dns\ManagedDnsRecordCleanup;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ServiceComposeUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,20 @@ class UpdateServiceApplicationFromApi
 {
     public function execute(ServiceApplication $serviceApplication, Request $request, string $teamId, array $payload): ?JsonResponse
     {
+        if (array_key_exists('is_force_https_enabled', $payload)) {
+            $requested = filter_var($payload['is_force_https_enabled'], FILTER_VALIDATE_BOOLEAN);
+            if (! ForceHttpsPolicy::allowsChange((bool) $serviceApplication->isForceHttpsEnabled(), $requested, $request->user())) {
+                auditLog('api.service_application.force_https.disable', [
+                    'service_application_uuid' => $serviceApplication->uuid,
+                    'result' => 'denied',
+                ], 'warning');
+
+                return response()->json([
+                    'message' => 'Only platform administrators can turn off the HTTP to HTTPS redirect.',
+                ], 403);
+            }
+        }
+
         $forceDomainOverride = $request->boolean('force_domain_override');
         $dnsCleanup = app(ManagedDnsRecordCleanup::class);
         $previousDnsHostnames = $dnsCleanup->hostnamesOf($serviceApplication->fresh() ?? $serviceApplication);

@@ -6,16 +6,46 @@
     <x-settings.layout>
         <form wire:submit="submit" class="application-settings-form flex min-w-0 flex-col gap-6">
             {{-- Scope dirty tracking to fields that need an explicit Save. Instant-save
-                 listboxes (API, MCP, telemetry, …) update the snapshot on the server
-                 immediately; without wire:target they briefly flash this bar. --}}
+                 listboxes (navigation, DNS validation, …) update the snapshot on the server
+                 immediately; without wire:target they briefly flash this bar. Access, API and
+                 external connection listboxes are password protected, so they wait for Save. --}}
             <x-unsaved-bar action="submit"
-                targets="custom_dns_servers,allowed_ips,webhook_allowed_internal_hosts,webhook_allow_localhost,domain_connect_private_key,image_cdn_url" />
+                targets="is_registration_enabled,is_api_enabled,is_mcp_server_enabled,allowed_ips,admin_allowed_ips,do_not_track,is_error_reporting_enabled,is_changelog_enabled,is_feedback_forwarding_enabled,audit_log_retention_days,custom_dns_servers,webhook_allowed_internal_hosts,webhook_allow_localhost,domain_connect_private_key,image_cdn_url" />
 
-            <x-application.settings-section id="access-section" :title="__('Access')">
+            {{-- Opened by submit() when access or external connection settings change; it calls
+                 submit(password) after the administrator re-enters their password. Fixed so the
+                 empty trigger does not add a gap to the form layout. --}}
+            <div class="fixed">
+                <x-modal-confirmation :title="__('Confirm security settings change')" submitAction="submit"
+                    :confirmWithText="false" :step3ButtonText="__('Save settings')"
+                    :warningMessage="e(__('These settings control who can reach this instance and what it sends to the internet.'))"
+                    :actions="[
+                        __('Save the changed access, API, administrator IP and external connection settings.'),
+                        __('The change takes effect immediately for every user.'),
+                    ]">
+                    <x-slot:trigger>
+                        <span x-on:confirm-security-settings.window="modalOpen = true"></span>
+                    </x-slot:trigger>
+                </x-modal-confirmation>
+            </div>
+
+            @if ($hasPendingSecurityChanges)
+                <x-callout type="warning" :title="__('Security settings not saved yet')">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span>{{ __('Changes to access, API, administrator IP and external connection settings are saved only after you confirm your password.') }}</span>
+                        <x-forms.button type="button" x-on:click="$dispatch('confirm-security-settings')">
+                            {{ __('Confirm and save') }}
+                        </x-forms.button>
+                    </div>
+                </x-callout>
+            @endif
+
+            <x-application.settings-section id="access-section" :title="__('Access')"
+                :helper="__('Changing registration requires your password.')">
                 <div class="grid gap-4 lg:grid-cols-2">
                      <x-forms.listbox id="is_registration_enabled" :label="__('Registration')"
                         :helper="__('Allow users to create their own account. When disabled, only administrators can create accounts.')"
-                        onChange="instantSave" :options="[
+                        :options="[
                             ['value' => true, 'label' => __('Anyone can register')],
                             ['value' => false, 'label' => __('Registration disabled')],
                          ]" />
@@ -26,12 +56,18 @@
                              ['value' => false, 'label' => __('Allow password registration')],
                              ['value' => true, 'label' => __('Disable when OAuth is enabled')],
                          ]" />
-                    <x-forms.listbox id="disable_two_step_confirmation" :label="__('Destructive action confirmation')"
-                        :helper="__('Choose whether destructive actions require password and text confirmation.')"
-                        onChange="instantSave" :options="[
-                            ['value' => false, 'label' => __('Require two-step confirmation')],
-                            ['value' => true, 'label' => __('Skip two-step confirmation')],
-                        ]" />
+                </div>
+            </x-application.settings-section>
+
+            <x-application.settings-section id="admin-access-section" :title="__('Administrator access')"
+                :helper="__('Limit instance settings and other administrator pages to trusted networks. Changing this list requires your password.')">
+                <div class="flex flex-col gap-4">
+                    <x-forms.textarea id="admin_allowed_ips" rows="4" :label="__('Allowed administrator IPs')"
+                        :helper="__('One IPv4/IPv6 address or CIDR range per line (commas also work). Leave empty to allow administrators from any address.')"
+                        placeholder="10.0.0.0/8&#10;192.168.10.25&#10;2001:db8::/32" />
+                    <x-callout type="warning" :title="__('Do not lock yourself out')">
+                        {{ __('Your current IP address is :ip. A list that does not include it would lock you out, so it cannot be saved.', ['ip' => $currentIp ?? __('unknown')]) }}
+                    </x-callout>
                 </div>
             </x-application.settings-section>
 
@@ -74,16 +110,17 @@
                 </x-application.settings-section>
             @endif
 
-            <x-application.settings-section id="api-section" :title="__('API and MCP')">
+            <x-application.settings-section id="api-section" :title="__('API and MCP')"
+                :helper="__('Changing API access, the MCP server or the API allowlist requires your password.')">
                 <div class="grid gap-4 lg:grid-cols-2">
                     <x-forms.listbox id="is_api_enabled" :label="__('API access')"
-                        :helper="__('Allow authenticated requests to the Coolify REST API.')" onChange="instantSave"
+                        :helper="__('Allow authenticated requests to the Coolify REST API.')"
                         :options="[
                             ['value' => true, 'label' => __('Enabled')],
                             ['value' => false, 'label' => __('Disabled')],
                         ]" />
                     <x-forms.listbox id="is_mcp_server_enabled" :label="__('MCP server')"
-                        :helper="__('Expose the authenticated Streamable HTTP endpoint at /mcp.')" onChange="instantSave"
+                        :helper="__('Expose the authenticated Streamable HTTP endpoint at /mcp.')"
                         :options="[
                             ['value' => true, 'label' => __('Enabled')],
                             ['value' => false, 'label' => __('Disabled')],
@@ -122,18 +159,52 @@
                 </div>
             </x-application.settings-section>
 
-            <x-application.settings-section id="interface-section" :title="__('Interface and telemetry')">
+            <x-application.settings-section id="interface-section" :title="__('Interface')">
                 <div class="grid gap-4 lg:grid-cols-2">
                     <x-forms.listbox id="is_wire_navigate_enabled" :label="__('Navigation')"
                         :helper="__('Prefetch pages and navigate without full reloads.')" onChange="instantSave" :options="[
                             ['value' => true, 'label' => __('SPA navigation')],
                             ['value' => false, 'label' => __('Full page navigation')],
                         ]" />
-                    <x-forms.listbox id="do_not_track" :label="__('Anonymous telemetry')"
-                        :helper="__('Control installation counting and error reports.')" onChange="instantSave" :options="[
+                </div>
+            </x-application.settings-section>
+
+            <x-application.settings-section id="external-connections-section" :title="__('External connections')"
+                :helper="__('These features contact services on the internet. They are off by default so the instance works on closed networks without outbound access. Changing them requires your password.')">
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <x-forms.listbox id="do_not_track" :label="__('Send anonymous usage data')"
+                        :helper="__('Report this installation to the usage counter. Off by default for closed networks.')"
+                        :options="[
                             ['value' => false, 'label' => __('Enabled')],
                             ['value' => true, 'label' => __('Disabled')],
                         ]" />
+                    <x-forms.listbox id="is_error_reporting_enabled" :label="__('Error reports')"
+                        :helper="__('Send error reports to Sentry. Off by default for closed networks.')"
+                        :options="[
+                            ['value' => true, 'label' => __('Enabled')],
+                            ['value' => false, 'label' => __('Disabled')],
+                        ]" />
+                    <x-forms.listbox id="is_changelog_enabled" :label="__('Release notes')"
+                        :helper="__('Fetch release notes from the internet. Off by default for closed networks.')"
+                        :options="[
+                            ['value' => true, 'label' => __('Enabled')],
+                            ['value' => false, 'label' => __('Disabled')],
+                        ]" />
+                    <x-forms.listbox id="is_feedback_forwarding_enabled" :label="__('Feedback forwarding')"
+                        :helper="__('Forward help requests and feedback to coolify.io. Off by default for closed networks.')"
+                        :options="[
+                            ['value' => true, 'label' => __('Enabled')],
+                            ['value' => false, 'label' => __('Disabled')],
+                        ]" />
+                </div>
+            </x-application.settings-section>
+
+            <x-application.settings-section id="audit-log-section" :title="__('Audit log')">
+                <div class="max-w-md">
+                    <x-forms.input id="audit_log_retention_days" type="number"
+                        min="{{ $minimumAuditLogRetentionDays }}" :label="__('Audit log retention (days)')"
+                        :helper="__('How long audit events are kept. The minimum is :days days.', ['days' => $minimumAuditLogRetentionDays])"
+                        required />
                 </div>
             </x-application.settings-section>
 

@@ -4,18 +4,29 @@ namespace App\Livewire\Platform;
 
 use App\Jobs\ReportVulnerabilitiesToRepositoryJob;
 use App\Livewire\Platform\Concerns\AuthorizesPlatformAdmin;
+use App\Livewire\Platform\Concerns\ManagesUserAccounts;
 use App\Models\OauthSetting;
+use App\Models\User;
 use App\Models\VulnerabilityScan;
 use App\Services\Security\TrivyScanner;
+use App\Support\InstanceSettingsAudit;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Trivy vulnerability scanning, SSO-only login, and the scan history.
+ * Trivy vulnerability scanning, SSO-only login, the scan history, and user account states.
  */
 class Security extends Component
 {
     use AuthorizesPlatformAdmin;
+    use ManagesUserAccounts;
+
+    /**
+     * Account state filters for the user list.
+     */
+    public const ACCOUNT_FILTERS = ['', 'locked', 'deactivated'];
 
     public bool $isTrivyScanEnabled = false;
 
@@ -36,6 +47,12 @@ class Security extends Component
     public string $status = '';
 
     public ?string $expandedScanUuid = null;
+
+    #[Url(as: 'users', except: '')]
+    public string $accountSearch = '';
+
+    #[Url(as: 'account', except: '')]
+    public string $accountFilter = '';
 
     public function mount(): void
     {
@@ -77,7 +94,13 @@ class Security extends Component
         $this->dispatch('success', __('Vulnerability scanning settings saved.'));
     }
 
-    public function saveLogin(): void
+    /**
+     * Save the login policy. Changing SSO-only login is saved only after the password
+     * confirmation modal calls this method again with the administrator's password.
+     *
+     * @param  mixed  $password  Null when called from the form; a string when called from the confirmation modal.
+     */
+    public function saveLogin(mixed $password = null): bool|string|null
     {
         $this->authorizePlatformAdmin();
         $this->validate(['isSsoOnlyLoginEnabled' => ['boolean']]);
@@ -86,12 +109,43 @@ class Security extends Component
             $this->isSsoOnlyLoginEnabled = false;
             $this->dispatch('error', __('Enable an OIDC/OAuth provider in Settings → Authentication before requiring SSO.'));
 
-            return;
+            return null;
         }
 
-        instanceSettings()->update(['is_sso_only_login_enabled' => $this->isSsoOnlyLoginEnabled]);
+        $settings = instanceSettings();
+        $settings->is_sso_only_login_enabled = $this->isSsoOnlyLoginEnabled;
+
+        if (InstanceSettingsAudit::pendingChanges($settings) === []) {
+            $settings->refresh();
+            $this->dispatch('success', __('Login policy saved.'));
+
+            return true;
+        }
+
+        if ($password === null) {
+            // Nothing is saved until the administrator confirms with their password.
+            $settings->refresh();
+            $this->dispatch('confirm-login-policy');
+
+            return null;
+        }
+
+        if (! verifyPasswordConfirmation($password, $this)) {
+            $settings->refresh();
+            auditLog(InstanceSettingsAudit::EVENT, [
+                'fields' => ['is_sso_only_login_enabled'],
+                'result' => 'denied',
+                'reason' => 'password_confirmation_failed',
+            ], 'warning');
+
+            return __('The provided password is incorrect.');
+        }
+
+        InstanceSettingsAudit::save($settings);
         auditLog('platform.security.sso_only_updated', ['enabled' => $this->isSsoOnlyLoginEnabled]);
         $this->dispatch('success', __('Login policy saved.'));
+
+        return true;
     }
 
     public function toggleScan(string $uuid): void
@@ -126,6 +180,29 @@ class Security extends Component
                 ->limit(50)
                 ->get(),
             'enabledProviders' => OauthSetting::where('enabled', true)->get(),
+            'accounts' => $this->accounts(),
         ]);
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function accounts(): Collection
+    {
+        $search = trim($this->accountSearch);
+        $filter = in_array($this->accountFilter, self::ACCOUNT_FILTERS, true) ? $this->accountFilter : '';
+
+        return User::query()
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $like = '%'.mb_strtolower($search).'%';
+                $query->where(fn (Builder $query) => $query
+                    ->whereRaw('LOWER(name) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$like]));
+            })
+            ->when($filter === 'locked', fn (Builder $query) => $query->where('locked_until', '>', now()))
+            ->when($filter === 'deactivated', fn (Builder $query) => $query->whereNotNull('deactivated_at'))
+            ->orderBy('id')
+            ->limit(50)
+            ->get();
     }
 }

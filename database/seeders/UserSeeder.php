@@ -3,12 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(): void
     {
+        $this->refuseToRunInProduction();
+
         User::factory()->create([
             'id' => 0,
             'name' => 'Root User',

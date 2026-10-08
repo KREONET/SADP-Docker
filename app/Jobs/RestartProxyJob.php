@@ -128,8 +128,7 @@ class RestartProxyJob implements ShouldBeEncrypted, ShouldQueue
                 "echo 'Starting proxy (Swarm mode)...'",
                 "mkdir -p $proxy_path/dynamic",
                 "echo 'Creating required Docker Compose file.'",
-                "echo 'Starting PADED
--proxy.'",
+                "echo 'Starting PADED proxy.'",
                 "docker stack deploy --detach=true -c $compose_file coolify-proxy",
                 "echo 'Successfully started coolify-proxy.'",
             ]);
@@ -146,8 +145,7 @@ class RestartProxyJob implements ShouldBeEncrypted, ShouldQueue
             // Ensure required networks exist BEFORE docker compose up
             $commands = $commands->merge(ensureProxyNetworksExist($this->server));
             $commands = $commands->merge([
-                "echo 'Starting PADED
--proxy.'",
+                "echo 'Starting PADED proxy.'",
                 "docker compose -f $compose_file up -d --wait --remove-orphans",
                 "echo 'Successfully started coolify-proxy.'",
             ]);

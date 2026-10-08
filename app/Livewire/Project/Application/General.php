@@ -9,12 +9,14 @@ use App\Livewire\Project\Service\Storage;
 use App\Models\Application;
 use App\Rules\ValidGitBranch;
 use App\Services\Dns\ManagedDnsRecordCleanup;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\ValidationPatterns;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\Features\SupportEvents\Event;
 
@@ -364,11 +366,36 @@ class General extends Component
         }
     }
 
+    /**
+     * Only platform administrators may save run options or Compose content that give the container
+     * host access. Unchanged values are accepted so other members can still save the form.
+     *
+     * @throws ValidationException When a non-administrator saves a changed value with host access
+     */
+    private function ensureHostAccessAllowed(): void
+    {
+        $user = auth()->user();
+        ContainerPrivilegePolicy::ensureRunOptionsAllowed(
+            $this->application->custom_docker_run_options,
+            $this->customDockerRunOptions,
+            $user,
+            'customDockerRunOptions',
+        );
+        ContainerPrivilegePolicy::ensureComposeAllowed(
+            $this->application->docker_compose_raw,
+            $this->dockerComposeRaw,
+            $user,
+            ContainerPrivilegePolicy::allowedHostDirectories($this->application),
+            'dockerComposeRaw',
+        );
+    }
+
     private function syncData(bool $toModel = false): void
     {
         if ($toModel) {
             $this->validate();
             $this->validateChangedDockerComposeRaw();
+            $this->ensureHostAccessAllowed();
 
             // Application properties
             $this->application->name = $this->name;

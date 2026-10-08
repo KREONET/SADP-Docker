@@ -179,13 +179,16 @@ class InstanceSettings extends Model
     }
 
     /**
-     * The master switch gates every log source, so turning it off stops all collection and shipping at once.
+     * Audit events are a security record and are always collected, whatever the master and audit switches say.
      */
     public function isAuditLogCollectionActive(): bool
     {
-        return (bool) $this->is_log_collection_enabled && (bool) $this->is_audit_log_collection_enabled;
+        return true;
     }
 
+    /**
+     * The master switch gates the system and container log sources and Loki shipping.
+     */
     public function isSystemLogCollectionActive(): bool
     {
         return (bool) $this->is_log_collection_enabled && (bool) $this->is_system_log_collection_enabled;
@@ -205,12 +208,18 @@ class InstanceSettings extends Model
 
     public function logRetentionDays(): int
     {
-        return max(1, min(365, (int) ($this->log_retention_days ?: 7)));
+        return LogEntry::retentionDays($this);
     }
 
     public function isPasswordRegistrationAllowed(): bool
     {
-        if (! $this->is_registration_enabled || $this->isSsoOnlyLoginActive()) {
+        if ($this->isSsoOnlyLoginActive()) {
+            return false;
+        }
+
+        // A fresh installation must be able to create its first (root) user even though
+        // open registration is off by default.
+        if (! $this->is_registration_enabled && User::query()->exists()) {
             return false;
         }
 

@@ -15,6 +15,7 @@ class ScheduledDatabaseBackup extends BaseModel
     {
         return [
             'dump_all' => 'boolean',
+            'encrypt_backup' => 'boolean',
             'database_backup_retention_max_storage_locally' => 'float',
             'database_backup_retention_max_storage_s3' => 'float',
             'missing_backup_notification_days' => 'integer',
@@ -44,6 +45,7 @@ class ScheduledDatabaseBackup extends BaseModel
         'timeout',
         'disable_local_backup',
         'missing_backup_notification_days',
+        'encrypt_backup',
     ];
 
     public static function ownedByCurrentTeam()
@@ -54,6 +56,20 @@ class ScheduledDatabaseBackup extends BaseModel
     public static function ownedByCurrentTeamAPI(int $teamId)
     {
         return ScheduledDatabaseBackup::whereRelation('team', 'id', $teamId)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Coolify's own database cannot be encrypted: the passphrases are stored in that database,
+     * so an encrypted copy could not be restored after the database is lost.
+     */
+    public function supportsEncryption(): bool
+    {
+        return ! ($this->database_type === StandalonePostgresql::class && (int) $this->database_id === 0);
+    }
+
+    public function shouldEncryptBackups(): bool
+    {
+        return (bool) $this->encrypt_backup && $this->supportsEncryption();
     }
 
     public function team()

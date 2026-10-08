@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -20,6 +21,7 @@ beforeEach(function () {
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
     // Git sources are created by platform admins (admins of the root team) only.
     (Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']))->members()->attach($this->user->id, ['role' => 'admin']);
+    TwoFactor::confirm($this->user);
 
     // Set current team
     $this->actingAs($this->user);

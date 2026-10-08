@@ -21,7 +21,7 @@ describe('Git submodule credential propagation', function () {
     });
 
     test('setGitImportSettings uses provided gitSshCommand for submodule update', function () {
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -43,12 +43,12 @@ describe('Git submodule credential propagation', function () {
         );
 
         expect($result)
-            ->toContain('GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive');
+            ->toContain('GIT_SSH_COMMAND="ssh -o LogLevel=ERROR '.gitSshHostKeyOptions().'" git submodule update --init --recursive');
     });
 
     test('setGitImportSettings uses provided gitSshCommand for fetch and checkout', function () {
         $this->application->git_commit_sha = 'abc123def456';
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -64,7 +64,7 @@ describe('Git submodule credential propagation', function () {
     test('setGitImportSettings uses provided gitSshCommand for shallow fetch', function () {
         $this->application->git_commit_sha = 'abc123def456';
         $this->application->settings->is_git_shallow_clone_enabled = true;
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -108,7 +108,7 @@ describe('Git submodule credential propagation', function () {
         $result = $method->invoke($this->application, 'main');
 
         expect($result)
-            ->toContain('GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive');
+            ->toContain('GIT_SSH_COMMAND="ssh -o LogLevel=ERROR '.gitSshHostKeyOptions().'" git submodule update --init --recursive');
     });
 
     test('buildGitCheckoutCommand omits submodule update when submodules disabled', function () {
@@ -156,7 +156,7 @@ describe('Git submodule credential propagation', function () {
             exec_in_docker: false,
         );
 
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa_coolify_test-uuid -o IdentitiesOnly=yes';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa_coolify_test-uuid -o IdentitiesOnly=yes';
 
         // Commands are a list of ['command' => ..., 'hidden' => ...] entries; assert on the joined shell script
         $commands = collect($result['commands'])
@@ -167,7 +167,7 @@ describe('Git submodule credential propagation', function () {
             ->toContain('GIT_SSH_COMMAND="'.$sshCommand.'" git fetch origin merge-requests/123/head:pr-123-coolify')
             ->toContain("git checkout 'pr-123-coolify'")
             ->toContain('GIT_SSH_COMMAND="'.$sshCommand.'" git submodule update --init --recursive')
-            ->not->toContain('GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive');
+            ->not->toContain('GIT_SSH_COMMAND="ssh -o LogLevel=ERROR '.gitSshHostKeyOptions().'" git submodule update --init --recursive');
     });
 
 });

@@ -19,6 +19,7 @@ use App\Jobs\ShipLogsToLokiJob;
 use App\Jobs\UpdateCoolifyJob;
 use App\Models\InstanceSettings;
 use App\Models\LogEntry;
+use App\Services\ChangelogService;
 use App\Services\ScheduledJobDeliveryService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -60,6 +61,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(60)
             ->runInBackground();
         $this->scheduleInstance->command('sanctum:prune-expired --hours=1')->hourly()->onOneServer();
+        $this->scheduleInstance->command('users:deactivate-inactive')
+            ->dailyAt('02:45')
+            ->onOneServer()
+            ->withoutOverlapping(60);
+        $this->scheduleInstance->command('audit:verify')->dailyAt('05:00')->onOneServer();
         $this->scheduleInstance->command('dns:release-orphaned-records')
             ->hourly()
             ->onOneServer()
@@ -90,7 +96,11 @@ class Kernel extends ConsoleKernel
             $this->scheduleInstance->command('cleanup:unreachable-servers')->daily()->onOneServer();
 
             $this->scheduleInstance->job(new PullTemplatesFromCDN)->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
-            $this->scheduleInstance->job(new PullChangelog)->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
+            $this->scheduleInstance->job(new PullChangelog)
+                ->cron($this->updateCheckFrequency)
+                ->timezone($this->instanceTimezone)
+                ->onOneServer()
+                ->when(fn () => app(ChangelogService::class)->isEnabled());
 
             $this->scheduleInstance->job(new CleanupInstanceStuffsJob)->everyTwoMinutes()->onOneServer();
             $this->scheduleUpdates();

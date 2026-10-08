@@ -41,7 +41,7 @@ test('environment variable editor closes only after a successful update', functi
 
 test('environment variable editor stays open when validation fails', function () {
     Livewire::test(Show::class, ['env' => $this->environmentVariable, 'type' => 'application'])
-        ->set('valuesLoaded', true)
+        ->call('confirmSensitiveAccess', 'password')
         ->set('is_required', true)
         ->set('value', '')
         ->call('submit')

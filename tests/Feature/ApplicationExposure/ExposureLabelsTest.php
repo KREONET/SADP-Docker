@@ -78,7 +78,7 @@ it('allows only the internal network ranges with Traefik, before every other mid
 
     expect($labels)
         ->toContain('traefik.http.middlewares.internal-only-app1.ipallowlist.sourcerange=10.0.0.0/8,2001:db8::/32')
-        ->toContain('traefik.http.routers.https-0-app1.middlewares=internal-only-app1,gzip')
+        ->toContain('traefik.http.routers.https-0-app1.middlewares=internal-only-app1,coolify-hsts,gzip')
         ->toContain('traefik.http.routers.http-0-app1.middlewares=internal-only-app1,gzip');
 });
 
@@ -110,7 +110,7 @@ it('sends signed-in users only requests to the panel with Traefik forward auth',
     expect($labels)
         ->toContain('traefik.http.middlewares.signed-in-only-app1.forwardauth.address=https://panel.example.org/proxy-auth/verify')
         ->toContain('traefik.http.middlewares.signed-in-only-app1.forwardauth.authResponseHeaders=X-Paded-User,X-Paded-Email')
-        ->toContain('traefik.http.routers.https-0-app1.middlewares=signed-in-only-app1,gzip')
+        ->toContain('traefik.http.routers.https-0-app1.middlewares=signed-in-only-app1,coolify-hsts,gzip')
         ->not->toContain('traefik.http.middlewares.signed-in-only-app1.forwardauth.trustForwardHeader=true');
 });
 
@@ -120,7 +120,7 @@ it('keeps HTTP basic auth after the exposure restriction', function () {
         ['is_http_basic_auth_enabled' => true, 'http_basic_auth_username' => 'admin', 'http_basic_auth_password' => 'secret'],
     );
 
-    expect($labels)->toContain('traefik.http.routers.https-0-app1.middlewares=signed-in-only-app1,gzip,http-basic-auth-app1');
+    expect($labels)->toContain('traefik.http.routers.https-0-app1.middlewares=signed-in-only-app1,coolify-hsts,gzip,http-basic-auth-app1');
 });
 
 it('sends signed-in users only requests to the panel with Caddy forward_auth', function () {

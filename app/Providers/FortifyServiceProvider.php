@@ -9,6 +9,7 @@ use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Models\OauthSetting;
 use App\Models\TeamInvitation;
 use App\Models\User;
+use App\Services\Auth\OauthLoginService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\ServiceProvider;
@@ -73,12 +74,21 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         Fortify::authenticateUsing(function (Request $request) {
+            // A password sign-in is never an SSO session, even if an abandoned OAuth
+            // two-factor challenge left the marker in this session.
+            $request->session()->forget(OauthLoginService::SSO_SESSION_KEY);
+
             $email = strtolower($request->email);
             $user = User::where('email', $email)->with('teams')->first();
-            if (
-                $user &&
-                Hash::check($request->password, $user->password)
-            ) {
+            if (! $user) {
+                return null;
+            }
+
+            if (! $this->passesAccountLockout($user, $request)) {
+                return null;
+            }
+
+            if (Hash::check($request->password, $user->password)) {
                 if ($user->isDeactivated()) {
                     auditLog('auth.password_login.blocked_deactivated', ['user_id' => $user->id], 'warning');
 
@@ -122,6 +132,10 @@ class FortifyServiceProvider extends ServiceProvider
 
                 return $user;
             }
+
+            $this->recordFailedPasswordLogin($user);
+
+            return null;
         });
         Fortify::requestPasswordResetLinkView(function () {
             return view('auth.forgot-password');
@@ -141,5 +155,70 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::twoFactorChallengeView(function () {
             return view('auth.two-factor-challenge');
         });
+    }
+
+    /**
+     * Refuse sign-in while the account is locked. The lockout message is shown only
+     * to someone who knows the password, so a wrong password on a locked account gets
+     * the same generic failure as an unknown email.
+     */
+    private function passesAccountLockout(User $user, Request $request): bool
+    {
+        if ($user->locked_until !== null && ! $user->isLockedOut()) {
+            // The lock expired: start counting from zero again.
+            $user->unlockAccount();
+        }
+
+        if (! $user->isLockedOut()) {
+            return true;
+        }
+
+        auditLog('auth.login.locked', $this->lockoutAuditContext($user) + [
+            'reason' => 'attempt_while_locked',
+            'locked_until' => $user->locked_until?->toIso8601String(),
+            'result' => 'denied',
+        ], 'warning');
+
+        if (is_string($request->password) && Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                Fortify::username() => __('This account is temporarily locked after too many failed sign-in attempts. Try again in :minutes minutes or ask an administrator to unlock it.', [
+                    'minutes' => max(1, (int) ceil(now()->diffInSeconds($user->locked_until) / 60)),
+                ]),
+            ]);
+        }
+
+        return false;
+    }
+
+    private function recordFailedPasswordLogin(User $user): void
+    {
+        $user->recordFailedLogin();
+
+        if (! $user->isLockedOut()) {
+            return;
+        }
+
+        $context = $this->lockoutAuditContext($user) + [
+            'reason' => 'max_attempts_reached',
+            'failed_attempts' => $user->failed_login_attempts,
+            'locked_until' => $user->locked_until?->toIso8601String(),
+        ];
+        auditLog('auth.login.locked', $context + ['result' => 'denied'], 'warning');
+        notifySecurityAlert('account_locked', 'Account locked after repeated failed sign-ins', $context);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function lockoutAuditContext(User $user): array
+    {
+        return [
+            'resource' => 'user',
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'actor_id' => $user->id,
+            'actor_name' => $user->name,
+            'actor_email' => $user->email,
+        ];
     }
 }

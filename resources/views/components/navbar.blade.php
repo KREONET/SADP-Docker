@@ -215,6 +215,16 @@
                         <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Settings') }}</span>
                     </a>
                 </li>
+            @elseif (auth()->user()?->is_auditor)
+                {{-- Auditors only read the logs; the rest of the platform admin area stays admin-only. --}}
+                <li>
+                    <a title="{{ __('Audit logs') }}" {{ wireNavigate() }}
+                        class="{{ request()->is('platform/logs*') ? 'menu-item-active menu-item' : 'menu-item' }}"
+                        :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('platform.logs') }}">
+                        <x-reicon name="file-content" class="menu-item-icon" />
+                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Audit logs') }}</span>
+                    </a>
+                </li>
             @endif
             <li class="flex-1" aria-hidden="true"></li>
         @endif

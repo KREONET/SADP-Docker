@@ -14,6 +14,7 @@ use Throwable;
  *
  * [한국어] Coolify 가 남기는 경고 이상의 로그를 '시스템 로그 수집' 이 켜져 있을 때 DB 에 저장합니다.
  * 로그를 저장하다 다시 로그가 생기면 무한 반복되므로 `$recording` 으로 중첩 기록을 막습니다.
+ * 메시지와 컨텍스트의 이메일·비밀값은 SensitiveDataMasker 로 가린 뒤 저장합니다.
  */
 class SystemLogRecorder
 {
@@ -63,7 +64,7 @@ class SystemLogRecorder
             $attributes = [
                 'source' => LogEntry::SOURCE_SYSTEM,
                 'level' => LogEntry::normalizeLevel($level),
-                'message' => LogEntry::truncateMessage((string) $event->message),
+                'message' => LogEntry::truncateMessage(SensitiveDataMasker::mask((string) $event->message)),
                 'context' => $this->normalizeContext($event->context),
                 'logged_at' => now(),
             ];
@@ -132,9 +133,12 @@ class SystemLogRecorder
         if ($value instanceof Throwable) {
             return [
                 'class' => $value::class,
-                'message' => LogEntry::truncateMessage($value->getMessage()),
+                'message' => LogEntry::truncateMessage(SensitiveDataMasker::mask($value->getMessage())),
                 'file' => $value->getFile().':'.$value->getLine(),
-                'trace' => array_slice(explode("\n", $value->getTraceAsString()), 0, self::MAX_TRACE_LINES),
+                'trace' => array_map(
+                    fn (string $line): string => SensitiveDataMasker::mask($line),
+                    array_slice(explode("\n", $value->getTraceAsString()), 0, self::MAX_TRACE_LINES),
+                ),
             ];
         }
 
@@ -149,11 +153,11 @@ class SystemLogRecorder
         }
 
         if (is_object($value)) {
-            return method_exists($value, '__toString') ? LogEntry::truncateMessage((string) $value) : '['.$value::class.']';
+            return method_exists($value, '__toString') ? LogEntry::truncateMessage(SensitiveDataMasker::mask((string) $value)) : '['.$value::class.']';
         }
 
         if (is_string($value)) {
-            return LogEntry::truncateMessage($value);
+            return LogEntry::truncateMessage(SensitiveDataMasker::mask($value));
         }
 
         return is_resource($value) ? '[resource]' : $value;

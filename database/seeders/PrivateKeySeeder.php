@@ -3,15 +3,20 @@
 namespace Database\Seeders;
 
 use App\Models\PrivateKey;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class PrivateKeySeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
+        $this->refuseToRunInProduction();
+
         PrivateKey::create([
             'uuid' => 'ssh',
             'team_id' => 0,

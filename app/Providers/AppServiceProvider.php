@@ -7,10 +7,15 @@ use App\Auth\Oidc\OidcTokenValidator;
 use App\Auth\Oidc\Socialite\OidcProvider;
 use App\Models\PersonalAccessToken;
 use App\Models\Server;
+use App\Models\User;
+use App\Observers\UserPasswordObserver;
 use App\Rules\SafeExternalUrl;
+use App\Support\ReverbSettings;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Once;
@@ -19,6 +24,7 @@ use Illuminate\Validation\Rules\Password;
 use Laravel\Sanctum\Sanctum;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use Stripe\StripeClient;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,11 +38,37 @@ class AppServiceProvider extends ServiceProvider
         $this->configureCommands();
         $this->configureModels();
         $this->configurePasswords();
+        $this->configureLoginTracking();
         $this->configureSanctumModel();
         $this->configureGitHubHttp();
         $this->configureGitLabHttp();
         $this->configureOidcSocialite();
         $this->configureQueue();
+        $this->configureReverbAllowedOrigins();
+    }
+
+    /**
+     * The Reverb server also accepts connections from the instance domain saved in the
+     * settings, not only from APP_URL. The database may be unavailable while Reverb
+     * starts, so the origins from the environment are kept on any error.
+     *
+     * @param  array<int, string>|null  $argv
+     */
+    private function configureReverbAllowedOrigins(?array $argv = null): void
+    {
+        $argv ??= $_SERVER['argv'] ?? [];
+        if (! $this->app->runningInConsole() || ($argv[1] ?? null) !== 'reverb:start') {
+            return;
+        }
+
+        try {
+            config(['reverb.apps.apps.0.allowed_origins' => ReverbSettings::withInstanceUrls(
+                (array) config('reverb.apps.apps.0.allowed_origins', []),
+                [instanceSettings()->fqdn],
+            )]);
+        } catch (Throwable) {
+            // Keep the origins from the environment.
+        }
     }
 
     /**
@@ -65,17 +97,39 @@ class AppServiceProvider extends ServiceProvider
         // Model::shouldBeStrict();
     }
 
+    /**
+     * One password policy for every environment (public-sector baseline): minimum
+     * length from config, upper and lower case, letters, numbers and symbols. The
+     * breach-corpus check needs outbound internet, so it is opt-in.
+     */
     private function configurePasswords(): void
     {
-        Password::defaults(function () {
-            return App::isProduction()
-                ? Password::min(8)
-                    ->mixedCase()
-                    ->letters()
-                    ->numbers()
-                    ->symbols()
-                    ->uncompromised()
-                : Password::min(8)->letters();
+        Password::defaults(function (): Password {
+            $rule = Password::min(max(1, (int) config('security.password.min_length')))
+                ->mixedCase()
+                ->letters()
+                ->numbers()
+                ->symbols();
+
+            return config('security.password.check_breached') ? $rule->uncompromised() : $rule;
+        });
+
+        User::observe(UserPasswordObserver::class);
+    }
+
+    /**
+     * Track the last successful sign-in and reset the failed-login counter for every
+     * login path (password, two-factor challenge, OAuth/OIDC, invitation link).
+     * Impersonation is not a sign-in of the impersonated user.
+     */
+    private function configureLoginTracking(): void
+    {
+        Event::listen(Login::class, function (Login $event): void {
+            if (! $event->user instanceof User || session('impersonating')) {
+                return;
+            }
+
+            $event->user->recordSuccessfulLogin();
         });
     }
 

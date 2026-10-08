@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Rules\NotRecentlyUsedPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -18,12 +19,14 @@ class ResetUserPassword implements ResetsUserPasswords
     public function reset(User $user, array $input): void
     {
         Validator::make($input, [
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'password' => ['required', Password::defaults(), 'confirmed', new NotRecentlyUsedPassword($user)],
         ])->validate();
 
         $user->fill([
             'password' => Hash::make($input['password']),
         ])->save();
+        // Proving control of the mailbox lifts a failed-login lock.
+        $user->unlockAccount();
         $user->deleteAllSessions();
     }
 }

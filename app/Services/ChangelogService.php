@@ -9,11 +9,47 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Spatie\LaravelMarkdown\MarkdownRenderer;
+use Stevebauman\Purify\Facades\Purify;
+use Throwable;
 
 class ChangelogService
 {
+    /**
+     * HTMLPurifier settings for rendered release notes: formatting, code and safe links only.
+     *
+     * @var array<string, mixed>
+     */
+    private const SANITIZER_CONFIG = [
+        'Core.Encoding' => 'utf-8',
+        'HTML.Doctype' => 'HTML 4.01 Transitional',
+        'HTML.Allowed' => 'h1[class],h2[class],h3[class],h4[class],h5[class],h6[class],p[class],br,hr,strong[class],b,em[class],i,del,s,blockquote,ul[class],ol[class],li[class],pre[class|style],code[class|style],span[class|style],a[href|title|class|target|rel],table,thead,tbody,tr,th,td',
+        'HTML.ForbiddenElements' => '',
+        'CSS.AllowedProperties' => 'color,background-color,font-style,font-weight,text-decoration',
+        'URI.AllowedSchemes' => ['http' => true, 'https' => true, 'mailto' => true],
+        'Attr.AllowedFrameTargets' => ['_blank'],
+        'Attr.AllowedRel' => ['noopener', 'noreferrer', 'nofollow'],
+        'AutoFormat.AutoParagraph' => false,
+        'AutoFormat.RemoveEmpty' => false,
+    ];
+
+    /**
+     * Whether the instance administrator enabled the changelog (it is fetched from an external CDN).
+     */
+    public function isEnabled(): bool
+    {
+        try {
+            return (bool) instanceSettings()->is_changelog_enabled;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     public function getEntries(int $recentMonths = 3): Collection
     {
+        if (! $this->isEnabled()) {
+            return collect();
+        }
+
         // For backward compatibility, check if old changelog.json exists
         if (file_exists(base_path('changelog.json'))) {
             $data = $this->fetchChangelogData();
@@ -49,6 +85,10 @@ class ChangelogService
 
     public function getAllEntries(): Collection
     {
+        if (! $this->isEnabled()) {
+            return collect();
+        }
+
         $availableMonths = $this->getAvailableMonths();
 
         return $availableMonths
@@ -75,6 +115,10 @@ class ChangelogService
 
     public function getUnreadCountForUser(User $user): int
     {
+        if (! $this->isEnabled()) {
+            return 0;
+        }
+
         if (isDev()) {
             $entries = $this->getEntries();
             $readIdentifiers = UserChangelogRead::getReadIdentifiersForUser($user->id);
@@ -252,16 +296,31 @@ class ChangelogService
         }
     }
 
-    private function parseMarkdown(string $content): string
+    /**
+     * Render release notes as HTML that is safe for x-html: raw HTML in the
+     * markdown is escaped, unsafe links are dropped, and the final output is sanitized.
+     */
+    public function parseMarkdown(string $content): string
     {
-        $renderer = app(MarkdownRenderer::class);
+        $renderer = app(MarkdownRenderer::class)->commonmarkOptions(array_merge(
+            (array) config('markdown.commonmark_options', []),
+            [
+                'html_input' => 'escape',
+                'allow_unsafe_links' => false,
+            ],
+        ));
 
         $html = $renderer->toHtml($content);
 
         // Apply custom Tailwind CSS classes for dark mode compatibility
         $html = $this->applyCustomStyling($html);
 
-        return $html;
+        return $this->sanitizeHtml($html);
+    }
+
+    public function sanitizeHtml(string $html): string
+    {
+        return Purify::config(self::SANITIZER_CONFIG)->clean($html);
     }
 
     private function applyCustomStyling(string $html): string

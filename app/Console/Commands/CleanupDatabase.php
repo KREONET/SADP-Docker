@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AuditEvent;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class CleanupDatabase extends Command
@@ -30,12 +31,12 @@ class CleanupDatabase extends Command
         $this->line("Keep days: $keep_days");
         $this->cleanupTable('failed_jobs', 'failed_at', now()->subDays(1));
 
-        $this->cleanupTable('sessions', 'last_activity', now()->subDays($keep_days)->timestamp);
+        $this->cleanupTable('sessions', 'last_activity', $this->sessionCutoff((int) $keep_days)->timestamp);
 
         $this->cleanupTable('activity_log', 'created_at', now()->subDays($keep_days));
 
-        $count = DB::table('audit_events')->where('created_at', '<', now()->subDays(90))->count();
-        $this->line("Delete $count entries from audit_events.");
+        $count = AuditEvent::expiredCount();
+        $this->line('Delete '.$count.' entries from audit_events (retention: '.AuditEvent::retentionDays().' days).');
         if ($this->option('yes')) {
             AuditEvent::pruneExpired();
         }
@@ -43,6 +44,21 @@ class CleanupDatabase extends Command
         $this->cleanupTable('application_deployment_queues', 'created_at', now()->subDays($keep_days));
 
         $this->cleanupTable('scheduled_task_executions', 'created_at', now()->subDays($keep_days));
+    }
+
+    /**
+     * A session whose last activity is older than the absolute session lifetime can never be valid again.
+     */
+    private function sessionCutoff(int $keepDays): Carbon
+    {
+        $absoluteTimeoutMinutes = (int) config('security.session.absolute_timeout_minutes');
+        $keepDaysCutoff = now()->subDays($keepDays);
+
+        if ($absoluteTimeoutMinutes <= 0) {
+            return $keepDaysCutoff;
+        }
+
+        return $keepDaysCutoff->max(now()->subMinutes($absoluteTimeoutMinutes));
     }
 
     /**

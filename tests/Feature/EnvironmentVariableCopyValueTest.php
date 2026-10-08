@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\SharedEnvironmentVariable;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -29,6 +30,8 @@ beforeEach(function () {
 
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
+    // Copying a secret value requires a recent re-authentication (see SensitiveReadReauthenticationTest).
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
 });
 
 function createEnvironmentVariable(array $attributes = []): EnvironmentVariable

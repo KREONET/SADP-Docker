@@ -15,6 +15,7 @@ use App\Models\ScheduledTaskExecution;
 use App\Models\Server;
 use App\Models\StandalonePostgresql;
 use App\Models\User;
+use App\Services\ChangelogService;
 use App\Support\ResourceStartActivity;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -61,10 +62,7 @@ class Init extends Command
         $this->settings = instanceSettings();
         $this->servers = Server::all();
 
-        $do_not_track = data_get($this->settings, 'do_not_track', true);
-        if ($do_not_track == false) {
-            $this->sendAliveSignal();
-        }
+        $this->sendAliveSignalIfAllowed($this->settings);
         get_public_ips();
 
         // Backward compatibility
@@ -182,6 +180,12 @@ class Init extends Command
 
     private function pullChangelogFromGitHub()
     {
+        if (! app(ChangelogService::class)->isEnabled()) {
+            echo "Changelog is disabled, skipping fetch\n";
+
+            return;
+        }
+
         try {
             PullChangelog::dispatch();
             echo "Changelog fetch initiated\n";
@@ -276,15 +280,26 @@ class Init extends Command
         }
     }
 
-    private function sendAliveSignal()
+    /**
+     * Send the anonymous "alive" ping (instance id and version only) to Coolify's telemetry endpoint.
+     * Skipped unless do_not_track is explicitly turned off; a missing setting counts as opted out.
+     */
+    public function sendAliveSignalIfAllowed(?InstanceSettings $settings): bool
     {
-        $id = config('app.id');
-        $version = config('constants.coolify.version');
+        if (isCloud() || data_get($settings, 'do_not_track', true) !== false) {
+            return false;
+        }
+
         try {
-            Http::get("https://undead.coolify.io/v4/alive?appId=$id&version=$version");
+            Http::timeout(10)->get('https://undead.coolify.io/v4/alive', [
+                'appId' => config('app.id'),
+                'version' => config('constants.coolify.version'),
+            ]);
         } catch (\Throwable $e) {
             echo "Error in sending live signal: {$e->getMessage()}\n";
         }
+
+        return true;
     }
 
     private function replaceSlashInEnvironmentName()

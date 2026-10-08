@@ -25,6 +25,11 @@ class SettingsDropdown extends Component
         return app(ChangelogService::class)->getEntriesForUser($user);
     }
 
+    public function getChangelogEnabledProperty(): bool
+    {
+        return app(ChangelogService::class)->isEnabled();
+    }
+
     public function getCurrentVersionProperty()
     {
         return 'v'.config('constants.coolify.version');
@@ -32,6 +37,10 @@ class SettingsDropdown extends Component
 
     public function openWhatsNewModal()
     {
+        if (! $this->changelogEnabled) {
+            return;
+        }
+
         $this->showWhatsNewModal = true;
     }
 
@@ -52,7 +61,7 @@ class SettingsDropdown extends Component
 
     public function manualFetchChangelog()
     {
-        if (! isDev()) {
+        if (! isDev() || ! $this->changelogEnabled) {
             return;
         }
 
@@ -70,6 +79,7 @@ class SettingsDropdown extends Component
             'entries' => $this->entries,
             'unreadCount' => $this->unreadCount,
             'currentVersion' => $this->currentVersion,
+            'changelogEnabled' => $this->changelogEnabled,
         ]);
     }
 }

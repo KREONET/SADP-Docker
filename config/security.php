@@ -36,6 +36,12 @@ return [
         'single_session' => (bool) env('SECURITY_SINGLE_SESSION', false),
     ],
 
+    'reauthentication' => [
+        // Minutes a successful identity confirmation unlocks sensitive reads.
+        'window_minutes' => (int) env('SECURITY_REAUTH_WINDOW_MINUTES', 15),
+        'max_attempts' => (int) env('SECURITY_REAUTH_MAX_ATTEMPTS', 5),
+    ],
+
     'two_factor' => [
         // none, admins (platform administrators) or all.
         'required_for' => env('SECURITY_REQUIRE_TWO_FACTOR', 'admins'),
@@ -57,6 +63,30 @@ return [
         // Failed logins within the window that trigger a security alert.
         'failed_login_alert_threshold' => (int) env('SECURITY_FAILED_LOGIN_ALERT_THRESHOLD', 10),
         'failed_login_alert_window_minutes' => (int) env('SECURITY_FAILED_LOGIN_ALERT_WINDOW_MINUTES', 10),
+    ],
+
+    'hsts' => [
+        'max_age_seconds' => (int) env('SECURITY_HSTS_MAX_AGE_SECONDS', 31536000),
+        'include_subdomains' => (bool) env('SECURITY_HSTS_INCLUDE_SUBDOMAINS', true),
+    ],
+
+    'ssh' => [
+        // Per-server known_hosts files (trust on first use). Managed by App\Services\Ssh\KnownHosts.
+        'known_hosts_directory' => storage_path('app/ssh/known_hosts'),
+        // known_hosts file for git hosts. Git runs on the build server (or in its helper
+        // container), so this path lives in the Coolify data directory on that server.
+        'git_known_hosts_file' => env('SECURITY_SSH_GIT_KNOWN_HOSTS_FILE', '/data/coolify/ssh/git/known_hosts'),
+        // FIPS 140-3 approved algorithms. Comma-separated OpenSSH lists; an empty value keeps the OpenSSH default.
+        'ciphers' => env('SECURITY_SSH_CIPHERS', 'aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr'),
+        'kex_algorithms' => env('SECURITY_SSH_KEX_ALGORITHMS', 'ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group16-sha512,diffie-hellman-group14-sha256'),
+        'macs' => env('SECURITY_SSH_MACS', 'hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256'),
+        'host_key_algorithms' => env('SECURITY_SSH_HOST_KEY_ALGORITHMS', 'ecdsa-sha2-nistp521,ecdsa-sha2-nistp384,ecdsa-sha2-nistp256,rsa-sha2-512,rsa-sha2-256'),
+        // Appends ssh-ed25519 to the host key algorithms. Ed25519 is not FIPS 140-3 approved for
+        // every module, but many servers only have an Ed25519 host key, so it is allowed by default.
+        // Set to false on fully FIPS-validated estates once every server has an ECDSA or RSA host key.
+        'allow_ed25519_host_keys' => (bool) env('SECURITY_SSH_ALLOW_ED25519_HOST_KEYS', true),
+        // Minutes between repeated alerts and audit events for the same server whose host key changed.
+        'host_key_changed_alert_throttle_minutes' => (int) env('SECURITY_SSH_HOST_KEY_ALERT_THROTTLE_MINUTES', 60),
     ],
 
 ];

@@ -30,16 +30,14 @@
 ])
 
 @php
-    use App\Models\InstanceSettings;
     use Illuminate\View\ComponentSlot;
-    // Global setting to disable ALL two-step confirmation (text + password)
-    $disableTwoStepConfirmation = data_get(InstanceSettings::get(), 'disable_two_step_confirmation');
-    // Skip ONLY password confirmation for OAuth users (they have no password)
+    // Two-step confirmation can no longer be disabled instance-wide.
+    $disableTwoStepConfirmation = false;
+    // SSO users without two-factor authentication have nothing to type: the server
+    // checks that they signed in recently instead.
     $skipPasswordConfirmation = shouldSkipPasswordConfirmation();
-    if ($temporaryDisableTwoStepConfirmation) {
-        $disableTwoStepConfirmation = false;
-        // Password confirmation requirement is not affected by temporary two-step disable
-    }
+    // SSO users with two-factor authentication confirm with a current TOTP code.
+    $confirmWithTotp = reauthenticationMethod() === 'totp';
     $title ??= __('Are you sure?');
     $confirmationLabel ??= __('Please confirm the execution of the actions by entering the Name below');
     $shortConfirmationLabel ??= __('Name');
@@ -94,7 +92,7 @@
     step3ButtonText: @js($step3ButtonText),
     validatePassword() {
         if (this.confirmWithPassword && !this.password) {
-            return @js(__('Password is required.'));
+            return @js($confirmWithTotp ? __('Two-factor code is required.') : __('Password is required.'));
         }
         return '';
     },
@@ -360,7 +358,11 @@
                     @if (!$skipPasswordConfirmation)
                         <div x-show="step === 3 && confirmWithPassword">
                             <x-callout type="danger" :title="__('Final Confirmation')" class="mb-4">
-                                {{ __('Please enter your password to confirm this destructive action.') }}
+                                @if ($confirmWithTotp)
+                                    {{ __('Enter the current code from your authenticator app to confirm this destructive action.') }}
+                                @else
+                                    {{ __('Please enter your password to confirm this destructive action.') }}
+                                @endif
                             </x-callout>
                             <div class="flex flex-col gap-2 mb-4">
                                 @php
@@ -368,14 +370,20 @@
                                 @endphp
                                 <label for="password-confirm-{{ $passwordConfirm }}"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {{ __('Your Password') }}
+                                    {{ $confirmWithTotp ? __('Two-factor code') : __('Your Password') }}
                                 </label>
                                 <form @submit.prevent="false" @keydown.enter.prevent>
-                                    <input type="text" name="username" autocomplete="username"
-                                        value="{{ auth()->user()->email }}" style="display: none;">
-                                    <input type="password" id="password-confirm-{{ $passwordConfirm }}"
-                                        x-model="password" class="w-full input" placeholder="{{ __('Enter your password') }}"
-                                        autocomplete="current-password">
+                                    @if ($confirmWithTotp)
+                                        <input type="text" id="password-confirm-{{ $passwordConfirm }}"
+                                            x-model="password" class="w-full input" placeholder="{{ __('Enter the 6-digit code') }}"
+                                            inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+                                    @else
+                                        <input type="text" name="username" autocomplete="username"
+                                            value="{{ auth()->user()->email }}" style="display: none;">
+                                        <input type="password" id="password-confirm-{{ $passwordConfirm }}"
+                                            x-model="password" class="w-full input" placeholder="{{ __('Enter your password') }}"
+                                            autocomplete="current-password">
+                                    @endif
                                 </form>
                                 <p x-show="passwordError" x-text="passwordError" class="mt-1 text-sm text-red-500">
                                 </p>

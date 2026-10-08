@@ -42,7 +42,7 @@ it('does not serialize a private key for a member who cannot update it', functio
         ->assertDontSee($privateKeyValue);
 });
 
-it('keeps a private key available to an owner who can update it', function () {
+it('reveals a private key to an owner who can update it only after re-authentication', function () {
     $privateKeyValue = PrivateKey::generateNewKeyPair('ed25519')['private_key'];
     $privateKey = PrivateKey::factory()->create([
         'team_id' => $this->team->id,
@@ -54,6 +54,10 @@ it('keeps a private key available to an owner who can update it', function () {
 
     Livewire::test(PrivateKeyShow::class, ['private_key_uuid' => $privateKey->uuid])
         ->assertSuccessful()
+        ->assertSet('privateKeyValue', '')
+        ->assertDontSee($privateKeyValue)
+        ->call('showPrivateKey', 'password')
+        ->assertReturned(true)
         ->assertSet('privateKeyValue', $privateKeyValue);
 });
 

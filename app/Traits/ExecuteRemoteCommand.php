@@ -7,6 +7,7 @@ use App\Exceptions\DeploymentException;
 use App\Helpers\SshMultiplexingHelper;
 use App\Models\EnvironmentVariable;
 use App\Models\Server;
+use App\Services\Ssh\KnownHosts;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Process;
@@ -236,6 +237,9 @@ trait ExecuteRemoteCommand
                         throw new \RuntimeException('Deployment cancelled by user', 69420);
                     }
                 }
+
+                // A changed host key is not retried: ssh refused the server, so stop with a clear error.
+                KnownHosts::failIfHostKeyChanged($this->server, (string) $process_result->errorOutput(), $process_result->exitCode());
 
                 // Don't immediately set to FAILED - let the retry logic handle it
                 // This prevents premature status changes during retryable SSH errors

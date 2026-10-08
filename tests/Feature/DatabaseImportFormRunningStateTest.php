@@ -20,10 +20,7 @@ use Spatie\Activitylog\Models\Activity;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    InstanceSettings::forceCreate([
-        'id' => 0,
-        'disable_two_step_confirmation' => true,
-    ]);
+    InstanceSettings::forceCreate(['id' => 0]);
 
     $this->team = Team::factory()->create();
     $this->user = User::factory()->create();
@@ -90,7 +87,7 @@ test('runImport resets importRunning when StartDatabaseImport rejects the import
     );
 
     importForm()
-        ->call('runImport')
+        ->call('runImport', 'password')
         ->assertSet('importRunning', false)
         ->assertDispatched('error', 'The completed upload was not found.');
 });
@@ -99,7 +96,7 @@ test('runImport resets importRunning when StartDatabaseImport throws a generic e
     StartDatabaseImport::shouldRun()->once()->andThrow(new RuntimeException('scp failed'));
 
     importForm()
-        ->call('runImport')
+        ->call('runImport', 'password')
         ->assertSet('importRunning', false)
         ->assertDispatched('error', 'scp failed');
 });
@@ -110,7 +107,7 @@ test('restoreFromS3 resets importRunning when StartDatabaseImport rejects the im
     );
 
     importForm()
-        ->call('restoreFromS3')
+        ->call('restoreFromS3', 'password')
         ->assertSet('importRunning', false)
         ->assertDispatched('error', 'The S3 backup was not found or exceeds the 10 GiB limit.');
 });
@@ -124,7 +121,7 @@ test('runImport keeps importRunning true after a successful start', function () 
     StartDatabaseImport::shouldRun()->once()->andReturn($activity);
 
     importForm()
-        ->call('runImport')
+        ->call('runImport', 'password')
         ->assertSet('importRunning', true)
         ->assertSet('activityId', $activity->id)
         ->assertDispatched('activityMonitor', $activity->id)

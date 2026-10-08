@@ -4,6 +4,7 @@ namespace App\Livewire\Project\Database\Sqlite;
 
 use App\Models\Server;
 use App\Models\StandaloneSqlite;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\ValidationPatterns;
 use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -78,6 +79,12 @@ class General extends Component
             $this->database->description = $this->description;
             $this->database->sqlite_databases = $this->sqliteDatabases;
             $this->database->image = $this->image;
+            ContainerPrivilegePolicy::ensureRunOptionsAllowed(
+                $this->database->custom_docker_run_options,
+                $this->customDockerRunOptions,
+                auth()->user(),
+                'customDockerRunOptions',
+            );
             $this->database->custom_docker_run_options = $this->customDockerRunOptions;
             $this->database->is_log_drain_enabled = $this->isLogDrainEnabled;
             $this->database->save();

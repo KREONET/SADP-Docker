@@ -54,6 +54,11 @@
                     <x-callout type="info" :title="__('Note')">
                         {!! __('Inline comments with space before # (e.g., :example) are stripped.', ['example' => '<code class="font-mono">KEY=value #comment</code>']) !!}
                     </x-callout>
+                    @if ($sensitiveConfirmationRequired)
+                        <x-sensitive-confirmation action="confirmSensitiveAccess" wire:key="env-dev-view-confirm"
+                            :message="__('Values are hidden until you confirm your identity. Hidden values are kept unchanged when you save. You will not be asked again for :minutes minutes.', ['minutes' => \App\Support\Reauthentication::windowMinutes()])"
+                            :buttonText="__('Show values')" />
+                    @endif
                     <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" id="variables"
                         wire:model="variables" :label="__('Production')"></x-forms.textarea>
                     @if ($showPreview)

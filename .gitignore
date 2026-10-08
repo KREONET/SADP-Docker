@@ -57,3 +57,6 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 /.claude/settings.local.json
+
+./Security_change.md
+./SECURITY_ADVISORY.md

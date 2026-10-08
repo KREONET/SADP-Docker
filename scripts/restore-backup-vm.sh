@@ -42,8 +42,11 @@ VM_MAC=52:54:00:c0:1f:01
 UBUNTU_IMAGE_URL=https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
 UBUNTU_IMAGE="$IMAGE_DIR/ubuntu-noble-amd64.qcow2"
 SSH_KEY="$IMAGE_DIR/ssh_key"
+# Dedicated known_hosts file: the first connection to a new VM pins its host key (accept-new),
+# later connections in the same run must present the same key.
+KNOWN_HOSTS="$IMAGE_DIR/known_hosts"
 VIRSH=(virsh --connect qemu:///system)
-SSH_OPTS=(-i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5)
+SSH_OPTS=(-i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$KNOWN_HOSTS" -o GlobalKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5)
 
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 die() {
@@ -79,6 +82,15 @@ wait_for_ip() {
     done
     [ -n "$ip" ] || die "VM $1 did not get an IP address from DHCP."
     echo "$ip"
+}
+
+# forget_host_key <ip>: removes the key of a deleted VM that had the same address.
+# A newly created VM generates new host keys, so its key is learned again on the first connection.
+forget_host_key() {
+    if [ -f "$KNOWN_HOSTS" ]; then
+        ssh-keygen -R "$1" -f "$KNOWN_HOSTS" >/dev/null 2>&1 || true
+        rm -f "$KNOWN_HOSTS.old"
+    fi
 }
 
 # wait_for_ssh <ip>: waits for SSH and for cloud-init to finish.
@@ -171,6 +183,7 @@ build_base_image() {
     delete_vm "$BUILDER_NAME"
     create_vm "$BUILDER_NAME" "$UBUNTU_IMAGE" "$NAT_NETWORK"
     VM_IP=$(wait_for_ip "$BUILDER_NAME")
+    forget_host_key "$VM_IP"
     wait_for_ssh "$VM_IP"
 
     log "Installing Coolify $VERSION in the builder VM (no backup data in this VM)"
@@ -192,7 +205,7 @@ build_base_image() {
 [ "${1:-}" = "destroy" ] && {
     delete_vm "$VM_NAME"
     delete_vm "$BUILDER_NAME"
-    rm -f "$IMAGE_DIR"/coolify-base-*.qcow2
+    rm -f "$IMAGE_DIR"/coolify-base-*.qcow2 "$KNOWN_HOSTS" "$KNOWN_HOSTS.old"
     echo "Deleted VM $VM_NAME, its disk, and the Coolify base images."
     exit 0
 }
@@ -251,6 +264,7 @@ ensure_offline_network
 create_vm "$VM_NAME" "$BASE_IMAGE" "$OFFLINE_NETWORK"
 VM_IP=$(wait_for_ip "$VM_NAME")
 log "VM IP address on the offline network: $VM_IP"
+forget_host_key "$VM_IP"
 wait_for_ssh "$VM_IP"
 
 log "Confirming that the VM has no internet access"
@@ -268,8 +282,7 @@ else
     scp "${SSH_OPTS[@]}" "$BACKUP_FILE" "root@$VM_IP:/root/coolify-backup.dmp"
 fi
 
-log "Restoring the backup and Starting PADED
- (migrations run on start)"
+log "Restoring the backup and Starting PADED (migrations run on start)"
 # Send APP_KEY through stdin, so it does not show in the process list of this host or the VM.
 {
     printf 'APP_KEY=%q\n' "$APP_KEY"
@@ -308,8 +321,7 @@ docker exec coolify-redis redis-cli -a "$REDIS_PASSWORD" --no-auth-warning FLUSH
 COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
 [ -f docker-compose.custom.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.custom.yml"
 [ -f docker-compose.postgres-upgrade.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.postgres-upgrade.yml"
-echo "Starting PADED
- $LATEST_IMAGE..."
+echo "Starting PADED $LATEST_IMAGE..."
 # --pull never: the VM is offline, all images come from the base image.
 # shellcheck disable=SC2086
 LATEST_IMAGE=$LATEST_IMAGE docker compose --env-file .env $COMPOSE_FILES up -d --pull never --wait --wait-timeout 600
@@ -350,8 +362,8 @@ $(printf '\033[1;32m')Restore finished.$(printf '\033[0m')
                                  then open http://localhost:8000
   Log in with a user account from the backup.
 
-  SSH into the VM:               ssh -i $SSH_KEY root@$VM_IP
-  Coolify logs:                  ssh -i $SSH_KEY root@$VM_IP docker logs -f coolify
+  SSH into the VM:               ssh -i $SSH_KEY -o UserKnownHostsFile=$KNOWN_HOSTS root@$VM_IP
+  Coolify logs:                  ssh -i $SSH_KEY -o UserKnownHostsFile=$KNOWN_HOSTS root@$VM_IP docker logs -f coolify
   Delete the VM:                 $0 destroy
 
   The VM never had internet access. Horizon and the scheduler are off, so no job runs.

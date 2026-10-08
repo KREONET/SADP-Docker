@@ -29,7 +29,7 @@ describe('token creation with expiration', function () {
             ->set('description', 'test-token')
             ->set('expiresInDays', 7)
             ->set('permissions', ['read'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertHasNoErrors();
 
         $token = $this->user->tokens()->latest()->first();
@@ -40,18 +40,15 @@ describe('token creation with expiration', function () {
             ->and(now()->diffInDays($token->expires_at))->toBeLessThanOrEqual(7);
     });
 
-    test('livewire component stores null expires_at when expiresInDays null (Never)', function () {
+    test('livewire component rejects a token without expiry (Never is no longer offered)', function () {
         Livewire::test(ApiTokens::class)
             ->set('description', 'never-token')
             ->set('expiresInDays', null)
             ->set('permissions', ['read'])
-            ->call('addNewToken')
-            ->assertHasNoErrors();
+            ->call('addNewToken', 'password')
+            ->assertDispatched('error');
 
-        $token = $this->user->tokens()->latest()->first();
-
-        expect($token)->not->toBeNull()
-            ->and($token->expires_at)->toBeNull();
+        expect($this->user->tokens()->count())->toBe(0);
     });
 
     test('livewire component rejects invalid expiresInDays value', function () {
@@ -59,22 +56,22 @@ describe('token creation with expiration', function () {
             ->set('description', 'bad-token')
             ->set('expiresInDays', 42)
             ->set('permissions', ['read'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
 
         expect($this->user->tokens()->count())->toBe(0);
     });
 
-    test('livewire component keeps Never (null) after an intermediate live update', function () {
+    test('livewire component keeps the chosen expiry after an intermediate live update', function () {
         Livewire::test(ApiTokens::class)
-            ->set('description', 'never-token')
-            ->set('expiresInDays', '')
+            ->set('description', 'week-token')
+            ->set('expiresInDays', '7')
             ->set('permissions', ['read', 'deploy'])
             ->set('permissions', ['read'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertHasNoErrors();
 
-        expect($this->user->tokens()->latest()->first()->expires_at)->toBeNull();
+        expect((int) round(now()->diffInDays($this->user->tokens()->latest()->first()->expires_at)))->toBe(7);
     });
 });
 

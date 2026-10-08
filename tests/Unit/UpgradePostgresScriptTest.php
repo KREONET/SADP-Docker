@@ -29,19 +29,19 @@ it('ships postgres upgrade scripts with valid bash syntax', function () {
     assertBashSyntaxIsValid('other/nightly/upgrade-postgres.sh');
 });
 
-it('downloads postgres upgrade script during install and upgrade without auto-running it', function (string $path) {
+it('downloads postgres upgrade script during install and upgrade without auto-running it', function (string $path, string $download) {
     $script = file_get_contents(getcwd().'/'.$path);
 
     expect($script)
         ->toContain('upgrade-postgres.sh')
-        ->toContain('curl -fsSL -L $CDN/upgrade-postgres.sh -o /data/coolify/source/upgrade-postgres.sh')
+        ->toContain($download)
         ->toContain('chmod +x')
         ->not->toContain('bash /data/coolify/source/upgrade-postgres.sh');
 })->with([
-    'stable install' => 'scripts/install.sh',
-    'nightly install' => 'other/nightly/install.sh',
-    'stable upgrade' => 'scripts/upgrade.sh',
-    'nightly upgrade' => 'other/nightly/upgrade.sh',
+    'stable install' => ['scripts/install.sh', 'download_verified "$CDN/upgrade-postgres.sh" /data/coolify/source/upgrade-postgres.sh'],
+    'nightly install' => ['other/nightly/install.sh', 'download_verified "$CDN/upgrade-postgres.sh" /data/coolify/source/upgrade-postgres.sh'],
+    'stable upgrade' => ['scripts/upgrade.sh', 'fetch_config_file upgrade-postgres.sh'],
+    'nightly upgrade' => ['other/nightly/upgrade.sh', 'fetch_config_file upgrade-postgres.sh'],
 ]);
 
 it('uses the selected registry url when extracting upgrade images', function (string $path) {

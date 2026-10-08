@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -19,6 +20,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user, ['role' => 'owner']);
     makePlatformAdmin($this->user);
+    TwoFactor::confirm($this->user);
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
 
     $this->actingAs($this->user);

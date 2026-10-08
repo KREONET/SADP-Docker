@@ -58,6 +58,9 @@ class SaveProxyConfiguration
 
         $commands[] = "echo '$docker_compose_yml_base64' | base64 -d | tee $proxy_path/docker-compose.yml > /dev/null";
 
+        // Every save (also on proxy start and restart) rewrites the default TLS options, so existing servers get them too.
+        array_push($commands, ...traefikTlsOptionsCommands($server));
+
         instant_remote_process($commands, $server);
     }
 }

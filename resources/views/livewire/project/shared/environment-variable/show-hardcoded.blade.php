@@ -30,9 +30,27 @@
         <span class="data-table-cell-dash">-</span>
         <div class="flex items-center gap-0.5 justify-self-end">
             @unless (auth()->user()?->isMember() ?? true)
-                <x-copy-button resolve="$wire.copyValue()" :label="__('Copy value')" />
+                {{-- Copying needs a recent re-authentication; without one, open the details to confirm. --}}
+                <button type="button" title="{{ __('Copy value') }}" aria-label="{{ __('Copy value') }}"
+                    class="icon-button group shrink-0" data-env-copy-value x-data="copyButton"
+                    @click="const copiedValue = await $wire.copyValue();
+                        if (copiedValue !== null && copiedValue !== undefined) {
+                            copy(copiedValue);
+                        } else if ($wire.sensitiveConfirmationRequired) {
+                            $el.closest('.data-table-row').querySelector('[data-env-settings-trigger]').click();
+                        } else {
+                            copy(null);
+                        }">
+                    <span class="inline-flex transition-transform duration-150 ease-out group-active:scale-75">
+                        <x-reicon name="copy" x-show="!copied" class="size-3.5" />
+                        <x-reicon name="check" x-cloak x-show="copied" class="size-3.5 text-success"
+                            x-transition:enter="transition-transform duration-200 ease-out"
+                            x-transition:enter-start="scale-50" x-transition:enter-end="scale-100" />
+                    </span>
+                </button>
             @endunless
-            <x-modal-input :title="__('Environment variable details')" :closeOutside="false">
+            <x-modal-input :title="__('Environment variable details')" :closeOutside="false" :wireIgnore="false"
+                wireOpen="detailsOpen">
                 <x-slot:content>
                     <button type="button" data-env-settings-trigger class="icon-button shrink-0"
                         title="{{ __('View environment variable') }}" aria-label="{{ __('View environment variable') }}">
@@ -42,6 +60,10 @@
                 <div class="flex w-full flex-col gap-4">
                     <x-forms.input :label="__('Name')" :value="$key" readonly />
                     <x-forms.input :label="__('Value')" :value="$value ?? ''" readonly />
+                    @if ($sensitiveConfirmationRequired)
+                        <x-sensitive-confirmation action="confirmSensitiveAccess" wire:key="env-hardcoded-copy-confirm"
+                            :message="__('Confirm your identity to view or copy this value. You will not be asked again for :minutes minutes.', ['minutes' => \App\Support\Reauthentication::windowMinutes()])" />
+                    @endif
                     @if (filled($comment))
                         <x-forms.input :label="__('Comment')" :value="$comment" readonly />
                     @endif

@@ -33,12 +33,35 @@ if (! function_exists('auditLog')) {
                 'path' => $request?->path(),
             ], $context));
 
+            alignAuditLogFileRetention();
             SystemLogRecorder::withoutRecording(fn () => Log::channel('audit')->{$level}($event, $payload));
         } catch (Throwable) {
             // The database sink remains available when the optional channel fails.
         }
 
         AuditEvent::record($event, $context, $level);
+    }
+}
+
+if (! function_exists('alignAuditLogFileRetention')) {
+    /**
+     * Keeps the daily `audit` log files as long as audit events are kept in the database
+     * (`AuditEvent::retentionDays()`), once per process and before the channel is first resolved.
+     */
+    function alignAuditLogFileRetention(): void
+    {
+        static $aligned = false;
+        if ($aligned) {
+            return;
+        }
+        $aligned = true;
+
+        try {
+            $days = max((int) config('logging.channels.audit.days', 365), AuditEvent::retentionDays());
+            config(['logging.channels.audit.days' => $days]);
+        } catch (Throwable) {
+            // The configured file retention stays in place.
+        }
     }
 }
 

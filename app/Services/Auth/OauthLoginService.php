@@ -17,6 +17,12 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OauthLoginService
 {
+    /**
+     * Session key that marks a session as signed in through OAuth/OIDC. Such sessions
+     * do not use the local password, so password expiry does not apply to them.
+     */
+    public const SSO_SESSION_KEY = 'auth.via_sso';
+
     public function login(string $provider, object $oauthUser, OauthSetting $oauthSetting): User
     {
         $email = strtolower(trim((string) $oauthUser->email));
@@ -36,6 +42,7 @@ class OauthLoginService
 
         $team = $user->currentTeam() ?? $user->teams()->first() ?? $user->recreate_personal_team();
         session(['currentTeam' => $team]);
+        session()->put(self::SSO_SESSION_KEY, $provider);
 
         if ($this->requiresTwoFactorChallenge($user)) {
             Auth::logout();

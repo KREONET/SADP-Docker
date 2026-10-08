@@ -14,6 +14,7 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -26,6 +27,7 @@ beforeEach(function () {
     $this->team->members()->attach($this->admin, ['role' => 'admin']);
     // Server secrets are only revealed to users who can manage the server (platform admins).
     makePlatformAdmin($this->admin);
+    TwoFactor::confirm($this->admin);
     $this->server = Server::factory()->create(['team_id' => $this->team->id]);
     $this->server->settings->updateQuietly([
         'sentinel_token' => 'SENTINEL-MARKER-SECRET',

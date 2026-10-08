@@ -12,7 +12,8 @@ it('uses Reverb as the first-party broadcast server', function () {
         ->toContain("'default' => env('BROADCAST_CONNECTION', env('BROADCAST_DRIVER', 'reverb'))")
         ->toContain("'reverb' => [")
         ->toContain("'key' => env('PUSHER_APP_KEY', 'coolify')")
-        ->toContain("'secret' => env('PUSHER_APP_SECRET', 'coolify')")
+        ->toContain("'secret' => \$appSecret")
+        ->not->toContain("env('PUSHER_APP_SECRET', 'coolify')")
         ->toContain("'app_id' => env('PUSHER_APP_ID', 'coolify')")
         ->toContain("'host' => \$backendHost")
         ->toContain("'port' => env('PUSHER_BACKEND_PORT', 6001)")
@@ -219,7 +220,7 @@ it('keeps the public websocket port adaptive and configures only the internal Re
 
 it('does not use the browser websocket port as the Docker host port', function (string $composeFile) {
     expect(file_get_contents(base_path($composeFile)))
-        ->toContain('"${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001"')
+        ->toContain('${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001"')
         ->not->toContain('"${PUSHER_PORT:-6001}:6001"');
 })->with([
     'production compose' => ['docker-compose.prod.yml'],
@@ -269,7 +270,7 @@ it('keeps 4.3.23 realtime setups working with the production compose files', fun
     // The browser port comes only from .env (for example PUSHER_PORT=443 for Cloudflare Tunnel).
     expect(collect($coolify['environment'])->filter(fn (string $entry) => Str::startsWith($entry, 'PUSHER_PORT')))->toBeEmpty()
         ->and($coolify['networks']['coolify']['aliases'])->toContain('coolify-realtime')
-        ->and($coolify['ports'])->toContain('6002:6002')
+        ->and($coolify['ports'])->toContain('${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}6002:6002')
         ->and(implode("\n", [...$coolify['ports'], ...$coolify['expose']]))->not->toContain('TERMINAL_PORT');
 })->with([
     'production compose' => ['docker-compose.prod.yml'],

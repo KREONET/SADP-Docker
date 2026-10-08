@@ -21,6 +21,7 @@ use App\Notifications\Database\BackupSuccessWithS3Warning;
 use App\Rules\SafeWebhookUrl;
 use App\Services\ScheduledJobDeliveryService;
 use App\Support\BackupCompression;
+use App\Support\BackupEncryption;
 use App\Support\ClickhouseBackupCommand;
 use App\Support\ValidationPatterns;
 use Carbon\Carbon;
@@ -422,6 +423,10 @@ class DatabaseBackupJob implements ShouldBeEncrypted, ShouldQueue
 
                     // Verify local backup succeeded
                     if ($size > 0) {
+                        if ($this->backup->shouldEncryptBackups()) {
+                            $this->encryptBackupFile();
+                            $size = $this->calculate_size();
+                        }
                         $localBackupSucceeded = true;
                     } else {
                         throw new \Exception('Local backup file is empty or was not created');
@@ -795,6 +800,49 @@ class DatabaseBackupJob implements ShouldBeEncrypted, ShouldQueue
         } else {
             $this->error_output = $output;
         }
+    }
+
+    /**
+     * Encrypts the new backup file on the server and removes the plain dump. The passphrase is
+     * stored (encrypted with APP_KEY) on the execution before the file is encrypted, so a backup
+     * file never exists without the passphrase that decrypts it.
+     */
+    private function encryptBackupFile(): void
+    {
+        $openssl = instant_remote_process([BackupEncryption::opensslCheckCommand()], $this->server, false, false, null, disableMultiplexing: true);
+        if (blank($openssl)) {
+            deleteBackupsLocally($this->backup_location, $this->server);
+
+            throw new \Exception('Backup encryption is enabled, but openssl is not installed on the server. Install openssl or disable backup encryption.');
+        }
+
+        $plainLocation = $this->backup_location;
+        $encryptedLocation = $plainLocation.BackupEncryption::EXTENSION;
+        $passphrase = BackupEncryption::generatePassphrase();
+        $this->backup_log?->update(['encryption_passphrase' => $passphrase]);
+
+        try {
+            instant_remote_process(
+                BackupEncryption::encryptCommands($plainLocation, $encryptedLocation, $passphrase),
+                $this->server,
+                true,
+                false,
+                $this->timeout,
+                disableMultiplexing: true,
+            );
+        } catch (Throwable $e) {
+            deleteBackupsLocally([$plainLocation, $encryptedLocation], $this->server);
+            $this->add_to_error_output('Backup encryption failed: '.$e->getMessage());
+
+            throw $e;
+        }
+
+        $this->backup_location = $encryptedLocation;
+        $this->backup_file .= BackupEncryption::EXTENSION;
+        $this->backup_log?->update([
+            'filename' => $encryptedLocation,
+            'is_encrypted' => true,
+        ]);
     }
 
     private function calculate_size()

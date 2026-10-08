@@ -25,7 +25,9 @@ use App\Rules\ValidGitBranch;
 use App\Rules\ValidGitRepositoryUrl;
 use App\Services\Dns\ManagedDnsRecordCleanup;
 use App\Services\DockerImageParser;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\DomainPortOverrides;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ValidationPatterns;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -173,6 +175,64 @@ class ApplicationsController extends Controller
         return response()->json([
             'message' => 'Validation failed.',
             'errors' => ['custom_container_name_prefix' => ['This container name prefix is already in use by another application.']],
+        ], 422);
+    }
+
+    /**
+     * Settings that only a platform administrator may change: turning the HTTP to HTTPS redirect off
+     * (403) and custom Docker run options or Compose content that give containers host access (422).
+     * Without $application the request creates a new application, whose redirect is on by default.
+     */
+    private function privilegedSettingsResponse(Request $request, ?Application $application = null): ?JsonResponse
+    {
+        $user = $request->user();
+
+        // The create and update paths only apply a non-null value (isset()).
+        if ($request->input('is_force_https_enabled') !== null) {
+            $current = $application === null ? true : (bool) $application->isForceHttpsEnabled();
+            if (! ForceHttpsPolicy::allowsChange($current, $request->boolean('is_force_https_enabled'), $user)) {
+                auditLog('api.application.force_https.disable', [
+                    'application_uuid' => $application?->uuid,
+                    'result' => 'denied',
+                ], 'warning');
+
+                return response()->json([
+                    'message' => 'Only platform administrators can turn off the HTTP to HTTPS redirect.',
+                ], 403);
+            }
+        }
+
+        $errors = [];
+        if ($request->has('custom_docker_run_options')) {
+            $requested = $request->input('custom_docker_run_options');
+            $violation = ContainerPrivilegePolicy::runOptionsViolation(
+                $application?->custom_docker_run_options,
+                is_string($requested) ? $requested : null,
+                $user,
+            );
+            if ($violation !== null) {
+                $errors['custom_docker_run_options'] = [$violation];
+            }
+        }
+        if ($request->filled('docker_compose_raw') && is_string($request->input('docker_compose_raw'))) {
+            $violation = ContainerPrivilegePolicy::composeViolation(
+                $application?->docker_compose_raw,
+                $request->input('docker_compose_raw'),
+                $user,
+                ContainerPrivilegePolicy::allowedHostDirectories($application),
+            );
+            if ($violation !== null) {
+                $errors['docker_compose_raw'] = [$violation];
+            }
+        }
+
+        if ($errors === []) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => 'Validation failed.',
+            'errors' => $errors,
         ], 422);
     }
 
@@ -1274,6 +1334,10 @@ class ApplicationsController extends Controller
                     ],
                 ], 422);
             }
+        }
+
+        if ($response = $this->privilegedSettingsResponse($request)) {
+            return $response;
         }
 
         $return = $this->validateTagsParameter($request);
@@ -3272,6 +3336,10 @@ class ApplicationsController extends Controller
                 'message' => 'Validation failed.',
                 'errors' => $errors,
             ], 422);
+        }
+
+        if ($response = $this->privilegedSettingsResponse($request, $application)) {
+            return $response;
         }
 
         $applicationSettings = $this->applicationSettingsFromRequest($request);

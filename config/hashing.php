@@ -8,14 +8,29 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option controls the default hash driver that will be used to hash
-    | passwords for your application. By default, the bcrypt algorithm is
-    | used; however, you remain free to modify this option if you wish.
+    | passwords for your application. PBKDF2-HMAC-SHA256 (FIPS 140-3 / KCMVP
+    | approved) is the default; its iteration count is read from
+    | config('security.password.pbkdf2_iterations'). Legacy bcrypt hashes
+    | still verify and are upgraded to PBKDF2 on the user's next sign-in.
     |
-    | Supported: "bcrypt", "argon", "argon2id"
+    | Supported: "pbkdf2", "bcrypt", "argon", "argon2id"
     |
     */
 
-    'driver' => 'bcrypt',
+    'driver' => env('HASH_DRIVER', 'pbkdf2'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rehash On Login
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, a password hash created with an outdated algorithm or cost
+    | (e.g. bcrypt, or fewer PBKDF2 iterations) is replaced after a successful
+    | password sign-in.
+    |
+    */
+
+    'rehash_on_login' => true,
 
     /*
     |--------------------------------------------------------------------------

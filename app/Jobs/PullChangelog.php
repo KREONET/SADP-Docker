@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\ChangelogService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -26,6 +27,11 @@ class PullChangelog implements ShouldBeEncrypted, ShouldQueue
 
     public function handle(): void
     {
+        // The changelog is fetched from an external CDN, so it is opt-in.
+        if (! app(ChangelogService::class)->isEnabled()) {
+            return;
+        }
+
         try {
             // Fetch from CDN instead of GitHub API to avoid rate limits
             $cdnUrl = config('constants.coolify.releases_url');

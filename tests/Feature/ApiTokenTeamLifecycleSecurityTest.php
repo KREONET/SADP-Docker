@@ -146,7 +146,7 @@ test('member cannot create write token through livewire token form', function ()
         ->set('description', 'member-write-token')
         ->set('expiresInDays', 30)
         ->set('permissions', ['write'])
-        ->call('addNewToken');
+        ->call('addNewToken', 'password');
 
     expect($this->user->tokens()->where('name', 'member-write-token')->exists())->toBeFalse();
 });

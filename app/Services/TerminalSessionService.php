@@ -9,6 +9,7 @@ use App\Support\ValidationPatterns;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Throwable;
 
 class TerminalSessionService
 {
@@ -25,10 +26,51 @@ class TerminalSessionService
             'container' => $container,
         ], now()->addSeconds(self::TOKEN_TTL_SECONDS));
 
+        auditLog('terminal.session.issued', $this->auditContext($user, $server, $container) + ['result' => 'success']);
+
         return $token;
     }
 
+    /**
+     * Redeem a one-time terminal token and build the SSH command for it.
+     * Every redemption is audited, including rejected ones.
+     */
     public function redeem(User $user, string $token): string
+    {
+        $payload = null;
+        $server = null;
+
+        try {
+            $command = $this->redeemPayload($user, $token, $payload, $server);
+        } catch (Throwable $exception) {
+            $ownPayload = is_array($payload) && data_get($payload, 'user_id') === $user->id ? $payload : [];
+
+            auditLog('terminal.session.redeemed', $this->auditContext(
+                $user,
+                $server,
+                is_string($ownPayload['container'] ?? null) ? $ownPayload['container'] : null,
+                is_string($ownPayload['server_uuid'] ?? null) ? $ownPayload['server_uuid'] : null,
+            ) + [
+                'result' => 'denied',
+                'reason' => $exception instanceof AccessDeniedHttpException ? $exception->getMessage() : class_basename($exception),
+            ], 'warning');
+
+            throw $exception;
+        }
+
+        auditLog('terminal.session.redeemed', $this->auditContext($user, $server, $payload['container']) + [
+            'command' => maskAuditCommand($this->remoteCommand($server, $payload['container'])),
+            'result' => 'success',
+        ]);
+
+        return $command;
+    }
+
+    /**
+     * @param  mixed  $payload  Set to the cached token payload.
+     * @param  Server|null  $server  Set to the resolved target server.
+     */
+    private function redeemPayload(User $user, string $token, mixed &$payload, ?Server &$server): string
     {
         $payload = Cache::lock($this->cacheKey($token).':lock', 5)
             ->get(fn () => Cache::pull($this->cacheKey($token)));
@@ -54,7 +96,6 @@ class TerminalSessionService
             throw new AccessDeniedHttpException('Terminal target is not authorized.');
         }
 
-        $command = $this->shellCommand();
         $container = $payload['container'];
 
         if ($container !== null) {
@@ -63,16 +104,46 @@ class TerminalSessionService
                 || getContainerStatus($server, $container) !== 'running') {
                 throw new AccessDeniedHttpException('Terminal container is not authorized.');
             }
-
-            $dockerCommand = 'docker exec -it '.escapeshellarg($container).' sh -c '.escapeshellarg($command);
-            $command = $server->isNonRoot() ? "sudo {$dockerCommand}" : $dockerCommand;
         }
 
         return SshMultiplexingHelper::generateSshCommand(
             $server,
-            $command,
+            $this->remoteCommand($server, $container),
             commandTimeout: (int) config('constants.terminal.command_timeout')
         );
+    }
+
+    /**
+     * The command run on the server: a login shell, or a shell inside the container.
+     */
+    private function remoteCommand(Server $server, ?string $container): string
+    {
+        $command = $this->shellCommand();
+
+        if ($container === null) {
+            return $command;
+        }
+
+        $dockerCommand = 'docker exec -it '.escapeshellarg($container).' sh -c '.escapeshellarg($command);
+
+        return $server->isNonRoot() ? "sudo {$dockerCommand}" : $dockerCommand;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function auditContext(User $user, ?Server $server, ?string $container, ?string $serverUuid = null): array
+    {
+        return [
+            'team_id' => $server?->team_id ?? $user->currentTeam()?->id,
+            'resource' => 'server',
+            'server_uuid' => $server?->uuid ?? $serverUuid,
+            'server_name' => $server?->name,
+            'container' => $container,
+            'actor_id' => $user->id,
+            'actor_name' => $user->name,
+            'actor_email' => $user->email,
+        ];
     }
 
     private function shellCommand(): string

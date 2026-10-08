@@ -181,6 +181,7 @@ class ServerSetting extends Model
         'server_disk_usage_notification_interval_hours' => 'integer',
         'is_dns_challenge_enabled' => 'boolean',
         'dns_challenge_credentials' => 'encrypted:array',
+        'ssh_host_key_trusted_at' => 'datetime',
     ];
 
     /**

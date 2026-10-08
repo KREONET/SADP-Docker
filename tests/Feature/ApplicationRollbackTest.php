@@ -89,7 +89,7 @@ describe('Application Rollback', function () {
     test('setGitImportSettings uses provided git_ssh_command for fetch', function () {
         $this->application->settings->is_git_shallow_clone_enabled = true;
         $rollbackCommit = 'abc123def456abc123def456abc123def456abc1';
-        $sshCommand = 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22222 -o Port=22222 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa"';
+        $sshCommand = 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22222 -o Port=22222 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa"';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -105,7 +105,7 @@ describe('Application Rollback', function () {
 
     test('setGitImportSettings uses provided git_ssh_command for submodule update', function () {
         $this->application->settings->is_git_submodules_enabled = true;
-        $sshCommand = 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa"';
+        $sshCommand = 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa"';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -119,7 +119,7 @@ describe('Application Rollback', function () {
 
     test('setGitImportSettings uses provided git_ssh_command for lfs pull', function () {
         $this->application->settings->is_git_lfs_enabled = true;
-        $sshCommand = 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa"';
+        $sshCommand = 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa"';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -140,7 +140,7 @@ describe('Application Rollback', function () {
         );
 
         expect($result)
-            ->toContain('GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git lfs pull')
+            ->toContain('GIT_SSH_COMMAND="ssh -o LogLevel=ERROR '.gitSshHostKeyOptions().'" git lfs pull')
             ->not->toContain('-i /root/.ssh/id_rsa');
     });
 });

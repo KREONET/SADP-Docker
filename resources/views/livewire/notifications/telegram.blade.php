@@ -30,6 +30,10 @@
         </form>
 
         <x-notification.event-grid :settings="$settings" channel="telegram" threaded />
+
+        @if ((int) $team->id === 0)
+            <x-notification.security-alert-events :settings="$settings" channel="telegram" threaded />
+        @endif
     </div>
     </x-notification.settings-layout>
 </div>

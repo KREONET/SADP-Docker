@@ -3,6 +3,8 @@
 namespace App\Livewire\Profile;
 
 use App\Actions\User\DeleteUserAccount;
+use App\Notifications\TransactionalEmails\EmailAddressChanged;
+use App\Rules\NotRecentlyUsedPassword;
 use App\Services\AvatarStorageService;
 use App\Support\InterfaceLocale;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +33,11 @@ class Index extends Component
     public string $name;
 
     public string $new_email = '';
+
+    /**
+     * Current password, required before a change code is sent to a new address.
+     */
+    public string $email_change_password = '';
 
     public string $email_verification_code = '';
 
@@ -147,7 +154,12 @@ class Index extends Component
 
             $this->validate([
                 'new_email' => ['required', 'email', 'unique:users,email'],
+                'email_change_password' => ['required', 'string'],
             ]);
+
+            if (! $this->emailChangePasswordIsValid()) {
+                return;
+            }
 
             $this->new_email = strtolower($this->new_email);
 
@@ -181,6 +193,7 @@ class Index extends Component
 
             Auth::user()->requestEmailChange($this->new_email);
             auditLog('ui.user.email_change_requested', $this->auditContext());
+            $this->email_change_password = '';
 
             $this->show_email_change = false;
             $this->show_verification = true;
@@ -230,7 +243,11 @@ class Index extends Component
                 return;
             }
 
+            $previousEmail = Auth::user()->email;
             if (Auth::user()->confirmEmailChange($this->email_verification_code)) {
+                // Tell the previous address, so an unexpected change can be reported.
+                Auth::user()->notify(new EmailAddressChanged($previousEmail, now()));
+
                 // Clear rate limiters on successful verification (only in production)
                 if (! isDev()) {
                     $verifyKey = 'email-verify:user:'.Auth::id();
@@ -306,6 +323,7 @@ class Index extends Component
     {
         Auth::user()->clearEmailChangeRequest();
         $this->new_email = '';
+        $this->email_change_password = '';
         $this->email_verification_code = '';
         $this->show_email_change = false;
         $this->show_verification = false;
@@ -321,6 +339,36 @@ class Index extends Component
 
         $this->show_email_change = true;
         $this->new_email = '';
+        $this->email_change_password = '';
+    }
+
+    /**
+     * Verify the current password for an email change. Wrong guesses are limited
+     * per user so a hijacked session cannot brute-force the password here.
+     */
+    private function emailChangePasswordIsValid(): bool
+    {
+        $key = 'email-change:password:'.Auth::id();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $this->dispatch('error', __('Too many incorrect passwords. Please wait :minutes minutes before trying again.', [
+                'minutes' => (int) ceil(RateLimiter::availableIn($key) / 60),
+            ]));
+
+            return false;
+        }
+
+        if (! Hash::check($this->email_change_password, Auth::user()->password)) {
+            RateLimiter::hit($key, 600);
+            $this->email_change_password = '';
+            $this->addError('email_change_password', __('Current password is incorrect.'));
+            auditLog('ui.user.email_change_password_failed', $this->auditContext(['result' => 'failure']), 'warning');
+
+            return false;
+        }
+
+        RateLimiter::clear($key);
+
+        return true;
     }
 
     private function rejectSsoEmailChange(): bool
@@ -349,6 +397,11 @@ class Index extends Component
 
                 return;
             }
+            // Checked only after the current password, so the reuse message cannot
+            // be used to test guesses of the current password.
+            $this->validate([
+                'new_password' => [new NotRecentlyUsedPassword(Auth::user())],
+            ]);
             if ($this->new_password !== $this->new_password_confirmation) {
                 $this->dispatch('error', __('The two new passwords does not match.'));
 

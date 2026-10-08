@@ -250,6 +250,9 @@ it('leaves the managed dns record when removing a service domain by key without 
 });
 
 it('shows and persists the HTTP redirect control for HTTPS service applications', function () {
+    // Only a platform administrator may turn the redirect off (see Security/ForceHttpsAdminOnlyTest).
+    makePlatformAdmin($this->user);
+
     Livewire::test(Domains::class, ['service' => $this->service->fresh(['applications', 'server'])])
         ->assertSee('Redirect HTTP to HTTPS')
         ->assertSee('Keep enabled when Cloudflare uses Full or Full (Strict) SSL.')

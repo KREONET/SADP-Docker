@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\SentryEventFilter;
+
 return [
 
     // @see https://docs.sentry.io/product/sentry-basics/dsn-explainer/
@@ -25,8 +27,8 @@ return [
         // Capture SQL queries in breadcrumbs
         'sql_queries' => true,
 
-        // Capture bindings on SQL queries logged in breadcrumbs
-        'sql_bindings' => true,
+        // Capture bindings on SQL queries logged in breadcrumbs (off: bindings can contain emails and secrets)
+        'sql_bindings' => false,
 
         // Capture queue job information in breadcrumbs
         'queue_info' => true,
@@ -74,7 +76,12 @@ return [
     ],
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#send-default-pii
-    'send_default_pii' => env('SENTRY_SEND_DEFAULT_PII', false),
+    // Never send personal data (user emails, IP addresses, cookies) to Sentry.
+    'send_default_pii' => false,
+
+    // Drop every event unless error reporting is enabled in the instance settings, and strip user data.
+    'before_send' => [SentryEventFilter::class, 'beforeSend'],
+    'before_send_transaction' => [SentryEventFilter::class, 'beforeSendTransaction'],
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#traces-sample-rate
     'enable_tracing' => env('SENTRY_ENABLE_TRACING', false),

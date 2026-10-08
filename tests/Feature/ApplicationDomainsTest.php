@@ -654,6 +654,8 @@ it('lists existing domains as individual rows', function () {
 });
 
 it('shows the HTTP redirect control for HTTPS domains and persists changes', function () {
+    // Only a platform administrator may turn the redirect off (see Security/ForceHttpsAdminOnlyTest).
+    makePlatformAdmin($this->user);
     $this->application->update(['fqdn' => 'https://app.example.com']);
 
     $component = Livewire::test(Domains::class, ['application' => $this->application->fresh()])

@@ -7,6 +7,7 @@ use App\Actions\Database\StartDatabaseImport;
 use App\Support\DatabaseBackupFileValidator;
 use App\Support\DatabaseImport\DatabaseImportException;
 use App\Support\DatabaseImport\DatabaseImportSource;
+use App\Support\DatabaseImport\ServerImportPath;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,6 +79,9 @@ trait HandlesDatabaseImportsApi
             }
 
             return response()->json(['message' => 'Validation failed.', 'errors' => $errors], 422);
+        }
+        if ($payload['source'] === 'server' && ! ServerImportPath::isWithinAllowedDirectory((string) $payload['path'])) {
+            return response()->json(['message' => 'Validation failed.', 'errors' => ['path' => [ServerImportPath::notAllowedMessage()]]], 422);
         }
 
         try {

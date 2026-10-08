@@ -85,7 +85,24 @@
         @endif
         <div class="flex items-center gap-0.5 justify-self-end">
             @if (! $isLocked && ! $isValueHidden)
-                <x-copy-button resolve="$wire.copyValue()" :label="__('Copy value')" />
+                {{-- Copying needs a recent re-authentication; without one, open the editor to confirm. --}}
+                <button type="button" title="{{ __('Copy value') }}" aria-label="{{ __('Copy value') }}"
+                    class="icon-button group shrink-0" data-env-copy-value x-data="copyButton"
+                    @click="const copiedValue = await $wire.copyValue();
+                        if (copiedValue !== null && copiedValue !== undefined) {
+                            copy(copiedValue);
+                        } else if ($wire.sensitiveConfirmationRequired) {
+                            $el.closest('.data-table-row').querySelector('[data-env-settings-trigger]').click();
+                        } else {
+                            copy(null);
+                        }">
+                    <span class="inline-flex transition-transform duration-150 ease-out group-active:scale-75">
+                        <x-reicon name="copy" x-show="!copied" class="size-3.5" />
+                        <x-reicon name="check" x-cloak x-show="copied" class="size-3.5 text-success"
+                            x-transition:enter="transition-transform duration-200 ease-out"
+                            x-transition:enter-start="scale-50" x-transition:enter-end="scale-100" />
+                    </span>
+                </button>
             @endif
             {{-- Open modal immediately (Alpine); decrypt value in a follow-up Livewire request. --}}
             <x-modal-input :title="__('Edit environment variable')" :closeOutside="false" :wireIgnore="false"
@@ -120,6 +137,12 @@
                                 <label class="mb-1 flex items-center gap-1 text-sm font-medium">{{ __('Value') }}</label>
                                 <input disabled type="text" value="{{ __('Hidden after locking') }}"
                                     class="input w-full italic !text-neutral-500 dark:!text-neutral-500" />
+                            </div>
+                        @elseif ($sensitiveConfirmationRequired && !$valuesLoaded)
+                            <div class="w-full" wire:key="env-show-value-confirm-{{ $env->id }}">
+                                <label class="mb-1 flex items-center gap-1 text-sm font-medium">{{ __('Value') }}</label>
+                                <x-sensitive-confirmation action="confirmSensitiveAccess"
+                                    :message="__('Confirm your identity to view or copy this value. You will not be asked again for :minutes minutes.', ['minutes' => \App\Support\Reauthentication::windowMinutes()])" />
                             </div>
                         @else
                             {{-- Multiline: same shell while loading/loaded to avoid layout jump. --}}

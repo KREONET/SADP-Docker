@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SshKeyType;
 use App\Traits\Auditable;
 use App\Traits\HasSafeStringAttribute;
 use DanHarrin\LivewireRateLimiting\WithRateLimiting;
@@ -160,14 +161,14 @@ class PrivateKey extends BaseModel
         });
     }
 
-    public static function generateNewKeyPair($type = 'rsa')
+    public static function generateNewKeyPair($type = 'ecdsa')
     {
         try {
             $instance = new self;
             $instance->rateLimit(10);
             $name = generate_random_name();
             $description = 'Created by Coolify';
-            $keyPair = generateSSHKey($type === 'ed25519' ? 'ed25519' : 'rsa');
+            $keyPair = generateSSHKey((SshKeyType::tryFrom((string) $type) ?? SshKeyType::default())->value);
 
             return [
                 'name' => $name,
@@ -256,13 +257,21 @@ class PrivateKey extends BaseModel
         }
     }
 
+    /**
+     * Remove the key file (and its lock file) when the key is deleted.
+     *
+     * The file is unlinked, not overwritten: on journaling and copy-on-write
+     * filesystems an overwrite does not reliably destroy the old blocks.
+     */
     public static function deleteFromStorage(self $privateKey)
     {
         $filename = "ssh_key@{$privateKey->uuid}";
         $disk = Storage::disk('ssh-keys');
 
-        if ($disk->exists($filename)) {
-            $disk->delete($filename);
+        foreach ([$filename, "{$filename}.lock"] as $file) {
+            if ($disk->exists($file)) {
+                $disk->delete($file);
+            }
         }
     }
 
@@ -276,6 +285,12 @@ class PrivateKey extends BaseModel
             if (! $success) {
                 throw new \Exception('Failed to create SSH keys storage directory');
             }
+        }
+
+        // Only the Coolify user may list or open the key files.
+        $directory = rtrim($disk->path($directoryPath), '/');
+        if (is_dir($directory) && (fileperms($directory) & 0777) !== 0700 && ! @chmod($directory, 0700)) {
+            Log::warning('Failed to set SSH keys directory permissions to 0700', ['path' => $directory]);
         }
 
         // Check if directory is writable by attempting a test file

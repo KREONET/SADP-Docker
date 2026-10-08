@@ -38,6 +38,64 @@ write_status() {
     echo "${step}|${message}|$(date -Iseconds)" > "$STATUS_FILE"
 }
 
+# Downloaded files are verified against "<url>.sha256" (CHECKSUM_URL_SUFFIX changes the suffix) before
+# they replace the current copy. A mismatch always fails; a missing checksum only warns, unless
+# COOLIFY_REQUIRE_CHECKSUMS=true is set in the environment or in .env.
+if [ -z "${COOLIFY_REQUIRE_CHECKSUMS:-}" ] && [ -f "$ENV_FILE" ]; then
+    COOLIFY_REQUIRE_CHECKSUMS=$(grep "^COOLIFY_REQUIRE_CHECKSUMS=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+fi
+COOLIFY_REQUIRE_CHECKSUMS=${COOLIFY_REQUIRE_CHECKSUMS:-false}
+CHECKSUM_URL_SUFFIX=${CHECKSUM_URL_SUFFIX:-.sha256}
+
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    else
+        openssl dgst -sha256 -r "$1" | awk '{print $1}'
+    fi
+}
+
+# Usage: download_verified <url> <destination>
+# Returns 1 when the download fails, 2 on a checksum mismatch, 3 when a required checksum is missing.
+# The destination is only replaced after a successful check. Set CHECKSUM_WARNINGS_FILE to collect
+# the URLs that had no checksum.
+download_verified() {
+    local url="$1"
+    local dest="$2"
+    local tmp="${dest}.download"
+    local expected actual
+
+    rm -f "$tmp"
+    if ! curl -fsSL -L "$url" -o "$tmp"; then
+        rm -f "$tmp"
+        echo "ERROR: Failed to download $url"
+        return 1
+    fi
+
+    expected=$(curl -fsSL -L "${url}${CHECKSUM_URL_SUFFIX}" 2>/dev/null | tr -d '\r' | awk 'NR==1 {print tolower($1)}' || true)
+    if [[ $expected =~ ^[0-9a-f]{64}$ ]]; then
+        actual=$(sha256_of "$tmp")
+        if [ "$actual" != "$expected" ]; then
+            rm -f "$tmp"
+            echo "ERROR: Checksum mismatch for $url (expected $expected, got $actual)"
+            return 2
+        fi
+        echo "Verified SHA-256 checksum of $url"
+    elif [ "$COOLIFY_REQUIRE_CHECKSUMS" = "true" ]; then
+        rm -f "$tmp"
+        echo "ERROR: No checksum published at ${url}${CHECKSUM_URL_SUFFIX} and COOLIFY_REQUIRE_CHECKSUMS=true"
+        return 3
+    else
+        echo "WARNING: No checksum published at ${url}${CHECKSUM_URL_SUFFIX}, the integrity of $url was not verified"
+        if [ -n "${CHECKSUM_WARNINGS_FILE:-}" ]; then
+            echo "$url" >>"$CHECKSUM_WARNINGS_FILE"
+        fi
+    fi
+
+    mv -f "$tmp" "$dest"
+}
+# End of download_verified
+
 echo ""
 echo "=========================================="
 echo "   Coolify Upgrade - ${DATE}"
@@ -56,15 +114,35 @@ echo "============================================================" >>"$LOGFILE"
 log_section "Step 1/6: Downloading configuration files"
 write_status "1" "Downloading configuration files"
 echo "1/6 Downloading latest configuration files..."
-log "Downloading docker-compose.yml from ${CDN}/docker-compose.yml"
-curl -fsSL -L $CDN/docker-compose.yml -o /data/coolify/source/docker-compose.yml
-log "Downloading docker-compose.prod.yml from ${CDN}/docker-compose.prod.yml"
-curl -fsSL -L $CDN/docker-compose.prod.yml -o /data/coolify/source/docker-compose.prod.yml
-log "Downloading .env.production from ${CDN}/.env.production"
-curl -fsSL -L $CDN/.env.production -o /data/coolify/source/.env.production
-log "Downloading upgrade-postgres.sh from ${CDN}/upgrade-postgres.sh"
-curl -fsSL -L $CDN/upgrade-postgres.sh -o /data/coolify/source/upgrade-postgres.sh
+CHECKSUM_WARNINGS_FILE=$(mktemp)
+
+# A file that fails its checksum aborts the upgrade; a failed download keeps the existing copy as before.
+fetch_config_file() {
+    local name="$1"
+    local status=0
+    log "Downloading ${name} from ${CDN}/${name}"
+    download_verified "$CDN/$name" "/data/coolify/source/$name" >>"$LOGFILE" 2>&1 || status=$?
+    if [ "$status" -eq 2 ] || [ "$status" -eq 3 ]; then
+        log "ERROR: ${name} failed checksum verification"
+        write_status "error" "Checksum verification failed for ${name}"
+        echo "     ERROR: ${name} failed checksum verification. Aborting upgrade."
+        rm -f "$CHECKSUM_WARNINGS_FILE"
+        exit 1
+    elif [ "$status" -ne 0 ]; then
+        log "WARNING: Failed to download ${name}, keeping the existing file"
+    fi
+}
+
+fetch_config_file docker-compose.yml
+fetch_config_file docker-compose.prod.yml
+fetch_config_file .env.production
+fetch_config_file upgrade-postgres.sh
 chmod +x /data/coolify/source/upgrade-postgres.sh
+if [ -s "$CHECKSUM_WARNINGS_FILE" ]; then
+    echo "     WARNING: No checksums are published for the configuration files, their integrity was not verified."
+    echo "     Set COOLIFY_REQUIRE_CHECKSUMS=true in .env to refuse unverified files."
+fi
+rm -f "$CHECKSUM_WARNINGS_FILE"
 log "Configuration files downloaded successfully"
 echo "     Done."
 
@@ -160,8 +238,7 @@ log "Environment variables check complete"
 echo "     Done."
 
 # Make sure coolify network exists
-# It is created when Starting PADED
- with docker compose
+# It is created when Starting PADED with docker compose
 log "Checking Docker network 'coolify'..."
 if ! docker network inspect coolify >/dev/null 2>&1; then
     log "Network 'coolify' does not exist, creating..."

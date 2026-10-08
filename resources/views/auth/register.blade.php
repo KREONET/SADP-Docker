@@ -44,7 +44,7 @@ $email = getOldOrLocal('email', 'test3@example.com');
 
                 <div class="auth-guidance">
                     <x-reicon name="info-circle" class="mt-0.5 size-4 shrink-0" />
-                    <p>{{ __('Use at least 8 characters with uppercase, lowercase, number, and symbol.') }}</p>
+                    <p>{{ __('Use at least :count characters with uppercase, lowercase, number, and symbol.', ['count' => config('security.password.min_length')]) }}</p>
                 </div>
 
                 <x-forms.button class="w-full justify-center" type="submit" isHighlighted>

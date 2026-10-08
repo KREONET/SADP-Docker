@@ -32,7 +32,7 @@ class RootUserSeeder extends Seeder
             ], [
                 'email' => ['required', 'email:rfc', 'max:255'],
                 'username' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\w\s-]+$/'],
-                'password' => ['required', 'string', 'min:8', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised()],
+                'password' => ['required', 'string', Password::defaults()],
             ]);
 
             if ($validator->fails()) {

@@ -30,19 +30,15 @@
                                     <x-reicon name="chevron-down" class="size-3 opacity-55" />
                                 </x-forms.button>
                                 <div x-show="open" x-cloak x-transition.origin.top.right role="menu"
-                                    class="listbox-panel left-auto! right-0! z-[90]! w-52! min-w-52!">
-                                    <button type="button" class="listbox-option justify-start! gap-2.5!"
-                                        wire:click="generatePrivateKey('ed25519')" @click="open = false"
-                                        role="menuitem">
-                                        <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
-                                        {{ __('Generate ED25519') }}
-                                    </button>
-                                    <button type="button" class="listbox-option justify-start! gap-2.5!"
-                                        wire:click="generatePrivateKey('rsa')" @click="open = false"
-                                        role="menuitem">
-                                        <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
-                                        {{ __('Generate RSA') }}
-                                    </button>
+                                    class="listbox-panel left-auto! right-0! z-[90]! w-72! min-w-72!">
+                                    @foreach (\App\Enums\SshKeyType::cases() as $keyType)
+                                        <button type="button" class="listbox-option justify-start! gap-2.5!"
+                                            wire:click="generatePrivateKey('{{ $keyType->value }}')" @click="open = false"
+                                            role="menuitem">
+                                            <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
+                                            {{ $keyType->generateLabel() }}
+                                        </button>
+                                    @endforeach
                                     <x-modal-input :title="__('Add Private Key Manually')">
                                         <x-slot:content>
                                             <button type="button"

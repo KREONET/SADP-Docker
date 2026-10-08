@@ -4,6 +4,7 @@ namespace App\Livewire\Project\Application;
 
 use App\Models\Application;
 use App\Models\ApplicationSetting;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ValidationPatterns;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Validator;
@@ -102,6 +103,7 @@ class Advanced extends Component
     {
         if ($toModel) {
             $this->validate();
+            $this->guardForceHttpsChange();
             $this->application->settings->is_force_https_enabled = $this->isForceHttpsEnabled;
             $this->application->settings->is_git_submodules_enabled = $this->isGitSubmodulesEnabled;
             $this->application->settings->is_git_lfs_enabled = $this->isGitLfsEnabled;
@@ -157,6 +159,24 @@ class Advanced extends Component
         // Load stop_grace_period separately since it has its own save handler
         // Convert null to empty string to prevent dirty detection issues
         $this->stopGracePeriod = $this->application->settings->stop_grace_period ?? '';
+    }
+
+    /**
+     * Only a platform administrator may turn the HTTP to HTTPS redirect off; for everyone else the
+     * stored value is kept. This form has no visible control for it, so the change is dropped silently.
+     */
+    private function guardForceHttpsChange(): void
+    {
+        $current = $this->application->isForceHttpsEnabled();
+        if (ForceHttpsPolicy::allowsChange($current, $this->isForceHttpsEnabled, auth()->user())) {
+            return;
+        }
+
+        $this->isForceHttpsEnabled = $current;
+        auditLog('application.force_https.disable', [
+            'application_uuid' => $this->application->uuid,
+            'result' => 'denied',
+        ], 'warning');
     }
 
     private function resetDefaultLabels()

@@ -167,13 +167,19 @@
         <div class="flex flex-wrap items-center justify-end gap-2 service-domains-https">
             <label for="isForceHttpsEnabled-trigger" class="mb-0! text-[12px]!">{{ __('Redirect HTTP to HTTPS') }}</label>
             <x-helper :helper="__('Disable only when Cloudflare Tunnel or another proxy connects to Coolify over HTTP. Keep enabled when Cloudflare uses Full or Full (Strict) SSL.')" />
+            @php
+                $forceHttpsLocked = ! $canDisableForceHttps && $isForceHttpsEnabled;
+            @endphp
+            @if ($forceHttpsLocked)
+                <x-helper :helper="__('Only a platform administrator can disable the HTTP to HTTPS redirect.')" />
+            @endif
             <div class="w-28 shrink-0">
                 <x-forms.listbox canGate="update" :canResource="$application" id="isForceHttpsEnabled"
                     onChange="updateForceHttps" portal
                     :options="[
                         ['value' => true, 'label' => __('Enabled')],
                         ['value' => false, 'label' => __('Disabled')],
-                    ]" :disabled="! auth()->user()->can('update', $application)" />
+                    ]" :disabled="! auth()->user()->can('update', $application) || $forceHttpsLocked" />
             </div>
         </div>
     @endif

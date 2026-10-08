@@ -178,6 +178,12 @@
                 </div>
             </x-application.settings-section>
         </div>
+
+        @if ((int) $team->id === 0)
+            <div class="application-settings-form">
+                <x-notification.security-alert-events :settings="$settings" channel="email" />
+            </div>
+        @endif
     </div>
     </x-notification.settings-layout>
 </div>

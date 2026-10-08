@@ -2,9 +2,8 @@
 
 namespace App\Exceptions;
 
-use App\Models\InstanceSettings;
-use App\Models\User;
 use App\Providers\RouteServiceProvider;
+use App\Support\SentryEventFilter;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
@@ -12,7 +11,6 @@ use Illuminate\Session\TokenMismatchException;
 use Psr\Log\LogLevel;
 use RuntimeException;
 use Sentry\Laravel\Integration;
-use Sentry\State\Scope;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -48,8 +46,6 @@ class Handler extends ExceptionHandler
         'password',
         'password_confirmation',
     ];
-
-    private InstanceSettings $settings;
 
     protected function unauthenticated($request, AuthenticationException $exception)
     {
@@ -121,22 +117,10 @@ class Handler extends ExceptionHandler
             if ($e instanceof RuntimeException) {
                 return;
             }
-            $this->settings = instanceSettings();
-            if ($this->settings->do_not_track) {
+            // Error reporting is opt-in and independent of do_not_track; no user or admin identity is attached.
+            if (! SentryEventFilter::reportingEnabled()) {
                 return;
             }
-            app('sentry')->configureScope(
-                function (Scope $scope) {
-                    $email = auth()?->user() ? auth()->user()->email : 'guest';
-                    $instanceAdmin = User::find(0)->email ?? 'admin@localhost';
-                    $scope->setUser(
-                        [
-                            'email' => $email,
-                            'instanceAdmin' => $instanceAdmin,
-                        ]
-                    );
-                }
-            );
             // Check for errors that should not be reported to Sentry
             if (str($e->getMessage())->contains('No space left on device')) {
                 // Log locally but don't send to Sentry

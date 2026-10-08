@@ -2,6 +2,7 @@
 
 use App\Enums\ApplicationDeploymentStatus;
 use App\Enums\ProxyTypes;
+use App\Enums\SshKeyType;
 use App\Jobs\ServerFilesFromServerJob;
 use App\Models\Application;
 use App\Models\ApplicationDeploymentQueue;
@@ -33,6 +34,8 @@ use App\Models\StandaloneSqlite;
 use App\Models\SwarmDocker;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\ErrorExposure;
+use App\Support\Reauthentication;
 use Carbon\CarbonImmutable;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -43,7 +46,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\RateLimiter;
@@ -672,11 +674,8 @@ function handleError(?Throwable $error = null, ?Component $livewire = null, ?str
         abort(404);
     }
 
-    if ($error instanceof Throwable) {
-        $message = $error->getMessage();
-    } else {
-        $message = null;
-    }
+    // In production, internal errors are replaced by a generic message with a logged reference id.
+    $message = ErrorExposure::make()->userMessage($error);
     if ($customErrorMessage) {
         $message = $customErrorMessage.' '.$message;
     }
@@ -727,24 +726,26 @@ function generate_random_name(?string $cuid = null): string
 
     return Str::kebab("{$generator->getName()}-$cuid");
 }
-function generateSSHKey(string $type = 'rsa')
+/**
+ * Generate an SSH key pair. Defaults to ECDSA P-256; RSA keys are 3072-bit.
+ *
+ * @param  string  $type  One of the App\Enums\SshKeyType values (ecdsa, rsa, ed25519).
+ * @return array{private: string, public: string}
+ */
+function generateSSHKey(string $type = 'ecdsa'): array
 {
-    if ($type === 'rsa') {
-        $key = RSA::createKey();
+    $keyType = SshKeyType::tryFrom($type) ?? throw new Exception('Invalid key type');
 
-        return [
-            'private' => $key->toString('PKCS1'),
-            'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
-        ];
-    } elseif ($type === 'ed25519') {
-        $key = EC::createKey('Ed25519');
+    $key = match ($keyType) {
+        SshKeyType::RSA => RSA::createKey(SshKeyType::RSA_BITS),
+        SshKeyType::ECDSA => EC::createKey(SshKeyType::ECDSA_CURVE),
+        SshKeyType::ED25519 => EC::createKey('Ed25519'),
+    };
 
-        return [
-            'private' => $key->toString('OpenSSH'),
-            'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
-        ];
-    }
-    throw new Exception('Invalid key type');
+    return [
+        'private' => $keyType === SshKeyType::RSA ? $key->toString('PKCS1') : $key->toString('OpenSSH'),
+        'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
+    ];
 }
 function formatPrivateKey(string $privateKey)
 {
@@ -4905,58 +4906,53 @@ function formatContainerStatus(string $status): string
 }
 
 /**
- * Check if password confirmation should be skipped.
- * Returns true if:
- * - Two-step confirmation is globally disabled
- * - User has no usable local password confirmation (including SSO users)
+ * Check if the confirmation modal can skip asking for a password or code.
  *
- * Used by modal-confirmation.blade.php to determine if password step should be shown.
+ * Only users without a usable local password and without confirmed two-factor
+ * authentication (SSO users) skip the input step. They are not exempt from
+ * re-authentication: verifyPasswordConfirmation() still requires that they
+ * signed in recently.
  *
- * @return bool True if password confirmation should be skipped
+ * Used by modal-confirmation.blade.php to determine if the password step should be shown.
  */
 function shouldSkipPasswordConfirmation(): bool
 {
-    // Skip if two-step confirmation is globally disabled
-    if (data_get(InstanceSettings::get(), 'disable_two_step_confirmation')) {
-        return true;
-    }
-
-    // OAuth users may have an unusable generated password, so the linked
-    // identity is the source of truth for whether confirmation is possible.
-    if (! Auth::user()?->requiresPasswordConfirmation()) {
-        return true;
-    }
-
-    return false;
+    return Reauthentication::needsNoInput();
 }
 
 /**
- * Verify password for two-step confirmation.
- * Skips verification if:
- * - Two-step confirmation is globally disabled
- * - User has no usable local password confirmation (including SSO users)
+ * How the current user re-authenticates: 'password', 'totp', 'recent_login' or 'none'.
+ */
+function reauthenticationMethod(): string
+{
+    return Reauthentication::method();
+}
+
+/**
+ * Whether the current user re-authenticated within the sensitive-action window
+ * (`sensitive_confirmed_at` in the session).
+ */
+function hasRecentSensitiveConfirmation(): bool
+{
+    return Reauthentication::hasRecentConfirmation();
+}
+
+/**
+ * Verify the user's identity before a sensitive action.
  *
- * @param  mixed  $password  The password to verify (may be array if skipped by frontend)
+ * - Users with a local password must enter it.
+ * - SSO users with confirmed two-factor authentication must enter a current TOTP code.
+ * - Other SSO users must have signed in within the re-authentication window.
+ *
+ * A successful confirmation is remembered in the session (`sensitive_confirmed_at`).
+ *
+ * @param  mixed  $password  The password or TOTP code to verify
  * @param  Component|null  $component  Optional Livewire component to add errors to
- * @return bool True if verification passed (or skipped), false if password is incorrect
+ * @return bool True if verification passed, false otherwise
  */
 function verifyPasswordConfirmation(mixed $password, ?Component $component = null): bool
 {
-    // Skip if password confirmation should be skipped
-    if (shouldSkipPasswordConfirmation()) {
-        return true;
-    }
-
-    // Verify the password
-    if (! Hash::check($password, Auth::user()->password)) {
-        if ($component) {
-            $component->addError('password', __('The provided password is incorrect.'));
-        }
-
-        return false;
-    }
-
-    return true;
+    return Reauthentication::verify($password, $component);
 }
 
 /**

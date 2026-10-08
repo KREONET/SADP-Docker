@@ -52,17 +52,43 @@
                     <x-application.settings-section :title="__('Members of :name', ['name' => $selectedTeam->name])" flush>
                         @forelse ($selectedTeam->members as $member)
                             <div wire:key="platform-member-{{ $selectedTeam->id }}-{{ $member->id }}"
-                                class="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-2.5 last:border-b-0 dark:border-white/[0.06]">
+                                class="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-2.5 last:border-b-0 dark:border-white/[0.06]">
                                 <div class="min-w-0">
                                     <div class="truncate text-[12px] font-semibold">{{ $member->name }}</div>
                                     <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">{{ $member->email }}</div>
+                                    <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-neutral-500 dark:text-fg-faint">
+                                        <span>{{ __('Last login') }}: {{ $member->last_login_at?->diffForHumans() ?? __('Never') }}</span>
+                                        @if ($member->isDeactivated())
+                                            <x-status-badge :status="__('Deactivated')" type="error" />
+                                        @endif
+                                        @if ($member->isLockedOut())
+                                            <x-status-badge :status="__('Locked until :time', ['time' => $member->locked_until->format('Y-m-d H:i')])" type="warning" />
+                                        @endif
+                                    </div>
                                 </div>
-                                <select class="input w-32" aria-label="{{ __('Role of :name', ['name' => $member->name]) }}"
-                                    wire:change="updateMemberRole({{ $selectedTeam->id }}, {{ $member->id }}, $event.target.value)">
-                                    @foreach (\App\Livewire\Platform\Groups::ROLES as $role)
-                                        <option value="{{ $role }}" @selected($member->pivot->role === $role)>{{ ucfirst($role) }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="flex flex-wrap items-center justify-end gap-2">
+                                    @if ($member->id !== 0 && $member->id !== auth()->id())
+                                        @if ($member->isLockedOut())
+                                            <x-forms.button wire:click="unlockUser({{ $member->id }})">{{ __('Unlock') }}</x-forms.button>
+                                        @endif
+                                        @if ($member->isDeactivated())
+                                            <x-forms.button wire:click="reactivateUser({{ $member->id }})">{{ __('Reactivate') }}</x-forms.button>
+                                        @else
+                                            <x-modal-confirmation :title="__('Deactivate :email?', ['email' => $member->email])" :buttonTitle="__('Deactivate')" isErrorButton
+                                                submitAction="deactivateUser({{ $member->id }})"
+                                                :warningMessage="e(__('The account keeps its teams and resources and can be reactivated later.'))"
+                                                :actions="[__('Sign the user out of every session.'), __('Revoke the user\'s API tokens.'), __('Block sign-in until the account is reactivated.')]"
+                                                confirmationText="{{ $member->email }}" :confirmationLabel="__('Enter the email address to confirm deactivation')"
+                                                :shortConfirmationLabel="__('Email')" />
+                                        @endif
+                                    @endif
+                                    <select class="input w-32" aria-label="{{ __('Role of :name', ['name' => $member->name]) }}"
+                                        wire:change="updateMemberRole({{ $selectedTeam->id }}, {{ $member->id }}, $event.target.value)">
+                                        @foreach (\App\Livewire\Platform\Groups::ROLES as $role)
+                                            <option value="{{ $role }}" @selected($member->pivot->role === $role)>{{ ucfirst($role) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
                         @empty
                             <x-empty size="sm" :title="__('No members')" />

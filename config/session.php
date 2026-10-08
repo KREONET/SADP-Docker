@@ -29,11 +29,15 @@ return [
     | to be allowed to remain idle before it expires. If you want them
     | to immediately expire on the browser closing, set that option.
     |
+    | The lifetime defaults to the security idle timeout and the cookie is a
+    | browser-session cookie; the EnforceSessionTimeout middleware applies the
+    | idle and absolute timeouts from config/security.php on top of this.
+    |
     */
 
-    'lifetime' => env('SESSION_LIFETIME', 10080),
+    'lifetime' => (int) env('SESSION_LIFETIME', env('SECURITY_SESSION_IDLE_MINUTES', 30)),
 
-    'expire_on_close' => false,
+    'expire_on_close' => (bool) env('SESSION_EXPIRE_ON_CLOSE', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -166,9 +170,12 @@ return [
     | to the server if the browser has a HTTPS connection. This will keep
     | the cookie from being sent to you when it can't be done securely.
     |
+    | Defaults to true when APP_URL uses https://. Otherwise it stays null so
+    | TrustProxies can still enable it for requests that arrive over HTTPS.
+    |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', str_starts_with(strtolower((string) env('APP_URL', '')), 'https://') ? true : null),
 
     /*
     |--------------------------------------------------------------------------

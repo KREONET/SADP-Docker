@@ -332,8 +332,6 @@ it('disables S3 backup when saved without a selected S3 storage', function () {
 });
 
 it('deletes a service database backup schedule without rendering the deleted relationship', function () {
-    InstanceSettings::get()->update(['disable_two_step_confirmation' => true]);
-
     $server = Server::factory()->create(['team_id' => $this->team->id]);
     $destination = StandaloneDocker::where('server_id', $server->id)->firstOrFail();
     $project = Project::factory()->create(['team_id' => $this->team->id]);
@@ -380,7 +378,7 @@ it('deletes a service database backup schedule without rendering the deleted rel
         'section' => 'danger',
     ]);
     $component
-        ->call('delete', '')
+        ->call('delete', 'password')
         ->assertRedirectToRoute('project.service.database.backups', $parameters);
 
     expect(ScheduledDatabaseBackup::find($backup->id))->toBeNull();

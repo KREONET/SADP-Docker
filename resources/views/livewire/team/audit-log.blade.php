@@ -6,7 +6,7 @@
     <x-team.settings-layout>
         <div class="application-settings-form">
             <x-application.settings-section :title="__('Audit log')"
-                :description="__('Activity from the last 90 days for the current team.')" flush>
+                :description="__('Activity from the last :days days for the current team.', ['days' => \App\Models\AuditEvent::retentionDays()])" flush>
                 <div
                     class="flex flex-col gap-2 border-b border-neutral-200 p-3 sm:flex-row sm:items-center dark:border-white/[0.08]">
                     <div class="relative min-w-0 flex-1 sm:max-w-sm">

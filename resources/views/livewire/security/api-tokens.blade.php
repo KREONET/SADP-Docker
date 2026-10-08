@@ -23,29 +23,39 @@
     @else
         @php
             $expirationList = collect($expirationOptions)
-                ->map(fn ($label, $days) => ['value' => (string) $days, 'label' => __($label)])
+                ->map(fn ($label, $days) => ['value' => (string) $days, 'label' => $label])
                 ->values()
-                ->push(['value' => '', 'label' => __('Never')])
                 ->all();
+            $tokensOverPolicy = $tokens->filter(fn ($token) => $this->exceedsLifetimePolicy($token));
         @endphp
 
         <div class="application-settings-form flex flex-col gap-6">
             @can('create', App\Models\PersonalAccessToken::class)
-                <form wire:submit="addNewToken">
+                {{-- Creating a token requires the password, so the form opens the confirmation modal instead of submitting. --}}
+                <form x-on:submit.prevent="$el.querySelector('[data-create-token-trigger]')?.click()">
                     <x-application.settings-section :title="__('New API token')">
                         <x-slot:actions>
-                            <button type="submit"
-                                class="button button-highlighted">
-                                <x-reicon name="plus" class="size-3.5" />
-                                {{ __('Create token') }}
-                            </button>
+                            <x-modal-confirmation :title="__('Create API token?')" submitAction="addNewToken"
+                                :confirmWithText="false" isHighlightedButton
+                                :warningMessage="e(__('The token can act on this team\'s resources with the selected permissions until it expires.'))"
+                                :actions="[__('Issue a new API token with the selected permissions and expiry.')]"
+                                :step2ButtonText="__('Continue')" :step3ButtonText="__('Create token')">
+                                <x-slot:trigger>
+                                    <button type="button" data-create-token-trigger
+                                        class="button button-highlighted">
+                                        <x-reicon name="plus" class="size-3.5" />
+                                        {{ __('Create token') }}
+                                    </button>
+                                </x-slot:trigger>
+                            </x-modal-confirmation>
                         </x-slot:actions>
 
                         <div class="grid gap-4 lg:grid-cols-2">
                             <x-forms.input required id="description" :label="__('Description')"
                                 :placeholder="__('CI deployment token')" />
                             <x-forms.listbox id="expiresInDays" :label="__('Expires in')"
-                                :options="$expirationList" />
+                                :options="$expirationList"
+                                :helper="$maxLifetimeDays > 0 ? __('Tokens expire after at most :days days.', ['days' => $maxLifetimeDays]) : null" />
                         </div>
 
                         <div class="mt-5 border-t border-neutral-200 pt-4 dark:border-white/[0.08]">
@@ -120,6 +130,12 @@
                         </div>
                     </div>
                 </x-application.settings-section>
+            @endif
+
+            @if ($tokensOverPolicy->isNotEmpty())
+                <x-callout type="warning" :title="__('Tokens exceed the lifetime policy')">
+                    {{ __(':count issued token(s) never expire or outlive the maximum token lifetime. Create replacement tokens that expire and revoke the old ones.', ['count' => $tokensOverPolicy->count()]) }}
+                </x-callout>
             @endif
 
             <x-application.settings-section :title="__('Issued tokens')" flush>
@@ -215,7 +231,12 @@
                                         {{ $token->created_at->format('Y-m-d') }}
                                     </div>
                                     <div class="text-[11px] text-neutral-500 dark:text-fg-dim">
-                                        @if (!$token->expires_at)
+                                        @if ($this->exceedsLifetimePolicy($token))
+                                            <span class="flex flex-wrap items-center gap-1.5">
+                                                {{ $token->expires_at?->format('Y-m-d') ?? __('Never') }}
+                                                <x-status-badge :label="__('Exceeds policy')" type="warning" />
+                                            </span>
+                                        @elseif (!$token->expires_at)
                                             {{ __('Never') }}
                                         @elseif ($token->expires_at->isPast())
                                             <x-status-badge :label="__('Expired')" type="error" />

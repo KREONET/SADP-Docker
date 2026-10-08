@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Once;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -19,6 +20,7 @@ function actingAsInstanceAdmin(): User
     if (! $user->teams()->whereKey($team->id)->exists()) {
         $user->teams()->attach($team, ['role' => 'owner']);
     }
+    TwoFactor::confirm($user);
     session(['currentTeam' => $team]);
     test()->actingAs($user);
 
@@ -106,10 +108,10 @@ it('does not show unknown oauth providers', function () {
         ->assertNotFound();
 });
 
-it('defaults oidc user creation and verified email requirement to enabled', function () {
+it('defaults oidc user creation to disabled and verified email requirement to enabled', function () {
     $setting = OauthSetting::where('provider', 'oidc')->first();
 
-    expect($setting->allow_registration)->toBeTrue()
+    expect($setting->allow_registration)->toBeFalse()
         ->and($setting->require_email_verified)->toBeTrue()
         ->and($setting->auto_join_root_team)->toBeFalse();
 });

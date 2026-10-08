@@ -7,6 +7,7 @@ use App\Enums\ProcessStatus;
 use App\Helpers\SshMultiplexingHelper;
 use App\Jobs\ApplicationDeploymentJob;
 use App\Models\Server;
+use App\Services\Ssh\KnownHosts;
 use App\Support\DatabaseImport\DatabaseImportCleanup;
 use App\Support\RemoteProcessCommand;
 use Illuminate\Contracts\Process\ProcessResult;
@@ -36,6 +37,8 @@ class RunRemoteProcess
     protected $throttle_interval_ms = 200;
 
     protected int $counter = 1;
+
+    protected ?Server $server = null;
 
     /**
      * Create a new job instance.
@@ -134,6 +137,10 @@ class RunRemoteProcess
             }
         }
         if ($processResult->exitCode() != 0 && ! $this->ignore_errors) {
+            if ($this->server) {
+                KnownHosts::failIfHostKeyChanged($this->server, $processResult->errorOutput(), $processResult->exitCode());
+            }
+
             throw new \RuntimeException($processResult->errorOutput(), $processResult->exitCode());
         }
 
@@ -144,9 +151,9 @@ class RunRemoteProcess
     {
         $server_uuid = $this->activity->getExtraProperty('server_uuid');
         $command = RemoteProcessCommand::read($this->activity) ?? throw new \RuntimeException('The command of this task was already removed.');
-        $server = Server::whereUuid($server_uuid)->firstOrFail();
+        $this->server = Server::whereUuid($server_uuid)->firstOrFail();
 
-        return SshMultiplexingHelper::generateSshCommand($server, $command);
+        return SshMultiplexingHelper::generateSshCommand($this->server, $command);
     }
 
     protected function handleOutput(string $type, string $output)

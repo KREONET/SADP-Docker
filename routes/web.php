@@ -204,8 +204,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/groups', PlatformGroups::class)->name('platform.groups');
         Route::get('/sources', PlatformSources::class)->name('platform.sources');
         Route::get('/security', PlatformSecurity::class)->name('platform.security');
-        Route::get('/logs', PlatformLogs::class)->name('platform.logs');
     });
+    // Auditors read the logs without any other platform admin access; changes inside are gated separately.
+    Route::get('/platform/logs', PlatformLogs::class)->middleware('can:viewAuditLogs')->name('platform.logs');
     Route::get('/onboarding', BoardingIndex::class)->name('onboarding');
 
     Route::get('/subscription', SubscriptionShow::class)->name('subscription.show');

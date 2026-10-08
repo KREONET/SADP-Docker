@@ -43,14 +43,14 @@ test('validates standalone import source and hides foreign databases', function 
     $otherEnvironment = Environment::factory()->create(['project_id' => $otherProject->id]);
     $foreign = StandalonePostgresql::create(['uuid' => (string) Str::uuid(), 'name' => 'foreign', 'postgres_user' => 'postgres', 'postgres_password' => 'password', 'postgres_db' => 'db', 'image' => 'postgres:17', 'status' => 'running', 'environment_id' => $otherEnvironment->id, 'destination_id' => $this->destination->id, 'destination_type' => $this->destination->getMorphClass()]);
 
-    $this->withHeaders($this->headers)->postJson("/api/v1/databases/{$foreign->uuid}/imports", ['source' => 'server', 'path' => '/tmp/a.sql'])->assertNotFound();
+    $this->withHeaders($this->headers)->postJson("/api/v1/databases/{$foreign->uuid}/imports", ['source' => 'server', 'path' => '/data/coolify/backups/a.sql'])->assertNotFound();
 });
 
 test('requires deploy ability to start standalone import', function () {
     $database = StandalonePostgresql::create(['uuid' => (string) Str::uuid(), 'name' => 'db', 'postgres_user' => 'postgres', 'postgres_password' => 'password', 'postgres_db' => 'db', 'image' => 'postgres:17', 'status' => 'running', 'environment_id' => $this->environment->id, 'destination_id' => $this->destination->id, 'destination_type' => $this->destination->getMorphClass()]);
     $read = $this->user->createToken('read', ['read']);
 
-    $this->withToken($read->plainTextToken)->postJson("/api/v1/databases/{$database->uuid}/imports", ['source' => 'server', 'path' => '/tmp/a.sql'])->assertForbidden();
+    $this->withToken($read->plainTextToken)->postJson("/api/v1/databases/{$database->uuid}/imports", ['source' => 'server', 'path' => '/data/coolify/backups/a.sql'])->assertForbidden();
 });
 
 test('audits a successfully queued standalone import', function () {
@@ -61,7 +61,7 @@ test('audits a successfully queued standalone import', function () {
     app()->instance(StartDatabaseImport::class, $action);
 
     $this->withHeaders($this->headers)
-        ->postJson("/api/v1/databases/{$database->uuid}/imports", ['source' => 'server', 'path' => '/tmp/backup.sql'])
+        ->postJson("/api/v1/databases/{$database->uuid}/imports", ['source' => 'server', 'path' => '/data/coolify/backups/backup.sql'])
         ->assertAccepted();
 
     $event = AuditEvent::query()->where('event', 'api.database.import_started')->sole();
@@ -85,7 +85,7 @@ test('passes the replace existing option to a standalone database import', funct
     $this->withHeaders($this->headers)
         ->postJson("/api/v1/databases/{$database->uuid}/imports", [
             'source' => 'server',
-            'path' => '/tmp/backup.dump',
+            'path' => '/data/coolify/backups/backup.dump',
             'replace_existing' => true,
         ])
         ->assertAccepted();
@@ -97,7 +97,7 @@ test('validates replace existing as a boolean', function () {
     $this->withHeaders($this->headers)
         ->postJson("/api/v1/databases/{$database->uuid}/imports", [
             'source' => 'server',
-            'path' => '/tmp/backup.dump',
+            'path' => '/data/coolify/backups/backup.dump',
             'replace_existing' => 'yes',
         ])
         ->assertUnprocessable()
@@ -114,7 +114,7 @@ test('rejects unknown fields on standalone import', function () {
     $this->withHeaders($this->headers)
         ->postJson("/api/v1/databases/{$database->uuid}/imports", [
             'source' => 'server',
-            'path' => '/tmp/backup.sql',
+            'path' => '/data/coolify/backups/backup.sql',
             'unknown_field' => 'nope',
         ])
         ->assertUnprocessable()

@@ -12,12 +12,14 @@ use App\Models\Service;
 use App\Models\ServiceApplication;
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ValidationPatterns;
 use App\Traits\ListensToTeamChannel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Domains extends Component
@@ -43,6 +45,10 @@ class Domains extends Component
 
     /** @var array<int|string, bool> */
     public array $forceHttpsRedirects = [];
+
+    /** Whether the current user may turn the HTTP to HTTPS redirect off (platform administrators only). */
+    #[Locked]
+    public bool $canDisableForceHttps = false;
 
     /** Service application id when a pending domain conflict belongs to setServiceRedirect. */
     public ?int $pendingRedirectServiceApplicationId = null;
@@ -219,6 +225,18 @@ class Domains extends Component
         $application = $this->service->applications()->findOrFail($serviceApplicationId);
         $this->authorize('update', $application);
 
+        if (! ForceHttpsPolicy::allowsChange($application->isForceHttpsEnabled(), $enabled, auth()->user())) {
+            $this->forceHttpsRedirects[$serviceApplicationId] = $application->isForceHttpsEnabled();
+            auditLog('service.force_https.disable', [
+                'service_uuid' => $this->service->uuid,
+                'service_application_id' => $application->id,
+                'result' => 'denied',
+            ], 'warning');
+            $this->dispatch('error', __('Only a platform administrator can disable the HTTP to HTTPS redirect.'));
+
+            return;
+        }
+
         $this->forceHttpsRedirects[$serviceApplicationId] = $enabled;
         $this->validateOnly("forceHttpsRedirects.{$serviceApplicationId}");
 
@@ -254,6 +272,7 @@ class Domains extends Component
             $this->serverIpConfigured = null;
         }
 
+        $this->canDisableForceHttps = ForceHttpsPolicy::canDisable(auth()->user());
         $this->forceHttpsRedirects = $this->service->applications
             ->mapWithKeys(fn (ServiceApplication $app) => [$app->id => $app->isForceHttpsEnabled()])
             ->all();

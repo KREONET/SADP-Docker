@@ -11,6 +11,7 @@ use App\Services\ServerTransfer\ServerTransferClaimer;
 use App\Services\ServerTransfer\ServerTransferExporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -23,6 +24,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
     makePlatformAdmin($this->user);
+    TwoFactor::confirm($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 

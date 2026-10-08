@@ -19,6 +19,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -30,6 +31,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
     makePlatformAdmin($this->user);
+    TwoFactor::confirm($this->user);
     session(['currentTeam' => $this->team]);
 
     $this->token = $this->user->createToken('resource-hosting-test', ['*']);

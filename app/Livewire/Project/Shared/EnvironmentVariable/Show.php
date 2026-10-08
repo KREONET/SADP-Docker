@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Server;
 use App\Models\Service;
 use App\Models\SharedEnvironmentVariable;
+use App\Support\Reauthentication;
 use App\Support\ValidationPatterns;
 use App\Traits\EnvironmentVariableAnalyzer;
 use App\Traits\EnvironmentVariableProtection;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Show extends Component
@@ -82,6 +84,7 @@ class Show extends Component
      * Decrypted value / real_value are only needed in the edit modal (or after save).
      * Keeping them unloaded for table rows avoids decrypting every visible env on each page change.
      */
+    #[Locked]
     public bool $valuesLoaded = false;
 
     /**
@@ -89,6 +92,13 @@ class Show extends Component
      * async loadValues() re-render (open immediately, decrypt after).
      */
     public bool $editorOpen = false;
+
+    /**
+     * True when the decrypted value was requested but the user has not re-authenticated recently.
+     * The edit modal then shows a confirmation form instead of the value.
+     */
+    #[Locked]
+    public bool $sensitiveConfirmationRequired = false;
 
     public array $problematicVariables = [];
 
@@ -150,12 +160,21 @@ class Show extends Component
 
     /**
      * Decrypt and resolve values only when the edit modal is opened.
+     *
+     * Revealing a secret value requires a recent re-authentication. Without one the
+     * modal opens with a confirmation form and the value stays encrypted on the server.
      */
     public function loadValues(): void
     {
         $this->authorize('update', $this->env);
 
         if ($this->valuesLoaded) {
+            return;
+        }
+
+        if ($this->revealsSecretValue() && ! $this->ensureSensitiveConfirmation()) {
+            $this->auditSecretAccess('secret.environment_variable.revealed', 'denied');
+
             return;
         }
 
@@ -170,13 +189,49 @@ class Show extends Component
 
         $this->hydrateValueFields();
         $this->valuesLoaded = true;
+
+        if ($this->revealsSecretValue()) {
+            $this->auditSecretAccess('secret.environment_variable.revealed', 'success');
+        }
+    }
+
+    /**
+     * Re-authenticate (password, TOTP code, or recent sign-in) and reveal the value.
+     *
+     * @return bool|string True on success, otherwise the error message for the confirmation form.
+     */
+    public function confirmSensitiveAccess(mixed $password = ''): bool|string
+    {
+        $this->authorize('update', $this->env);
+
+        if (! verifyPasswordConfirmation($password, $this)) {
+            $this->auditSecretAccess('secret.environment_variable.revealed', 'denied');
+
+            return $this->getErrorBag()->first('password') ?: Reauthentication::failureMessage(Reauthentication::method());
+        }
+
+        $this->resetErrorBag('password');
+        $this->sensitiveConfirmationRequired = false;
+        $this->loadValues();
+
+        return true;
     }
 
     public function copyValue(): ?string
     {
         if ($this->env->is_shown_once || (auth()->user()?->cannot('update', $this->env) ?? true)) {
+            $this->auditSecretAccess('secret.environment_variable.copied', 'denied');
+
             return null;
         }
+
+        if (! $this->ensureSensitiveConfirmation()) {
+            $this->auditSecretAccess('secret.environment_variable.copied', 'denied');
+
+            return null;
+        }
+
+        $this->auditSecretAccess('secret.environment_variable.copied', 'success');
 
         if (! $this->env instanceof ModelsEnvironmentVariable) {
             return $this->env->value;
@@ -186,6 +241,58 @@ class Show extends Component
             $this->env->resolveReferencedValue(),
             $this->env->resourceable,
         );
+    }
+
+    /**
+     * Whether loading values would send a decrypted secret to the browser.
+     */
+    private function revealsSecretValue(): bool
+    {
+        return ! $this->env->is_shown_once && ! (auth()->user()?->isMember() ?? true);
+    }
+
+    /**
+     * Accepts a re-authentication from the last few minutes. SSO users without
+     * two-factor authentication pass silently when they signed in recently.
+     */
+    private function ensureSensitiveConfirmation(): bool
+    {
+        if (hasRecentSensitiveConfirmation()) {
+            $this->sensitiveConfirmationRequired = false;
+
+            return true;
+        }
+
+        if (Reauthentication::needsNoInput() && Reauthentication::hasRecentLogin()) {
+            Reauthentication::markConfirmed();
+            $this->sensitiveConfirmationRequired = false;
+
+            return true;
+        }
+
+        $this->sensitiveConfirmationRequired = true;
+
+        return false;
+    }
+
+    /**
+     * Records access to a secret value. Never includes the value itself.
+     *
+     * @param  'success'|'denied'|'failure'  $result
+     */
+    private function auditSecretAccess(string $event, string $result): void
+    {
+        $resource = $this->env instanceof ModelsEnvironmentVariable ? $this->env->resourceable : null;
+
+        auditLog($event, [
+            'variable_key' => $this->env->key,
+            'environment_variable_id' => $this->env->id,
+            'resource_type' => $resource
+                ? class_basename($resource)
+                : ($this->env instanceof SharedEnvironmentVariable ? 'shared_'.$this->env->type : null),
+            'resource_uuid' => data_get($resource, 'uuid'),
+            'result' => $result,
+        ], $result === 'success' ? 'info' : 'warning');
     }
 
     private function syncData(bool $toModel = false): void
@@ -210,14 +317,17 @@ class Show extends Component
                 $this->env->is_buildtime = $this->is_buildtime;
                 $this->env->is_shared = $this->is_shared;
             }
+            // Without a revealed value the form never held it, so keep the stored one.
+            $valueWasRevealed = $this->valuesLoaded && $this->revealsSecretValue();
             $this->env->key = $this->key;
-            $this->env->value = $this->value;
+            if ($valueWasRevealed) {
+                $this->env->value = $this->value;
+            }
             $this->env->comment = $this->comment;
             $this->env->is_multiline = $this->is_multiline;
             $this->env->is_literal = $this->is_literal;
             $this->env->is_shown_once = $this->is_shown_once;
             $this->env->save();
-            $this->valuesLoaded = true;
         } else {
             // Table metadata only — never decrypt here. Values load via loadValues().
             $this->env->setAppends([]);
@@ -309,9 +419,15 @@ class Show extends Component
     {
         try {
             $this->authorize('update', $this->env);
-            $this->loadValues();
+            if ($this->valuesLoaded || ! $this->revealsSecretValue() || hasRecentSensitiveConfirmation()) {
+                $this->loadValues();
+            } elseif ($this->env->exists && ($fresh = $this->env->fresh())) {
+                // Metadata-only update: refresh the model without decrypting the value for the browser.
+                $fresh->setAppends([]);
+                $this->env = $fresh;
+            }
 
-            if (! $this->isSharedVariable && $this->is_required && str($this->value)->isEmpty()) {
+            if ($this->valuesLoaded && ! $this->isSharedVariable && $this->is_required && str($this->value)->isEmpty()) {
                 $oldValue = $this->env->getOriginal('value');
                 $this->value = $oldValue;
                 $this->dispatch('error', __('Required environment variables cannot be empty.'));

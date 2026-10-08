@@ -18,7 +18,7 @@ use RuntimeException;
 class DeactivateUserAccount
 {
     /**
-     * @param  'scim'|'admin'  $via
+     * @param  'scim'|'admin'|'inactivity'  $via
      */
     public static function execute(User $user, string $via): void
     {
@@ -43,7 +43,7 @@ class DeactivateUserAccount
     }
 
     /**
-     * @param  'scim'|'admin'  $via
+     * @param  'scim'|'admin'|'inactivity'  $via
      */
     public static function reactivate(User $user, string $via): void
     {

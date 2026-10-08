@@ -77,6 +77,9 @@ class Pushover extends Component
     #[Validate(['boolean'])]
     public bool $traefikOutdatedPushoverNotifications = true;
 
+    #[Validate(['boolean'])]
+    public bool $securityAlertPushoverNotifications = true;
+
     public function mount()
     {
         try {
@@ -112,6 +115,7 @@ class Pushover extends Component
             $this->settings->server_unreachable_pushover_notifications = $this->serverUnreachablePushoverNotifications;
             $this->settings->server_patch_pushover_notifications = $this->serverPatchPushoverNotifications;
             $this->settings->traefik_outdated_pushover_notifications = $this->traefikOutdatedPushoverNotifications;
+            $this->settings->security_alert_pushover_notifications = $this->securityAlertPushoverNotifications;
 
             $changedFields = array_keys($this->settings->getDirty());
             $this->settings->save();
@@ -142,6 +146,7 @@ class Pushover extends Component
             $this->serverUnreachablePushoverNotifications = $this->settings->server_unreachable_pushover_notifications;
             $this->serverPatchPushoverNotifications = $this->settings->server_patch_pushover_notifications;
             $this->traefikOutdatedPushoverNotifications = $this->settings->traefik_outdated_pushover_notifications;
+            $this->securityAlertPushoverNotifications = $this->settings->security_alert_pushover_notifications;
         }
     }
 

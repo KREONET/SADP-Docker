@@ -11,12 +11,14 @@ use App\Models\Application;
 use App\Models\Server;
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ValidationPatterns;
 use App\Traits\ListensToTeamChannel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Domains extends Component
@@ -33,6 +35,10 @@ class Domains extends Component
     public string $redirect = 'both';
 
     public bool $isForceHttpsEnabled = true;
+
+    /** Whether the current user may turn the HTTP to HTTPS redirect off (platform administrators only). */
+    #[Locked]
+    public bool $canDisableForceHttps = false;
 
     /**
      * Per compose-service www/non-www redirect direction.
@@ -243,6 +249,18 @@ class Domains extends Component
         $this->authorize('update', $this->application);
         $this->validateOnly('isForceHttpsEnabled');
 
+        $current = $this->application->isForceHttpsEnabled();
+        if (! ForceHttpsPolicy::allowsChange($current, $this->isForceHttpsEnabled, auth()->user())) {
+            $this->isForceHttpsEnabled = $current;
+            auditLog('application.force_https.disable', [
+                'application_uuid' => $this->application->uuid,
+                'result' => 'denied',
+            ], 'warning');
+            $this->dispatch('error', __('Only a platform administrator can disable the HTTP to HTTPS redirect.'));
+
+            return;
+        }
+
         $this->application->settings->is_force_https_enabled = $this->isForceHttpsEnabled;
         $this->application->settings->save();
         $this->resetDefaultLabels();
@@ -261,6 +279,7 @@ class Domains extends Component
             $this->redirect = $this->application->redirect ?? 'both';
         }
         $this->isForceHttpsEnabled = $this->application->isForceHttpsEnabled();
+        $this->canDisableForceHttps = ForceHttpsPolicy::canDisable(auth()->user());
 
         $settings = instanceSettings();
         $this->dnsValidationEnabled = (bool) data_get($settings, 'is_dns_validation_enabled', true);

@@ -65,7 +65,7 @@
         this.page = Math.min(Math.max(page, 1), this.lastPage);
     }
 }" class="{{ in_array($trigger, ['changelog-sidebar', 'account-menu'], true) ? 'w-full' : '' }}">
-    @if ($trigger === 'changelog-sidebar')
+    @if ($changelogEnabled && $trigger === 'changelog-sidebar')
         <button wire:click="openWhatsNewModal" type="button" title="{{ __('What\'s New') }}" aria-label="{{ __('What\'s New') }}"
             class="relative text-left menu-item">
             <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -81,7 +81,7 @@
                 </span>
             @endif
         </button>
-    @elseif ($trigger === 'account-menu')
+    @elseif ($changelogEnabled && $trigger === 'account-menu')
         <button wire:click="openWhatsNewModal" type="button"
             class="listbox-option relative w-full text-left">
             <span class="flex items-center gap-2">
@@ -103,7 +103,7 @@
     @endif
 
     <!-- What's New Modal -->
-    @if ($showWhatsNewModal)
+    @if ($showWhatsNewModal && $changelogEnabled)
         <template x-teleport="body">
             <div class="fixed inset-0 z-[99] flex items-center justify-center p-3 sm:p-6"
                 @keydown.escape.window="$wire.closeWhatsNewModal()">
@@ -204,6 +204,7 @@
                                             {{ __('Mark read') }}
                                         </button>
                                     </div>
+                                    {{-- content_html is rendered with raw HTML escaped and sanitized by ChangelogService::parseMarkdown() --}}
                                     <div
                                         class="max-w-none text-sm leading-6 text-neutral-600 dark:text-fg-dim [&_a]:font-medium [&_a]:text-accent [&_code]:rounded [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 dark:[&_code]:bg-white/[0.06] [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-black dark:[&_h2]:text-fg [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-black dark:[&_h3]:text-fg [&_li]:my-1 [&_ul]:ml-5 [&_ul]:list-disc"
                                         x-html="entry.content_html"></div>

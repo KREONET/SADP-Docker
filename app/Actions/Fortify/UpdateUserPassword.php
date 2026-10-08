@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Rules\NotRecentlyUsedPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -22,6 +23,12 @@ class UpdateUserPassword implements UpdatesUserPasswords
             'password' => ['required', Password::defaults(), 'confirmed'],
         ], [
             'current_password.current_password' => __('The provided password does not match your current password.'),
+        ])->validateWithBag('updatePassword');
+
+        // Checked only after the current password, so the reuse message cannot be
+        // used to test guesses of the current password.
+        Validator::make($input, [
+            'password' => [new NotRecentlyUsedPassword($user)],
         ])->validateWithBag('updatePassword');
 
         $user->fill([

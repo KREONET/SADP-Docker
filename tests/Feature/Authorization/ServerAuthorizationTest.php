@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -35,6 +36,7 @@ beforeEach(function () {
     $this->platformAdmin = User::factory()->create();
     $this->platformAdmin->teams()->attach($this->team, ['role' => 'admin']);
     makePlatformAdmin($this->platformAdmin);
+    TwoFactor::confirm($this->platformAdmin);
 
     $keyId = DB::table('private_keys')->insertGetId([
         'uuid' => (string) Str::uuid(),

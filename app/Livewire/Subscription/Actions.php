@@ -7,13 +7,15 @@ use App\Actions\Stripe\RefundSubscription;
 use App\Actions\Stripe\ResumeSubscription;
 use App\Actions\Stripe\UpdateSubscriptionQuantity;
 use App\Models\Team;
+use App\Traits\ConfirmsSensitiveAccess;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Stripe\StripeClient;
 
 class Actions extends Component
 {
+    use ConfirmsSensitiveAccess;
+
     public $server_limits = 0;
 
     public int $quantity = UpdateSubscriptionQuantity::MIN_SERVER_LIMIT;
@@ -98,8 +100,8 @@ class Actions extends Component
 
     public function refundSubscription(string $password): bool|string
     {
-        if (! shouldSkipPasswordConfirmation() && ! Hash::check($password, auth()->user()->password)) {
-            return 'Invalid password.';
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return $this->sensitiveConfirmationFailureMessage();
         }
 
         $result = app(RefundSubscription::class)->execute(currentTeam());
@@ -118,8 +120,8 @@ class Actions extends Component
 
     public function cancelImmediately(string $password, array $selectedActions = []): bool|string
     {
-        if (! shouldSkipPasswordConfirmation() && ! Hash::check($password, auth()->user()->password)) {
-            return 'Invalid password.';
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return $this->sensitiveConfirmationFailureMessage();
         }
 
         if (in_array('refundLatestPayment', $selectedActions, true)) {
@@ -179,8 +181,8 @@ class Actions extends Component
 
     public function cancelAtPeriodEnd(string $password): bool|string
     {
-        if (! shouldSkipPasswordConfirmation() && ! Hash::check($password, auth()->user()->password)) {
-            return 'Invalid password.';
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return $this->sensitiveConfirmationFailureMessage();
         }
 
         $result = (new CancelSubscriptionAtPeriodEnd)->execute(currentTeam());

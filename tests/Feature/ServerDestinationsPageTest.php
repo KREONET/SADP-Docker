@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -23,6 +24,7 @@ beforeEach(function () {
     $this->team = Team::factory()->create();
     $this->user->teams()->attach($this->team, ['role' => 'owner']);
     makePlatformAdmin($this->user);
+    TwoFactor::confirm($this->user);
 
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);

@@ -22,10 +22,12 @@ services:
       - PUSHER_BACKEND_PORT=${PUSHER_BACKEND_PORT:-6001}
     env_file:
       - /data/coolify/source/.env
+    # COOLIFY_BIND_ADDRESS=127.0.0.1 publishes the direct ports on loopback only (access through the
+    # proxy domain). Unset keeps Docker's default of all IPv4 and IPv6 addresses.
     ports:
-      - "${APP_PORT:-8000}:8080"
-      - "${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001"
-      - "6002:6002"
+      - "${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}${APP_PORT:-8000}:8080"
+      - "${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001"
+      - "${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}6002:6002"
     expose:
       - "${APP_PORT:-8000}"
       - "6001"

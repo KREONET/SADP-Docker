@@ -1583,11 +1583,11 @@ it('deletes a volume backup schedule without deleting unselected archives', func
     Process::assertNothingRan();
 });
 
-it('deletes a volume backup schedule without a password when two-step confirmation is disabled', function () {
+it('requires the password to delete a volume backup schedule even when the legacy two-step setting is on', function () {
     $team = Team::factory()->create();
     signInForVolumeBackups($this, $team);
     [$application, $volume] = createVolumeBackupApplication($team);
-    InstanceSettings::get()->update(['disable_two_step_confirmation' => true]);
+    InstanceSettings::get()->forceFill(['disable_two_step_confirmation' => true])->save();
     $backup = $volume->scheduledBackups()->create([
         'team_id' => $team->id,
         'frequency' => 'daily',
@@ -1595,6 +1595,12 @@ it('deletes a volume backup schedule without a password when two-step confirmati
 
     Livewire::test(VolumeBackups::class, ['storage' => $volume, 'resource' => $application])
         ->call('delete', '')
+        ->assertNotDispatched('success');
+
+    expect($backup->fresh())->not->toBeNull();
+
+    Livewire::test(VolumeBackups::class, ['storage' => $volume, 'resource' => $application])
+        ->call('delete', 'password')
         ->assertDispatched('success');
 
     expect($backup->fresh())->toBeNull();

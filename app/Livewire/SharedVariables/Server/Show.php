@@ -2,15 +2,17 @@
 
 namespace App\Livewire\SharedVariables\Server;
 
+use App\Livewire\SharedVariables\Concerns\GatesDeveloperViewValues;
 use App\Models\Server;
 use App\Models\SharedEnvironmentVariable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Show extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, GatesDeveloperViewValues;
 
     public Server $server;
 
@@ -72,26 +74,7 @@ class Show extends Component
 
     public function getDevView()
     {
-        $this->variables = $this->formatEnvironmentVariables($this->server->environment_variables->whereNotIn('key', ['COOLIFY_SERVER_UUID', 'COOLIFY_SERVER_NAME'])->sortBy('key'));
-    }
-
-    private function formatEnvironmentVariables($variables)
-    {
-        $isMember = auth()->user()?->isMember();
-
-        return $variables->map(function ($item) use ($isMember) {
-            if ($isMember) {
-                return "$item->key=(Hidden, only admins can view)";
-            }
-            if ($item->is_shown_once) {
-                return "$item->key=(Locked Secret, delete and add again to change)";
-            }
-            if ($item->is_multiline) {
-                return "$item->key=(Multiline environment variable, edit in normal view)";
-            }
-
-            return "$item->key=$item->value";
-        })->join("\n");
+        $this->variables = $this->formatSharedVariablesForDeveloperView($this->server->environment_variables->whereNotIn('key', ['COOLIFY_SERVER_UUID', 'COOLIFY_SERVER_NAME'])->sortBy('key'));
     }
 
     public function submit()
@@ -110,6 +93,11 @@ class Show extends Component
 
     private function handleBulkSubmit()
     {
+        // The bulk text only exists while the developer view is open; never treat a missing text as "delete everything".
+        if ($this->variables === null) {
+            return;
+        }
+
         $variables = parseEnvFormatToArray($this->variables);
 
         $changesMade = DB::transaction(function () use ($variables) {
@@ -158,6 +146,11 @@ class Show extends Component
                 continue;
             }
             $found = $this->server->environment_variables()->where('key', $key)->first();
+            // A placeholder stands for a value that was never revealed: keep the stored one.
+            $keepsStoredValue = $this->isHiddenValuePlaceholder($value);
+            if ($keepsStoredValue && $found) {
+                $value = $found->value;
+            }
 
             if ($found) {
                 if (! $found->is_shown_once && ! $found->is_multiline) {
@@ -168,7 +161,7 @@ class Show extends Component
                         $count++;
                     }
                 }
-            } else {
+            } elseif (! $keepsStoredValue) {
                 $this->server->environment_variables()->create([
                     'key' => $key,
                     'value' => $value,
@@ -189,6 +182,16 @@ class Show extends Component
     {
         $this->server->refresh();
         $this->getDevView();
+    }
+
+    protected function sharedVariableOwner(): Model
+    {
+        return $this->server;
+    }
+
+    protected function sharedVariableType(): string
+    {
+        return 'server';
     }
 
     public function render()

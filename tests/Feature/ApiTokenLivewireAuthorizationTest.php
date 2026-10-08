@@ -51,7 +51,7 @@ test('member cannot create root token through tampered permissions payload', fun
         ->set('description', 'pwned-root-token')
         ->set('expiresInDays', 30)
         ->set('permissions', ['root'])
-        ->call('addNewToken');
+        ->call('addNewToken', 'password');
 
     expect($member->tokens()->count())->toBe(0);
 });
@@ -67,7 +67,7 @@ test('member can still create read token', function () {
         ->set('description', 'read-token')
         ->set('expiresInDays', 30)
         ->set('permissions', ['read'])
-        ->call('addNewToken')
+        ->call('addNewToken', 'password')
         ->assertHasNoErrors();
 
     $token = $member->tokens()->latest()->first();
@@ -123,7 +123,7 @@ test('owner can create root token', function () {
         ->set('description', 'root-token')
         ->set('expiresInDays', 30)
         ->set('permissions', ['root'])
-        ->call('addNewToken')
+        ->call('addNewToken', 'password')
         ->assertHasNoErrors();
 
     $token = $owner->tokens()->latest()->first();

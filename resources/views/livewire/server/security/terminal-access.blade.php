@@ -9,7 +9,7 @@
         class="server-settings-workspace application-settings-workspace mt-4 grid w-full max-w-none min-w-0 gap-8 lg:mt-0 xl:grid-cols-[210px_minmax(0,1fr)] xl:gap-8">
         <x-server.sidebar :server="$server" activeMenu="security" />
 
-        <div class="application-settings-form w-full">
+        <div class="application-settings-form flex w-full flex-col gap-6">
             <x-application.settings-section id="server-terminal-access-section" :title="__('Terminal access')"
                 :helper="__('Control dashboard terminal access for this server and its containers.')">
                 <x-slot:actions>
@@ -51,6 +51,10 @@
                     @endif
                 </div>
             </x-application.settings-section>
+
+            @can('update', $server)
+                <livewire:server.security.host-key :server="$server" :key="'server-ssh-host-key-'.$server->uuid" />
+            @endcan
         </div>
     </div>
 </div>

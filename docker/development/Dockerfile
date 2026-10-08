@@ -96,6 +96,7 @@ RUN npm ci --prefix /terminal && \
     npm rebuild node-pty --prefix /terminal --update-binary
 COPY docker/coolify-terminal/terminal-server.js /terminal/terminal-server.js
 COPY docker/coolify-terminal/terminal-utils.js /terminal/terminal-utils.js
+COPY docker/coolify-terminal/terminal-origin.js /terminal/terminal-origin.js
 RUN chown -R www-data:www-data /terminal
 
 # Configure Nginx and S6 overlay

@@ -49,6 +49,7 @@ class AuditEventsController extends Controller
                 'source',
                 'action',
                 'level',
+                'result',
                 'actor_type',
                 'actor_id',
                 'actor_name',

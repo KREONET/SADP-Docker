@@ -34,6 +34,7 @@ services:
       - dev_backups_data:/var/www/html/storage/app/backups
       - ./docker/coolify-terminal/terminal-server.js:/terminal/terminal-server.js
       - ./docker/coolify-terminal/terminal-utils.js:/terminal/terminal-utils.js
+      - ./docker/coolify-terminal/terminal-origin.js:/terminal/terminal-origin.js
     networks:
       - coolify
   postgres:

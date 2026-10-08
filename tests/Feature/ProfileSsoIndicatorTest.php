@@ -85,6 +85,7 @@ it('keeps profile email changes available for password-only users', function () 
         ->call('showEmailChangeForm')
         ->assertSet('show_email_change', true)
         ->set('new_email', 'changed@example.com')
+        ->set('email_change_password', 'password')
         ->call('requestEmailChange')
         ->assertSet('show_verification', true)
         ->assertDispatched('success');

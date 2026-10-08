@@ -16,6 +16,8 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->withoutVite();
     $this->withoutDefer();
+    // These tests cover the logs page itself, not the two-factor requirement for platform admins.
+    config(['security.two_factor.required_for' => 'none']);
     InstanceSettings::forceCreate(['id' => 0]);
     Once::flush();
 
@@ -81,7 +83,7 @@ test('platform admins can turn log collection on and off', function () {
         ->set('isLogCollectionEnabled', true)
         ->set('isContainerLogCollectionEnabled', true)
         ->set('isSystemLogCollectionEnabled', false)
-        ->set('logRetentionDays', 14)
+        ->set('logRetentionDays', 200)
         ->call('saveCollection')
         ->assertHasNoErrors()
         ->assertDispatched('success');
@@ -91,7 +93,7 @@ test('platform admins can turn log collection on and off', function () {
         ->is_log_collection_enabled->toBeTrue()
         ->is_container_log_collection_enabled->toBeTrue()
         ->is_system_log_collection_enabled->toBeFalse()
-        ->log_retention_days->toBe(14)
+        ->log_retention_days->toBe(200)
         ->and($settings->isContainerLogCollectionActive())->toBeTrue()
         ->and($settings->isSystemLogCollectionActive())->toBeFalse();
 
@@ -101,7 +103,7 @@ test('platform admins can turn log collection on and off', function () {
 
     $settings = InstanceSettings::query()->find(0);
     expect($settings->isContainerLogCollectionActive())->toBeFalse()
-        ->and($settings->isAuditLogCollectionActive())->toBeFalse()
+        ->and($settings->isAuditLogCollectionActive())->toBeTrue()
         ->and(AuditEvent::query()->where('event', 'platform.logs.collection_updated')->count())->toBe(2);
 });
 
@@ -112,7 +114,7 @@ test('the retention period is validated', function (int $days) {
         ->set('logRetentionDays', $days)
         ->call('saveCollection')
         ->assertHasErrors('logRetentionDays');
-})->with([0, 366]);
+})->with([0, 179, 366]);
 
 test('enabling loki shipping stores the encrypted password and the shipping start time', function () {
     $this->travelTo(now()->startOfMinute());

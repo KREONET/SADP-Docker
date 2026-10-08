@@ -202,6 +202,9 @@
                         <form wire:submit="requestEmailChange" class="application-settings-section-body space-y-4">
                             <x-forms.input id="new_email" :label="__('New email address')" required type="email"
                                 x-ref="newEmailInput" />
+                            <x-forms.input id="email_change_password" :label="__('Current password')" required
+                                type="password" autocomplete="current-password"
+                                :helper="__('Confirm your identity before the address is changed.')" />
                             <div class="flex justify-end">
                                 <x-forms.button type="submit" isHighlighted>{{ __('Send code') }}</x-forms.button>
                             </div>
@@ -231,7 +234,12 @@
             </section>
         </form>
 
-        <section class="application-settings-section">
+        <section id="two-factor" class="application-settings-section scroll-mt-6">
+            @if (session('two_factor_required'))
+                <x-callout type="warning" :title="__('Two-factor authentication required')">
+                    {{ session('two_factor_required') }}
+                </x-callout>
+            @endif
             <div class="application-settings-section-header">
                 <div>
                     <h2>{{ __('Two-factor authentication') }}</h2>
@@ -310,6 +318,8 @@
                 @endif
             </div>
         </section>
+
+        <livewire:profile.sessions />
 
         @if (auth()->id() !== 0)
             <x-danger-zone :title="__('Delete account')">

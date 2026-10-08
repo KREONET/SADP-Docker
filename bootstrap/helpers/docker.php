@@ -780,6 +780,9 @@ function fqdnLabelsForCaddy(string $network, string $uuid, Collection $domains, 
         } else {
             $labels->push("caddy_{$loop}.header=-Server");
         }
+        if ($schema === 'https') {
+            $labels = $labels->merge(caddyHttpsHardeningLabels($loop, ! $is_force_https_enabled));
+        }
         $labels->push("caddy_{$loop}.try_files={path} /index.html /index.php");
 
         if ($access_mode === 'internal') {
@@ -886,6 +889,18 @@ function dockerComposeServicePorts(?string $compose, ?string $serviceName): arra
         ->unique()->values()->all();
 }
 
+/**
+ * Middleware chain of a Traefik HTTPS router: the exposure restrictions stay first, followed by
+ * the HSTS headers middleware and the remaining middlewares.
+ */
+function traefikHttpsRouterMiddlewares(Collection $middlewares, int $accessMiddlewareCount): string
+{
+    $chain = $middlewares->values()->all();
+    array_splice($chain, $accessMiddlewareCount, 0, [traefikHstsMiddlewareName()]);
+
+    return implode(',', $chain);
+}
+
 function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_https_enabled = false, $onlyPort = null, ?Collection $serviceLabels = null, ?bool $is_gzip_enabled = true, ?bool $is_stripprefix_enabled = true, ?string $service_name = null, bool $generate_unique_uuid = false, ?string $image = null, string $redirect_direction = 'both', bool $is_http_basic_auth_enabled = false, ?string $http_basic_auth_username = null, ?string $http_basic_auth_password = null, ?Collection $noindex_domains = null, bool $escape_redirect_replacement_for_compose = true, array $domainPortOverrides = [], ?array $access = null)
 {
     $labels = collect([]);
@@ -944,8 +959,10 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
             return null;
         })->flatten()
             ->filter()
+            ->reject(fn ($middleware_name) => $middleware_name === traefikHstsMiddlewareName())
             ->unique();
     }
+    $hsts_labels_added = false;
     foreach ($domains as $loop => $domain) {
         try {
             if ($generate_unique_uuid) {
@@ -997,6 +1014,10 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                 "traefik.http.middlewares.{$to_www_name}.redirectregex.permanent=false",
             ];
             if ($schema === 'https') {
+                if (! $hsts_labels_added) {
+                    $labels = $labels->merge(traefikHstsMiddlewareLabels());
+                    $hsts_labels_added = true;
+                }
                 // Set labels for https
                 $labels->push("traefik.http.routers.{$https_label}.rule=Host(`{$host}`) && PathPrefix(`{$path}`)");
                 $labels->push("traefik.http.routers.{$https_label}.entryPoints=https");
@@ -1034,9 +1055,8 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                     $middlewares_from_labels->each(function ($middleware_name) use ($middlewares) {
                         $middlewares->push($middleware_name);
                     });
-                    if ($middlewares->isNotEmpty()) {
-                        $labels->push("traefik.http.routers.{$https_label}.middlewares={$middlewares->join(',')}");
-                    }
+                    // HSTS only on the HTTPS router; the HTTP router may reuse $middlewares below.
+                    $labels->push("traefik.http.routers.{$https_label}.middlewares=".traefikHttpsRouterMiddlewares($middlewares, $access_middlewares->count()));
                 } else {
                     $middlewares = collect($access_middlewares);
                     if ($is_gzip_enabled) {
@@ -1062,9 +1082,8 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                     $middlewares_from_labels->each(function ($middleware_name) use ($middlewares) {
                         $middlewares->push($middleware_name);
                     });
-                    if ($middlewares->isNotEmpty()) {
-                        $labels->push("traefik.http.routers.{$https_label}.middlewares={$middlewares->join(',')}");
-                    }
+                    // HSTS only on the HTTPS router; the HTTP router may reuse $middlewares below.
+                    $labels->push("traefik.http.routers.{$https_label}.middlewares=".traefikHttpsRouterMiddlewares($middlewares, $access_middlewares->count()));
                 }
                 $labels->push("traefik.http.routers.{$https_label}.tls=true");
                 $labels->push("traefik.http.routers.{$https_label}.tls.certresolver=letsencrypt");

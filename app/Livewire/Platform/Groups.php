@@ -3,6 +3,7 @@
 namespace App\Livewire\Platform;
 
 use App\Livewire\Platform\Concerns\AuthorizesPlatformAdmin;
+use App\Livewire\Platform\Concerns\ManagesUserAccounts;
 use App\Models\Application;
 use App\Models\Project;
 use App\Models\Team;
@@ -20,6 +21,7 @@ use RuntimeException;
 class Groups extends Component
 {
     use AuthorizesPlatformAdmin;
+    use ManagesUserAccounts;
 
     public const ROLES = ['member', 'admin', 'owner'];
 
@@ -94,20 +96,26 @@ class Groups extends Component
         }
 
         try {
-            DB::transaction(function () use ($teamId, $userId, $role): void {
+            $previousRole = DB::transaction(function () use ($teamId, $userId, $role): string {
                 $team = Team::query()->lockForUpdate()->findOrFail($teamId);
                 $member = $team->members()->where('users.id', $userId)->firstOrFail();
+                $previousRole = (string) $member->pivot->role;
 
-                if ($member->pivot->role === 'owner' && $role !== 'owner'
+                if ($previousRole === 'owner' && $role !== 'owner'
                     && $team->members()->wherePivot('role', 'owner')->count() <= 1) {
                     throw new RuntimeException(__('A team must keep at least one owner.'));
                 }
 
                 $team->members()->updateExistingPivot($member->id, ['role' => $role]);
+
+                return $previousRole;
             });
             Cache::forget("user:{$userId}:team:{$teamId}");
 
-            auditLog('platform.team.member_role_updated', ['team_id' => $teamId, 'user_id' => $userId, 'role' => $role]);
+            auditLog('platform.team.member_role_updated', ['team_id' => $teamId, 'user_id' => $userId, 'role' => $role, 'previous_role' => $previousRole]);
+            if ($teamId === 0 && $previousRole !== $role) {
+                $this->recordPlatformAdminChange($userId, $previousRole, $role);
+            }
             $this->dispatch('success', __('Role updated.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
@@ -173,6 +181,34 @@ class Groups extends Component
         } catch (\Throwable $e) {
             return $e->getMessage();
         }
+    }
+
+    /**
+     * A role change in the root team grants or revokes platform administration, so it gets its
+     * own audit event and a security alert in addition to the generic role update event.
+     */
+    private function recordPlatformAdminChange(int $userId, string $previousRole, string $newRole): void
+    {
+        $granted = array_search($newRole, self::ROLES, true) > array_search($previousRole, self::ROLES, true);
+        $target = User::query()->find($userId);
+        $context = [
+            'resource' => 'user',
+            'team_id' => 0,
+            'target_user_id' => $userId,
+            'target_user_email' => $target?->email,
+            'previous_role' => $previousRole,
+            'new_role' => $newRole,
+            'result' => 'success',
+        ];
+
+        auditLog($granted ? 'platform.admin.granted' : 'platform.admin.revoked', $context, 'warning');
+        notifySecurityAlert(
+            'platform_admin_changed',
+            $granted
+                ? __('Platform administrator role granted to :email', ['email' => $target?->email ?? "#{$userId}"])
+                : __('Platform administrator role revoked from :email', ['email' => $target?->email ?? "#{$userId}"]),
+            $context + ['actor_user_id' => auth()->id(), 'actor_email' => auth()->user()?->email],
+        );
     }
 
     private function startEdit(string $type, int $id, string $name, ?string $description): void

@@ -157,24 +157,8 @@ class ProductionSeeder extends Seeder
         }
 
         if (config('constants.coolify.is_windows_docker_desktop')) {
-            PrivateKey::updateOrCreate(
-                [
-                    'id' => 0,
-                    'team_id' => 0,
-                ],
-                [
-                    'name' => 'Testing-host',
-                    'description' => 'This is a a docker container with SSH access',
-                    'private_key' => '-----BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACBbhpqHhqv6aI67Mj9abM3DVbmcfYhZAhC7ca4d9UCevAAAAJi/QySHv0Mk
-hwAAAAtzc2gtZWQyNTUxOQAAACBbhpqHhqv6aI67Mj9abM3DVbmcfYhZAhC7ca4d9UCevA
-AAAECBQw4jg1WRT2IGHMncCiZhURCts2s24HoDS0thHnnRKVuGmoeGq/pojrsyP1pszcNV
-uZx9iFkCELtxrh31QJ68AAAAEXNhaWxANzZmZjY2ZDJlMmRkAQIDBA==
------END OPENSSH PRIVATE KEY-----
-',
-                ]
-            );
+            // The key is generated per install; see WindowsDockerDesktopKeySeeder for how it reaches the testing host.
+            $this->call(WindowsDockerDesktopKeySeeder::class);
             if (Server::find(0) == null) {
                 $server_details = [
                     'id' => 0,

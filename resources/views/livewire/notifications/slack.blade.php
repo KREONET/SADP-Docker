@@ -29,6 +29,10 @@
         </form>
 
         <x-notification.event-grid :settings="$settings" channel="slack" />
+
+        @if ((int) $team->id === 0)
+            <x-notification.security-alert-events :settings="$settings" channel="slack" />
+        @endif
     </div>
     </x-notification.settings-layout>
 </div>

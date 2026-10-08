@@ -96,6 +96,13 @@
                     min="0" max="365" :suffix="__('days')" canGate="manageBackups" :canResource="$backup->database"
                     :helper="__('Notify through backup failure channels after this many days without an execution. Use 0 to disable.')" required />
             </div>
+            @if ($backup->supportsEncryption())
+                <div class="w-full sm:w-96">
+                    <x-forms.checkbox instantSave id="encryptBackup" :label="__('Encrypt backup files')"
+                        :helper="__('Encrypts each new backup file on the server with AES-256 (OpenSSL, PBKDF2-SHA256) before it is stored or uploaded to S3. The server needs openssl. Coolify keeps a random passphrase per backup and decrypts it automatically when you restore it here. Downloaded files stay encrypted. Existing backups are not changed.')"
+                        canGate="manageBackups" :canResource="$backup->database" />
+                </div>
+            @endif
             <x-next-run :at="$backup->next_run_at" :timezone="$timezone" :enabled="$backup->enabled" :frequency="$backup->frequency" />
         </div>
     </x-application.settings-section>

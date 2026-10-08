@@ -6,10 +6,12 @@ use App\Models\InstanceSettings;
 use App\Models\LogEntry;
 use App\Services\Logging\LokiClient;
 use App\Services\Logging\LokiStreamBuilder;
+use App\Services\Logging\ThrottledSecurityAlert;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Once;
 
@@ -86,7 +88,7 @@ test('rows created before shipping was turned on are not sent', function () {
     expect($old->fresh()->loki_shipped_at)->toBeNull();
 });
 
-test('sources that are switched off are not sent', function () {
+test('sources that are switched off are not sent but audit events always are', function () {
     Http::fake(['loki.example.com/*' => Http::response('', 204)]);
     InstanceSettings::query()->find(0)->update(['is_audit_log_collection_enabled' => false, 'is_container_log_collection_enabled' => false]);
     AuditEvent::factory()->create();
@@ -95,9 +97,10 @@ test('sources that are switched off are not sent', function () {
 
     (new ShipLogsToLokiJob)->handle();
 
-    expect(collect(lokiStreams())->pluck('stream.source')->unique()->values()->all())->toBe(['system'])
+    expect(collect(lokiStreams())->pluck('stream.source')->unique()->sort()->values()->all())->toBe(['audit', 'system'])
         ->and($system->fresh()->loki_shipped_at)->not->toBeNull()
-        ->and(AuditEvent::query()->whereNotNull('loki_shipped_at')->count())->toBe(0);
+        ->and(AuditEvent::query()->whereNull('loki_shipped_at')->count())->toBe(0)
+        ->and(LogEntry::query()->where('source', LogEntry::SOURCE_CONTAINER)->whereNotNull('loki_shipped_at')->count())->toBe(0);
 });
 
 test('nothing is sent while the master switch or loki shipping is off', function (array $settings) {
@@ -134,14 +137,69 @@ test('connection failures keep rows for the next run', function () {
         ->and(InstanceSettings::query()->find(0)->loki_last_error)->toContain('Could not reach Loki');
 });
 
-test('a batch loki rejects is skipped so it cannot block newer rows', function () {
+test('a batch loki rejects stays unshipped and is retried on the next run', function () {
     Http::fake(['loki.example.com/*' => Http::response('entry too far behind', 400)]);
     $entry = LogEntry::factory()->create();
 
     (new ShipLogsToLokiJob)->handle();
 
-    expect($entry->fresh()->loki_shipped_at)->not->toBeNull()
-        ->and(InstanceSettings::query()->find(0)->loki_last_error)->toContain('HTTP 400')->toContain('skipped');
+    expect($entry->fresh()->loki_shipped_at)->toBeNull()
+        ->and($entry->fresh()->loki_attempts)->toBe(1)
+        ->and(Http::recorded())->toHaveCount(1)
+        ->and(InstanceSettings::query()->find(0)->loki_last_error)->toContain('HTTP 400')->toContain('attempt 1 of '.ShipLogsToLokiJob::MAX_REJECTED_ATTEMPTS);
+});
+
+test('a batch loki keeps rejecting is parked unshipped so it cannot block newer rows', function () {
+    Http::fake(['loki.example.com/*' => Http::sequence()
+        ->pushStatus(400)->pushStatus(400)->pushStatus(400)->pushStatus(400)->pushStatus(400)
+        ->pushStatus(204)]);
+    $rejected = LogEntry::factory()->create();
+
+    foreach (range(1, ShipLogsToLokiJob::MAX_REJECTED_ATTEMPTS) as $run) {
+        (new ShipLogsToLokiJob)->handle();
+    }
+
+    expect($rejected->fresh()->loki_shipped_at)->toBeNull()
+        ->and($rejected->fresh()->loki_attempts)->toBe(ShipLogsToLokiJob::MAX_REJECTED_ATTEMPTS)
+        ->and(InstanceSettings::query()->find(0)->loki_last_error)->toContain('without further retries');
+
+    $newer = LogEntry::factory()->create();
+    (new ShipLogsToLokiJob)->handle();
+
+    expect($newer->fresh()->loki_shipped_at)->not->toBeNull()
+        ->and($rejected->fresh()->loki_shipped_at)->toBeNull()
+        ->and(Http::recorded())->toHaveCount(ShipLogsToLokiJob::MAX_REJECTED_ATTEMPTS + 1);
+});
+
+test('shipping failures send a throttled security alert', function () {
+    Http::fake(['loki.example.com/*' => Http::response('ingester unavailable', 503)]);
+    LogEntry::factory()->create();
+
+    expect(Cache::has(ThrottledSecurityAlert::cacheKey('log_shipping_failed')))->toBeFalse();
+
+    (new ShipLogsToLokiJob)->handle();
+
+    expect(Cache::has(ThrottledSecurityAlert::cacheKey('log_shipping_failed')))->toBeTrue();
+});
+
+test('successful shipping sends no security alert', function () {
+    Http::fake(['loki.example.com/*' => Http::response('', 204)]);
+    LogEntry::factory()->create();
+
+    (new ShipLogsToLokiJob)->handle();
+
+    expect(Cache::has(ThrottledSecurityAlert::cacheKey('log_shipping_failed')))->toBeFalse();
+});
+
+test('loki lines mask e-mail addresses and secrets in free text', function () {
+    Http::fake(['loki.example.com/*' => Http::response('', 204)]);
+    LogEntry::factory()->create(['message' => 'login for jane@example.com with password=hunter2', 'context' => ['header' => 'Bearer abc.def.ghi']]);
+
+    (new ShipLogsToLokiJob)->handle();
+
+    $line = json_decode(collect(lokiStreams())->firstWhere('stream.source', 'system')['values'][0][1], true);
+    expect($line['msg'])->toBe('login for j***@example.com with password=[REDACTED]')
+        ->and($line['context']['header'])->toBe('Bearer [REDACTED]');
 });
 
 test('large backlogs are sent in batches', function () {

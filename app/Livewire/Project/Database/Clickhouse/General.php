@@ -6,6 +6,7 @@ use App\Actions\Database\StartDatabaseProxy;
 use App\Actions\Database\StopDatabaseProxy;
 use App\Models\Server;
 use App\Models\StandaloneClickhouse;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\ValidationPatterns;
 use App\Traits\ListensToTeamChannel;
 use Exception;
@@ -123,6 +124,12 @@ class General extends Component
             $this->database->is_public = $this->isPublic;
             $this->database->public_port = $this->publicPort ?: null;
             $this->database->public_port_timeout = $this->publicPortTimeout ?: null;
+            ContainerPrivilegePolicy::ensureRunOptionsAllowed(
+                $this->database->custom_docker_run_options,
+                $this->customDockerRunOptions,
+                auth()->user(),
+                'customDockerRunOptions',
+            );
             $this->database->custom_docker_run_options = $this->customDockerRunOptions;
             $this->database->is_log_drain_enabled = $this->isLogDrainEnabled;
             $this->database->save();

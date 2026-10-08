@@ -2,16 +2,18 @@
 
 namespace App\Livewire\SharedVariables\Environment;
 
+use App\Livewire\SharedVariables\Concerns\GatesDeveloperViewValues;
 use App\Models\Application;
 use App\Models\Project;
 use App\Models\SharedEnvironmentVariable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Show extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, GatesDeveloperViewValues;
 
     public Project $project;
 
@@ -73,26 +75,7 @@ class Show extends Component
 
     public function getDevView()
     {
-        $this->variables = $this->formatEnvironmentVariables($this->environment->environment_variables->sortBy('key'));
-    }
-
-    private function formatEnvironmentVariables($variables)
-    {
-        $isMember = auth()->user()?->isMember();
-
-        return $variables->map(function ($item) use ($isMember) {
-            if ($isMember) {
-                return "$item->key=(Hidden, only admins can view)";
-            }
-            if ($item->is_shown_once) {
-                return "$item->key=(Locked Secret, delete and add again to change)";
-            }
-            if ($item->is_multiline) {
-                return "$item->key=(Multiline environment variable, edit in normal view)";
-            }
-
-            return "$item->key=$item->value";
-        })->join("\n");
+        $this->variables = $this->formatSharedVariablesForDeveloperView($this->environment->environment_variables->sortBy('key'));
     }
 
     public function submit()
@@ -111,6 +94,11 @@ class Show extends Component
 
     private function handleBulkSubmit()
     {
+        // The bulk text only exists while the developer view is open; never treat a missing text as "delete everything".
+        if ($this->variables === null) {
+            return;
+        }
+
         $variables = parseEnvFormatToArray($this->variables);
         $changesMade = false;
 
@@ -154,16 +142,18 @@ class Show extends Component
             $value = is_array($data) ? ($data['value'] ?? '') : $data;
 
             $found = $this->environment->environment_variables()->where('key', $key)->first();
+            // A placeholder stands for a value that was never revealed: keep the stored one.
+            $keepsStoredValue = $this->isHiddenValuePlaceholder($value);
 
             if ($found) {
-                if (! $found->is_shown_once && ! $found->is_multiline) {
+                if (! $keepsStoredValue && ! $found->is_shown_once && ! $found->is_multiline) {
                     if ($found->value !== $value) {
                         $found->value = $value;
                         $found->save();
                         $count++;
                     }
                 }
-            } else {
+            } elseif (! $keepsStoredValue) {
                 $this->environment->environment_variables()->create([
                     'key' => $key,
                     'value' => $value,
@@ -183,6 +173,16 @@ class Show extends Component
     {
         $this->environment->refresh();
         $this->getDevView();
+    }
+
+    protected function sharedVariableOwner(): Model
+    {
+        return $this->environment;
+    }
+
+    protected function sharedVariableType(): string
+    {
+        return 'environment';
     }
 
     public function render()

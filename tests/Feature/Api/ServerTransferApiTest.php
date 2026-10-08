@@ -183,9 +183,14 @@ describe('GET /api/v1/servers/{uuid}/export', function () {
             ->getJson("/api/v1/servers/{$this->server->uuid}/export?encrypt=1&passphrase=secret-pass");
 
         $response->assertOk()
-            ->assertJsonPath('encrypted', true);
+            ->assertJsonPath('encrypted', true)
+            ->assertJsonPath('encryption_version', 2)
+            ->assertJsonPath('kdf', 'pbkdf2-sha256');
 
         expect($response->json('payload'))->toBeString()->not->toBeEmpty();
+
+        $restored = ServerTransferBundle::decryptWithPassphrase($response->json(), 'secret-pass');
+        expect($restored['server']['uuid'])->toBe($this->server->uuid);
     });
 });
 

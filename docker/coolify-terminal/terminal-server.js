@@ -18,6 +18,7 @@ import {
     sanitizeSshArgs,
     validateSshArgs,
 } from './terminal-utils.js';
+import { checkTerminalOrigin, getAllowedTerminalOrigins } from './terminal-origin.js';
 
 async function postToCoolify(path, headers, body = null) {
     return new Promise((resolve, reject) => {
@@ -78,6 +79,7 @@ function createHttpError(response) {
 }
 
 const userSessions = new Map();
+const allowedTerminalOrigins = getAllowedTerminalOrigins();
 const envName = String(process.env.APP_ENV || process.env.NODE_ENV || '').toLowerCase();
 const debugOverride = String(process.env.TERMINAL_DEBUG || '').toLowerCase();
 const terminalDebugEnabled =
@@ -132,6 +134,23 @@ const verifyClient = async (req) => {
     };
 
     logTerminal('log', 'Verifying websocket client.', requestContext);
+
+    // Reject cross-site WebSocket hijacking before the session cookie is sent to Laravel.
+    const originCheck = checkTerminalOrigin({ origin: req.headers.origin, host: req.headers.host }, allowedTerminalOrigins);
+    if (!originCheck.allowed) {
+        console.warn('[TerminalServer] Rejecting websocket client from a disallowed origin.', {
+            origin: req.headers.origin,
+            host: req.headers.host,
+            reason: originCheck.reason,
+        });
+
+        return {
+            authenticated: false,
+            closeCode: TERMINAL_CLOSE_CODES.AUTH_REJECTED,
+            reason: 'Forbidden: Origin not allowed',
+            status: 403,
+        };
+    }
 
     // Authenticate with Laravel backend
     const result = await authenticateTerminalUpgrade(sessionCookie, postToCoolify);

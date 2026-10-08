@@ -13,6 +13,27 @@ class ServerTransferBundle
     public const MAILBOX_DIR = '/data/coolify/exports';
 
     /**
+     * Passphrase envelope format written by encryptWithPassphrase().
+     */
+    public const ENCRYPTION_VERSION = 2;
+
+    public const KDF = 'pbkdf2-sha256';
+
+    /**
+     * Floor for the bundle KDF; bundles leave the instance, so the test-time
+     * password hashing override never lowers it.
+     */
+    public const MIN_KDF_ITERATIONS = 600000;
+
+    public const MAX_KDF_ITERATIONS = 10_000_000;
+
+    public const KDF_SALT_BYTES = 32;
+
+    private const IV_BYTES = 16;
+
+    private const CIPHER = 'AES-256-CBC';
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     public static function wrap(array $payload): array
@@ -94,8 +115,12 @@ class ServerTransferBundle
     /**
      * Encrypt an entire bundle for mailbox/API transport with a user passphrase.
      *
+     * Envelope v2: PBKDF2-HMAC-SHA256 (random salt, >= 600000 iterations) derives a
+     * master key; HKDF-SHA256 splits it into separate AES-256-CBC and HMAC-SHA256 keys.
+     * The MAC covers version, salt, iterations, IV and ciphertext (encrypt-then-MAC).
+     *
      * @param  array<string, mixed>  $bundle
-     * @return array{encrypted: true, schema_version: int, payload: string}
+     * @return array{encrypted: true, schema_version: int, encryption_version: int, kdf: string, iterations: int, salt: string, iv: string, cipher: string, mac: string, payload: string}
      */
     public static function encryptWithPassphrase(array $bundle, string $passphrase): array
     {
@@ -104,23 +129,36 @@ class ServerTransferBundle
         }
 
         $json = json_encode($bundle, JSON_THROW_ON_ERROR);
-        $key = hash('sha256', $passphrase, true);
-        $iv = random_bytes(16);
-        $cipher = openssl_encrypt($json, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+        $iterations = self::kdfIterations();
+        $salt = random_bytes(self::KDF_SALT_BYTES);
+        $iv = random_bytes(self::IV_BYTES);
+        ['encryption' => $encryptionKey, 'mac' => $macKey] = self::deriveKeys($passphrase, $salt, $iterations);
+
+        $cipher = openssl_encrypt($json, self::CIPHER, $encryptionKey, OPENSSL_RAW_DATA, $iv);
         if ($cipher === false) {
             throw new RuntimeException('Failed to encrypt transfer bundle.');
         }
 
-        $mac = hash_hmac('sha256', $iv.$cipher, $key);
+        $mac = hash_hmac('sha256', self::macInput(self::ENCRYPTION_VERSION, $salt, $iterations, $iv, $cipher), $macKey);
 
         return [
             'encrypted' => true,
             'schema_version' => self::SCHEMA_VERSION,
-            'payload' => base64_encode($iv.$mac.$cipher),
+            'encryption_version' => self::ENCRYPTION_VERSION,
+            'kdf' => self::KDF,
+            'iterations' => $iterations,
+            'salt' => base64_encode($salt),
+            'iv' => base64_encode($iv),
+            'cipher' => strtolower(self::CIPHER),
+            'mac' => $mac,
+            'payload' => base64_encode($cipher),
         ];
     }
 
     /**
+     * Decrypt a passphrase-encrypted bundle. Accepts the current v2 envelope and,
+     * read-only, the legacy v1 envelope (unsalted SHA-256 key, no encryption_version).
+     *
      * @param  array<string, mixed>  $encrypted
      * @return array<string, mixed>
      */
@@ -130,8 +168,67 @@ class ServerTransferBundle
             throw new RuntimeException('Bundle is not encrypted.');
         }
 
+        $version = data_get($encrypted, 'encryption_version');
+        if ($version === null) {
+            $json = self::decryptLegacyV1($encrypted, $passphrase);
+        } elseif ((int) $version === self::ENCRYPTION_VERSION) {
+            $json = self::decryptV2($encrypted, $passphrase);
+        } else {
+            throw new RuntimeException('Unsupported bundle encryption version.');
+        }
+
+        /** @var array<string, mixed> $bundle */
+        $bundle = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        return $bundle;
+    }
+
+    /**
+     * @param  array<string, mixed>  $encrypted
+     */
+    private static function decryptV2(array $encrypted, string $passphrase): string
+    {
+        $iterations = filter_var(data_get($encrypted, 'iterations'), FILTER_VALIDATE_INT);
+        $salt = base64_decode((string) data_get($encrypted, 'salt'), true);
+        $iv = base64_decode((string) data_get($encrypted, 'iv'), true);
+        $cipher = base64_decode((string) data_get($encrypted, 'payload'), true);
+        $mac = data_get($encrypted, 'mac');
+
+        if (data_get($encrypted, 'kdf') !== self::KDF
+            || strtolower((string) data_get($encrypted, 'cipher', self::CIPHER)) !== strtolower(self::CIPHER)
+            || $iterations === false || $iterations < self::MIN_KDF_ITERATIONS || $iterations > self::MAX_KDF_ITERATIONS
+            || $salt === false || strlen($salt) !== self::KDF_SALT_BYTES
+            || $iv === false || strlen($iv) !== self::IV_BYTES
+            || $cipher === false || $cipher === ''
+            || ! is_string($mac) || strlen($mac) !== 64) {
+            throw new RuntimeException('Invalid encrypted payload.');
+        }
+
+        ['encryption' => $encryptionKey, 'mac' => $macKey] = self::deriveKeys($passphrase, $salt, $iterations);
+
+        $expectedMac = hash_hmac('sha256', self::macInput(self::ENCRYPTION_VERSION, $salt, $iterations, $iv, $cipher), $macKey);
+        if (! hash_equals($expectedMac, $mac)) {
+            throw new RuntimeException('Invalid passphrase or corrupted bundle.');
+        }
+
+        $json = openssl_decrypt($cipher, self::CIPHER, $encryptionKey, OPENSSL_RAW_DATA, $iv);
+        if ($json === false) {
+            throw new RuntimeException('Failed to decrypt transfer bundle.');
+        }
+
+        return $json;
+    }
+
+    /**
+     * Legacy v1 envelope: base64(iv || hex HMAC || ciphertext), key = SHA-256(passphrase).
+     * Kept only so bundles exported before v2 can still be imported; never written.
+     *
+     * @param  array<string, mixed>  $encrypted
+     */
+    private static function decryptLegacyV1(array $encrypted, string $passphrase): string
+    {
         $raw = base64_decode((string) data_get($encrypted, 'payload'), true);
-        if ($raw === false || strlen($raw) < 48) {
+        if ($raw === false || strlen($raw) < 96) {
             throw new RuntimeException('Invalid encrypted payload.');
         }
 
@@ -144,15 +241,35 @@ class ServerTransferBundle
             throw new RuntimeException('Invalid passphrase or corrupted bundle.');
         }
 
-        $json = openssl_decrypt($cipher, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+        $json = openssl_decrypt($cipher, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
         if ($json === false) {
             throw new RuntimeException('Failed to decrypt transfer bundle.');
         }
 
-        /** @var array<string, mixed> $bundle */
-        $bundle = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        return $json;
+    }
 
-        return $bundle;
+    /**
+     * @return array{encryption: string, mac: string}
+     */
+    private static function deriveKeys(string $passphrase, string $salt, int $iterations): array
+    {
+        $masterKey = hash_pbkdf2('sha256', $passphrase, $salt, $iterations, 32, true);
+
+        return [
+            'encryption' => hash_hkdf('sha256', $masterKey, 32, 'server-transfer-bundle:v2:aes-256-cbc', $salt),
+            'mac' => hash_hkdf('sha256', $masterKey, 32, 'server-transfer-bundle:v2:hmac-sha256', $salt),
+        ];
+    }
+
+    private static function macInput(int $version, string $salt, int $iterations, string $iv, string $cipher): string
+    {
+        return pack('N', $version).$salt.pack('N', $iterations).$iv.$cipher;
+    }
+
+    private static function kdfIterations(): int
+    {
+        return min(self::MAX_KDF_ITERATIONS, max(self::MIN_KDF_ITERATIONS, (int) config('security.password.pbkdf2_iterations')));
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Livewire\Server\New;
 
 use App\Enums\ProxyTypes;
 use App\Enums\ServerRole;
+use App\Enums\SshKeyType;
 use App\Models\PrivateKey;
 use App\Models\Server;
 use App\Models\Team;
@@ -105,7 +106,7 @@ class ByIp extends Component
         try {
             $this->authorize('create', PrivateKey::class);
 
-            if (! in_array($type, ['ed25519', 'rsa'], true)) {
+            if (SshKeyType::tryFrom($type) === null) {
                 $this->dispatch('error', __('Invalid private key type.'));
 
                 return;

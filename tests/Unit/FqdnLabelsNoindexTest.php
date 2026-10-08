@@ -58,8 +58,10 @@ describe('Traefik noindex middleware', function () {
             noindex_domains: collect(['https://example.com/api']),
         )->values()->all();
 
+        // The HTTPS router additionally sends HSTS, which must never reach the plain HTTP router.
         expect(middlewaresOf($labels, 'http-0-testuuid'))
-            ->toBe(middlewaresOf($labels, 'https-0-testuuid'))
+            ->toBe(array_values(array_diff(middlewaresOf($labels, 'https-0-testuuid'), ['coolify-hsts'])))
+            ->not->toContain('coolify-hsts')
             ->toContain(
                 'https-0-testuuid-stripprefix',
                 'gzip',

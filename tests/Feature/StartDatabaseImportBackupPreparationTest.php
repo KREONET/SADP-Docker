@@ -29,6 +29,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     config()->set('cache.default', 'array');
     config()->set('constants.ssh.mux_enabled', false);
+    config()->set('database-import.allowed_paths', ['/srv/backups']);
     InstanceSettings::forceCreate(['id' => 0]);
 
     $this->team = Team::factory()->create();
@@ -63,6 +64,7 @@ beforeEach(function () {
 function importServerBackup(object $test, string $path, string $magicHex): string
 {
     Process::fake([
+        '*realpath*' => Process::result($path),
         '*stat -c %s*' => Process::result('2048'),
         '*od -An -tx1*' => Process::result(' '.implode(' ', str_split($magicHex, 2))),
         '*' => Process::result(''),

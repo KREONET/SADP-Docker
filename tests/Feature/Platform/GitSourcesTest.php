@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Once;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -28,6 +29,7 @@ beforeEach(function () {
     $this->rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']);
     $this->platformAdmin = User::factory()->create(['name' => 'Platform Admin']);
     $this->rootTeam->members()->attach($this->platformAdmin->id, ['role' => 'admin']);
+    TwoFactor::confirm($this->platformAdmin);
     $this->rootMember = User::factory()->create(['name' => 'Root Member']);
     $this->rootTeam->members()->attach($this->rootMember->id, ['role' => 'member']);
 

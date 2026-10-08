@@ -137,7 +137,8 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/audit.log'),
             'level' => env('LOG_AUDIT_LEVEL', 'info'),
-            'days' => env('LOG_AUDIT_DAYS', 90),
+            // Same as the audit event retention (security.audit.min_retention_days is 365); never shorter.
+            'days' => max(365, (int) env('LOG_AUDIT_DAYS', 365)),
             'replace_placeholders' => true,
         ],
 

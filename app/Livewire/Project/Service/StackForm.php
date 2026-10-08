@@ -3,6 +3,7 @@
 namespace App\Livewire\Project\Service;
 
 use App\Models\Service;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\ValidationPatterns;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
@@ -168,6 +169,13 @@ class StackForm extends Component
 
             // Validate for command injection BEFORE any database operations
             validateDockerComposeForInjection($this->service->docker_compose_raw, composeResourceDirectory($this->service));
+            ContainerPrivilegePolicy::ensureComposeAllowed(
+                $this->service->getOriginal('docker_compose_raw'),
+                $this->service->docker_compose_raw,
+                auth()->user(),
+                ContainerPrivilegePolicy::allowedHostDirectories($this->service),
+                'dockerComposeRaw',
+            );
 
             // Use transaction to ensure atomicity - if parse fails, save is rolled back
             DB::transaction(function () {

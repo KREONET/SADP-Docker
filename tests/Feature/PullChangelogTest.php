@@ -1,8 +1,17 @@
 <?php
 
 use App\Jobs\PullChangelog;
+use App\Models\InstanceSettings;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    // The changelog is opt-in; these tests cover the fetch itself.
+    InstanceSettings::forceCreate(['id' => 0, 'is_changelog_enabled' => true]);
+});
 
 /**
  * Fake releases land in a month that no real release uses, so the generated

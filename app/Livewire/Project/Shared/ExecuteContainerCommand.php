@@ -6,6 +6,8 @@ use App\Models\Application;
 use App\Models\Server;
 use App\Models\Service;
 use App\Support\ValidationPatterns;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
@@ -183,6 +185,7 @@ class ExecuteContainerCommand extends Component
             if ($server->isForceDisabled()) {
                 throw new \RuntimeException('Server is disabled.');
             }
+            $this->auditConnection($server, null, 'success');
             $this->dispatch(
                 'send-terminal-command',
                 false,
@@ -193,6 +196,7 @@ class ExecuteContainerCommand extends Component
             // Dispatch a frontend event to ensure terminal gets focus after connection
             $this->dispatch('terminal-should-focus');
         } catch (\Throwable $e) {
+            $this->auditConnection($server ?? null, null, 'failure', $e);
             $this->failTerminalSession(Terminal::sessionFailureMessage($e));
         } finally {
             $this->isConnecting = false;
@@ -244,6 +248,7 @@ class ExecuteContainerCommand extends Component
                 throw new \RuntimeException('Server ownership verification failed.');
             }
 
+            $this->auditConnection($server, data_get($container, 'container.Names'), 'success');
             $this->dispatch(
                 'send-terminal-command',
                 true,
@@ -254,10 +259,42 @@ class ExecuteContainerCommand extends Component
             // Dispatch a frontend event to ensure terminal gets focus after connection
             $this->dispatch('terminal-should-focus');
         } catch (\Throwable $e) {
+            $this->auditConnection(
+                isset($server) && $server instanceof Server ? $server : null,
+                str($this->selected_container)->after(':')->limit(255, '')->value(),
+                'failure',
+                $e,
+            );
             $this->failTerminalSession(Terminal::sessionFailureMessage($e));
         } finally {
             $this->isConnecting = false;
         }
+    }
+
+    /**
+     * Audit a terminal connection request from this page. The interactive session
+     * itself is audited when its one-time token is issued and redeemed.
+     */
+    private function auditConnection(?Server $server, ?string $container, string $result, ?\Throwable $exception = null): void
+    {
+        $context = [
+            'resource' => 'server',
+            'server_uuid' => $server?->uuid,
+            'server_name' => $server?->name,
+            'container' => $container,
+            'target_type' => $this->type ?? null,
+            'target_uuid' => data_get($this->resource, 'uuid'),
+            'target_name' => data_get($this->resource, 'name'),
+            'result' => $result,
+        ];
+
+        if ($exception !== null) {
+            $isDenied = $exception instanceof AuthorizationException || $exception instanceof ModelNotFoundException;
+            $context['result'] = $isDenied ? 'denied' : 'failure';
+            $context['reason'] = str($exception->getMessage() ?: class_basename($exception))->limit(255)->value();
+        }
+
+        auditLog('terminal.connection.requested', $context, $context['result'] === 'success' ? 'info' : 'warning');
     }
 
     /**
