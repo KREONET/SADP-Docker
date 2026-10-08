@@ -725,6 +725,138 @@ function removeLegacyTraefikDashboardExposure(Server $server): bool
 }
 
 /**
+ * Whether the generated Traefik and Caddy proxies serve HTTP/3 (QUIC on UDP 443). Off by default.
+ */
+function proxyHttp3Enabled(): bool
+{
+    return (bool) config('security.proxy.http3', false);
+}
+
+/**
+ * Removes network exposure that older Coolify versions generated into the proxy configuration:
+ * - outside development, the published Traefik API port (8080:8080) and --api.insecure=true (turned into --api.insecure=false);
+ * - when HTTP/3 is disabled, the Traefik --entrypoints.https.http3 flag and the published 443:443/udp port (Traefik and Caddy).
+ *
+ * Comments and formatting are kept. Only the exact entries that Coolify generated are changed. A configuration where the
+ * user changed the same setting (another mapping to the API port, extra HTTP/3 options) keeps that part unchanged, and
+ * the original is returned when the line edit cannot be verified with a YAML round-trip.
+ */
+function removeLegacyInsecureProxySettings(string $configuration): string
+{
+    try {
+        $yaml = Yaml::parse($configuration);
+    } catch (Throwable) {
+        return $configuration;
+    }
+    if (! is_array($yaml)) {
+        return $configuration;
+    }
+
+    $isStringList = fn (mixed $value): bool => is_array($value) && array_is_list($value) && array_filter($value, 'is_string') === $value;
+    $removeLines = [];
+    $replaceLines = [];
+    $expected = $yaml;
+    $http3 = proxyHttp3Enabled();
+
+    foreach (['traefik', 'caddy'] as $service) {
+        $ports = data_get($yaml, "services.{$service}.ports");
+        $commands = data_get($yaml, "services.{$service}.command");
+        if (! $isStringList($ports)) {
+            continue;
+        }
+        $commands = $isStringList($commands) ? $commands : null;
+        $newPorts = $ports;
+        $newCommands = $commands;
+
+        if ($service === 'traefik' && ! isDev()) {
+            // Any other mapping to the API port is a user choice, so the API settings are left alone.
+            $customApiPort = array_filter($ports, fn (string $port) => $port !== '8080:8080' && preg_match('/(?:^|:)8080(?:\/tcp)?$/', $port) === 1);
+            if ($customApiPort === []) {
+                $newPorts = array_values(array_diff($newPorts, ['8080:8080']));
+                if ($newCommands !== null) {
+                    $newCommands = array_map(fn (string $command) => $command === '--api.insecure=true' ? '--api.insecure=false' : $command, $newCommands);
+                }
+            }
+        }
+
+        if (! $http3) {
+            // Extra HTTP/3 options (for example an advertised port) mean the user configured HTTP/3 on purpose.
+            $customHttp3 = $newCommands !== null && array_filter($newCommands, fn (string $command) => str_starts_with($command, '--entrypoints.https.http3') && $command !== '--entrypoints.https.http3') !== [];
+            if (! $customHttp3) {
+                $newPorts = array_values(array_diff($newPorts, ['443:443/udp']));
+                if ($newCommands !== null) {
+                    $newCommands = array_values(array_diff($newCommands, ['--entrypoints.https.http3']));
+                }
+            }
+        }
+
+        if ($newPorts !== $ports) {
+            data_set($expected, "services.{$service}.ports", $newPorts);
+            $removeLines = [...$removeLines, ...array_diff($ports, $newPorts)];
+        }
+        if ($newCommands !== $commands) {
+            data_set($expected, "services.{$service}.command", $newCommands);
+            if (in_array('--api.insecure=true', $commands, true) && ! in_array('--api.insecure=true', $newCommands, true)) {
+                $replaceLines['--api.insecure=true'] = '--api.insecure=false';
+            }
+            $removeLines = [...$removeLines, ...array_diff($commands, $newCommands, ['--api.insecure=true'])];
+        }
+    }
+
+    if ($expected === $yaml) {
+        return $configuration;
+    }
+
+    $fixed = $configuration;
+    foreach ($replaceLines as $from => $to) {
+        $fixed = preg_replace('/^([ \t]*-[ \t]*([\'"]?))'.preg_quote($from, '/').'(\2(?:[ \t]+#[^\r\n]*)?[ \t]*)(?=\R|\z)/m', '${1}'.$to.'${3}', $fixed);
+    }
+    foreach (array_unique($removeLines) as $line) {
+        $fixed = preg_replace('/^[ \t]*-[ \t]*([\'"]?)'.preg_quote($line, '/').'\1(?:[ \t]+#[^\r\n]*)?[ \t]*(?:\R|\z)/m', '', $fixed);
+    }
+
+    // Keep the original when the line edit also changed other parts of the file.
+    try {
+        return is_string($fixed) && Yaml::parse($fixed) === $expected ? $fixed : $configuration;
+    } catch (Throwable) {
+        return $configuration;
+    }
+}
+
+/**
+ * Saves the proxy configuration without the legacy insecure settings (see removeLegacyInsecureProxySettings()).
+ * The next proxy restart applies it.
+ */
+function removeLegacyInsecureProxyExposure(Server $server): bool
+{
+    // The cleanup depends on the environment and the security configuration.
+    if (! app()->bound('config')) {
+        return false;
+    }
+    $configuration = $server->proxy->get('last_saved_proxy_configuration');
+    if (! in_array($server->proxyType(), [ProxyTypes::TRAEFIK->value, ProxyTypes::CADDY->value], true) || ! is_string($configuration) || blank($configuration)) {
+        return false;
+    }
+
+    $fixed = removeLegacyInsecureProxySettings($configuration);
+    if ($fixed === $configuration) {
+        return false;
+    }
+
+    // The running proxy still uses the old configuration, so the UI must ask for a restart.
+    if (blank($server->proxy->get('last_applied_settings'))) {
+        $server->proxy->last_applied_settings = md5(base64_encode($configuration));
+    }
+    $server->proxy->last_saved_proxy_configuration = $fixed;
+    $server->proxy->last_saved_settings = md5(base64_encode($fixed));
+    $server->save();
+
+    Log::info('Removed legacy insecure settings from the proxy configuration', ['server_id' => $server->id]);
+
+    return true;
+}
+
+/**
  * Development only. Older dev builds wrote the dev data volume path (/var/lib/docker/volumes/<name>_coolify_data/_data)
  * into the proxy configuration of every server. Replace it with the path for this server (devHostDockerPath()):
  * /data/coolify on a dev KVM VM, the configured volume path on the testing-host server. The next proxy restart applies it.
@@ -972,6 +1104,7 @@ function generateDefaultProxyConfiguration(Server $server, array $custom_command
 
     $proxy_path = $server->proxyPath();
     $proxy_type = $server->proxyType();
+    $http3 = proxyHttp3Enabled();
 
     if ($server->isSwarm()) {
         $networks = collect($server->swarmDockers)->map(function ($docker) {
@@ -1022,7 +1155,7 @@ function generateDefaultProxyConfiguration(Server $server, array $custom_command
                     'ports' => [
                         '80:80',
                         '443:443',
-                        '443:443/udp',
+                        ...($http3 ? ['443:443/udp'] : []),
                     ],
                     'healthcheck' => [
                         'test' => 'wget -qO- http://localhost:80/ping || exit 1',
@@ -1044,7 +1177,7 @@ function generateDefaultProxyConfiguration(Server $server, array $custom_command
                         '--entryPoints.http.http2.maxConcurrentStreams=250',
                         '--entrypoints.https.http.encodequerysemicolons=true',
                         '--entryPoints.https.http2.maxConcurrentStreams=250',
-                        '--entrypoints.https.http3',
+                        ...($http3 ? ['--entrypoints.https.http3'] : []),
                         '--providers.file.directory=/traefik/dynamic/',
                         '--providers.file.watch=true',
                         '--certificatesresolvers.letsencrypt.acme.httpchallenge=true',
@@ -1111,11 +1244,12 @@ function generateDefaultProxyConfiguration(Server $server, array $custom_command
                     'ports' => [
                         '80:80',
                         '443:443',
-                        '443:443/udp',
+                        ...($http3 ? ['443:443/udp'] : []),
                     ],
                     'labels' => [
                         'coolify.managed=true',
                         'coolify.proxy=true',
+                        ...($http3 ? [] : ['caddy.servers.protocols=h1 h2']),
                     ],
                     'volumes' => [
                         '/var/run/docker.sock:/var/run/docker.sock:ro',

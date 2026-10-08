@@ -95,6 +95,8 @@ function fakeRepositoryCompose(string $compose): void
 function composeDeploymentJob(Application $application, int $pullRequestId, array &$logEntries): ApplicationDeploymentJob
 {
     $queue = Mockery::mock(ApplicationDeploymentQueue::class);
+    // Webhook-style deployment: no user started it.
+    $queue->shouldReceive('getAttribute')->with('triggered_by_user_id')->andReturnNull();
     $queue->shouldReceive('addLogEntry')->andReturnUsing(function (string $message, string $type = 'stdout', bool $hidden = false) use (&$logEntries) {
         $logEntries[] = [$message, $type, $hidden];
     });
@@ -291,6 +293,8 @@ test('the deployment log shows the unsafe Compose file explanation once and a sh
     fakeRepositoryCompose(composeInjectionPayloads()['service name command substitution'][0]);
     $logEntries = [];
     $queue = Mockery::mock(ApplicationDeploymentQueue::class);
+    // Webhook-style deployment: no user started it.
+    $queue->shouldReceive('getAttribute')->with('triggered_by_user_id')->andReturnNull();
     $queue->shouldReceive('addLogEntry')->andReturnUsing(function (string $message, string $type = 'stdout', bool $hidden = false) use (&$logEntries) {
         $logEntries[] = [$message, $type, $hidden];
     });

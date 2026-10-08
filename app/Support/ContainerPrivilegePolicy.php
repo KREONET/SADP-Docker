@@ -19,7 +19,9 @@ use Throwable;
  *
  * The check runs when the value is saved. A value that is not changed is accepted as it is, so options an
  * administrator set earlier stay in place and other members can still save unrelated settings. A member
- * cannot save a changed value that still contains (or adds) a dangerous option. Runtime parsing in
+ * cannot save a changed value that still contains (or adds) a dangerous option. A deployment that reads the
+ * Compose file from the repository may not add host access to the stored file unless a platform administrator
+ * started it (deploymentComposeViolation()). Runtime parsing in
  * bootstrap/helpers/docker.php and bootstrap/helpers/parsers.php is not changed.
  */
 class ContainerPrivilegePolicy
@@ -177,9 +179,18 @@ class ContainerPrivilegePolicy
 
         $findings = [];
 
+        // Included files are read by Docker Compose at deploy time and are never inspected here.
+        if (array_key_exists('include', $parsed)) {
+            $findings[] = 'include';
+        }
+
         foreach ((array) ($parsed['services'] ?? []) as $serviceName => $service) {
             if (! is_array($service)) {
                 continue;
+            }
+            // Extending a service from another file pulls in settings that are never inspected here.
+            if (is_array($service['extends'] ?? null) && isset($service['extends']['file'])) {
+                $findings[] = "{$serviceName}: extends.file";
             }
             foreach (self::composeServiceFindings($service, $allowedHostDirectories) as $finding) {
                 $findings[] = "{$serviceName}: {$finding}";
@@ -243,6 +254,45 @@ class ContainerPrivilegePolicy
     }
 
     /**
+     * The host-access findings in $requested that $baseline does not already have. Findings are compared
+     * instead of the raw text, so reformatting a Compose file does not count as a change.
+     *
+     * @param  list<string>  $allowedHostDirectories
+     * @return list<string>
+     */
+    public static function newComposeFindings(?string $baseline, ?string $requested, array $allowedHostDirectories = []): array
+    {
+        return array_values(array_diff(
+            self::dangerousComposeSettings($requested, $allowedHostDirectories),
+            self::dangerousComposeSettings($baseline, $allowedHostDirectories),
+        ));
+    }
+
+    /**
+     * Why a deployment may not use the Compose file read from the repository, or null when it may.
+     *
+     * Deployments run in the queue without a signed-in user, so the stored Compose file is the approved
+     * baseline: an administrator saved it, or it was saved before this check existed. The repository file
+     * may keep the host access the baseline already has, but only a deployment started by a platform
+     * administrator may add more.
+     *
+     * @param  list<string>  $allowedHostDirectories
+     * @param  array<string, mixed>  $auditContext  Non-secret details for the audit event
+     */
+    public static function deploymentComposeViolation(?string $baseline, ?string $requested, ?User $initiator, array $allowedHostDirectories = [], array $auditContext = []): ?string
+    {
+        if (self::canUseHostAccess($initiator)) {
+            return null;
+        }
+
+        return self::violationMessage(
+            self::newComposeFindings($baseline, $requested, $allowedHostDirectories),
+            'docker_compose_raw',
+            ['source' => 'deployment'] + $auditContext,
+        );
+    }
+
+    /**
      * @throws ValidationException When a non-administrator saves dangerous run options
      */
     public static function ensureRunOptionsAllowed(?string $current, ?string $requested, ?User $user, string $attribute = 'custom_docker_run_options'): void
@@ -270,18 +320,19 @@ class ContainerPrivilegePolicy
      * The validation message for $findings, or null when there are none. A denial is written to the audit log.
      *
      * @param  list<string>  $findings
+     * @param  array<string, mixed>  $auditContext
      */
-    private static function violationMessage(array $findings, string $field): ?string
+    private static function violationMessage(array $findings, string $field, array $auditContext = []): ?string
     {
         if ($findings === []) {
             return null;
         }
 
-        auditLog('container.host_access.change', [
+        auditLog('container.host_access.change', array_merge($auditContext, [
             'field' => $field,
             'findings' => array_slice($findings, 0, 20),
             'result' => 'denied',
-        ], 'warning');
+        ]), 'warning');
 
         return __('Only platform administrators may give containers access to the host. Remove: :options', [
             'options' => implode(', ', $findings),

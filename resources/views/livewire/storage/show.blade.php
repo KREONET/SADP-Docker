@@ -58,6 +58,9 @@
                 <div class="min-w-0">
                     @if ($currentRoute === 'storage.show')
                         <livewire:storage.form :storage="$storage" />
+                        @can('accessPlatformAdmin')
+                            <livewire:storage.owner :storage="$storage" :key="'owner-'.$storage->uuid" />
+                        @endcan
                     @elseif ($currentRoute === 'storage.resources')
                         <livewire:storage.resources :storage="$storage" :key="'resources-'.$storage->uuid" />
                     @elseif ($currentRoute === 'storage.danger')

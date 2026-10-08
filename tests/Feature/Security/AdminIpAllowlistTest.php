@@ -134,7 +134,7 @@ test('the admin area requires an allowed address for everyone', function (string
         ->assertSee('This area can only be opened from the IP addresses an administrator approved.');
     $this->assertAuthenticatedAs($this->tenant);
     expect(AuditEvent::query()->where('event', 'auth.admin_ip.denied')->where('result', 'denied')->exists())->toBeTrue();
-})->with(['/platform', '/platform/logs', '/settings', '/terminal']);
+})->with(['/platform', '/platform/logs', '/settings']);
 
 test('the login page stays reachable from any address', function () {
     restrictAdminsTo('198.51.100.0/24');
@@ -189,6 +189,39 @@ test('the client address resolver', function (array $server, ?string $forwardedF
     'ports and brackets' => [['REMOTE_ADDR' => '10.0.0.2'], '[2001:db8::1]:443, 198.51.100.7:5555', '198.51.100.7'],
     'ipv4 mapped ipv6 peer' => [['REMOTE_ADDR' => '::ffff:203.0.113.5'], '198.51.100.7', '203.0.113.5'],
 ]);
+
+test('with configured trusted proxies only their forwarded entries are trusted', function (array $server, ?string $forwardedFor, ?string $expected) {
+    config()->set('security.admin_ip.trusted_proxies', '172.18.0.2, 127.0.0.1');
+    $request = Request::create('/', 'GET', [], [], [], $server);
+    if ($forwardedFor !== null) {
+        $request->headers->set('X-Forwarded-For', $forwardedFor);
+    }
+
+    expect(AdminIpAllowlist::clientIp($request))->toBe($expected);
+})->with([
+    'client on the proxy network forging a public address' => [['REMOTE_ADDR' => '172.18.0.2'], '198.51.100.7, 10.0.5.9', '10.0.5.9'],
+    'container reaching the app directly with a forged header' => [['REMOTE_ADDR' => '172.18.0.9'], '198.51.100.7', '172.18.0.9'],
+    'public client through the trusted proxy' => [['REMOTE_ADDR' => '172.18.0.2'], '198.51.100.7', '198.51.100.7'],
+    'chain of trusted proxies' => [['REMOTE_ADDR' => '127.0.0.1'], '198.51.100.7, 172.18.0.2', '198.51.100.7'],
+]);
+
+test('a regular user forging an allowed address on the proxy network cannot open the admin area', function () {
+    config()->set('security.admin_ip.trusted_proxies', '172.18.0.2');
+    restrictAdminsTo('198.51.100.0/24');
+    actAsAllowlistUser($this->tenant, $this->tenantTeam);
+
+    $this->withServerVariables(['REMOTE_ADDR' => '172.18.0.2', 'HTTP_X_FORWARDED_FOR' => '198.51.100.7, 10.0.5.9'])
+        ->get('/settings')
+        ->assertForbidden();
+});
+
+test('team users keep the terminal outside the allowlist', function () {
+    restrictAdminsTo('198.51.100.0/24');
+    actAsAllowlistUser($this->tenant, $this->tenantTeam);
+
+    expect(runRestrictAdminIps('/terminal', ['REMOTE_ADDR' => '203.0.113.5'])->getContent())->toBe('passed');
+    $this->assertAuthenticatedAs($this->tenant);
+});
 
 test('allowlist matching accepts addresses and CIDR ranges and ignores invalid entries', function () {
     $ranges = AdminIpAllowlist::ranges("198.51.100.7, 10.0.0.0/8\nnonsense 2001:db8::/32");

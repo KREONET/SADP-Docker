@@ -5541,5 +5541,18 @@
     "Auditor role removed from :email.": ":email 계정의 감사자 역할을 해제했습니다.",
     "Values are hidden until you confirm your identity. Hidden values are kept unchanged when you save. You will not be asked again for :minutes minutes.": "본인 확인을 하기 전까지 값이 숨겨집니다. 숨겨진 값은 저장해도 변경되지 않습니다. :minutes분 동안은 다시 묻지 않습니다.",
     "Show values": "값 보기",
-    "You do not have permission to copy this value.": "이 값을 복사할 권한이 없습니다."
+    "You do not have permission to copy this value.": "이 값을 복사할 권한이 없습니다.",
+    "Only the owner and platform administrators can see and use this storage.": "소유자와 플랫폼 관리자만 이 스토리지를 보고 사용할 수 있습니다.",
+    "No owner": "소유자 없음",
+    "This storage was created before owners were recorded, so only platform administrators can see it. Assign a team member to give them access.": "소유자를 기록하기 전에 만든 스토리지라 플랫폼 관리자만 볼 수 있습니다. 팀 멤버를 소유자로 지정하면 그 멤버도 쓸 수 있습니다.",
+    "Current owner: :email": "현재 소유자: :email",
+    "New owner": "새 소유자",
+    "Choose a team member": "팀 멤버 선택",
+    "Change the storage owner?": "스토리지 소유자를 바꿀까요?",
+    "Change owner": "소유자 변경",
+    "The new owner can see the access keys of this storage and use it for backups.": "새 소유자는 이 스토리지의 접근 키를 보고 백업에 쓸 수 있습니다.",
+    "Give the selected team member access to this storage.": "선택한 팀 멤버에게 이 스토리지 접근 권한을 줍니다.",
+    "Choose a member of the storage team.": "스토리지가 속한 팀의 멤버를 선택하세요.",
+    "Owner changed to :email.": "소유자를 :email(으)로 바꿨습니다.",
+    "The Docker Compose file in the repository adds settings that give containers access to the host, and the deployment was not started by a platform administrator, so Coolify did not load it. :violation": "저장소의 Docker Compose 파일에 컨테이너에 호스트 접근 권한을 주는 설정이 추가되었고 플랫폼 관리자가 시작한 배포가 아니므로 Coolify가 이 파일을 불러오지 않았습니다. :violation"
 }

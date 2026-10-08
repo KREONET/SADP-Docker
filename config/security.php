@@ -70,6 +70,18 @@ return [
         'include_subdomains' => (bool) env('SECURITY_HSTS_INCLUDE_SUBDOMAINS', true),
     ],
 
+    'proxy' => [
+        // HTTP/3 (QUIC on UDP 443) on the generated Traefik and Caddy proxies. Off by default: QUIC traffic
+        // bypasses most TCP-based inspection, so only turn it on where the network policy allows it.
+        'http3' => (bool) env('SECURITY_PROXY_HTTP3', false),
+    ],
+
+    'admin_ip' => [
+        // Proxies whose X-Forwarded-For entries the administrator IP allowlist trusts (comma separated IPs/CIDRs),
+        // e.g. the address of the Coolify proxy container. Empty trusts every private address.
+        'trusted_proxies' => env('SECURITY_ADMIN_IP_TRUSTED_PROXIES', ''),
+    ],
+
     'ssh' => [
         // Per-server known_hosts files (trust on first use). Managed by App\Services\Ssh\KnownHosts.
         'known_hosts_directory' => storage_path('app/ssh/known_hosts'),

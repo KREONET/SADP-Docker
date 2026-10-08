@@ -368,3 +368,16 @@ describe('api', function () {
         expect($this->service->refresh()->docker_compose_raw)->toBe(HOST_ACCESS_SAFE_COMPOSE);
     });
 });
+
+test('compose files that include or extend other files are admin-only because those files are not inspected', function (string $compose, string $finding) {
+    expect(ContainerPrivilegePolicy::dangerousComposeSettings($compose))->toContain($finding);
+})->with([
+    'top-level include' => ["include:\n  - other.yml\nservices:\n  web:\n    image: nginx\n", 'include'],
+    'extends from a file' => ["services:\n  web:\n    extends:\n      file: common.yml\n      service: base\n", 'web: extends.file'],
+]);
+
+test('extending a service in the same file is allowed', function () {
+    $compose = "services:\n  base:\n    image: nginx\n  web:\n    extends:\n      service: base\n";
+
+    expect(ContainerPrivilegePolicy::dangerousComposeSettings($compose))->toBe([]);
+});

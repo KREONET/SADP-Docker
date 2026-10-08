@@ -20,6 +20,7 @@ use App\Models\GitlabApp;
 use App\Models\Server;
 use App\Models\StandaloneDocker;
 use App\Models\SwarmDocker;
+use App\Models\User;
 use App\Models\VulnerabilityScan;
 use App\Notifications\Application\DeploymentFailed;
 use App\Notifications\Application\DeploymentSuccess;
@@ -1529,13 +1530,25 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
     }
 
     /**
+     * The user who started this deployment, or null for webhook deployments and users that no longer exist.
+     */
+    private function deploymentInitiator(): ?User
+    {
+        $userId = $this->application_deployment_queue->triggered_by_user_id;
+
+        return $userId === null ? null : User::query()->find($userId);
+    }
+
+    /**
      * Reads the Compose file from the repository again (also for pull request previews). If the file is not
-     * safe to use, the deployment stops here with a visible log line, before a command uses the file.
+     * safe to use, or adds host access that the stored Compose file does not have and the deployment was not
+     * started by a platform administrator, the deployment stops here with a visible log line, before a
+     * command uses the file.
      */
     private function loadComposeFileForDeployment(): void
     {
         try {
-            $this->application->loadComposeFile(isInit: false);
+            $this->application->loadComposeFile(isInit: false, isDeployment: true, deploymentInitiator: $this->deploymentInitiator());
         } catch (DeploymentException $e) {
             // Deployment logs escape HTML themselves, so undo the escaping that error toasts need.
             $message = 'Deployment stopped: '.lcfirst(html_entity_decode($e->getMessage(), ENT_QUOTES | ENT_HTML5));
@@ -2787,6 +2800,7 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
                 rollback: $this->rollback,
                 docker_registry_image_tag: $this->application_deployment_queue->docker_registry_image_tag,
                 parent_deployment_uuid: $this->deployment_uuid,
+                triggered_by_user_id: $this->application_deployment_queue->triggered_by_user_id,
             );
             if ($result['status'] !== 'queued') {
                 $this->application_deployment_queue->addLogEntry("Deployment to {$server->name} was not queued: {$result['message']}", 'stderr');

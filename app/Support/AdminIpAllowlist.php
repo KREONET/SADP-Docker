@@ -13,17 +13,18 @@ use Throwable;
  * Client address: the app trusts every proxy (TrustProxies, which must not be changed), so
  * `$request->ip()` follows `X-Forwarded-For` even when a client reaches the app directly on
  * its published port and writes that header itself. {@see self::clientIp()} only reads the
- * header when the direct peer is a loopback, private or reserved address (the local reverse
- * proxy, e.g. Traefik on the Docker network) and then takes the right-most entry that is not
- * itself private, which the proxy appended. A direct public peer is used as is.
+ * header when the direct peer is a trusted proxy and then takes the right-most entry that is
+ * not itself a trusted proxy, which is the address the outermost trusted proxy saw.
  *
- * Known limitation: a client inside a private network that goes through the proxy can prepend a
- * public address to `X-Forwarded-For`; the private entries the proxy appended are skipped and the
- * forged public entry is used. Allowlists that contain public addresses should therefore not rely
- * on this check alone against users on the same private network as the proxy.
+ * Trusted proxies are the ranges in `security.admin_ip.trusted_proxies`
+ * (`SECURITY_ADMIN_IP_TRUSTED_PROXIES`, e.g. the address of the Coolify proxy container). When it
+ * is empty, every loopback, private or reserved address counts as a trusted proxy. In that default
+ * mode a client inside a private network that goes through the proxy can prepend a public address
+ * to `X-Forwarded-For`; set the trusted proxies to close that gap.
  *
- * [한국어] 관리자 IP 허용 목록입니다. 직접 연결한 주소가 사설/루프백(로컬 리버스 프록시)일 때만 X-Forwarded-For를 읽고,
- * 그중 오른쪽에서 처음 나오는 공인 주소를 클라이언트 주소로 씁니다. 공인 주소에서 직접 연결하면 전달 헤더를 무시합니다.
+ * [한국어] 관리자 IP 허용 목록입니다. 직접 연결한 주소가 신뢰하는 프록시일 때만 X-Forwarded-For를 읽고,
+ * 그중 오른쪽에서 처음 나오는 신뢰하지 않는 주소를 클라이언트 주소로 씁니다. 신뢰 프록시를 지정하지 않으면
+ * 사설/루프백 주소 전체를 신뢰합니다. SECURITY_ADMIN_IP_TRUSTED_PROXIES로 프록시 주소만 지정하면 내부망 위조를 막습니다.
  */
 final class AdminIpAllowlist
 {
@@ -79,7 +80,7 @@ final class AdminIpAllowlist
     public static function clientIp(Request $request): ?string
     {
         $remoteAddress = self::normalize($request->server->get('REMOTE_ADDR'));
-        if ($remoteAddress === null || ! self::isPrivate($remoteAddress)) {
+        if ($remoteAddress === null || ! self::isTrustedProxy($remoteAddress)) {
             return $remoteAddress;
         }
 
@@ -89,14 +90,43 @@ final class AdminIpAllowlist
         }
 
         foreach (array_reverse($forwarded) as $entry) {
-            if (! self::isPrivate($entry)) {
+            if (! self::isTrustedProxy($entry)) {
                 return $entry;
             }
         }
 
-        // Every hop is private (a client on the proxy's own network): the proxy appended the
-        // right-most entry, so that is the peer it actually saw.
+        // Every hop is a trusted proxy (a client on the proxy's own network): the proxy appended
+        // the right-most entry, so that is the peer it actually saw.
         return $forwarded[array_key_last($forwarded)];
+    }
+
+    /**
+     * Whether the address belongs to a proxy whose `X-Forwarded-For` entries are trusted:
+     * one of the configured trusted proxy ranges, or any private address when none are configured.
+     */
+    public static function isTrustedProxy(string $ip): bool
+    {
+        $trustedProxies = self::trustedProxyRanges();
+        if ($trustedProxies === []) {
+            return self::isPrivate($ip);
+        }
+
+        return IpUtils::checkIp($ip, $trustedProxies);
+    }
+
+    /**
+     * Valid ranges of `security.admin_ip.trusted_proxies` (comma, space or newline separated).
+     *
+     * @return array<int, string>
+     */
+    public static function trustedProxyRanges(): array
+    {
+        $configured = config('security.admin_ip.trusted_proxies');
+        if (is_array($configured)) {
+            $configured = implode("\n", $configured);
+        }
+
+        return self::ranges(is_string($configured) ? $configured : null);
     }
 
     /**

@@ -49,6 +49,10 @@ class GetProxyConfiguration
                 $proxy_configuration = $server->proxy->get('last_saved_proxy_configuration');
             }
 
+            if (! empty(trim($proxy_configuration ?? '')) && removeLegacyInsecureProxyExposure($server)) {
+                $proxy_configuration = $server->proxy->get('last_saved_proxy_configuration');
+            }
+
             if (! empty(trim($proxy_configuration ?? '')) && replaceDevHostDockerProxyPaths($server)) {
                 $proxy_configuration = $server->proxy->get('last_saved_proxy_configuration');
             }

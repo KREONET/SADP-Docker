@@ -127,7 +127,7 @@ describe('Traefik proxy compose', function () {
 
         $traefik = Yaml::parse(generateDefaultProxyConfiguration($server))['services']['traefik'];
 
-        expect($traefik['ports'])->toBe(['80:80', '443:443', '443:443/udp'])
+        expect($traefik['ports'])->toBe(['80:80', '443:443'])
             ->and($traefik['command'])->toContain('--api.insecure=false');
     });
 
