@@ -127,6 +127,54 @@ sudo bash scripts/paded-deploy.sh
 
 올리기 전에 **설정 → Backup**에서 인스턴스 백업을 먼저 받아 두세요.
 
+### 다른 브랜치로 바꾸기 (데이터 유지)
+
+```bash
+cd /opt/paded
+git fetch origin
+git checkout <브랜치>
+git pull
+sudo bash scripts/paded-deploy.sh
+```
+
+새 브랜치의 코드로 이미지를 다시 빌드하고, 새 마이그레이션만 추가로 실행됩니다. 데이터베이스는 **되돌려지지 않으므로**, 마이그레이션이 더 적은 예전 브랜치로 돌아가면 오류가 날 수 있습니다. 그럴 때는 아래처럼 아예 새로 설치하세요.
+
+### 브랜치를 바꾸면서 아예 새로 설치하기 (데이터 삭제)
+
+**PADED의 계정, 프로젝트, 설정, 이 서버에 배포한 앱 데이터가 모두 지워지고 되돌릴 수 없습니다.** 필요한 것은 먼저 백업하고, `/data/coolify/source/.env`도 서버 밖에 복사해 두세요.
+
+1. 기존 PADED를 지웁니다.
+
+   ```bash
+   # 프록시와 센티널 컨테이너 삭제 (없으면 그냥 넘어갑니다)
+   sudo docker rm -f coolify-proxy coolify-sentinel 2>/dev/null || true
+
+   # PADED 컨테이너, DB·Redis 볼륨, coolify 네트워크 삭제
+   cd /data/coolify/source
+   sudo docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml down -v --remove-orphans
+
+   # 데이터 폴더(.env, SSH 키, 앱·DB·백업 파일) 삭제
+   cd /
+   sudo rm -rf /data/coolify
+   ```
+
+   이 서버에 배포한 앱 컨테이너가 남아 있으면 `coolify` 네트워크가 지워지지 않습니다. `docker ps -a`로 확인해 지운 뒤 `sudo docker network rm coolify`를 실행하세요.
+
+2. 원하는 브랜치로 바꾼 뒤 처음 설치할 때와 같이 1단계, 2단계를 다시 실행합니다.
+
+   ```bash
+   cd /opt/paded
+   git fetch origin
+   git checkout <브랜치>
+   git pull
+   sudo bash scripts/install.sh
+   sudo bash scripts/paded-deploy.sh
+   ```
+
+   `.env`(DB 비밀번호, APP_KEY)와 SSH 키가 새로 만들어지므로, 예전 백업을 복원하려면 1단계에서 복사해 둔 `.env`의 `APP_KEY`가 필요합니다.
+
+> 새로 설치하면 설치 스크립트가 `~/.ssh/authorized_keys`에 `coolify` 주석이 붙은 키를 추가합니다. 예전 키 줄이 남아 있어도 동작에는 문제없지만, 정리하려면 예전 `coolify` 줄을 지우세요.
+
 <!-- ## Quick start
 
 Install Coolify on a supported server with one command:

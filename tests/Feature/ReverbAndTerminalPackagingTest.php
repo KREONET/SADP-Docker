@@ -111,11 +111,25 @@ it('runs Reverb and terminal websocket services inside the Coolify containers', 
         ->toContain('exec node /terminal/terminal-server.js')
         ->and(file_exists(base_path(dirname($dockerfile)."/etc/s6-overlay/s6-rc.d/reverb/dependencies.d/{$dependencyService}")))->toBeTrue()
         ->and(file_exists(base_path(dirname($dockerfile)."/etc/s6-overlay/s6-rc.d/terminal-server/dependencies.d/{$dependencyService}")))->toBeTrue()
-        ->and(file_exists(base_path(dirname($dockerfile).'/etc/s6-overlay/s6-rc.d/user/contents.d/reverb')))->toBeTrue()
-        ->and(file_exists(base_path(dirname($dockerfile).'/etc/s6-overlay/s6-rc.d/user/contents.d/terminal-server')))->toBeTrue();
+        ->and(file_exists(base_path(dirname($dockerfile).'/etc/s6-overlay/user-bundles.d/user/contents.d/reverb')))->toBeTrue()
+        ->and(file_exists(base_path(dirname($dockerfile).'/etc/s6-overlay/user-bundles.d/user/contents.d/terminal-server')))->toBeTrue();
 })->with([
     'production image' => ['docker/production/Dockerfile', 'init-script'],
     'development image' => ['docker/development/Dockerfile', 'init-setup'],
+]);
+
+it('registers s6 services in user-bundles.d so the non-root container starts with nginx and php-fpm', function (string $s6Directory, array $services) {
+    // s6-overlay 3.2.3+ writes s6-rc.d/user/type at boot (fails as www-data) and then ignores
+    // user-bundles.d, where the serversideup base image registers nginx and php-fpm
+    expect(base_path("{$s6Directory}/s6-rc.d/user"))->not->toBeDirectory();
+
+    foreach ($services as $service) {
+        expect(base_path("{$s6Directory}/user-bundles.d/user/contents.d/{$service}"))->toBeFile()
+            ->and(base_path("{$s6Directory}/s6-rc.d/{$service}"))->toBeDirectory();
+    }
+})->with([
+    'production image' => ['docker/production/etc/s6-overlay', ['db-migration', 'horizon', 'init-script', 'init-seeder', 'reverb', 'scheduler-worker', 'terminal-server']],
+    'development image' => ['docker/development/etc/s6-overlay', ['horizon', 'init-setup', 'reverb', 'scheduler-worker', 'terminal-server']],
 ]);
 
 it('removes the dedicated realtime service from bundled compose files', function (string $composeFile, bool $hasRuntimeEnvironment) {
