@@ -239,6 +239,10 @@
                 <x-callout type="warning" :title="__('Two-factor authentication required')">
                     {{ session('two_factor_required') }}
                 </x-callout>
+            @elseif ($twoFactorDeadline = \App\Http\Middleware\RequireTwoFactor::gracePeriodEndsAt(request()->user()))
+                <x-callout type="warning" :title="__('Two-factor authentication required')">
+                    {{ __('Set up two-factor authentication before :deadline. After that, other pages stay locked until you do.', ['deadline' => $twoFactorDeadline->format('Y-m-d H:i')]) }}
+                </x-callout>
             @endif
             <div class="application-settings-section-header">
                 <div>

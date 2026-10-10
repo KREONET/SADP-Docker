@@ -18,6 +18,7 @@ beforeEach(function () {
     $this->withoutVite();
     InstanceSettings::forceCreate(['id' => 0]);
     Cache::flush();
+    config()->set('security.two_factor.grace_period_hours', 0);
 
     $this->rootTeam = Team::factory()->create(['id' => 0, 'name' => 'Root Team', 'show_boarding' => false]);
     $this->admin = User::factory()->create();
@@ -194,4 +195,49 @@ test('auditors must use 2FA when it is required for admins', function () {
     $this->tenant->forceFill(['is_auditor' => true])->save();
 
     expect(RequireTwoFactor::mustUseTwoFactor($this->tenant->fresh()))->toBeTrue();
+});
+
+test('a new account can skip 2FA until its grace period ends', function () {
+    config()->set('security.two_factor.required_for', 'admins');
+    config()->set('security.two_factor.grace_period_hours', 24);
+    $this->admin->forceFill(['created_at' => now()->subHours(23)])->save();
+
+    expect(RequireTwoFactor::mustUseTwoFactor($this->admin->fresh()))->toBeFalse()
+        ->and(RequireTwoFactor::gracePeriodEndsAt($this->admin->fresh())->equalTo($this->admin->created_at->copy()->addHours(24)))->toBeTrue()
+        ->and(runRequireTwoFactor($this->admin->fresh(), 'GET', '/platform')->getContent())->toBe('passed');
+
+    $this->travel(2)->hours();
+
+    expect(RequireTwoFactor::mustUseTwoFactor($this->admin->fresh()))->toBeTrue()
+        ->and(runRequireTwoFactor($this->admin->fresh(), 'GET', '/platform')->isRedirect(route('profile').'#two-factor'))->toBeTrue();
+});
+
+test('the grace period does not apply to users outside the policy or with 2FA confirmed', function () {
+    config()->set('security.two_factor.required_for', 'admins');
+    config()->set('security.two_factor.grace_period_hours', 24);
+
+    expect(RequireTwoFactor::gracePeriodEndsAt($this->tenant))->toBeNull()
+        ->and(RequireTwoFactor::gracePeriodEndsAt(TwoFactor::confirm($this->admin)->fresh()))->toBeNull();
+});
+
+test('a zero grace period requires 2FA right away', function () {
+    config()->set('security.two_factor.required_for', 'admins');
+    config()->set('security.two_factor.grace_period_hours', 0);
+
+    expect(RequireTwoFactor::mustUseTwoFactor($this->admin))->toBeTrue()
+        ->and(RequireTwoFactor::gracePeriodEndsAt($this->admin))->toBeNull();
+});
+
+test('the profile page shows the 2FA deadline during the grace period', function () {
+    config()->set('security.two_factor.required_for', 'admins');
+    config()->set('security.two_factor.grace_period_hours', 24);
+    $this->admin->forceFill(['name' => 'Root'])->save();
+
+    $this->actingAs($this->admin)
+        ->withSession(['currentTeam' => $this->rootTeam])
+        ->get('/profile')
+        ->assertOk()
+        ->assertSee(__('Set up two-factor authentication before :deadline. After that, other pages stay locked until you do.', [
+            'deadline' => RequireTwoFactor::gracePeriodEndsAt($this->admin)->format('Y-m-d H:i'),
+        ]));
 });

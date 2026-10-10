@@ -45,6 +45,8 @@ return [
     'two_factor' => [
         // none, admins (platform administrators) or all.
         'required_for' => env('SECURITY_REQUIRE_TWO_FACTOR', 'admins'),
+        // Hours after account creation before 2FA is enforced, so a new root can sign in first; 0 enforces it at once.
+        'grace_period_hours' => (int) env('SECURITY_TWO_FACTOR_GRACE_HOURS', 24),
     ],
 
     'accounts' => [

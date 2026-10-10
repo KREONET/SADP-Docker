@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -12,7 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Sends users who must use two-factor authentication to their profile until they confirm it.
  *
  * `security.two_factor.required_for` selects who must: `none`, `admins` (platform administrators)
- * or `all`. Only the pages needed to set up 2FA, sign out or finish another mandatory step stay
+ * or `all`. New accounts get `security.two_factor.grace_period_hours` from creation to set it up
+ * before they are redirected. Only the pages needed to set up 2FA, sign out or finish another mandatory step stay
  * reachable meanwhile. API (Sanctum token) requests are never affected.
  */
 class RequireTwoFactor
@@ -94,15 +96,34 @@ class RequireTwoFactor
     }
 
     /**
-     * Whether the policy requires this user to use 2FA and they have not confirmed it yet.
+     * Whether the policy requires this user to use 2FA now and they have not confirmed it yet.
      */
     public static function mustUseTwoFactor(User $user): bool
     {
-        if (! static::policyAppliesTo($user)) {
+        if (! static::policyAppliesTo($user) || static::hasConfirmedTwoFactor($user)) {
             return false;
         }
 
-        return ! static::hasConfirmedTwoFactor($user);
+        return static::gracePeriodEndsAt($user) === null;
+    }
+
+    /**
+     * When the grace period for setting up 2FA ends, or null when the user is not in one.
+     */
+    public static function gracePeriodEndsAt(User $user): ?Carbon
+    {
+        $hours = (int) config('security.two_factor.grace_period_hours', 0);
+
+        if ($hours <= 0
+            || $user->created_at === null
+            || ! static::policyAppliesTo($user)
+            || static::hasConfirmedTwoFactor($user)) {
+            return null;
+        }
+
+        $endsAt = $user->created_at->copy()->addHours($hours);
+
+        return $endsAt->isFuture() ? $endsAt : null;
     }
 
     /**
