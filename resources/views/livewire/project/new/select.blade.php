@@ -698,7 +698,6 @@
                                     class="block truncate text-[13px] font-semibold text-black dark:text-fg">{{ $swarmDocker->name }}</span>
                                 <span class="block text-[11px] text-neutral-500 dark:text-fg-faint">{{ __('Docker Swarm destination') }}</span>
                             </span>
-                            <x-deprecated-badge />
                         </button>
                     @endforeach
                 @else

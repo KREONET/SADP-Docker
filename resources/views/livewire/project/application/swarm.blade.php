@@ -2,16 +2,8 @@
     <x-unsaved-bar action="submit" />
 
     <x-application.settings-section :title="__('Swarm configuration')"
-        :description="__('Legacy placement and replica settings for Docker Swarm deployments.')">
-        <x-slot:actions>
-            <x-deprecated-badge />
-        </x-slot:actions>
-
-        <x-callout type="warning" :title="__('Deprecated')">
-            {{ config('deprecations.swarm') }}
-        </x-callout>
-
-        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        :description="__('Replicas and node placement for Docker Swarm deployments. Set CPU and memory limits under Resource Limits so Swarm only places replicas on nodes with enough free resources.')">
+        <div class="grid gap-4 lg:grid-cols-2">
             <x-forms.input id="swarmReplicas" :label="__('Replicas')" required canGate="update"
                 :canResource="$application" />
             <x-forms.listbox canGate="update" :canResource="$application" id="isSwarmOnlyWorkerNodes" :label="__('Node placement')" live onChange="instantSave"

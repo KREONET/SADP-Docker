@@ -25,6 +25,8 @@ use App\Notifications\Application\DeploymentFailed;
 use App\Notifications\Application\DeploymentSuccess;
 use App\Services\Platform\SourcePolicy;
 use App\Services\Security\TrivyScanner;
+use App\Services\Swarm\SwarmClusterManager;
+use App\Services\Swarm\SwarmCommands;
 use App\Support\RemoteSecretReferences;
 use App\Support\ValidationPatterns;
 use App\Traits\EnvironmentVariableAnalyzer;
@@ -321,6 +323,7 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
         try {
             SourcePolicy::current()->assertApplicationAllowed($this->application);
             $this->validateDeploymentEnvironmentVariableKeys();
+            $this->useSwarmClusterRegistry();
             $this->ensureRegistryImageForMultipleServers();
             $this->warnAboutVolumesOnMultipleServers();
             $this->warnAboutMixedProxiesOnMultipleServers();
@@ -2203,6 +2206,27 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
      * Additional servers pull the image that the main server pushes. Without a registry image, each
      * server builds its own image, so the servers can run different code.
      */
+    /**
+     * Worker nodes of a PADED Swarm cluster pull images from the registry on the manager. An
+     * application without its own registry image pushes there for this deployment only; the
+     * name is never saved, so moving the application off the cluster leaves no trace of it.
+     */
+    private function useSwarmClusterRegistry(): void
+    {
+        if (! $this->mainServer->isSwarmManager()
+            || (int) $this->mainServer->swarm_cluster !== $this->mainServer->id
+            || str($this->application->docker_registry_image_name)->isNotEmpty()
+            || in_array($this->application->build_pack, ['dockerimage', 'dockercompose'], true)
+            || data_get($this->application, 'settings.is_build_server_enabled')
+            || ! $this->mainServer->canBuildApplications()) {
+            return;
+        }
+
+        $this->application->docker_registry_image_name = SwarmClusterManager::registryImageName($this->application->uuid);
+        $this->application->syncOriginalAttribute('docker_registry_image_name');
+        $this->application_deployment_queue->addLogEntry('Using the Swarm cluster registry ('.SwarmCommands::REGISTRY_ADDRESS.') so every node can pull the image.');
+    }
+
     private function ensureRegistryImageForMultipleServers(): void
     {
         if ($this->pull_request_id !== 0) {
