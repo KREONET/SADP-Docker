@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\DomainPortOverrides;
+use App\Support\SharedServerDomainPolicy;
 use App\Support\ValidationPatterns;
 use App\Traits\HasRestartLimit;
 use App\Traits\ReleasesManagedDnsRecords;
@@ -92,6 +93,7 @@ class ApplicationPreview extends BaseModel
                 $normalized = DomainPortOverrides::normalize($preview->fqdn, $preview->domain_port_overrides);
                 $preview->fqdn = $normalized['fqdn'];
                 $preview->domain_port_overrides = $normalized['overrides'];
+                SharedServerDomainPolicy::assertPreviewAllowed($preview);
             }
         });
     }

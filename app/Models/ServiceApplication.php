@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
+use App\Support\SharedServerDomainPolicy;
 use App\Traits\HasNoindexDomains;
 use App\Traits\HasRestartLimit;
 use App\Traits\ReleasesManagedDnsRecords;
@@ -82,6 +83,7 @@ class ServiceApplication extends BaseModel
             if ($service->isDirty('fqdn')) {
                 $service->normalizeDomainPortOverrides();
                 $service->syncNoindexDomains();
+                SharedServerDomainPolicy::assertServiceApplicationAllowed($service);
             }
         });
     }

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Once;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -229,4 +230,66 @@ it('does not list the team\'s own servers as shared with it', function () {
     session(['currentTeam' => $this->rootTeam]);
 
     expect(Server::sharedWithCurrentTeam()->pluck('id'))->not->toContain($this->sharedServer->id);
+});
+
+describe('domains on a shared server', function () {
+    beforeEach(function () {
+        $this->sharedServer->settings()->update(['wildcard_domain' => 'https://apps.example.com']);
+        $this->sharedServer->refresh();
+        $this->application = sharedTestApplication($this->team, $this->sharedDestination);
+    });
+
+    it('accepts a generated address', function () {
+        $domain = generateUrl(server: $this->sharedServer, random: new_public_id());
+
+        $this->application->update(['fqdn' => $domain]);
+
+        expect($this->application->fresh()->fqdn)->toBe($domain);
+    });
+
+    it('rejects an address the team picked itself', function (string $domain) {
+        expect(fn () => $this->application->update(['fqdn' => $domain]))
+            ->toThrow(ValidationException::class);
+
+        expect($this->application->fresh()->fqdn)->toBeNull();
+    })->with([
+        'other domain' => 'https://evil.example.org',
+        'readable subdomain' => 'https://admin.apps.example.com',
+        'nested subdomain' => 'https://x.'.str_repeat('a', 24).'.apps.example.com',
+    ]);
+
+    it('rejects the address of another team\'s resource', function () {
+        $otherTeam = Team::factory()->create();
+        $otherApplication = sharedTestApplication($otherTeam, $this->sharedDestination);
+        $takenDomain = generateUrl(server: $this->sharedServer, random: new_public_id());
+        $otherApplication->forceFill(['fqdn' => $takenDomain])->saveQuietly();
+
+        expect(fn () => $this->application->update(['fqdn' => $takenDomain]))
+            ->toThrow(ValidationException::class);
+    });
+
+    it('keeps an address the resource already has', function () {
+        $this->application->forceFill(['fqdn' => 'https://legacy.example.org'])->saveQuietly();
+
+        $this->application->update(['fqdn' => 'https://legacy.example.org,'.generateUrl(server: $this->sharedServer, random: new_public_id())]);
+
+        expect($this->application->fresh()->fqdn)->toContain('https://legacy.example.org');
+    });
+
+    it('lets a platform administrator choose any address', function () {
+        $this->actingAs($this->platformAdmin);
+
+        $this->application->update(['fqdn' => 'https://custom.example.org']);
+
+        expect($this->application->fresh()->fqdn)->toBe('https://custom.example.org');
+    });
+
+    it('does not limit addresses on the team\'s own server', function () {
+        $ownServer = sharedTestServer($this->team);
+        $ownApplication = sharedTestApplication($this->team, sharedTestDestination($ownServer));
+
+        $ownApplication->update(['fqdn' => 'https://custom.example.org']);
+
+        expect($ownApplication->fresh()->fqdn)->toBe('https://custom.example.org');
+    });
 });
