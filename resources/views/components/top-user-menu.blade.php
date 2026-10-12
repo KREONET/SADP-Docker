@@ -103,12 +103,27 @@
         <div class="my-1 h-px bg-neutral-200 dark:bg-white/[0.07]"></div>
 
         <livewire:settings-dropdown trigger="account-menu" />
-        <a href="https://coolify.io/docs" target="_blank" rel="noopener noreferrer" class="listbox-option">
-            <span class="flex items-center gap-2">
-                <x-reicon name="documentation" class="size-4 opacity-80" />
-                {{ __('Documentation') }}
-            </span>
-        </a>
+        {{-- Our own documentation is not finished yet, so say so before sending users to the Coolify docs. --}}
+        <x-modal-input :title="__('Documentation')">
+            <x-slot:content>
+                <div class="listbox-option cursor-pointer" @click="closePanel()">
+                    <span class="flex items-center gap-2">
+                        <x-reicon name="documentation" class="size-4 opacity-80" />
+                        {{ __('Documentation') }}
+                    </span>
+                </div>
+            </x-slot:content>
+            <div class="flex flex-col gap-4">
+                <p class="text-sm text-neutral-600 dark:text-fg-dim">
+                    {{ __('The :brand documentation is not finished yet, so the Coolify documentation opens instead. Features added in :brand may work differently or be missing there.', ['brand' => brand_name()]) }}
+                </p>
+                <div class="flex justify-end gap-2">
+                    <x-forms.button @click="modalOpen = false">{{ __('Cancel') }}</x-forms.button>
+                    <a href="https://coolify.io/docs" target="_blank" rel="noopener noreferrer" class="button"
+                        @click="modalOpen = false">{{ __('Open Coolify Docs') }}</a>
+                </div>
+            </div>
+        </x-modal-input>
         <a href="{{ route('open-source-licenses') }}" {{ wireNavigate() }} class="listbox-option">
             <span class="flex items-center gap-2">
                 <x-reicon name="file-content" class="size-4 opacity-80" />
