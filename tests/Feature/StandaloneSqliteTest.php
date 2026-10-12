@@ -74,7 +74,7 @@ it('generates a compose file that passes the database files to the image', funct
     expect($service)->not->toHaveKey('command')
         ->and($service['environment'])->toBe(['SQLITE_DATABASES=app.db,jobs.db'])
         ->and($service['healthcheck']['test'])->toBe(['CMD', 'healthcheck.sh'])
-        ->and($service['volumes'])->toBe(['sqlite-data-'.$this->database->uuid.':/var/lib/sqlite']);
+        ->and($service['volumes'])->toBe([$this->database->persistentStorages()->value('name').':/var/lib/sqlite']);
 });
 
 it('restores a gzipped backup with .restore into the first database file', function () {

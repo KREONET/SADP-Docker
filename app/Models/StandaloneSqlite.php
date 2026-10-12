@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PersistentVolumeName;
 use App\Traits\Auditable;
 use App\Traits\ClearsGlobalSearchCache;
 use App\Traits\HasDatabaseHealthCheck;
@@ -72,7 +73,7 @@ class StandaloneSqlite extends BaseModel
     {
         static::created(function ($database) {
             LocalPersistentVolume::create([
-                'name' => 'sqlite-data-'.$database->uuid,
+                'name' => PersistentVolumeName::generate($database->environment?->project, 'sqlite-data'),
                 'mount_path' => self::DATA_DIRECTORY,
                 'host_path' => null,
                 'resource_id' => $database->id,

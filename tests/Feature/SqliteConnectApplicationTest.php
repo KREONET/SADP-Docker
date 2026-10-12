@@ -83,9 +83,17 @@ function createSqliteConnectApplication(Environment $environment, StandaloneDock
     ]);
 }
 
+/**
+ * The Docker volume that holds the data of the SQLite database.
+ */
+function sqliteDataVolume(StandaloneSqlite $sqlite): string
+{
+    return $sqlite->persistentStorages()->whereNull('host_path')->orderBy('id')->value('name');
+}
+
 function sqliteVolumeCompose(StandaloneSqlite $sqlite, string $declaration = 'external: true'): string
 {
-    $volume = 'sqlite-data-'.$sqlite->uuid;
+    $volume = sqliteDataVolume($sqlite);
 
     return "services:\n  web:\n    image: nginx:alpine\n    volumes:\n      - '{$volume}:/app/database'\nvolumes:\n  {$volume}:\n    {$declaration}\n";
 }
@@ -104,7 +112,7 @@ it('mounts the data volume into the selected application and redirects to its st
 
     $volume = $this->application->persistentStorages()->sole();
 
-    expect($volume->name)->toBe('sqlite-data-'.$this->sqlite->uuid)
+    expect($volume->name)->toBe(sqliteDataVolume($this->sqlite))
         ->and($volume->mount_path)->toBe('/app/database')
         ->and($volume->is_preview_suffix_enabled)->toBeFalse()
         ->and($volume->standalone_sqlite_id)->toBe($this->sqlite->id)
@@ -113,7 +121,7 @@ it('mounts the data volume into the selected application and redirects to its st
 
 it('shows the compose lines for compose applications instead of adding a storage entry', function () {
     $compose = createSqliteConnectApplication($this->environment, $this->destination, 'Compose App', 'dockercompose', "services:\n  api:\n    image: nginx:alpine\n");
-    $volume = 'sqlite-data-'.$this->sqlite->uuid;
+    $volume = sqliteDataVolume($this->sqlite);
 
     $component = Livewire::test(ConnectApplication::class, ['database' => $this->sqlite])
         ->assertSet('applicationOptions', fn (array $options) => str_ends_with(collect($options)->firstWhere('value', $compose->uuid)['label'], '· Docker Compose'))
@@ -222,7 +230,7 @@ it('keeps a docker volume shared with another resource when the application volu
     Process::fake();
 
     LocalPersistentVolume::create([
-        'name' => 'sqlite-data-'.$this->sqlite->uuid,
+        'name' => sqliteDataVolume($this->sqlite),
         'mount_path' => StandaloneSqlite::DATA_DIRECTORY,
         'host_path' => null,
         'standalone_sqlite_id' => $this->sqlite->id,
@@ -241,13 +249,13 @@ it('keeps a docker volume shared with another resource when the application volu
     $this->application->deleteVolumes();
 
     Process::assertRan(fn ($process) => str_contains($process->command, 'docker volume rm -f '.escapeshellarg($this->application->uuid.'-data')));
-    Process::assertNotRan(fn ($process) => str_contains($process->command, 'sqlite-data-'.$this->sqlite->uuid));
+    Process::assertNotRan(fn ($process) => str_contains($process->command, sqliteDataVolume($this->sqlite)));
 });
 
 function connectSqliteVolume(Application $application, StandaloneSqlite $sqlite): LocalPersistentVolume
 {
     return LocalPersistentVolume::create([
-        'name' => 'sqlite-data-'.$sqlite->uuid,
+        'name' => sqliteDataVolume($sqlite),
         'mount_path' => StandaloneSqlite::DATA_DIRECTORY,
         'host_path' => null,
         'standalone_sqlite_id' => $sqlite->id,

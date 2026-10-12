@@ -56,8 +56,46 @@
         </div>
     @else
         @if ($showWaiting)
-            <div class="flex justify-start">
-                <x-loading :text="__('Waiting for the process to start...')" />
+            {{-- No Activity row exists yet, so there is no real percentage: show an
+                 indeterminate bar plus elapsed time. Resets when the dialog closes. --}}
+            <div data-activity-waiting class="flex w-full max-w-md flex-col gap-2"
+                x-data="{
+                    startedAt: Date.now(),
+                    elapsed: 0,
+                    timer: null,
+                    init() {
+                        this.timer = setInterval(() => {
+                            this.elapsed = Math.floor((Date.now() - this.startedAt) / 1000);
+                        }, 1000);
+                    },
+                    destroy() {
+                        clearInterval(this.timer);
+                    },
+                    reset() {
+                        this.startedAt = Date.now();
+                        this.elapsed = 0;
+                    },
+                    get elapsedLabel() {
+                        const minutes = Math.floor(this.elapsed / 60);
+                        const seconds = this.elapsed % 60;
+                        return minutes > 0 ? `${minutes}m ${String(seconds).padStart(2, '0')}s` : `${seconds}s`;
+                    },
+                }"
+                x-on:process-dialog-closed.camel.window="reset()">
+                <div class="flex items-center justify-between gap-3">
+                    <x-loading :text="__('Waiting for the process to start...')" />
+                    <span class="shrink-0 text-[12px] tabular-nums text-neutral-500 dark:text-fg-faint"
+                        x-text="elapsedLabel"></span>
+                </div>
+                <div class="h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-white/[0.08]" role="progressbar"
+                    aria-label="{{ __('Waiting for the process to start...') }}">
+                    <div
+                        class="h-full w-1/3 rounded-full bg-coollabs animate-progress-indeterminate motion-reduce:w-full motion-reduce:animate-pulse dark:bg-warning">
+                    </div>
+                </div>
+                <p x-cloak x-show="elapsed >= 30" class="text-[12px] leading-5 text-neutral-500 dark:text-fg-faint">
+                    {{ __('This is taking longer than usual. The server may still be preparing the task.') }}
+                </p>
             </div>
         @endif
     @endif

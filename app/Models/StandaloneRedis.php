@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PersistentVolumeName;
 use App\Traits\Auditable;
 use App\Traits\ClearsGlobalSearchCache;
 use App\Traits\HasDatabaseHealthCheck;
@@ -84,7 +85,7 @@ class StandaloneRedis extends BaseModel
     {
         static::created(function ($database) {
             LocalPersistentVolume::create([
-                'name' => 'redis-data-'.$database->uuid,
+                'name' => PersistentVolumeName::generate($database->environment?->project, 'redis-data'),
                 'mount_path' => '/data',
                 'host_path' => null,
                 'resource_id' => $database->id,
@@ -332,7 +333,7 @@ class StandaloneRedis extends BaseModel
         return new Attribute(
             get: function () {
                 if ($this->is_public && $this->public_port) {
-                    $serverIp = $this->destination->server->getIp;
+                    $serverIp = publicDatabaseHost($this->destination->server, $this->uuid);
                     if (empty($serverIp)) {
                         return null;
                     }

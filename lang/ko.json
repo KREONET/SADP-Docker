@@ -4689,6 +4689,7 @@
     "This IP is taken from the destination server.": "이 IP는 대상 서버에서 가져옵니다.",
     "This is a secure area. Please confirm your password before continuing.": "보안 영역입니다. 계속하기 전에 비밀번호를 확인하세요.",
     "This is the localhost server where Coolify runs. During proxy restart, the connection may be temporarily lost. If logs stop updating, please refresh the browser after a few minutes.": "Coolify가 실행 중인 localhost 서버입니다. 프록시를 재시작하는 동안 연결이 잠시 끊길 수 있습니다. 로그가 더 이상 갱신되지 않으면 몇 분 후 브라우저를 새로고침하세요.",
+    "This is taking longer than usual. The server may still be preparing the task.": "평소보다 오래 걸리고 있습니다. 서버가 아직 작업을 준비하는 중일 수 있습니다.",
     "This key is added to the Droplet automatically.": "이 키는 Droplet에 자동으로 추가됩니다.",
     "This key is added to the Hetzner server automatically.": "이 키는 Hetzner 서버에 자동으로 추가됩니다.",
     "This key is added to the Vultr server automatically.": "이 키는 Vultr 서버에 자동으로 추가됩니다.",

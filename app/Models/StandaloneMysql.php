@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PersistentVolumeName;
 use App\Traits\Auditable;
 use App\Traits\ClearsGlobalSearchCache;
 use App\Traits\HasDatabaseHealthCheck;
@@ -90,7 +91,7 @@ class StandaloneMysql extends BaseModel
     {
         static::created(function ($database) {
             LocalPersistentVolume::create([
-                'name' => 'mysql-data-'.$database->uuid,
+                'name' => PersistentVolumeName::generate($database->environment?->project, 'mysql-data'),
                 'mount_path' => '/var/lib/mysql',
                 'host_path' => null,
                 'resource_id' => $database->id,
@@ -331,7 +332,7 @@ class StandaloneMysql extends BaseModel
         return new Attribute(
             get: function () {
                 if ($this->is_public && $this->public_port) {
-                    $serverIp = $this->destination->server->getIp;
+                    $serverIp = publicDatabaseHost($this->destination->server, $this->uuid);
                     if (empty($serverIp)) {
                         return null;
                     }

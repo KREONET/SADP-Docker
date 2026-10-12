@@ -20,6 +20,7 @@ use App\Models\StandaloneMysql;
 use App\Models\StandalonePostgresql;
 use App\Models\StandaloneRedis;
 use App\Models\StandaloneSqlite;
+use App\Support\PersistentVolumeName;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -165,6 +166,8 @@ class ResourceOperations extends Component
                         $newName = 'dragonfly-data-'.$new_resource->uuid;
                     } elseif (str_starts_with($originalName, 'sqlite-data-')) {
                         $newName = 'sqlite-data-'.$new_resource->uuid;
+                    } elseif (PersistentVolumeName::isGenerated($originalName)) {
+                        $newName = PersistentVolumeName::regenerate($originalName, $new_resource->environment?->project);
                     } else {
                         if (str_starts_with($volume->name, $this->resource->uuid)) {
                             $newName = str($volume->name)->replace($this->resource->uuid, $new_resource->uuid);
@@ -299,6 +302,7 @@ class ResourceOperations extends Component
                     $newEnvironmentVariable->save();
                 }
 
+                $clonedVolumeNames = [];
                 foreach ($new_resource->applications() as $application) {
                     $application->fill([
                         'status' => 'exited',
@@ -307,7 +311,10 @@ class ResourceOperations extends Component
                     $persistentVolumes = $application->persistentStorages()->get();
                     foreach ($persistentVolumes as $volume) {
                         $newName = '';
-                        if (str_starts_with($volume->name, $volume->resource->uuid)) {
+                        if (PersistentVolumeName::isGenerated($volume->name)) {
+                            // Containers that shared a volume keep sharing its copy.
+                            $newName = $clonedVolumeNames[$volume->name] ??= PersistentVolumeName::regenerate($volume->name, $new_resource->environment?->project);
+                        } elseif (str_starts_with($volume->name, $volume->resource->uuid)) {
                             $newName = str($volume->name)->replace($volume->resource->uuid, $application->uuid);
                         } else {
                             $newName = $application->uuid.'-'.str($volume->name)->afterLast('-');
@@ -350,7 +357,10 @@ class ResourceOperations extends Component
                     $persistentVolumes = $database->persistentStorages()->get();
                     foreach ($persistentVolumes as $volume) {
                         $newName = '';
-                        if (str_starts_with($volume->name, $volume->resource->uuid)) {
+                        if (PersistentVolumeName::isGenerated($volume->name)) {
+                            // Containers that shared a volume keep sharing its copy.
+                            $newName = $clonedVolumeNames[$volume->name] ??= PersistentVolumeName::regenerate($volume->name, $new_resource->environment?->project);
+                        } elseif (str_starts_with($volume->name, $volume->resource->uuid)) {
                             $newName = str($volume->name)->replace($volume->resource->uuid, $database->uuid);
                         } else {
                             $newName = $database->uuid.'-'.str($volume->name)->afterLast('-');

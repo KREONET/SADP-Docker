@@ -1479,6 +1479,23 @@ function generateFqdn(Server $server, string $random, bool $forceHttps = false, 
 
     return "$scheme://{$random}.$host$path";
 }
+/**
+ * The domain that a public database is reached at: "{uuid}.{wildcard domain}", or "{uuid}.{ip}.sslip.io" when the
+ * server has no wildcard domain. Both resolve to the server, which publishes the public port. A server added by
+ * hostname is reached at that hostname.
+ */
+function publicDatabaseHost(Server $server, string $uuid): ?string
+{
+    $hasWildcard = filled(data_get($server, 'settings.wildcard_domain'));
+    if (! $hasWildcard && filled($server->ip) && $server->ip !== 'host.docker.internal' && filter_var($server->ip, FILTER_VALIDATE_IP) === false) {
+        return strtolower($server->ip);
+    }
+
+    $host = parse_url(generateUrl(server: $server, random: $uuid), PHP_URL_HOST);
+
+    return is_string($host) && $host !== '' ? $host : null;
+}
+
 function sslip(Server $server)
 {
     if (isDev() && $server->id === 0) {

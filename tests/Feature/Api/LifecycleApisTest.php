@@ -17,6 +17,7 @@ use App\Models\StandalonePostgresql;
 use App\Models\Team;
 use App\Models\User;
 use App\Notifications\Database\BackupMissing;
+use App\Support\PersistentVolumeName;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Queue;
@@ -208,7 +209,7 @@ describe('POST /api/v1/databases/{uuid}/clone', function () {
         $cloned = StandalonePostgresql::where('uuid', $response->json('uuid'))->firstOrFail();
         expect($cloned->persistentStorages()->count())->toBe($sourceVolumeCount)
             ->and($cloned->persistentStorages()->first()->name)->not->toBe($database->persistentStorages()->first()->name)
-            ->and($cloned->persistentStorages()->first()->name)->toContain($cloned->uuid);
+            ->and(PersistentVolumeName::isGenerated($cloned->persistentStorages()->first()->name))->toBeTrue();
     });
 
     test('returns 404 for another team database', function () {

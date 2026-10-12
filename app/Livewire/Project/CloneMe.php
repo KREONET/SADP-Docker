@@ -10,6 +10,7 @@ use App\Jobs\VolumeCloneJob;
 use App\Models\Environment;
 use App\Models\Project;
 use App\Models\Server;
+use App\Support\PersistentVolumeName;
 use App\Support\ValidationPatterns;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -192,6 +193,8 @@ class CloneMe extends Component
                         $newName = 'dragonfly-data-'.$newDatabase->uuid;
                     } elseif (str_starts_with($originalName, 'sqlite-data-')) {
                         $newName = 'sqlite-data-'.$newDatabase->uuid;
+                    } elseif (PersistentVolumeName::isGenerated($originalName)) {
+                        $newName = PersistentVolumeName::regenerate($originalName, $newDatabase->environment?->project);
                     } else {
                         if (str_starts_with($volume->name, $database->uuid)) {
                             $newName = str($volume->name)->replace($database->uuid, $newDatabase->uuid);
@@ -317,6 +320,7 @@ class CloneMe extends Component
                     $newEnvironmentVariable->save();
                 }
 
+                $clonedVolumeNames = [];
                 foreach ($newService->applications() as $application) {
                     $application->fill([
                         'status' => 'exited',
@@ -325,7 +329,10 @@ class CloneMe extends Component
                     $persistentVolumes = $application->persistentStorages()->get();
                     foreach ($persistentVolumes as $volume) {
                         $newName = '';
-                        if (str_starts_with($volume->name, $application->uuid)) {
+                        if (PersistentVolumeName::isGenerated($volume->name)) {
+                            // Containers that shared a volume keep sharing its copy.
+                            $newName = $clonedVolumeNames[$volume->name] ??= PersistentVolumeName::regenerate($volume->name, $newService->environment?->project);
+                        } elseif (str_starts_with($volume->name, $application->uuid)) {
                             $newName = str($volume->name)->replace($application->uuid, $application->uuid);
                         } else {
                             $newName = $application->uuid.'-'.$volume->name;
@@ -380,7 +387,10 @@ class CloneMe extends Component
                     $persistentVolumes = $database->persistentStorages()->get();
                     foreach ($persistentVolumes as $volume) {
                         $newName = '';
-                        if (str_starts_with($volume->name, $database->uuid)) {
+                        if (PersistentVolumeName::isGenerated($volume->name)) {
+                            // Containers that shared a volume keep sharing its copy.
+                            $newName = $clonedVolumeNames[$volume->name] ??= PersistentVolumeName::regenerate($volume->name, $newService->environment?->project);
+                        } elseif (str_starts_with($volume->name, $database->uuid)) {
                             $newName = str($volume->name)->replace($database->uuid, $database->uuid);
                         } else {
                             $newName = $database->uuid.'-'.$volume->name;

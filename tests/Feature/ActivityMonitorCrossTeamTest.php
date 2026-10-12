@@ -150,3 +150,33 @@ test('closing a process dialog clears the previous activity logs', function () {
         ->assertSet('activity', null)
         ->assertSet('isPollingActive', false);
 });
+
+test('waiting state shows an indeterminate progress bar with elapsed time', function () {
+    $this->actingAs($this->user);
+    session(['currentTeam' => ['id' => $this->team->id]]);
+
+    Livewire::test(ActivityMonitor::class)
+        ->assertSeeHtml('data-activity-waiting')
+        ->assertSeeHtml('role="progressbar"')
+        ->assertSeeHtml('animate-progress-indeterminate')
+        ->assertSeeHtml('x-text="elapsedLabel"')
+        ->assertSeeHtml('x-on:process-dialog-closed.camel.window="reset()"');
+});
+
+test('waiting progress is hidden when showWaiting is disabled or an activity is running', function () {
+    $activity = Activity::create([
+        'log_name' => 'default',
+        'description' => 'test activity',
+        'properties' => ['team_id' => $this->team->id],
+    ]);
+
+    $this->actingAs($this->user);
+    session(['currentTeam' => ['id' => $this->team->id]]);
+
+    Livewire::test(ActivityMonitor::class, ['showWaiting' => false])
+        ->assertDontSeeHtml('data-activity-waiting');
+
+    Livewire::test(ActivityMonitor::class)
+        ->call('newMonitorActivity', $activity->id)
+        ->assertDontSeeHtml('data-activity-waiting');
+});

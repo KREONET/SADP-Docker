@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PersistentVolumeName;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -205,8 +206,12 @@ class LocalPersistentVolume extends BaseModel
                     }
                     $resourceUuid = $resource instanceof Application ? $resource->uuid : data_get($resource, 'service.uuid');
                     $generatedName = $source ? $resourceUuid.'_'.Str::slug($source, '-') : null;
+                    // New resources get "{nickname}-{random}-{project}_{volume}" (see PersistentVolumeName).
+                    $isGeneratedForSource = $source
+                        && PersistentVolumeName::isGenerated($this->name)
+                        && Str::afterLast($this->name, '_') === PersistentVolumeName::purposeSlug((string) $source);
 
-                    if ($generatedName === $this->name && $target && str($target)->start('/')->value() === $this->mount_path) {
+                    if (($generatedName === $this->name || $isGeneratedForSource) && $target && str($target)->start('/')->value() === $this->mount_path) {
                         return true;
                     }
                 }

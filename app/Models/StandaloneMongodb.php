@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PersistentVolumeName;
 use App\Traits\Auditable;
 use App\Traits\ClearsGlobalSearchCache;
 use App\Traits\HasDatabaseHealthCheck;
@@ -86,14 +87,14 @@ class StandaloneMongodb extends BaseModel
     {
         static::created(function ($database) {
             LocalPersistentVolume::create([
-                'name' => 'mongodb-configdb-'.$database->uuid,
+                'name' => PersistentVolumeName::generate($database->environment?->project, 'mongodb-configdb'),
                 'mount_path' => '/data/configdb',
                 'host_path' => null,
                 'resource_id' => $database->id,
                 'resource_type' => $database->getMorphClass(),
             ]);
             LocalPersistentVolume::create([
-                'name' => 'mongodb-db-'.$database->uuid,
+                'name' => PersistentVolumeName::generate($database->environment?->project, 'mongodb-db'),
                 'mount_path' => '/data/db',
                 'host_path' => null,
                 'resource_id' => $database->id,
@@ -350,7 +351,7 @@ class StandaloneMongodb extends BaseModel
         return new Attribute(
             get: function () {
                 if ($this->is_public && $this->public_port) {
-                    $serverIp = $this->destination->server->getIp;
+                    $serverIp = publicDatabaseHost($this->destination->server, $this->uuid);
                     if (empty($serverIp)) {
                         return null;
                     }

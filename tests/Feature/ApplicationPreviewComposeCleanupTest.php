@@ -130,7 +130,7 @@ it('removes only the network and volumes that Coolify generated for the preview'
     $resourceCommands = implode("\n", dockerResourceCommands($commands));
 
     expect($resourceCommands)
-        ->toContain("sudo docker volume rm -f '{$this->uuid}_app-data-pr-42'")
+        ->toMatch("/sudo docker volume rm -f '[a-z0-9-]+-[a-z0-9]{8}-[a-z0-9-]+_app-data-pr-42'/")
         ->not->toContain('shared-data-pr-42')
         ->toContain("sudo docker network disconnect '{$this->previewNetwork}' coolify-proxy")
         ->toContain("sudo docker network rm '{$this->previewNetwork}'")
@@ -175,7 +175,7 @@ it('does not run network commands when the preview network does not exist', func
     expect($resourceCommands)
         ->not->toContain('docker network disconnect')
         ->not->toContain('docker network rm')
-        ->toContain("docker volume rm -f '{$this->uuid}_app-data-pr-42'");
+        ->toMatch("/docker volume rm -f '[a-z0-9-]+-[a-z0-9]{8}-[a-z0-9-]+_app-data-pr-42'/");
 });
 
 it('keeps the destination network when it has the generated preview name pattern', function () {
@@ -229,7 +229,7 @@ it('removes the preview containers, network, and volumes through the delete job 
         ->and($networkRemoval)->not->toBeFalse()
         ->and($containerRemoval)->toBeLessThan($networkRemoval)
         ->and($all)->not->toContain("docker rm -f 'web-{$this->uuid}'")
-        ->and($all)->toContain("docker volume rm -f '{$this->uuid}_app-data-pr-42'")
+        ->and($all)->toMatch("/docker volume rm -f '[a-z0-9-]+-[a-z0-9]{8}-[a-z0-9-]+_app-data-pr-42'/")
         ->and(implode("\n", dockerResourceCommands($commands)))
         ->not->toContain("'coolify'")
         ->not->toContain("'shared-proxy'")

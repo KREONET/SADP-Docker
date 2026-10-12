@@ -9,6 +9,7 @@ use App\Models\LocalPersistentVolume;
 use App\Models\Service;
 use App\Models\ServiceApplication;
 use App\Models\ServiceDatabase;
+use App\Support\PersistentVolumeName;
 use App\Support\ValidationPatterns;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -1421,7 +1422,8 @@ function applicationParser(Application $resource, int $pull_request_id = 0, ?int
                         }
                     }
                     $slugWithoutUuid = Str::slug($source, '-');
-                    $name = "{$uuid}_{$slugWithoutUuid}";
+                    $name = PersistentVolumeName::findComposeVolume($resource->persistentStorages()->pluck('name'), $slugWithoutUuid, $uuid)
+                        ?? PersistentVolumeName::generate($resource->environment?->project, $slugWithoutUuid);
 
                     if ($isPullRequest) {
                         $name = addPreviewDeploymentSuffix($name, $pull_request_id);
@@ -2777,7 +2779,15 @@ function serviceParser(Service $resource): Collection
                         }
                     }
                     $slugWithoutUuid = Str::slug($source, '-');
-                    $name = "{$uuid}_{$slugWithoutUuid}";
+                    // Containers of one service that mount the same Compose volume share it, so look in all of them.
+                    $serviceVolumeNames = LocalPersistentVolume::query()
+                        ->where(fn ($query) => $query
+                            ->where(fn ($query) => $query->where('resource_type', ServiceApplication::class)->whereIn('resource_id', $resource->applications()->pluck('id')))
+                            ->orWhere(fn ($query) => $query->where('resource_type', ServiceDatabase::class)->whereIn('resource_id', $resource->databases()->pluck('id'))))
+                        ->orderBy('id')
+                        ->pluck('name');
+                    $name = PersistentVolumeName::findComposeVolume($serviceVolumeNames, $slugWithoutUuid, $uuid)
+                        ?? PersistentVolumeName::generate($resource->environment?->project, $slugWithoutUuid);
 
                     if (is_string($volume)) {
                         $parsed = parseDockerVolumeString($volume);

@@ -58,6 +58,13 @@ class SslHelper
                             array_merge($subjectAlternativeNames, ["$type:$ip"])
                         );
                     }
+                    // Public databases are reached by domain (see publicDatabaseHost()); the common name is their uuid.
+                    $publicHost = $resourceType !== null ? publicDatabaseHost($server, $commonName) : null;
+                    if ($publicHost) {
+                        $subjectAlternativeNames = array_unique(
+                            array_merge($subjectAlternativeNames, ["DNS:$publicHost"])
+                        );
+                    }
                 }
             }
 
