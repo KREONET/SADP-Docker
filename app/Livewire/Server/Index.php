@@ -10,9 +10,12 @@ class Index extends Component
 {
     public ?Collection $servers = null;
 
+    public ?Collection $sharedServers = null;
+
     public function mount()
     {
         $this->servers = Server::ownedByCurrentTeamCached();
+        $this->sharedServers = Server::sharedWithCurrentTeam()->get();
     }
 
     public function render()

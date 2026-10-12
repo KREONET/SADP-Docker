@@ -155,6 +155,12 @@ class Server extends BaseModel
 
     protected static function booted()
     {
+        // Servers of the root team are shared with every team unless a platform administrator turns sharing off.
+        static::creating(function (Server $server) {
+            if ($server->getAttribute('is_shared') === null) {
+                $server->is_shared = (int) $server->team_id === 0;
+            }
+        });
         static::saving(function ($server) {
             $payload = [];
             if ($server->user) {
@@ -550,6 +556,17 @@ class Server extends BaseModel
         return Server::where(fn (Builder $query) => $query->whereTeamId($teamId)->orWhere('is_shared', true))
             ->with('settings', 'swarmDockers', 'standaloneDockers')
             ->select($selectArray->all())
+            ->orderBy('name');
+    }
+
+    /**
+     * Servers other teams shared with the current team. The current team may deploy to them but not manage them.
+     */
+    public static function sharedWithCurrentTeam(): Builder
+    {
+        return Server::where('is_shared', true)
+            ->where('team_id', '!=', currentTeam()->id)
+            ->with('settings')
             ->orderBy('name');
     }
 
