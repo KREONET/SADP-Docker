@@ -148,7 +148,21 @@ class ApplicationDeploymentQueue extends Model
             ->whereIn('server_id', Server::whereTeamId($teamId)->select('id'))
             ->orWhere(fn (Builder $query) => $query
                 ->whereIn('server_id', Server::where('is_shared', true)->select('id'))
-                ->whereHas('application', fn (Builder $query) => $query->whereRelation('environment.project', 'team_id', $teamId))));
+                ->whereIn('application_id', self::applicationIdsOfTeam($teamId))));
+    }
+
+    /**
+     * application_id is a string column, so comparing it with applications.id (bigint) in SQL breaks on
+     * PostgreSQL. Match the team's application IDs as strings instead.
+     *
+     * @return list<string>
+     */
+    private static function applicationIdsOfTeam(int $teamId): array
+    {
+        return Application::ownedByCurrentTeamAPI($teamId)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
     }
 
     public function application()
