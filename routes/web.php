@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BrandingLogoController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\InitialPasswordController;
 use App\Http\Controllers\OauthController;
 use App\Http\Controllers\ProfileAvatarController;
 use App\Http\Controllers\ProjectIconController;
@@ -194,6 +195,8 @@ if (app()->environment(['local', 'testing'])) {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['throttle:force-password-reset'])->group(function () {
         Route::get('/force-password-reset', ForcePasswordReset::class)->name('auth.force-password-reset');
+        // SSO users set their first password on the password confirmation page (before enabling 2FA).
+        Route::post('/user/initial-password', [InitialPasswordController::class, 'store'])->name('password.initial.store');
     });
 
     Route::get('/', Dashboard::class)->name('dashboard');

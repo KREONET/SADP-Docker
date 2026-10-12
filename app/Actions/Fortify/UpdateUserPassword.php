@@ -24,8 +24,9 @@ class UpdateUserPassword implements UpdatesUserPasswords
             'current_password.current_password' => __('The provided password does not match your current password.'),
         ])->validateWithBag('updatePassword');
 
-        $user->fill([
+        $user->forceFill([
             'password' => Hash::make($input['password']),
+            'local_password_set_at' => now(),
         ])->save();
         auditLog('ui.user.password_changed', [
             'team_id' => $user->currentTeam()?->id,

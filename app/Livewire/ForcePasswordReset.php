@@ -47,9 +47,10 @@ class ForcePasswordReset extends Component
         try {
             $this->rateLimit(10);
             $this->validate();
-            auth()->user()->fill([
+            auth()->user()->forceFill([
                 'password' => Hash::make($this->password),
                 'force_password_reset' => false,
+                'local_password_set_at' => now(),
             ])->save();
 
             return redirect()->route('dashboard');

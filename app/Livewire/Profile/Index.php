@@ -354,9 +354,10 @@ class Index extends Component
 
                 return;
             }
-            auth()->user()->update([
+            auth()->user()->forceFill([
                 'password' => Hash::make($this->new_password),
-            ]);
+                'local_password_set_at' => now(),
+            ])->save();
             auditLog('ui.user.password_changed', $this->auditContext());
             $this->dispatch('success', __('Password updated.'));
             $this->current_password = '';

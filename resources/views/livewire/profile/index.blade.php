@@ -232,6 +232,11 @@
         </form>
 
         <section class="application-settings-section">
+            @if (session('status') === 'initial-password-set')
+                <x-callout type="success" :title="__('Password set')">
+                    {{ __('Your password is set. Select Configure 2FA again to continue the setup.') }}
+                </x-callout>
+            @endif
             <div class="application-settings-section-header">
                 <div>
                     <h2>{{ __('Two-factor authentication') }}</h2>

@@ -5463,5 +5463,11 @@
     "Administrators manage every team, the instance settings, the security settings and the platform roles. The user joins the root team as admin.": "관리자는 모든 팀, 인스턴스 설정, 보안 설정, 플랫폼 권한을 관리합니다. 사용자는 루트 팀에 admin으로 추가됩니다.",
     "Sub-administrators operate teams and applications. They cannot change platform roles, instance settings or security settings.": "부관리자는 팀과 애플리케이션을 운영합니다. 플랫폼 권한, 인스턴스 설정, 보안 설정은 변경할 수 없습니다.",
     "The user loses platform admin access. Team roles outside the root team do not change.": "플랫폼 관리 접근 권한이 사라집니다. 루트 팀 외의 팀 역할은 바뀌지 않습니다.",
-    "Administrators manage the whole platform, its settings and the platform roles. Sub-administrators operate teams and applications but cannot change roles or settings. Users have no platform admin access.": "관리자는 플랫폼 전체와 설정, 플랫폼 권한을 관리합니다. 부관리자는 팀과 애플리케이션을 운영하지만 권한과 설정은 변경할 수 없습니다. 유저는 플랫폼 관리에 접근할 수 없습니다."
+    "Administrators manage the whole platform, its settings and the platform roles. Sub-administrators operate teams and applications but cannot change roles or settings. Users have no platform admin access.": "관리자는 플랫폼 전체와 설정, 플랫폼 권한을 관리합니다. 부관리자는 팀과 애플리케이션을 운영하지만 권한과 설정은 변경할 수 없습니다. 유저는 플랫폼 관리에 접근할 수 없습니다.",
+    "Set a password for your account to continue to this secure area.": "보안 영역으로 계속하려면 계정 비밀번호를 설정하세요.",
+    "You signed in with SSO, so your account has no password you know yet. Set one to continue. With SSO-only login enabled, the password is used only to confirm sensitive actions such as two-factor setup.": "SSO로 로그인하셨기 때문에 아직 알고 계신 비밀번호가 없습니다. 계속하려면 비밀번호를 설정하세요. SSO 전용 로그인이 켜져 있으면 이 비밀번호는 2단계 인증 설정 같은 민감한 작업의 확인에만 사용됩니다.",
+    "Set password and continue": "비밀번호 설정 후 계속",
+    "I already know my password": "이미 비밀번호를 알고 있습니다",
+    "Password set": "비밀번호 설정 완료",
+    "Your password is set. Select Configure 2FA again to continue the setup.": "비밀번호가 설정되었습니다. '2FA 구성'을 다시 눌러 설정을 계속하세요."
 }
