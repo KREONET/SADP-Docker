@@ -66,7 +66,7 @@ class Destination extends Component
     {
         try {
             $this->authorize('deploy', $this->resource);
-            $server = Server::ownedByCurrentTeam()->findOrFail($serverId);
+            $server = Server::accessibleByCurrentTeam()->findOrFail($serverId);
             StopApplicationOneServer::run($this->resource, $server);
             auditLog('ui.application.destination_stopped', [
                 'team_id' => $this->resource->team()?->id,
@@ -91,7 +91,7 @@ class Destination extends Component
                 return;
             }
             $deployment_uuid = new_public_id();
-            $server = Server::ownedByCurrentTeam()->findOrFail($server_id);
+            $server = Server::accessibleByCurrentTeam()->findOrFail($server_id);
             $destination = $server->standaloneDockers->where('id', $network_id)->firstOrFail();
             $result = queue_application_deployment(
                 deployment_uuid: $deployment_uuid,
@@ -126,8 +126,8 @@ class Destination extends Component
     public function promote(int $network_id, int $server_id)
     {
         try {
-            $server = Server::ownedByCurrentTeam()->findOrFail($server_id);
-            $network = StandaloneDocker::ownedByCurrentTeam()->where('server_id', $server->id)->findOrFail($network_id);
+            $server = Server::accessibleByCurrentTeam()->findOrFail($server_id);
+            $network = StandaloneDocker::deployableByTeam(currentTeam()->id)->where('server_id', $server->id)->findOrFail($network_id);
             $this->authorize('update', $this->resource);
             $this->resource->getConnection()->transaction(function () use ($network, $server) {
                 $mainDestination = $this->resource->destination;
@@ -158,8 +158,8 @@ class Destination extends Component
     public function addServer(int $network_id, int $server_id)
     {
         try {
-            $server = Server::ownedByCurrentTeam()->findOrFail($server_id);
-            $network = StandaloneDocker::ownedByCurrentTeam()->where('server_id', $server->id)->findOrFail($network_id);
+            $server = Server::accessibleByCurrentTeam()->findOrFail($server_id);
+            $network = StandaloneDocker::deployableByTeam(currentTeam()->id)->where('server_id', $server->id)->findOrFail($network_id);
             $this->authorize('update', $this->resource);
             $reason = $this->resource instanceof Application
                 ? $this->resource->additionalServersUnavailableReason($server)
@@ -192,7 +192,7 @@ class Destination extends Component
 
                 return;
             }
-            $server = Server::ownedByCurrentTeam()->findOrFail($server_id);
+            $server = Server::accessibleByCurrentTeam()->findOrFail($server_id);
             StopApplicationOneServer::run($this->resource, $server);
             $this->resource->additional_networks()
                 ->wherePivot('server_id', $server_id)

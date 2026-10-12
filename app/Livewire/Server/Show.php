@@ -45,6 +45,8 @@ class Show extends Component
 
     public bool $isUsable;
 
+    public bool $isShared = false;
+
     #[Locked]
     public bool $isSwarmManager;
 
@@ -279,6 +281,7 @@ class Show extends Component
             $this->wildcardDomain = $this->server->settings->wildcard_domain;
             $this->isReachable = $this->server->settings->is_reachable;
             $this->isUsable = $this->server->settings->is_usable;
+            $this->isShared = $this->server->is_shared === true;
             $this->isSwarmManager = $this->server->settings->is_swarm_manager;
             $this->isSwarmWorker = $this->server->settings->is_swarm_worker;
             $this->serverRole = $this->server->settings->effectiveServerRole()->value;
@@ -517,6 +520,29 @@ class Show extends Component
             $this->server->settings->generateSentinelToken();
             $this->dispatch('success', __('Token regenerated. Restarting Sentinel.'));
         } catch (\Throwable $e) {
+            return handleError($e, $this);
+        }
+    }
+
+    /**
+     * Shares the server with every team, or stops sharing it. Only a platform administrator of the
+     * server's team may change it (ServerPolicy::update).
+     */
+    public function saveSharing()
+    {
+        try {
+            $this->authorize('update', $this->server);
+            $this->server->forceFill(['is_shared' => $this->isShared])->save();
+            auditLog('ui.server.sharing_changed', [
+                'team_id' => $this->server->team_id,
+                'server_uuid' => $this->server->uuid,
+                'server_name' => $this->server->name,
+                'is_shared' => $this->isShared,
+            ]);
+            $this->dispatch('success', $this->isShared ? __('Server is shared with all teams.') : __('Server is no longer shared.'));
+        } catch (\Throwable $e) {
+            $this->isShared = $this->server->is_shared === true;
+
             return handleError($e, $this);
         }
     }

@@ -1,7 +1,5 @@
 <?php
 
-use App\Actions\Server\UpdateCoolify;
-use App\Models\Server;
 use Symfony\Component\Process\Process;
 
 /**
@@ -167,69 +165,3 @@ it('aborts the upgrade when a configuration file fails its checksum', function (
     'stable upgrade' => 'scripts/upgrade.sh',
     'nightly upgrade' => 'other/nightly/upgrade.sh',
 ]);
-
-describe('in-app upgrade', function () {
-    function runUpgradeDownload(array $sandbox): Process
-    {
-        $process = Process::fromShellCommandline(
-            UpdateCoolify::downloadUpgradeScriptCommand('https://cdn.example/coolify/upgrade.sh', $sandbox['out']),
-            $sandbox['root'],
-            ['PATH' => $sandbox['bin'].':'.getenv('PATH'), 'LC_ALL' => 'C'],
-        );
-        $process->run();
-
-        return $process;
-    }
-
-    it('installs upgrade.sh when it matches the published checksum', function () {
-        $sandbox = integritySandbox();
-        file_put_contents("{$sandbox['cdn']}/upgrade.sh", "echo new\n");
-        file_put_contents("{$sandbox['cdn']}/upgrade.sh.sha256", hash('sha256', "echo new\n")."  upgrade.sh\n");
-        file_put_contents("{$sandbox['out']}/upgrade.sh", "echo old\n");
-
-        $process = runUpgradeDownload($sandbox);
-
-        expect($process->getExitCode())->toBe(0)
-            ->and($process->getOutput())->toContain('upgrade.sh checksum verified.')
-            ->and(file_get_contents("{$sandbox['out']}/upgrade.sh"))->toBe("echo new\n");
-    });
-
-    it('aborts and keeps the old upgrade.sh on a checksum mismatch', function () {
-        $sandbox = integritySandbox();
-        file_put_contents("{$sandbox['cdn']}/upgrade.sh", "echo tampered\n");
-        file_put_contents("{$sandbox['cdn']}/upgrade.sh.sha256", hash('sha256', "echo new\n")."\n");
-        file_put_contents("{$sandbox['out']}/upgrade.sh", "echo old\n");
-
-        $process = runUpgradeDownload($sandbox);
-
-        expect($process->getExitCode())->toBe(1)
-            ->and($process->getErrorOutput())->toContain('checksum mismatch')
-            ->and(file_get_contents("{$sandbox['out']}/upgrade.sh"))->toBe("echo old\n")
-            ->and(file_exists("{$sandbox['out']}/upgrade.sh.download"))->toBeFalse();
-    });
-
-    it('warns without a checksum unless the host requires checksums', function () {
-        $sandbox = integritySandbox();
-        file_put_contents("{$sandbox['cdn']}/upgrade.sh", "echo new\n");
-
-        $process = runUpgradeDownload($sandbox);
-        expect($process->getExitCode())->toBe(0)
-            ->and($process->getOutput())->toContain('WARNING: No checksum published')
-            ->and(file_get_contents("{$sandbox['out']}/upgrade.sh"))->toBe("echo new\n");
-
-        file_put_contents("{$sandbox['out']}/upgrade.sh", "echo old\n");
-        file_put_contents("{$sandbox['out']}/.env", "COOLIFY_REQUIRE_CHECKSUMS=true\n");
-
-        $process = runUpgradeDownload($sandbox);
-        expect($process->getExitCode())->toBe(1)
-            ->and(file_get_contents("{$sandbox['out']}/upgrade.sh"))->toBe("echo old\n");
-    });
-
-    it('runs the whole check with sudo for non-root SSH users', function () {
-        $server = new Server;
-        $server->user = 'cooluser';
-        $command = UpdateCoolify::downloadUpgradeScriptCommand('https://cdn.example/coolify/upgrade.sh');
-
-        expect(parseCommandsByLineForSudo(collect([$command]), $server))->toBe(["sudo {$command}"]);
-    });
-});

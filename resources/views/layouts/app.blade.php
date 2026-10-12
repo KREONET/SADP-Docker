@@ -160,9 +160,6 @@
                         class="hidden shrink-0 items-center"></div>
                     <div id="configuration-warning-hud-slot-mobile" class="relative shrink-0"></div>
                     <livewire:deployments-indicator variant="mobile" />
-                    @if (isInstanceAdmin() && !isCloud())
-                        <livewire:upgrade key="mobile-upgrade" />
-                    @endif
                     <x-top-user-menu />
                     <button type="button" x-on:click="open = !open"
                         class="-mr-1 flex size-9 items-center justify-center rounded-md text-neutral-500 transition-transform duration-100 ease-out hover:bg-neutral-100 hover:text-black active:scale-90 dark:text-fg-dim dark:hover:bg-white/[0.06] dark:hover:text-fg">

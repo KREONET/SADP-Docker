@@ -297,8 +297,8 @@ function migrateResourceToDestination(Request $request, $resource, string $resou
 
     Gate::authorize('update', $resource);
 
-    $destination = StandaloneDocker::ownedByCurrentTeamAPI($teamId)->where('uuid', $request->destination_uuid)->first()
-        ?? SwarmDocker::ownedByCurrentTeamAPI($teamId)->where('uuid', $request->destination_uuid)->first();
+    $destination = StandaloneDocker::deployableByTeam($teamId)->where('uuid', $request->destination_uuid)->first()
+        ?? SwarmDocker::deployableByTeam($teamId)->where('uuid', $request->destination_uuid)->first();
 
     if (! $destination || ! $destination->server?->canHostResources()) {
         return response()->json(['message' => 'Destination not found.'], 404);

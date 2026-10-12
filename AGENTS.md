@@ -36,24 +36,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 The main checkout serves its branch at `localhost:8000` (Reverb `6001`, terminal `6002`, db `5432`, redis `6379`, vite `5173`). Worktrees get a port block at `20000 + slot*10` (app `+0`, Reverb `+1`, terminal `+2`, db `+3`, redis `+4`, vite `+5`). Each instance has its own libvirt network `coolify-dev-<slot>` (`10.221.<slot>.0/24`) and VMs `coolify-dev-<branch>--<profile>`; VMs are reused, use `php artisan dev:qemu <profile> --fresh` to rebuild one. On macOS with Lima >= 2.0 (`brew install lima`), the localhost VM is the Lima instance `coolify-dev-<slot>-<profile>` (same profiles, users, and SSH key); Coolify reaches it through Lima's forwarded SSH port on `host.docker.internal`, and only guest ports 80/443 are forwarded to the Mac. Rebuild it with `limactl delete -f <vm>`. Force it with `COOLIFY_DEV_SERVER_BACKEND=lima`. If `APP_URL` in `.env` is a `*.ts.net` host, the browser ports are published with `tailscale serve`. Set `COOLIFY_DEV_INSTANCE=<name>` to run another instance from the same checkout.
 
-## Testing the Self-Hosted Upgrade Process
+## Updates
 
-Use the following workflow to test a self-hosted upgrade:
-
-1. Install the source version with the upgrade script:
-
-   ```bash
-   bash scripts/upgrade.sh sha-6492d081362c009519481ac70e50873e39ba1861
-   ```
-
-2. Set the current Coolify version and rebuild the cached configuration:
-
-   ```bash
-   docker exec -e COOLIFY_VERSION=4.3.0 coolify php artisan config:cache
-   ```
-
-3. In the Coolify UI, click **Check for Updates**.
-4. Confirm that an upgrade is available, then click **Upgrade** and verify that the upgrade completes successfully.
+PADED has no in-app update feature: the Upgrade button, the automatic update job, and the update check settings were removed, because upstream's `upgrade.sh` installs the official Coolify image over PADED. Do not reintroduce them. New versions are published on GitHub Releases (`constants.coolify.github_releases_url`), and servers update with `git pull && sudo bash scripts/paded-deploy.sh`. `CheckForUpdatesJob` stays: it only refreshes `versions.json` for Traefik, Sentinel, and helper image versions.
 
 ## Common Commands
 

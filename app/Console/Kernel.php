@@ -16,7 +16,6 @@ use App\Jobs\RegenerateSslCertJob;
 use App\Jobs\RevalidateUnusableS3StoragesJob;
 use App\Jobs\ServerManagerJob;
 use App\Jobs\ShipLogsToLokiJob;
-use App\Jobs\UpdateCoolifyJob;
 use App\Models\InstanceSettings;
 use App\Models\LogEntry;
 use App\Services\ChangelogService;
@@ -168,14 +167,6 @@ class Kernel extends ConsoleKernel
             ->cron($this->updateCheckFrequency)
             ->timezone($this->instanceTimezone)
             ->onOneServer();
-
-        if ($this->settings->is_auto_update_enabled) {
-            $autoUpdateFrequency = $this->settings->auto_update_frequency;
-            $this->scheduleInstance->job(new UpdateCoolifyJob)
-                ->cron($autoUpdateFrequency)
-                ->timezone($this->instanceTimezone)
-                ->onOneServer();
-        }
     }
 
     protected function commands(): void

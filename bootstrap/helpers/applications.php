@@ -213,7 +213,7 @@ function clone_application(Application $source, $destination, array $overrides =
     $uuid = $overrides['uuid'] ?? new_public_id();
     $server = $destination->server;
 
-    if ($server->team_id !== currentTeam()->id) {
+    if (! $server->isAccessibleByTeam(currentTeam()->id)) {
         throw new RuntimeException('Destination does not belong to the current team.');
     }
 

@@ -37,7 +37,18 @@ test('instance admin can access settings updates page', function () {
 
     Livewire::test(Updates::class)
         ->assertOk()
-        ->assertNoRedirect();
+        ->assertNoRedirect()
+        ->assertSee(config('constants.coolify.github_releases_url'))
+        ->assertDontSee(__('Upgrade now'))
+        ->assertDontSee(__('Automatic updates'));
+});
+
+test('settings updates page no longer exposes in-app update actions', function () {
+    expect(method_exists(Updates::class, 'checkManually'))->toBeFalse()
+        ->and(method_exists(Updates::class, 'submit'))->toBeFalse()
+        ->and(class_exists('App\\Livewire\\Upgrade'))->toBeFalse()
+        ->and(class_exists('App\\Actions\\Server\\UpdateCoolify'))->toBeFalse()
+        ->and(class_exists('App\\Jobs\\UpdateCoolifyJob'))->toBeFalse();
 });
 
 test('instance admin cannot save an invalid docker registry url', function () {

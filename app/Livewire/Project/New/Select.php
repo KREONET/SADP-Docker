@@ -83,7 +83,7 @@ class Select extends Component
                 $this->type = $queryType;
                 $this->server_id = $queryServerId;
                 $this->destination_uuid = $queryDestination;
-                $this->server = Server::ownedByCurrentTeam()->find($queryServerId);
+                $this->server = Server::accessibleByCurrentTeam()->find($queryServerId);
                 $this->current_step = 'select-postgresql-type';
             }
         } catch (\Exception $e) {

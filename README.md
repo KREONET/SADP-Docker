@@ -114,9 +114,19 @@ sudo bash scripts/paded-deploy.sh
 
 반영됐는지 확인하려면: `docker inspect coolify -f '{{.Config.Image}}'`가 `docker.io/coollabsio/coolify:paded`여야 합니다.
 
-### 3. Upgrade 버튼 누르지 않기
+### 3. 업데이트는 GitHub에서 확인
 
-화면의 **Upgrade** 버튼을 누르면 공식 Coolify 이미지를 받아 와서 PADED를 덮어씁니다. 실수로 눌렀다면 `sudo bash scripts/paded-deploy.sh`를 다시 실행하세요.
+PADED에는 앱 안에서 업데이트하는 기능(Upgrade 버튼, 자동 업데이트)이 없습니다. 원본 Coolify의 업데이트 기능은 공식 Coolify 이미지를 받아 와서 PADED를 덮어쓰기 때문에 제거했습니다. 새 버전은 [GitHub Releases](https://github.com/KREONET/PASED/releases)에서 확인하고, 아래 **PADED 새 버전으로 올리기** 방법으로 올리세요.
+
+### 서버 공유하기 (여러 팀이 같은 서버 사용)
+
+원래 Coolify는 팀마다 서버를 따로 등록해야 합니다. PADED에서는 플랫폼 관리자가 서버 하나를 모든 팀과 공유할 수 있습니다.
+
+1. 플랫폼 관리자(Root 팀 admin/owner)로 로그인합니다.
+2. **서버 → 해당 서버 → 공유**에서 **모든 팀과 공유**를 켭니다.
+3. 이제 다른 팀(OIDC로 가입한 사용자의 개인 팀 포함)이 새 리소스를 만들 때 이 서버를 고를 수 있습니다.
+
+공유해도 서버 관리(프록시, 삭제, 서버 터미널 등)는 원래 팀의 관리자만 할 수 있습니다. 다른 팀은 자기 리소스와 자기 배포 기록, 로그만 봅니다. 컨테이너에 호스트 권한을 주는 설정(privileged, Docker 소켓·호스트 경로 마운트 등)은 원래대로 플랫폼 관리자만 넣을 수 있습니다. 공유 서버 위 컨테이너의 터미널 접속은 아직 플랫폼 관리자만 됩니다.
 
 ### PADED 새 버전으로 올리기
 

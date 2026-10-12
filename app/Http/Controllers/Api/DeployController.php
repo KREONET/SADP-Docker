@@ -73,8 +73,7 @@ class DeployController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        $servers = Server::whereTeamId($teamId)->get();
-        $deployments_per_server = ApplicationDeploymentQueue::whereIn('status', ['in_progress', 'queued'])->whereIn('server_id', $servers->pluck('id'))->get()->sortBy('id');
+        $deployments_per_server = ApplicationDeploymentQueue::whereIn('status', ['in_progress', 'queued'])->visibleToTeam($teamId)->get()->sortBy('id');
         $deployments_per_server = $deployments_per_server->map(function ($deployment) {
             return $this->removeSensitiveData($deployment);
         });
@@ -228,8 +227,7 @@ class DeployController extends Controller
         }
 
         // Check if the deployment belongs to the user's team
-        $servers = Server::whereTeamId($teamId)->pluck('id');
-        if (! $servers->contains($deployment->server_id)) {
+        if (! ApplicationDeploymentQueue::visibleToTeam($teamId)->whereKey($deployment->getKey())->exists()) {
             return response()->json(['message' => 'You do not have permission to cancel this deployment.'], 403);
         }
 
@@ -247,7 +245,7 @@ class DeployController extends Controller
 
         // Perform the cancellation
         $cancelled = false;
-        $deploymentServer = Server::whereTeamId($teamId)->find($deployment->server_id);
+        $deploymentServer = Server::accessibleByTeam($teamId)->find($deployment->server_id);
 
         try {
             $deployment_uuid = $deployment->deployment_uuid;
@@ -271,7 +269,7 @@ class DeployController extends Controller
             $cancelled = true;
 
             // Get the server
-            $server = Server::whereTeamId($teamId)->find($build_server_id);
+            $server = Server::accessibleByTeam($teamId)->find($build_server_id);
 
             try {
                 if ($server) {
@@ -714,8 +712,6 @@ class DeployController extends Controller
         if (is_null($teamId)) {
             return invalidTokenResponse();
         }
-        $servers = Server::whereTeamId($teamId)->get();
-
         if (is_null($app_uuid)) {
             return response()->json(['message' => 'Application uuid is required'], 400);
         }

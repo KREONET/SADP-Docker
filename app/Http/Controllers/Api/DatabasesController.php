@@ -1995,7 +1995,7 @@ class DatabasesController extends Controller
         if (! $environment) {
             return response()->json(['message' => 'You need to provide a valid environment_name or environment_uuid.'], 422);
         }
-        $server = Server::whereTeamId($teamId)->whereUuid($serverUuid)->first();
+        $server = Server::accessibleByTeam($teamId)->whereUuid($serverUuid)->first();
         if (! $server) {
             return response()->json(['message' => 'Server not found.'], 404);
         }
@@ -5021,8 +5021,8 @@ class DatabasesController extends Controller
 
         $this->authorize('update', $database);
 
-        $destination = StandaloneDocker::ownedByCurrentTeamAPI($teamId)->where('uuid', $request->destination_uuid)->first()
-            ?? SwarmDocker::ownedByCurrentTeamAPI($teamId)->where('uuid', $request->destination_uuid)->first();
+        $destination = StandaloneDocker::deployableByTeam($teamId)->where('uuid', $request->destination_uuid)->first()
+            ?? SwarmDocker::deployableByTeam($teamId)->where('uuid', $request->destination_uuid)->first();
 
         if (! $destination || ! $destination->server?->canHostResources()) {
             return response()->json(['message' => 'Destination not found.'], 404);

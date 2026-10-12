@@ -9,7 +9,6 @@ return [
         'helper_version' => '1.0.17',
         'railpack_version' => '0.23.0',
         'self_hosted' => env('SELF_HOSTED', true),
-        'autoupdate' => env('AUTOUPDATE'),
         'base_config_path' => env('BASE_CONFIG_PATH', '/data/coolify'),
         // Development only: Docker volumes that the testing-host server mounts at /data/coolify and /data/coolify/backups.
         // devHostDockerPath() uses them only for that server. The defaults are the legacy docker-compose.dev.yml names.
@@ -20,8 +19,8 @@ return [
         'is_windows_docker_desktop' => env('IS_WINDOWS_DOCKER_DESKTOP', false),
         'cdn_url' => env('CDN_URL', 'https://cdn.coollabs.io'),
         'versions_url' => env('VERSIONS_URL', env('CDN_URL', 'https://cdn.coollabs.io').'/coolify/versions.json'),
-        'upgrade_script_url' => env('UPGRADE_SCRIPT_URL', env('CDN_URL', 'https://cdn.coollabs.io').'/coolify/upgrade.sh'),
         'releases_url' => env('RELEASES_URL', 'https://cdn.coollabs.io/coolify/releases.json'),
+        'github_releases_url' => env('GITHUB_RELEASES_URL', 'https://github.com/KREONET/PASED/releases'),
     ],
 
     'urls' => [

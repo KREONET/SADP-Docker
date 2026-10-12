@@ -17,7 +17,7 @@ class Index extends Component
 
     public function mount(): void
     {
-        $this->servers = Server::isUsable()->get();
+        $this->servers = Server::isUsable(includeShared: false)->get();
         $this->destinations = $this->servers
             ->flatMap(fn (Server $server) => $server->standaloneDockers->concat($server->swarmDockers))
             ->values();

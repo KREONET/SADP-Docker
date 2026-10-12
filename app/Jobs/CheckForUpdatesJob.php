@@ -22,7 +22,6 @@ class CheckForUpdatesJob implements ShouldBeEncrypted, ShouldQueue
             if (isDev() || isCloud()) {
                 return;
             }
-            $settings = instanceSettings();
             $response = Http::retry(3, 1000)->get(config('constants.coolify.versions_url'));
             if ($response->successful()) {
                 $versions = $response->json();
@@ -65,7 +64,6 @@ class CheckForUpdatesJob implements ShouldBeEncrypted, ShouldQueue
 
                 // Use data_set() for safe mutation (fixes #3)
                 data_set($versions, 'coolify.v4.version', $bestVersion);
-                $latest_version = $bestVersion;
 
                 // ALWAYS write versions.json (for Sentinel, Helper, Traefik updates)
                 File::put(base_path('versions.json'), json_encode($versions, JSON_PRETTY_PRINT));
@@ -74,14 +72,6 @@ class CheckForUpdatesJob implements ShouldBeEncrypted, ShouldQueue
                 invalidate_versions_cache();
 
                 CheckTraefikVersionJob::dispatch();
-
-                // Only mark new version available if Coolify version actually increased
-                if (version_compare($latest_version, $current_version, '>')) {
-                    // New version available
-                    $settings->update(['new_version_available' => true]);
-                } else {
-                    $settings->update(['new_version_available' => false]);
-                }
             }
         } catch (\Throwable $e) {
             // Consider implementing a notification to administrators

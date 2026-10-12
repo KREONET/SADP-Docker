@@ -478,7 +478,7 @@ class ServicesController extends Controller
         if (! $environment) {
             return response()->json(['message' => 'Environment not found.'], 404);
         }
-        $server = Server::whereTeamId($teamId)->whereUuid($serverUuid)->first();
+        $server = Server::accessibleByTeam($teamId)->whereUuid($serverUuid)->first();
         if (! $server) {
             return response()->json(['message' => 'Server not found.'], 404);
         }
@@ -689,7 +689,7 @@ class ServicesController extends Controller
             if (! $environment) {
                 return response()->json(['message' => 'Environment not found.'], 404);
             }
-            $server = Server::whereTeamId($teamId)->whereUuid($serverUuid)->first();
+            $server = Server::accessibleByTeam($teamId)->whereUuid($serverUuid)->first();
             if (! $server) {
                 return response()->json(['message' => 'Server not found.'], 404);
             }
@@ -3274,8 +3274,8 @@ class ServicesController extends Controller
 
         $this->authorize('update', $service);
 
-        $destination = StandaloneDocker::ownedByCurrentTeamAPI($teamId)->where('uuid', $request->destination_uuid)->first()
-            ?? SwarmDocker::ownedByCurrentTeamAPI($teamId)->where('uuid', $request->destination_uuid)->first();
+        $destination = StandaloneDocker::deployableByTeam($teamId)->where('uuid', $request->destination_uuid)->first()
+            ?? SwarmDocker::deployableByTeam($teamId)->where('uuid', $request->destination_uuid)->first();
 
         if (! $destination || ! $destination->server?->canHostResources()) {
             return response()->json(['message' => 'Destination not found.'], 404);
