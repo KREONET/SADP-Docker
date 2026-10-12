@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
+use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\NewAccessToken;
@@ -611,6 +613,18 @@ class User extends Authenticatable implements SendsEmail
     public function hasPassword(): bool
     {
         return ! empty($this->password);
+    }
+
+    /**
+     * Authenticator apps list the account under the registered brand name instead of APP_NAME.
+     */
+    public function twoFactorQrCodeUrl()
+    {
+        return app(TwoFactorAuthenticationProvider::class)->qrCodeUrl(
+            brand_name(),
+            $this->{Fortify::username()},
+            Fortify::currentEncrypter()->decrypt($this->two_factor_secret)
+        );
     }
 
     public function requiresPasswordConfirmation(): bool
