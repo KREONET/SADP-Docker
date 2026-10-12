@@ -15,6 +15,7 @@ use App\Services\Platform\SourcePolicy;
 use App\Support\ContainerPrivilegePolicy;
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
+use App\Support\SharedServerDomainPolicy;
 use App\Traits\Auditable;
 use App\Traits\ClearsGlobalSearchCache;
 use App\Traits\HasComposeVolumeWarnings;
@@ -319,6 +320,9 @@ class Application extends BaseModel
                 }
                 $payload['fqdn'] = $application->fqdn;
                 $application->syncNoindexDomains();
+            }
+            if ($application->isDirty(['fqdn', 'docker_compose_domains'])) {
+                SharedServerDomainPolicy::assertApplicationAllowed($application);
             }
             if ($application->isDirty('install_command')) {
                 $payload['install_command'] = str($application->install_command)->trim();
