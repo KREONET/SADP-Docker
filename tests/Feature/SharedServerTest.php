@@ -180,3 +180,10 @@ it('refreshes resource statuses for the teams that deploy to a shared server', f
     Event::assertDispatched(ServiceChecked::class, fn (ServiceChecked $event) => $event->teamId === $this->team->id);
     Event::assertDispatched(ServiceChecked::class, fn (ServiceChecked $event) => $event->teamId === $this->rootTeam->id);
 });
+
+it('does not compare the string application_id column with applications.id in SQL', function () {
+    // PostgreSQL has no varchar = bigint operator, so such a comparison fails there but not on SQLite.
+    $sql = ApplicationDeploymentQueue::visibleToTeam($this->team->id)->toSql();
+
+    expect($sql)->not->toContain('"application_deployment_queues"."application_id" = "applications"."id"');
+});
