@@ -84,6 +84,7 @@ class User extends Authenticatable implements SendsEmail
         'password_changed_at' => 'datetime',
         'is_auditor' => 'boolean',
         'is_sub_admin' => 'boolean',
+        'local_password_set_at' => 'datetime',
     ];
 
     /**
@@ -673,5 +674,15 @@ class User extends Authenticatable implements SendsEmail
     public function requiresPasswordConfirmation(): bool
     {
         return $this->hasPassword() && ! $this->hasSsoIdentity();
+    }
+
+    /**
+     * SSO accounts are created with a random password nobody knows, so Fortify's password
+     * confirmation (for example before enabling 2FA) cannot be passed until the user sets
+     * their own password. Users who set or changed it themselves have `local_password_set_at`.
+     */
+    public function needsInitialPassword(): bool
+    {
+        return $this->local_password_set_at === null && $this->hasSsoIdentity();
     }
 }

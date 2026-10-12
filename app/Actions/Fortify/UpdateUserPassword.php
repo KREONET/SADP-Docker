@@ -31,8 +31,9 @@ class UpdateUserPassword implements UpdatesUserPasswords
             'password' => [new NotRecentlyUsedPassword($user)],
         ])->validateWithBag('updatePassword');
 
-        $user->fill([
+        $user->forceFill([
             'password' => Hash::make($input['password']),
+            'local_password_set_at' => now(),
         ])->save();
         auditLog('ui.user.password_changed', [
             'team_id' => $user->currentTeam()?->id,

@@ -235,6 +235,11 @@
         </form>
 
         <section id="two-factor" class="application-settings-section scroll-mt-6">
+            @if (session('status') === 'initial-password-set')
+                <x-callout type="success" :title="__('Password set')">
+                    {{ __('Your password is set. Select Configure 2FA again to continue the setup.') }}
+                </x-callout>
+            @endif
             @if (session('two_factor_required'))
                 <x-callout type="warning" :title="__('Two-factor authentication required')">
                     {{ session('two_factor_required') }}

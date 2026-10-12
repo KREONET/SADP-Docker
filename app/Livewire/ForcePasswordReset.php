@@ -55,9 +55,10 @@ class ForcePasswordReset extends Component
             $this->rateLimit(10);
             $this->validate();
             $user = auth()->user();
-            $user->fill([
+            $user->forceFill([
                 'password' => Hash::make($this->password),
                 'force_password_reset' => false,
+                'local_password_set_at' => now(),
             ])->save();
             auditLog('ui.user.password_changed', [
                 'team_id' => $user->currentTeam()?->id,

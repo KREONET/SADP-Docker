@@ -22,8 +22,9 @@ class ResetUserPassword implements ResetsUserPasswords
             'password' => ['required', Password::defaults(), 'confirmed', new NotRecentlyUsedPassword($user)],
         ])->validate();
 
-        $user->fill([
+        $user->forceFill([
             'password' => Hash::make($input['password']),
+            'local_password_set_at' => now(),
         ])->save();
         // Proving control of the mailbox lifts a failed-login lock.
         $user->unlockAccount();
