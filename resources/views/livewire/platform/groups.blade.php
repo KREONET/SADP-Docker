@@ -57,7 +57,9 @@
                                     <div class="truncate text-[12px] font-semibold">{{ $member->name }}</div>
                                     <div class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">{{ $member->email }}</div>
                                 </div>
+                                {{-- Root team admins and owners are platform administrators: only administrators change those roles. --}}
                                 <select class="input w-32" aria-label="{{ __('Role of :name', ['name' => $member->name]) }}"
+                                    @disabled($selectedTeam->id === 0 && ! isInstanceAdmin())
                                     wire:change="updateMemberRole({{ $selectedTeam->id }}, {{ $member->id }}, $event.target.value)">
                                     @foreach (\App\Livewire\Platform\Groups::ROLES as $role)
                                         <option value="{{ $role }}" @selected($member->pivot->role === $role)>{{ ucfirst($role) }}</option>

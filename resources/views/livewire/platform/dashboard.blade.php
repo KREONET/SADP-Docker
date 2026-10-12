@@ -12,7 +12,7 @@
                     ['label' => __('Not running'), 'value' => $stats['stopped'], 'href' => route('platform.applications')],
                     ['label' => __('Services'), 'value' => $stats['services'], 'href' => null],
                     ['label' => __('Servers'), 'value' => $stats['servers'], 'href' => null],
-                    ['label' => __('Blocked deployments (7d)'), 'value' => $stats['blocked_scans'], 'href' => route('platform.security', ['status' => 'blocked'])],
+                    ['label' => __('Blocked deployments (7d)'), 'value' => $stats['blocked_scans'], 'href' => \Illuminate\Support\Facades\Gate::allows('accessPlatformAdmin') ? route('platform.security', ['status' => 'blocked']) : null],
                 ] as $card)
                     <a wire:key="platform-stat-{{ str($card['label'])->slug() }}" @if ($card['href']) href="{{ $card['href'] }}" {{ wireNavigate() }} @endif
                         class="rounded-[10px] border border-neutral-200 bg-white p-4 dark:border-white/[0.07] dark:bg-surface">

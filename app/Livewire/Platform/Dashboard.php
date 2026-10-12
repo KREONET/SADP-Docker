@@ -20,12 +20,12 @@ class Dashboard extends Component
 
     public function mount(): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
     }
 
     public function render()
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
 
         $settings = instanceSettings();
         $applicationStatuses = Application::query()->pluck('status');

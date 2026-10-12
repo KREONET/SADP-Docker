@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Actions\User\RevokeUserTeamTokens;
+use App\Enums\PlatformRole;
 use App\Jobs\UpdateStripeCustomerEmailJob;
 use App\Notifications\Channels\SendsEmail;
 use App\Notifications\TransactionalEmails\EmailChangeVerification;
@@ -77,6 +78,7 @@ class User extends Authenticatable implements SendsEmail
         'show_boarding' => 'boolean',
         'email_change_code_expires_at' => 'datetime',
         'deactivated_at' => 'datetime',
+        'is_sub_admin' => 'boolean',
     ];
 
     /**
@@ -362,6 +364,27 @@ class User extends Authenticatable implements SendsEmail
         });
 
         return $found_root_team->count() > 0;
+    }
+
+    /**
+     * Instance-wide permission level: root team admins/owners are administrators,
+     * `is_sub_admin` makes a sub-administrator, everyone else is a user.
+     */
+    public function platformRole(): PlatformRole
+    {
+        return match (true) {
+            $this->isInstanceAdmin() => PlatformRole::ADMIN,
+            (bool) $this->is_sub_admin => PlatformRole::SUB_ADMIN,
+            default => PlatformRole::USER,
+        };
+    }
+
+    /**
+     * Administrators and sub-administrators may open the platform admin pages.
+     */
+    public function canOperatePlatform(): bool
+    {
+        return $this->platformRole()->canOperatePlatform();
     }
 
     public function currentTeam(): ?Team

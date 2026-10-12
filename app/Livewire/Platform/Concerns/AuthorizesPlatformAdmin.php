@@ -14,4 +14,12 @@ trait AuthorizesPlatformAdmin
     {
         abort_unless(auth()->check() && Gate::allows('accessPlatformAdmin'), 403);
     }
+
+    /**
+     * Administrators and sub-administrators: day-to-day operation of the platform admin pages.
+     */
+    protected function authorizePlatformOperator(): void
+    {
+        abort_unless(auth()->check() && Gate::allows('operatePlatform'), 403);
+    }
 }
