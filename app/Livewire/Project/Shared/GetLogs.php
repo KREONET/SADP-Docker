@@ -153,7 +153,7 @@ class GetLogs extends Component
         if (! $this->canReadLogs()) {
             return 'Unauthorized.';
         }
-        if (! Server::ownedByCurrentTeam()->where('id', $this->server->id)->exists()) {
+        if (! $this->server->isAccessibleByTeam(currentTeam()?->id)) {
             return 'Unauthorized.';
         }
         if (! $this->server->isFunctional()) {
@@ -180,7 +180,7 @@ class GetLogs extends Component
         if (! $this->canReadLogs()) {
             return '';
         }
-        if (! Server::ownedByCurrentTeam()->where('id', $this->server->id)->exists()) {
+        if (! $this->server->isAccessibleByTeam(currentTeam()?->id)) {
             return '';
         }
         if (! $this->server->isFunctional() || ! $this->container) {
@@ -200,7 +200,7 @@ class GetLogs extends Component
         if (! $this->canReadLogs()) {
             return '';
         }
-        if (! Server::ownedByCurrentTeam()->where('id', $this->server->id)->exists()) {
+        if (! $this->server->isAccessibleByTeam(currentTeam()?->id)) {
             return '';
         }
         if (! $this->server->isFunctional() || ! $this->container) {

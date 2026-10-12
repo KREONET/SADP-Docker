@@ -243,6 +243,14 @@
                         @endif
                     </x-application.settings-section>
 
+                    @can('update', $server)
+                        <x-application.settings-section id="server-sharing-section" :title="__('Sharing')"
+                            :helper="__('A shared server stays managed by this team. Other teams can only deploy their own resources to it and see only those resources.')">
+                            <x-forms.checkbox instantSave="saveSharing" id="isShared"
+                                :label="__('Share with all teams')" />
+                        </x-application.settings-section>
+                    @endcan
+
                     <x-application.settings-section id="server-overview-section" :title="__('Server overview')"
                         :helper="__('Provider state, operating system, and hardware details.')">
                         <x-slot:actions>

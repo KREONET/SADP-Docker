@@ -2785,7 +2785,7 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
                 continue;
             }
             $server = $destination->server;
-            if ($server->team_id !== $this->mainServer->team_id) {
+            if (! $server->isAccessibleByTeam($this->application->environment->project->team_id)) {
                 $this->application_deployment_queue->addLogEntry("Skipping deployment to {$server->name}. Not in the same team?!");
 
                 continue;

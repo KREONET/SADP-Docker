@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Settings;
 
-use App\Jobs\CheckForUpdatesJob;
 use App\Models\InstanceSettings;
 use App\Models\Server;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -19,15 +18,6 @@ class Updates extends Component
 
     public ?Server $server = null;
 
-    #[Validate('string')]
-    public string $auto_update_frequency;
-
-    #[Validate('string|required')]
-    public string $update_check_frequency;
-
-    #[Validate('boolean')]
-    public bool $is_auto_update_enabled;
-
     #[Validate('required|string|in:docker.io,ghcr.io')]
     public string $docker_registry_url;
 
@@ -41,9 +31,6 @@ class Updates extends Component
         }
 
         $this->settings = instanceSettings();
-        $this->auto_update_frequency = $this->settings->auto_update_frequency;
-        $this->update_check_frequency = $this->settings->update_check_frequency;
-        $this->is_auto_update_enabled = $this->settings->is_auto_update_enabled;
         $this->docker_registry_url = $this->settings->docker_registry_url ?: 'docker.io';
     }
 
@@ -51,17 +38,9 @@ class Updates extends Component
     {
         try {
             $this->authorize('update', $this->settings);
-            if ($this->settings->is_auto_update_enabled === true) {
-                $this->validate([
-                    'auto_update_frequency' => ['required', 'string'],
-                ]);
-            }
             $validated = $this->validate([
                 'docker_registry_url' => ['required', 'string', 'in:docker.io,ghcr.io'],
             ]);
-            $this->settings->auto_update_frequency = $this->auto_update_frequency;
-            $this->settings->update_check_frequency = $this->update_check_frequency;
-            $this->settings->is_auto_update_enabled = $this->is_auto_update_enabled;
             $this->settings->docker_registry_url = $validated['docker_registry_url'];
             $this->syncRegistryUrlToEnv($validated['docker_registry_url']);
             $this->settings->save();
@@ -109,55 +88,6 @@ class Updates extends Component
             "    printf '%s\\n' {$registryLine} | tee -a {$envFile} > /dev/null",
             'fi',
         ];
-    }
-
-    public function submit()
-    {
-        try {
-            $this->authorize('update', $this->settings);
-            $this->resetErrorBag();
-            $this->validate();
-
-            if ($this->is_auto_update_enabled && ! validate_cron_expression($this->auto_update_frequency)) {
-                $this->dispatch('error', __('Invalid Cron / Human expression for Auto Update Frequency.'));
-                if (empty($this->auto_update_frequency)) {
-                    $this->auto_update_frequency = '0 0 * * *';
-                }
-
-                return;
-            }
-
-            if (! validate_cron_expression($this->update_check_frequency)) {
-                $this->dispatch('error', __('Invalid Cron / Human expression for Update Check Frequency.'));
-                if (empty($this->update_check_frequency)) {
-                    $this->update_check_frequency = '0 * * * *';
-                }
-
-                return;
-            }
-
-            $this->instantSave();
-            if ($this->server) {
-                $this->server->setupDynamicProxyConfiguration();
-            }
-        } catch (ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return handleError($e, $this);
-        }
-    }
-
-    public function checkManually()
-    {
-        $this->authorize('update', $this->settings);
-        CheckForUpdatesJob::dispatchSync();
-        $this->dispatch('updateAvailable');
-        $settings = instanceSettings();
-        if ($settings->new_version_available) {
-            $this->dispatch('success', __('New version available!'));
-        } else {
-            $this->dispatch('success', __('No new version available.'));
-        }
     }
 
     public function render()

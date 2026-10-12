@@ -577,9 +577,18 @@ function find_destination_for_current_team(?string $uuid): StandaloneDocker|Swar
         ?? SwarmDocker::ownedByCurrentTeam()->where('uuid', $uuid)->first();
 }
 
+/**
+ * A destination the current team may deploy a resource to, including destinations on shared servers.
+ */
 function find_resource_destination_for_current_team(?string $uuid): StandaloneDocker|SwarmDocker|null
 {
-    $destination = find_destination_for_current_team($uuid);
+    if (blank($uuid) || ! currentTeam()) {
+        return null;
+    }
+
+    $teamId = currentTeam()->id;
+    $destination = StandaloneDocker::deployableByTeam($teamId)->where('uuid', $uuid)->first()
+        ?? SwarmDocker::deployableByTeam($teamId)->where('uuid', $uuid)->first();
 
     if (! $destination?->server?->canHostResources()) {
         return null;

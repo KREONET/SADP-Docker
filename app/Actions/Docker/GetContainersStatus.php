@@ -526,6 +526,15 @@ class GetContainersStatus
         $this->aggregateServiceContainerStatuses($services);
 
         ServiceChecked::dispatch($this->server->team->id);
+        if ($this->server->is_shared === true) {
+            // Teams that deploy to a shared server refresh their own resource statuses too.
+            collect($this->applications)->concat($databases)->concat($services)
+                ->map(fn ($resource) => data_get($resource, 'environment.project.team_id'))
+                ->filter()
+                ->unique()
+                ->reject(fn ($teamId) => (int) $teamId === (int) $this->server->team_id)
+                ->each(fn ($teamId) => ServiceChecked::dispatch($teamId));
+        }
     }
 
     private function aggregateApplicationStatus($application, Collection $containerStatuses, int $maxRestartCount = 0): ?string

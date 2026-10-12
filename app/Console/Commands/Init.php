@@ -152,16 +152,6 @@ class Init extends Command
         } catch (\Throwable $e) {
             echo "Could not setup dynamic configuration: {$e->getMessage()}\n";
         }
-
-        if (! is_null(config('constants.coolify.autoupdate', null))) {
-            if (config('constants.coolify.autoupdate') == true) {
-                echo "Enabling auto-update\n";
-                $this->settings->update(['is_auto_update_enabled' => true]);
-            } else {
-                echo "Disabling auto-update\n";
-                $this->settings->update(['is_auto_update_enabled' => false]);
-            }
-        }
     }
 
     private function pullHelperImage()

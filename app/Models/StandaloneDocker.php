@@ -132,6 +132,14 @@ class StandaloneDocker extends BaseModel
     }
 
     /**
+     * Destinations the team may deploy resources to: those on its own servers and on shared servers.
+     */
+    public static function deployableByTeam(int $teamId)
+    {
+        return static::whereHas('server', fn ($q) => $q->where(fn ($q) => $q->whereTeamId($teamId)->orWhere('is_shared', true)));
+    }
+
+    /**
      * Get the server attribute using identity map caching.
      * This intercepts lazy-loading to use cached Server lookups.
      */

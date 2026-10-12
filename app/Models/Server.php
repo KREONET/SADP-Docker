@@ -109,6 +109,7 @@ use Symfony\Component\Yaml\Yaml;
         'validation_logs' => ['type' => 'string', 'description' => 'The validation logs.'],
         'log_drain_notification_sent' => ['type' => 'boolean', 'description' => 'The flag to indicate if the log drain notification has been sent.'],
         'swarm_cluster' => ['type' => 'string', 'description' => 'The swarm cluster configuration.'],
+        'is_shared' => ['type' => 'boolean', 'description' => 'Whether every team may deploy resources to this server.'],
         'settings' => ['$ref' => '#/components/schemas/ServerSetting'],
     ]
 )]
@@ -283,6 +284,7 @@ class Server extends BaseModel
         'delete_unused_volumes' => 'boolean',
         'delete_unused_networks' => 'boolean',
         'force_disabled' => 'boolean',
+        'is_shared' => 'boolean',
         'sentinel_waiting_since' => 'datetime',
     ];
 
@@ -533,6 +535,33 @@ class Server extends BaseModel
     }
 
     /**
+     * Servers the current team may deploy resources to: its own servers and the servers a platform
+     * administrator shared with every team. Shared servers stay managed by their owner team only.
+     */
+    public static function accessibleByCurrentTeam(array $select = ['*']): Builder
+    {
+        return self::accessibleByTeam(currentTeam()->id, $select);
+    }
+
+    public static function accessibleByTeam(int $teamId, array $select = ['*']): Builder
+    {
+        $selectArray = collect($select)->concat(['id']);
+
+        return Server::where(fn (Builder $query) => $query->whereTeamId($teamId)->orWhere('is_shared', true))
+            ->with('settings', 'swarmDockers', 'standaloneDockers')
+            ->select($selectArray->all())
+            ->orderBy('name');
+    }
+
+    /**
+     * Whether the team owns this server or may deploy to it because it is shared.
+     */
+    public function isAccessibleByTeam(?int $teamId): bool
+    {
+        return $teamId !== null && ($this->team_id === $teamId || $this->is_shared === true);
+    }
+
+    /**
      * Get all servers owned by current team (cached for request duration).
      */
     public static function ownedByCurrentTeamCached()
@@ -542,19 +571,23 @@ class Server extends BaseModel
         });
     }
 
-    public static function isUsable(): Builder
+    /**
+     * Usable deployment servers of the current team. Shared servers are included unless the caller
+     * manages the team's own servers (for example its destinations).
+     */
+    public static function isUsable(bool $includeShared = true): Builder
     {
-        return self::usableByBuildServerStatus(false);
+        return self::usableByBuildServerStatus(false, $includeShared);
     }
 
-    public static function isUsableBuildServer(): Builder
+    public static function isUsableBuildServer(bool $includeShared = true): Builder
     {
-        return self::usableByBuildServerStatus(true);
+        return self::usableByBuildServerStatus(true, $includeShared);
     }
 
-    private static function usableByBuildServerStatus(bool $isBuildServer): Builder
+    private static function usableByBuildServerStatus(bool $isBuildServer, bool $includeShared): Builder
     {
-        $query = Server::ownedByCurrentTeam()
+        $query = ($includeShared ? Server::accessibleByCurrentTeam() : Server::ownedByCurrentTeam())
             ->whereRelation('settings', 'is_reachable', true)
             ->whereRelation('settings', 'is_usable', true)
             ->whereRelation('settings', 'is_swarm_worker', false)
@@ -1004,7 +1037,7 @@ $siteAddress {
      */
     public static function buildServers($teamId): Builder
     {
-        $query = Server::whereTeamId($teamId)
+        $query = Server::where(fn (Builder $query) => $query->whereTeamId($teamId)->orWhere('is_shared', true))
             ->whereRelation('settings', 'is_reachable', true)
             ->whereRelation('settings', 'is_usable', true)
             ->whereRelation('settings', 'is_swarm_worker', false)

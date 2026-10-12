@@ -179,7 +179,7 @@ class ForgejoPrivateRepository extends Component
                 throw new \RuntimeException(__('Invalid repository data: :error', ['error' => $validator->errors()->first()]));
             }
 
-            $destination = find_destination_for_current_team($this->query['destination'] ?? null);
+            $destination = find_resource_destination_for_current_team($this->query['destination'] ?? null);
             if (! $destination) {
                 throw new \Exception(__('Destination not found.'));
             }

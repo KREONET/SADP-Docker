@@ -191,7 +191,7 @@ class ImportForm extends Component
             return null;
         }
 
-        return Server::ownedByCurrentTeam()->find($this->serverId);
+        return Server::accessibleByCurrentTeam()->find($this->serverId);
     }
 
     protected $listeners = [

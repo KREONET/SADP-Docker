@@ -38,10 +38,16 @@ function remote_process(
 
     $command_string = implode("\n", $command);
 
+    // Output of a command on a shared server belongs to the team that ran it, not to the server's owner team.
+    $activityTeamId = $server->team_id;
     if (Auth::check()) {
         $teams = Auth::user()->teams->pluck('id');
-        if (! $teams->contains($server->team_id) && ! $teams->contains(0)) {
+        if (! $teams->contains($server->team_id) && ! $teams->contains(0) && $server->is_shared !== true) {
             throw new Exception('User is not part of the team that owns this server');
+        }
+        $currentTeamId = currentTeam()?->id;
+        if ($server->is_shared === true && $currentTeamId !== null && $teams->contains($currentTeamId)) {
+            $activityTeamId = $currentTeamId;
         }
     }
 
@@ -54,7 +60,7 @@ function remote_process(
         'type' => $type,
         'type_uuid' => $type_uuid,
         'status' => ProcessStatus::QUEUED->value,
-        'team_id' => $server->team_id,
+        'team_id' => $activityTeamId,
     ];
 
     $activityLog = activity()

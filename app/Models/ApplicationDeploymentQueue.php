@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\EncryptedArrayCast;
 use App\Enums\ApplicationDeploymentStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -136,6 +137,19 @@ class ApplicationDeploymentQueue extends Model
         'configuration_snapshot' => EncryptedArrayCast::class,
         'configuration_diff' => EncryptedArrayCast::class,
     ];
+
+    /**
+     * Deployments a team may see: every deployment on its own servers, and on shared servers only the
+     * deployments of its own applications.
+     */
+    public function scopeVisibleToTeam(Builder $query, int $teamId): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->whereIn('server_id', Server::whereTeamId($teamId)->select('id'))
+            ->orWhere(fn (Builder $query) => $query
+                ->whereIn('server_id', Server::where('is_shared', true)->select('id'))
+                ->whereHas('application', fn (Builder $query) => $query->whereRelation('environment.project', 'team_id', $teamId))));
+    }
 
     public function application()
     {

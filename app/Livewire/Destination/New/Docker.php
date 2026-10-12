@@ -32,7 +32,7 @@ class Docker extends Component
     public function mount(?string $server_id = null): void
     {
         $this->network = new_public_id();
-        $this->servers = Server::isUsable()->get();
+        $this->servers = Server::isUsable(includeShared: false)->get();
 
         if (filled($server_id)) {
             $this->selectedServer = Server::ownedByCurrentTeam()->whereKey($server_id)->firstOrFail();

@@ -1784,7 +1784,7 @@ function stripCoolifyCustomFields(array $yamlCompose): array
 function validateComposeFile(string $compose, int $server_id): string|Throwable
 {
     $uuid = Str::random(18);
-    $server = Server::ownedByCurrentTeam()->find($server_id);
+    $server = Server::accessibleByCurrentTeam()->find($server_id);
     try {
         if (! $server) {
             throw new Exception('Server not found');
