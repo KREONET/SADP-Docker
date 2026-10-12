@@ -2,7 +2,7 @@
 
 use App\Livewire\Platform\Groups;
 use App\Livewire\Platform\Logs;
-use App\Livewire\Platform\Security;
+use App\Livewire\Platform\Users;
 use App\Models\AuditEvent;
 use App\Models\InstanceSettings;
 use App\Models\LogEntry;
@@ -178,13 +178,13 @@ test('platform admins grant and revoke the auditor role after confirming their p
         ->assertReturned(true);
     expect((bool) $this->tenant->fresh()->is_auditor)->toBeFalse()
         ->and(AuditEvent::query()->where('event', 'platform.auditor.revoked')->where('result', 'success')->exists())->toBeTrue();
-})->with(['security page' => [Security::class], 'groups page' => [Groups::class]]);
+})->with(['users page' => [Users::class], 'groups page' => [Groups::class]]);
 
 test('platform admins cannot change their own or the root user auditor role', function () {
     $root = User::find(0) ?? User::factory()->create(['id' => 0]);
     actAsAuditorTestUser($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Security::class)
+    Livewire::test(Users::class)
         ->call('grantAuditor', $this->platformAdmin->id, 'password')
         ->assertReturned('You cannot change your own account here.')
         ->call('grantAuditor', $root->id, 'password')
@@ -198,14 +198,14 @@ test('auditors and regular users cannot change the auditor role', function (stri
     $user = $who === 'auditor' ? $this->auditor : $this->tenant;
     actAsAuditorTestUser($user, $this->tenantTeam);
 
-    Livewire::test(Security::class)->assertForbidden();
+    Livewire::test(Users::class)->assertForbidden();
     expect((bool) $this->tenant->fresh()->is_auditor)->toBeFalse();
 })->with(['auditor', 'regular user']);
 
-test('the security page shows the auditor toggle and badge', function () {
+test('the users page shows the auditor toggle and badge', function () {
     actAsAuditorTestUser($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Security::class)
+    Livewire::test(Users::class)
         ->assertSee('Make auditor')
         ->assertSeeHtml('grantAuditor('.$this->tenant->id.')')
         ->assertSeeHtml('revokeAuditor('.$this->auditor->id.')')

@@ -4,29 +4,19 @@ namespace App\Livewire\Platform;
 
 use App\Jobs\ReportVulnerabilitiesToRepositoryJob;
 use App\Livewire\Platform\Concerns\AuthorizesPlatformAdmin;
-use App\Livewire\Platform\Concerns\ManagesUserAccounts;
 use App\Models\OauthSetting;
-use App\Models\User;
 use App\Models\VulnerabilityScan;
 use App\Services\Security\TrivyScanner;
 use App\Support\InstanceSettingsAudit;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Trivy vulnerability scanning, SSO-only login, the scan history, and user account states.
+ * Trivy vulnerability scanning, SSO-only login and the scan history. User accounts are on {@see Users}.
  */
 class Security extends Component
 {
     use AuthorizesPlatformAdmin;
-    use ManagesUserAccounts;
-
-    /**
-     * Account state filters for the user list.
-     */
-    public const ACCOUNT_FILTERS = ['', 'locked', 'deactivated'];
 
     public bool $isTrivyScanEnabled = false;
 
@@ -47,12 +37,6 @@ class Security extends Component
     public string $status = '';
 
     public ?string $expandedScanUuid = null;
-
-    #[Url(as: 'users', except: '')]
-    public string $accountSearch = '';
-
-    #[Url(as: 'account', except: '')]
-    public string $accountFilter = '';
 
     public function mount(): void
     {
@@ -180,29 +164,6 @@ class Security extends Component
                 ->limit(50)
                 ->get(),
             'enabledProviders' => OauthSetting::where('enabled', true)->get(),
-            'accounts' => $this->accounts(),
         ]);
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function accounts(): Collection
-    {
-        $search = trim($this->accountSearch);
-        $filter = in_array($this->accountFilter, self::ACCOUNT_FILTERS, true) ? $this->accountFilter : '';
-
-        return User::query()
-            ->when($search !== '', function (Builder $query) use ($search): void {
-                $like = '%'.mb_strtolower($search).'%';
-                $query->where(fn (Builder $query) => $query
-                    ->whereRaw('LOWER(name) LIKE ?', [$like])
-                    ->orWhereRaw('LOWER(email) LIKE ?', [$like]));
-            })
-            ->when($filter === 'locked', fn (Builder $query) => $query->where('locked_until', '>', now()))
-            ->when($filter === 'deactivated', fn (Builder $query) => $query->whereNotNull('deactivated_at'))
-            ->orderBy('id')
-            ->limit(50)
-            ->get();
     }
 }

@@ -5639,5 +5639,19 @@
     "What changes": "바뀌는 점",
     "Worker": "워커",
     "Worker node": "워커 노드",
-    "Worker nodes": "워커 노드"
+    "Worker nodes": "워커 노드",
+    "Administrator": "관리자",
+    "Sub-administrator": "부관리자",
+    "Users": "사용자",
+    "Make :role": ":role(으)로 지정",
+    "Change the platform role of :email to :role?": ":email 의 플랫폼 권한을 :role(으)로 변경할까요?",
+    "Change the platform role to :role.": "플랫폼 권한을 :role(으)로 변경합니다.",
+    "Platform role of :email changed to :role.": ":email 의 플랫폼 권한이 :role(으)로 변경되었습니다.",
+    "Platform role of :email changed to :role": ":email 의 플랫폼 권한이 :role(으)로 변경됨",
+    "Only administrators can change administrator and sub-administrator accounts.": "관리자·부관리자 계정은 관리자만 변경할 수 있습니다.",
+    "Administrators manage every team, the instance settings, the security settings and the platform roles. The user joins the root team as admin.": "관리자는 모든 팀, 인스턴스 설정, 보안 설정, 플랫폼 권한을 관리합니다. 사용자는 루트 팀에 admin으로 추가됩니다.",
+    "Sub-administrators operate teams, applications and user accounts. They cannot change platform roles, instance settings or security settings.": "부관리자는 팀, 애플리케이션, 사용자 계정을 운영합니다. 플랫폼 권한, 인스턴스 설정, 보안 설정은 변경할 수 없습니다.",
+    "The user loses platform admin access. Team roles outside the root team do not change.": "플랫폼 관리 접근 권한이 사라집니다. 루트 팀 외의 팀 역할은 바뀌지 않습니다.",
+    "Administrators manage the whole platform, its settings and the platform roles. Sub-administrators operate teams, applications and user accounts but cannot change roles or settings. Users have no platform admin access.": "관리자는 플랫폼 전체와 설정, 플랫폼 권한을 관리합니다. 부관리자는 팀·애플리케이션·사용자 계정을 운영하지만 권한과 설정은 변경할 수 없습니다. 유저는 플랫폼 관리에 접근할 수 없습니다.",
+    "Regular user": "유저"
 }

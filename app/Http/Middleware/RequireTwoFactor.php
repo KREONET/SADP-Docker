@@ -138,7 +138,7 @@ class RequireTwoFactor
 
         $applies = match ($requiredFor) {
             'all' => true,
-            'admins' => $user->isInstanceAdmin() || (bool) $user->is_auditor,
+            'admins' => $user->canOperatePlatform() || (bool) $user->is_auditor,
             default => false,
         };
 

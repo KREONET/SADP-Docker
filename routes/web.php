@@ -35,6 +35,7 @@ use App\Livewire\Platform\Groups as PlatformGroups;
 use App\Livewire\Platform\Logs as PlatformLogs;
 use App\Livewire\Platform\Security as PlatformSecurity;
 use App\Livewire\Platform\Sources as PlatformSources;
+use App\Livewire\Platform\Users as PlatformUsers;
 use App\Livewire\Profile\Appearance as ProfileAppearance;
 use App\Livewire\Profile\Index as ProfileIndex;
 use App\Livewire\Project\Application\Backup\Index as ApplicationBackupIndex;
@@ -198,10 +199,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
     Route::get('/analytics', Analytics::class)->name('analytics');
     Route::get('/admin', AdminIndex::class)->name('admin.index');
-    Route::prefix('platform')->middleware('can:accessPlatformAdmin')->group(function () {
+    // Administrators and sub-administrators operate these pages; sources and security settings are administrator-only.
+    Route::prefix('platform')->middleware('can:operatePlatform')->group(function () {
         Route::get('/', PlatformDashboard::class)->name('platform.dashboard');
         Route::get('/applications', PlatformApplications::class)->name('platform.applications');
         Route::get('/groups', PlatformGroups::class)->name('platform.groups');
+        Route::get('/users', PlatformUsers::class)->name('platform.users');
+    });
+    Route::prefix('platform')->middleware('can:accessPlatformAdmin')->group(function () {
         Route::get('/sources', PlatformSources::class)->name('platform.sources');
         Route::get('/security', PlatformSecurity::class)->name('platform.security');
     });

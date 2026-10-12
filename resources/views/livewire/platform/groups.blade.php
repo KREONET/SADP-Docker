@@ -67,7 +67,9 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-wrap items-center justify-end gap-2">
-                                    @if ($member->id !== 0 && $member->id !== auth()->id())
+                                    {{-- Sub-administrators manage accounts with the user role only. --}}
+                                    @if ($member->id !== 0 && $member->id !== auth()->id()
+                                        && (isInstanceAdmin() || $member->platformRole() === \App\Enums\PlatformRole::USER))
                                         @if ($member->isLockedOut())
                                             <x-forms.button wire:click="unlockUser({{ $member->id }})">{{ __('Unlock') }}</x-forms.button>
                                         @endif
@@ -82,7 +84,9 @@
                                                 :shortConfirmationLabel="__('Email')" />
                                         @endif
                                     @endif
+                                    {{-- Root team admins and owners are platform administrators: only administrators change those roles. --}}
                                     <select class="input w-32" aria-label="{{ __('Role of :name', ['name' => $member->name]) }}"
+                                        @disabled($selectedTeam->id === 0 && ! isInstanceAdmin())
                                         wire:change="updateMemberRole({{ $selectedTeam->id }}, {{ $member->id }}, $event.target.value)">
                                         @foreach (\App\Livewire\Platform\Groups::ROLES as $role)
                                             <option value="{{ $role }}" @selected($member->pivot->role === $role)>{{ ucfirst($role) }}</option>

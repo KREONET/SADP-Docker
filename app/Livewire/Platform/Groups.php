@@ -38,26 +38,26 @@ class Groups extends Component
 
     public function mount(): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
     }
 
     public function selectTeam(int $teamId): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         $this->selectedTeamId = Team::query()->findOrFail($teamId)->id;
         $this->cancelEdit();
     }
 
     public function editTeam(int $teamId): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         $team = Team::query()->findOrFail($teamId);
         $this->startEdit('team', $team->id, $team->name, $team->description);
     }
 
     public function editProject(int $projectId): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         $project = Project::query()->findOrFail($projectId);
         $this->startEdit('project', $project->id, $project->name, $project->description);
     }
@@ -70,7 +70,7 @@ class Groups extends Component
 
     public function save(): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         $this->validate([
             'name' => ['required', 'string', 'max:255', 'regex:'.ValidationPatterns::NAME_PATTERN],
             'description' => ['nullable', 'string', 'max:255', 'regex:'.ValidationPatterns::DESCRIPTION_PATTERN],
@@ -90,7 +90,11 @@ class Groups extends Component
 
     public function updateMemberRole(int $teamId, int $userId, string $role): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
+        // Root team admins and owners are platform administrators, so only administrators change those roles.
+        if ($teamId === 0) {
+            $this->authorizePlatformAdmin();
+        }
         if (! in_array($role, self::ROLES, true)) {
             abort(422);
         }
@@ -124,7 +128,7 @@ class Groups extends Component
 
     public function deleteProject(int $projectId, mixed $password = ''): bool|string|null
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         if (! verifyPasswordConfirmation($password, $this)) {
             return __('The provided password is incorrect.');
         }
@@ -143,7 +147,7 @@ class Groups extends Component
 
     public function deleteTeam(int $teamId, mixed $password = ''): bool|string|null
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         if (! verifyPasswordConfirmation($password, $this)) {
             return __('The provided password is incorrect.');
         }
@@ -222,7 +226,7 @@ class Groups extends Component
 
     public function render()
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
 
         $selectedTeam = $this->selectedTeamId === null ? null : Team::query()
             ->with([
@@ -232,6 +236,7 @@ class Groups extends Component
             ->find($this->selectedTeamId);
 
         $applicationCounts = $selectedTeam === null ? collect() : Application::query()
+            ->withoutGlobalScope('withRelations')
             ->join('environments', 'environments.id', '=', 'applications.environment_id')
             ->whereIn('environments.project_id', $selectedTeam->projects->pluck('id'))
             ->selectRaw('environments.project_id as project_id, count(*) as aggregate')

@@ -14,13 +14,13 @@ use Throwable;
  * Restricts administrator access to the addresses in `instance_settings.admin_allowed_ips`.
  *
  * When the allowlist is set and the client address ({@see AdminIpAllowlist::clientIp()}) is not in it:
- * - a signed-in platform administrator or auditor is signed out and shown a 403 page;
+ * - a signed-in platform administrator, sub-administrator or auditor is signed out and shown a 403 page;
  * - every request to the instance admin area (/platform, /settings), including Livewire
  *   updates of components rendered on those pages, gets a 403.
  * Other users and pages are not affected. The login page stays reachable so administrators can sign in
  * from an allowed address.
  *
- * [한국어] 관리자 IP 허용 목록 미들웨어입니다. 허용되지 않은 주소에서 접속한 플랫폼 관리자·감사자는 로그아웃되고 403 화면을 봅니다.
+ * [한국어] 관리자 IP 허용 목록 미들웨어입니다. 허용되지 않은 주소에서 접속한 플랫폼 관리자·부관리자·감사자는 로그아웃되고 403 화면을 봅니다.
  * /platform, /settings 경로(그리고 그 화면의 Livewire 요청)는 누구든 허용된 주소에서만 열 수 있습니다.
  * 팀 사용자의 터미널(/terminal)은 제한하지 않습니다. 관리자·감사자는 허용되지 않은 주소에서 이미 로그아웃됩니다.
  */
@@ -88,11 +88,11 @@ class RestrictAdminIps
     }
 
     /**
-     * Platform administrators and auditors are bound to the administrator allowlist.
+     * Platform administrators, sub-administrators and auditors are bound to the administrator allowlist.
      */
     public static function isPrivilegedUser(User $user): bool
     {
-        return (bool) $user->is_auditor || (bool) $user->isInstanceAdmin();
+        return (bool) $user->is_auditor || $user->canOperatePlatform();
     }
 
     /**

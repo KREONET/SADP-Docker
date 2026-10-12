@@ -41,12 +41,12 @@ class Applications extends Component
 
     public function mount(): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
     }
 
     public function edit(string $uuid): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         $application = $this->findApplication($uuid);
 
         $this->editingUuid = $application->uuid;
@@ -66,7 +66,7 @@ class Applications extends Component
 
     public function save(): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
 
         try {
             $application = $this->findApplication((string) $this->editingUuid);
@@ -103,7 +103,7 @@ class Applications extends Component
 
     public function redeploy(string $uuid): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
 
         try {
             $application = $this->findApplication($uuid);
@@ -122,7 +122,7 @@ class Applications extends Component
 
     public function stop(string $uuid): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
 
         try {
             $application = $this->findApplication($uuid);
@@ -137,7 +137,7 @@ class Applications extends Component
 
     public function delete(string $uuid, mixed $password = ''): bool|string|null
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
         if (! verifyPasswordConfirmation($password, $this)) {
             return __('The provided password is incorrect.');
         }
@@ -162,7 +162,7 @@ class Applications extends Component
 
     public function render()
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizePlatformOperator();
 
         $query = Application::query()
             ->with(['environment.project.team:id,name', 'latestVulnerabilityScan', 'settings:id,application_id,is_auto_deploy_enabled'])

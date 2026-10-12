@@ -1,7 +1,7 @@
 <?php
 
 use App\Livewire\Platform\Groups;
-use App\Livewire\Platform\Security;
+use App\Livewire\Platform\Users;
 use App\Models\AuditEvent;
 use App\Models\InstanceSettings;
 use App\Models\Team;
@@ -70,13 +70,13 @@ test('platform admins can deactivate and reactivate a user after confirming thei
     expect($tenant->isDeactivated())->toBeFalse()
         ->and($tenant->last_login_at)->not->toBeNull()
         ->and(AuditEvent::query()->where('event', 'platform.user.reactivated')->exists())->toBeTrue();
-})->with(['groups page' => [Groups::class], 'security page' => [Security::class]]);
+})->with(['groups page' => [Groups::class], 'users page' => [Users::class]]);
 
 test('platform admins can unlock a locked account', function () {
     $this->tenant->forceFill(['failed_login_attempts' => 5, 'locked_until' => now()->addMinutes(30)])->saveQuietly();
     actAsPlatformAccountManager($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Security::class)
+    Livewire::test(Users::class)
         ->set('accountFilter', 'locked')
         ->assertSee($this->tenant->email)
         ->assertSee('Unlock')
@@ -96,8 +96,8 @@ test('the root user and the acting admin cannot be changed', function (string $m
 
     $arguments = $method === 'deactivateUser' ? ['password'] : [];
 
-    Livewire::test(Security::class)->call($method, 0, ...$arguments);
-    Livewire::test(Security::class)->call($method, $this->platformAdmin->id, ...$arguments);
+    Livewire::test(Users::class)->call($method, 0, ...$arguments);
+    Livewire::test(Users::class)->call($method, $this->platformAdmin->id, ...$arguments);
 
     expect($this->root->fresh()->isDeactivated())->toBeFalse()
         ->and($this->root->fresh()->isLockedOut())->toBeTrue()
@@ -109,7 +109,7 @@ test('the root user and the acting admin cannot be changed', function (string $m
 test('non platform admins cannot open the account management pages', function () {
     actAsPlatformAccountManager($this->tenant, $this->tenantTeam);
 
-    Livewire::test(Security::class)->assertForbidden();
+    Livewire::test(Users::class)->assertForbidden();
     Livewire::test(Groups::class)->assertForbidden();
 });
 
@@ -118,7 +118,7 @@ test('every account action re-checks the platform admin gate', function (string 
     $this->tenantTeam->members()->attach($victim->id, ['role' => 'member']);
     $victim->forceFill(['locked_until' => now()->addMinutes(30), 'deactivated_at' => $method === 'reactivateUser' ? now() : null])->saveQuietly();
     actAsPlatformAccountManager($this->platformAdmin, $this->rootTeam);
-    $component = Livewire::test(Security::class);
+    $component = Livewire::test(Users::class);
 
     // Demoted after the page was opened.
     $this->rootTeam->members()->updateExistingPivot($this->platformAdmin->id, ['role' => 'member']);
@@ -136,7 +136,7 @@ test('the account list shows last login and state', function () {
     $this->tenant->forceFill(['last_login_at' => now()->subDays(3), 'deactivated_at' => now()])->saveQuietly();
     actAsPlatformAccountManager($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Security::class)
+    Livewire::test(Users::class)
         ->assertSee($this->tenant->email)
         ->assertSee('3 days ago')
         ->assertSee('Deactivated')

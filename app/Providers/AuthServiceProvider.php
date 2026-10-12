@@ -157,6 +157,10 @@ class AuthServiceProvider extends ServiceProvider
         // Platform administrators (admins/owners of the root team) manage every team's resources
         Gate::define('accessPlatformAdmin', fn (User $user): bool => $user->isInstanceAdmin());
 
+        // Platform administrators and sub-administrators operate the platform admin pages;
+        // platform roles, instance settings and security settings stay with accessPlatformAdmin
+        Gate::define('operatePlatform', fn (User $user): bool => $user->canOperatePlatform());
+
         // Read-only access to the instance logs: platform administrators and auditors (separation of duties)
         Gate::define('viewAuditLogs', fn (User $user): bool => (bool) $user->is_auditor || $user->isInstanceAdmin());
 

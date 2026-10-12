@@ -198,7 +198,7 @@
                     <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Tags') }}</span>
                 </a>
             </li>
-            @if (isInstanceAdmin())
+            @if (auth()->user()?->canOperatePlatform())
                 <li>
                     <a title="{{ __('Platform Admin') }}" {{ wireNavigate() }}
                         class="{{ request()->is('platform*') ? 'menu-item-active menu-item' : 'menu-item' }}"
@@ -207,14 +207,17 @@
                         <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Platform Admin') }}</span>
                     </a>
                 </li>
-                <li>
-                    <a title="{{ __('Settings') }}" {{ wireNavigate() }}
-                        class="{{ request()->is('settings*') ? 'menu-item-active menu-item' : 'menu-item' }}"
-                        :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('settings.index') }}">
-                        <x-reicon name="settings" class="menu-item-icon" />
-                        <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Settings') }}</span>
-                    </a>
-                </li>
+                {{-- Instance settings stay administrator-only; sub-administrators only operate the platform admin pages. --}}
+                @if (isInstanceAdmin())
+                    <li>
+                        <a title="{{ __('Settings') }}" {{ wireNavigate() }}
+                            class="{{ request()->is('settings*') ? 'menu-item-active menu-item' : 'menu-item' }}"
+                            :class="collapsed && 'lg:justify-center lg:px-0'" href="{{ route('settings.index') }}">
+                            <x-reicon name="settings" class="menu-item-icon" />
+                            <span class="menu-item-label" :class="collapsed && 'lg:hidden'">{{ __('Settings') }}</span>
+                        </a>
+                    </li>
+                @endif
             @elseif (auth()->user()?->is_auditor)
                 {{-- Auditors only read the logs; the rest of the platform admin area stays admin-only. --}}
                 <li>
