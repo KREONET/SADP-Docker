@@ -82,11 +82,11 @@
             localStorage.setItem('coolify-servers-view', mode);
         }
     }">
-        @if ($servers->isEmpty())
+        @if ($servers->isEmpty() && $sharedServers->isEmpty())
             <x-empty :title="__('No servers yet')"
                 :description="__('Add a server to deploy applications, databases, and services.')"
                 icon-name="servers" />
-        @else
+        @elseif ($servers->isNotEmpty())
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="relative w-full sm:max-w-sm">
                     <x-reicon name="search"
@@ -223,6 +223,49 @@
                 <p class="text-[13px] font-medium">{{ __('No matching servers') }}</p>
                 <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">{{ __('Try a different search.') }}</p>
             </div>
+        @endif
+
+        @if ($sharedServers->isNotEmpty())
+            <section @class(['mt-8' => $servers->isNotEmpty()])>
+                <h2 class="text-[15px]! leading-5! font-semibold!">{{ __('Shared servers') }}</h2>
+                <p class="mt-1 mb-3 text-[12px] text-neutral-500 dark:text-fg-dim">
+                    {{ __('A platform administrator shared these servers with every team. Choose one when you create a new resource. Only the administrator can manage them.') }}
+                </p>
+                <div
+                    class="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
+                    @foreach ($sharedServers as $sharedServer)
+                        @php
+                            $isSharedServerReady = $sharedServer->settings->is_reachable
+                                && $sharedServer->settings->is_usable
+                                && ! $sharedServer->settings->force_disabled;
+                        @endphp
+                        <div
+                            class="flex min-h-14 items-center gap-3 border-b border-neutral-200 px-4 py-2.5 text-[12px] last:border-b-0 dark:border-white/[0.07]">
+                            <div
+                                class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-500 dark:border-white/[0.1] dark:bg-white/[0.035] dark:text-fg-dim">
+                                <x-reicon name="servers" class="size-4" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-[13px] font-semibold text-black dark:text-fg">
+                                    {{ $sharedServer->name }}
+                                </p>
+                                <p class="truncate text-[11px] text-neutral-500 dark:text-fg-faint">
+                                    {{ $sharedServer->description }}
+                                </p>
+                            </div>
+                            <x-status-badge :label="__('Shared')" />
+                            <span class="flex items-center gap-2 text-[11px] font-medium text-neutral-600 dark:text-fg-dim">
+                                <span @class([
+                                    'size-2 shrink-0 rounded-full',
+                                    'bg-green-500 dark:bg-green-400' => $isSharedServerReady,
+                                    'bg-red-500 dark:bg-red-400' => ! $isSharedServerReady,
+                                ])></span>
+                                {{ $isSharedServerReady ? __('Ready') : __('Not ready') }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
         @endif
 
         @isset($error)

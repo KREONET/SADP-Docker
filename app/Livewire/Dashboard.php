@@ -14,12 +14,15 @@ class Dashboard extends Component
 
     public Collection $servers;
 
+    public Collection $sharedServers;
+
     public Collection $privateKeys;
 
     public function mount()
     {
         $this->privateKeys = PrivateKey::ownedByCurrentTeamCached();
         $this->servers = Server::ownedByCurrentTeamCached();
+        $this->sharedServers = Server::sharedWithCurrentTeam()->get();
         $this->projects = Project::ownedByCurrentTeam()
             ->with(['environments:id,uuid,name,project_id'])
             ->withCount([

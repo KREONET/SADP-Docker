@@ -127,7 +127,7 @@
             <x-section-heading :title="__('Servers')" :subtitle="__('Infrastructure available for deployments')"
                 :href="route('server.index')" />
 
-            @if ($dashboardServers->isEmpty())
+            @if ($dashboardServers->isEmpty() && $sharedServers->isEmpty())
                 @if ($privateKeys->isEmpty())
                     <x-empty :title="__('A private key is required')"
                         :description="__('Add an SSH private key before connecting your first server.')"
@@ -209,6 +209,42 @@
                                 @endif
                             </div>
                         </a>
+                    @endforeach
+                    @foreach ($sharedServers->take(max(0, $dashboardItemLimit - $dashboardServers->count())) as $sharedServer)
+                        @php
+                            $isSharedServerReady = $sharedServer->settings->is_reachable
+                                && $sharedServer->settings->is_usable
+                                && ! $sharedServer->settings->force_disabled;
+                        @endphp
+                        {{-- Shared servers are managed by their owner team, so they have no page to open here. --}}
+                        <div
+                            class="relative flex min-h-28 min-w-0 flex-col rounded-xl border border-dashed border-neutral-200 bg-white p-3 shadow-sm dark:border-white/[0.1] dark:bg-white/[0.05]">
+                            <div class="relative z-10 flex min-w-0 items-start gap-3">
+                                <div
+                                    class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-500 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-fg-dim">
+                                    <x-reicon name="servers" class="size-4" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3
+                                        class="truncate text-[13px]! leading-4! font-semibold! text-black dark:text-fg">
+                                        {{ $sharedServer->name }}
+                                    </h3>
+                                    <p class="mt-0.5 truncate text-[11px] text-neutral-500 dark:text-fg-faint">
+                                        {{ $sharedServer->description }}
+                                    </p>
+                                </div>
+                                @if (! $isSharedServerReady)
+                                    <span data-tooltip="{{ __('Not ready') }}"
+                                        aria-label="{{ __('Server status: :status', ['status' => __('Not ready')]) }}"
+                                        class="flex size-6 shrink-0 items-center justify-center rounded-md text-red-500 dark:text-red-400">
+                                        <x-reicon name="alert-triangle" class="size-4" />
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="relative z-10 mt-auto pt-3">
+                                <x-status-badge :label="__('Shared')" />
+                            </div>
+                        </div>
                     @endforeach
                 </div>
             @endif

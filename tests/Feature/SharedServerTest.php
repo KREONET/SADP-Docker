@@ -3,6 +3,8 @@
 use App\Actions\Docker\GetContainersStatus;
 use App\Enums\ApplicationDeploymentStatus;
 use App\Events\ServiceChecked;
+use App\Livewire\Dashboard;
+use App\Livewire\Server\Index as ServerIndex;
 use App\Livewire\Server\Show;
 use App\Models\Application;
 use App\Models\ApplicationDeploymentQueue;
@@ -186,4 +188,45 @@ it('does not compare the string application_id column with applications.id in SQ
     $sql = ApplicationDeploymentQueue::visibleToTeam($this->team->id)->toSql();
 
     expect($sql)->not->toContain('"application_deployment_queues"."application_id" = "applications"."id"');
+});
+
+it('shares servers of the root team by default but not servers of other teams', function () {
+    $rootServer = Server::factory()->create(['team_id' => $this->rootTeam->id]);
+    $teamServer = Server::factory()->create(['team_id' => $this->team->id]);
+
+    expect($rootServer->fresh()->is_shared)->toBeTrue()
+        ->and($teamServer->fresh()->is_shared)->toBeFalse();
+});
+
+it('shares the root team servers that existed before sharing', function () {
+    $this->privateServer->forceFill(['is_shared' => false])->save();
+    $teamServer = sharedTestServer($this->team);
+
+    (require database_path('migrations/2026_10_13_090000_share_existing_root_team_servers.php'))->up();
+
+    expect($this->privateServer->fresh()->is_shared)->toBeTrue()
+        ->and($teamServer->fresh()->is_shared)->toBeFalse();
+});
+
+it('lists shared servers for a team without servers of its own', function () {
+    Livewire::test(ServerIndex::class)
+        ->assertSee($this->sharedServer->name)
+        ->assertSee(__('Shared servers'))
+        ->assertDontSee($this->privateServer->name)
+        ->assertDontSee(__('No servers yet'))
+        ->assertDontSee(route('server.show', ['server_uuid' => $this->sharedServer->uuid]));
+});
+
+it('shows shared servers on the dashboard', function () {
+    Livewire::test(Dashboard::class)
+        ->assertSee($this->sharedServer->name)
+        ->assertDontSee($this->privateServer->name)
+        ->assertDontSee(__('No servers yet'));
+});
+
+it('does not list the team\'s own servers as shared with it', function () {
+    $this->actingAs($this->platformAdmin);
+    session(['currentTeam' => $this->rootTeam]);
+
+    expect(Server::sharedWithCurrentTeam()->pluck('id'))->not->toContain($this->sharedServer->id);
 });
