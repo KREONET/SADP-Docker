@@ -40,8 +40,8 @@ Coolify와 같이 아래와같은 기능은 공통적으로 제공됨니다.
 준비물은 Docker뿐입니다. PHP와 Node는 컨테이너 안에서 돌기 때문에 따로 설치하지 않아도 됩니다.
 
 ```bash
-git clone https://github.com/KREONET/PASED.git
-cd PASED
+git clone https://github.com/KREONET/SADP-Docker.git
+cd SADP-Docker
 
 ./scripts/dev start    # 개발 환경 시작
 ./scripts/dev demo     # 또는: 데모 데이터와 Loki/Grafana까지 함께 시작
@@ -71,7 +71,7 @@ PADED는 Coolify 공식 이미지가 아니라 **이 저장소에서 직접 빌�
 ### 1. 기본 설치 (디렉터리, 비밀값, SSH 키 생성)
 
 ```bash
-git clone https://github.com/KREONET/PASED.git /opt/paded
+git clone https://github.com/KREONET/SADP-Docker.git /opt/paded
 cd /opt/paded
 sudo bash scripts/install.sh
 ```
@@ -112,7 +112,7 @@ sudo bash scripts/paded-deploy.sh
 
 ### 3. 업데이트는 GitHub에서 확인
 
-PADED에는 앱 안에서 업데이트하는 기능(Upgrade 버튼, 자동 업데이트)이 없습니다. 원본 Coolify의 업데이트 기능은 공식 Coolify 이미지를 받아 와서 PADED를 덮어쓰기 때문에 제거했습니다. 새 버전은 [GitHub Releases](https://github.com/KREONET/PASED/releases)에서 확인하고, 아래 **PADED 새 버전으로 올리기** 방법으로 올리세요.
+PADED에는 앱 안에서 업데이트하는 기능(Upgrade 버튼, 자동 업데이트)이 없습니다. 원본 Coolify의 업데이트 기능은 공식 Coolify 이미지를 받아 와서 PADED를 덮어쓰기 때문에 제거했습니다. 새 버전은 [GitHub Releases](https://github.com/KREONET/SADP-Docker/releases)에서 확인하고, 아래 **PADED 새 버전으로 올리기** 방법으로 올리세요.
 
 ### 서버 공유하기 (여러 팀이 같은 서버 사용)
 
