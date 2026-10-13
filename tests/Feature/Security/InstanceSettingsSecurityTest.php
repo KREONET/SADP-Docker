@@ -263,7 +263,7 @@ test('internal network, branding and default language saves are audited', functi
     Livewire::test(Index::class)
         ->set('internal_network_cidrs', '10.0.0.0/8')
         ->call('saveInternalNetworks')
-        ->set('brand_name', 'PASED')
+        ->set('brand_name', 'SADP-Docker-Security')
         ->call('saveBranding');
 
     $fields = settingsUpdatedEvents()->pluck('metadata.fields')->all();

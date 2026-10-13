@@ -20,7 +20,7 @@ return [
         'cdn_url' => env('CDN_URL', 'https://cdn.coollabs.io'),
         'versions_url' => env('VERSIONS_URL', env('CDN_URL', 'https://cdn.coollabs.io').'/coolify/versions.json'),
         'releases_url' => env('RELEASES_URL', 'https://cdn.coollabs.io/coolify/releases.json'),
-        'github_releases_url' => env('GITHUB_RELEASES_URL', 'https://github.com/KREONET/PASED/releases'),
+        'github_releases_url' => env('GITHUB_RELEASES_URL', 'https://github.com/KREONET/SADP-Docker-Security/releases'),
     ],
 
     'urls' => [
