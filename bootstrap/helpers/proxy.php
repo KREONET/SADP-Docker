@@ -305,6 +305,64 @@ function applyDnsChallengeToProxyConfiguration(Server $server, string $configura
 }
 
 /**
+ * Traefik trusts X-Forwarded-* headers on the HTTP entrypoint from private ranges, so applications
+ * behind a Cloudflare Tunnel see the original scheme (`https`) and client IP sent by cloudflared.
+ */
+const CLOUDFLARE_TUNNEL_TRAEFIK_TRUSTED_IPS_COMMAND = '--entrypoints.http.forwardedheaders.trustedips=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7';
+
+/** The same for Caddy, as a caddy-docker-proxy global option on the proxy container. */
+const CLOUDFLARE_TUNNEL_CADDY_TRUSTED_PROXIES_LABEL = 'caddy.servers.trusted_proxies=static private_ranges';
+
+/**
+ * Adds or removes the forwarded-header trust that Cloudflare Tunnel traffic needs, keeping
+ * everything else in the proxy configuration.
+ */
+function applyCloudflareTunnelToProxyConfigArray(Server $server, array $config): array
+{
+    $enabled = (bool) $server->settings?->is_cloudflare_tunnel_ingress_enabled;
+
+    if ($server->proxyType() === ProxyTypes::TRAEFIK->value) {
+        $commands = data_get($config, 'services.traefik.command', []);
+        if (! is_array($commands)) {
+            throw new RuntimeException('Traefik commands must be a YAML list.');
+        }
+        $commands = array_values(array_filter($commands, fn (mixed $command) => $command !== CLOUDFLARE_TUNNEL_TRAEFIK_TRUSTED_IPS_COMMAND));
+        if ($enabled) {
+            $commands[] = CLOUDFLARE_TUNNEL_TRAEFIK_TRUSTED_IPS_COMMAND;
+        }
+        data_set($config, 'services.traefik.command', $commands);
+    } elseif ($server->proxyType() === ProxyTypes::CADDY->value) {
+        $labels = data_get($config, 'services.caddy.labels', []);
+        [$key, $value] = explode('=', CLOUDFLARE_TUNNEL_CADDY_TRUSTED_PROXIES_LABEL, 2);
+        if (is_array($labels) && array_is_list($labels)) {
+            $labels = array_values(array_filter($labels, fn (mixed $label) => $label !== CLOUDFLARE_TUNNEL_CADDY_TRUSTED_PROXIES_LABEL));
+            if ($enabled) {
+                $labels[] = CLOUDFLARE_TUNNEL_CADDY_TRUSTED_PROXIES_LABEL;
+            }
+        } elseif (is_array($labels)) {
+            unset($labels[$key]);
+            if ($enabled) {
+                $labels[$key] = $value;
+            }
+        }
+        data_set($config, 'services.caddy.labels', $labels);
+    }
+
+    return $config;
+}
+
+function applyCloudflareTunnelToProxyConfiguration(Server $server, string $configuration): string
+{
+    $config = Yaml::parse($configuration);
+
+    if (! is_array($config)) {
+        throw new RuntimeException('Proxy configuration must be a YAML mapping.');
+    }
+
+    return Yaml::dump(applyCloudflareTunnelToProxyConfigArray($server, $config), 12, 2);
+}
+
+/**
  * Converts a Compose environment list (`KEY=value`) to a map so single keys can be replaced.
  *
  * @param  array<int, mixed>  $environment
@@ -357,7 +415,8 @@ function wildcardCertificateCovers(string $domain, string $host): bool
  */
 function applyWildcardCertificateLabels(Collection $labels, ?Server $server): Collection
 {
-    $domain = $server?->wildcardCertificateDomain();
+    // A worker routed through the controller uses the certificate settings of the controller's proxy.
+    $domain = $server?->trafficEntryServer()->wildcardCertificateDomain();
     if ($domain === null) {
         return $labels;
     }
@@ -390,6 +449,118 @@ function applyWildcardCertificateLabels(Collection $labels, ?Server $server): Co
     }
 
     return collect($result);
+}
+
+/**
+ * Final adjustments of generated proxy labels for the proxy that receives the server's traffic:
+ * the DNS-01 wildcard certificate, then Cloudflare Tunnel.
+ */
+function applyProxyEntryLabels(Collection $labels, ?Server $server): Collection
+{
+    return applyCloudflareTunnelLabels(applyWildcardCertificateLabels($labels, $server), $server);
+}
+
+/**
+ * Serves every domain over plain HTTP when public traffic arrives through a Cloudflare Tunnel.
+ * Cloudflare terminates TLS and cloudflared forwards to the proxy's HTTP port, so an HTTPS router
+ * would never match and an HTTP-to-HTTPS redirect would loop.
+ *
+ * Traefik: each HTTPS router moves to the `http` entrypoint without TLS, keeping its middlewares
+ * (access restrictions, basic auth, ...), and replaces its HTTP twin (the router with the same rule).
+ * Caddy: site addresses become `http://host`, so Caddy requests no certificate and does not redirect.
+ */
+function applyCloudflareTunnelLabels(Collection $labels, ?Server $server): Collection
+{
+    if (! $server?->servesTrafficThroughCloudflareTunnel()) {
+        return $labels;
+    }
+
+    $rules = [];
+    $entryPoints = [];
+    $routerServices = [];
+    foreach ($labels as $label) {
+        if (! is_string($label)) {
+            continue;
+        }
+        if (preg_match('/^traefik\.http\.routers\.([^.=]+)\.rule=(.*)$/i', $label, $matches)) {
+            $rules[$matches[1]] = $matches[2];
+        } elseif (preg_match('/^traefik\.http\.routers\.([^.=]+)\.entrypoints=(.*)$/i', $label, $matches)) {
+            $entryPoints[$matches[1]] = strtolower(trim($matches[2]));
+        } elseif (preg_match('/^traefik\.http\.routers\.([^.=]+)\.service=(.*)$/i', $label, $matches)) {
+            $routerServices[$matches[1]] = trim($matches[2]);
+        }
+    }
+
+    $httpsRouters = array_keys(array_filter($entryPoints, fn (string $entryPoint) => $entryPoint === 'https'));
+    $httpsRules = array_filter(array_map(fn (string $router) => $rules[$router] ?? null, $httpsRouters));
+    $droppedRouters = [];
+    foreach ($entryPoints as $router => $entryPoint) {
+        if ($entryPoint === 'http' && isset($rules[$router]) && in_array($rules[$router], $httpsRules, true)) {
+            $droppedRouters[$router] = true;
+        }
+    }
+    $keptServices = [];
+    foreach ($routerServices as $router => $service) {
+        if (! isset($droppedRouters[$router])) {
+            $keptServices[$service] = true;
+        }
+    }
+    $droppedServices = [];
+    foreach (array_keys($droppedRouters) as $router) {
+        if (isset($routerServices[$router]) && ! isset($keptServices[$routerServices[$router]])) {
+            $droppedServices[$routerServices[$router]] = true;
+        }
+    }
+
+    $result = [];
+    foreach ($labels as $key => $label) {
+        if (! is_string($label)) {
+            $result[$key] = $label;
+
+            continue;
+        }
+        if (preg_match('/^traefik\.http\.routers\.([^.=]+)\./i', $label, $matches) && isset($droppedRouters[$matches[1]])) {
+            continue;
+        }
+        if (preg_match('/^traefik\.http\.services\.([^.=]+)\./i', $label, $matches) && isset($droppedServices[$matches[1]])) {
+            continue;
+        }
+        if (preg_match('/^traefik\.http\.routers\.([^.=]+)\.(entrypoints)=/i', $label, $matches) && in_array($matches[1], $httpsRouters, true)) {
+            $result[$key] = "traefik.http.routers.{$matches[1]}.{$matches[2]}=http";
+
+            continue;
+        }
+        if (preg_match('/^traefik\.http\.routers\.([^.=]+)\.tls(\.|=)/i', $label, $matches) && in_array($matches[1], $httpsRouters, true)) {
+            continue;
+        }
+        if (preg_match('/^(caddy(?:_\d+)?)=(.*)$/', $label, $matches)) {
+            $result[$key] = $matches[1].'='.cloudflareTunnelCaddySiteAddress($matches[2]);
+
+            continue;
+        }
+        $result[$key] = $label;
+    }
+
+    return collect($result);
+}
+
+/**
+ * `https://a.example.com` and `http://a.example.com, https://a.example.com` become `http://a.example.com`.
+ */
+function cloudflareTunnelCaddySiteAddress(string $siteAddress): string
+{
+    $addresses = [];
+    foreach (explode(',', $siteAddress) as $address) {
+        $address = trim($address);
+        if ($address === '') {
+            continue;
+        }
+        $address = (string) preg_replace('#^[a-z][a-z0-9+.-]*://#i', '', $address);
+        $address = (string) preg_replace('#:443$#', '', $address);
+        $addresses['http://'.$address] = true;
+    }
+
+    return implode(', ', array_keys($addresses));
 }
 
 /**
@@ -935,6 +1106,7 @@ function generateDefaultProxyConfiguration(Server $server, array $custom_command
 
     $config = applyTrafficAnalyticsToProxyConfigArray($server, $config);
     $config = applyDnsChallengeToProxyConfigArray($server, $config);
+    $config = applyCloudflareTunnelToProxyConfigArray($server, $config);
     $config = Yaml::dump($config, 12, 2);
     SaveProxyConfiguration::run($server, $config);
 

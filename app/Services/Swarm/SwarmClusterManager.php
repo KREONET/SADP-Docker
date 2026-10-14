@@ -51,6 +51,9 @@ class SwarmClusterManager
         if ($server->settings->is_cloudflare_tunnel) {
             $blockers[] = __('Servers reached through a Cloudflare Tunnel cannot join a Swarm cluster.');
         }
+        if ($server->isRoutedThroughController()) {
+            $blockers[] = __('Servers routed through the controller cannot join a Swarm cluster. Turn off routing through the controller first.');
+        }
         if (! in_array($server->proxyType(), [null, ProxyTypes::NONE->value, ProxyTypes::TRAEFIK->value], true)) {
             $blockers[] = __('Swarm clusters only support the Traefik proxy. Switch the proxy to Traefik first.');
         }
@@ -90,6 +93,9 @@ class SwarmClusterManager
         }
         if ($server->settings->is_cloudflare_tunnel) {
             $blockers[] = __('Servers reached through a Cloudflare Tunnel cannot join a Swarm cluster.');
+        }
+        if ($server->isRoutedThroughController()) {
+            $blockers[] = __('Servers routed through the controller cannot join a Swarm cluster. Turn off routing through the controller first.');
         }
         if ($server->hasDefinedResources()) {
             $blockers[] = __('Move or delete the resources on this server first. Its existing containers would stop working in Swarm mode.');
