@@ -8,9 +8,16 @@
         <x-server.sidebar :server="$server" activeMenu="proxy" activeSubMenu="configuration" />
         @if ($server->isFunctional())
             <div class="w-full">
-                <livewire:server.proxy :server="$server" />
-                @if (in_array($server->proxyType(), [\App\Enums\ProxyTypes::TRAEFIK->value, \App\Enums\ProxyTypes::CADDY->value], true))
-                    <livewire:server.proxy.wildcard-certificate :server="$server" />
+                @if ($server->isRoutedThroughController())
+                    {{-- The controller's proxy receives this server's traffic. --}}
+                    <livewire:server.proxy.controller-routing :server="$server" />
+                @else
+                    <livewire:server.proxy :server="$server" />
+                    @if (in_array($server->proxyType(), [\App\Enums\ProxyTypes::TRAEFIK->value, \App\Enums\ProxyTypes::CADDY->value], true))
+                        <livewire:server.proxy.wildcard-certificate :server="$server" />
+                        <livewire:server.proxy.cloudflare-tunnel-ingress :server="$server" />
+                    @endif
+                    <livewire:server.proxy.controller-routing :server="$server" />
                 @endif
             </div>
         @else

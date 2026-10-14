@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ControllerIngress\ControllerIngress;
 use App\Support\DomainPortOverrides;
 use App\Support\SharedServerDomainPolicy;
 use App\Support\ValidationPatterns;
@@ -49,6 +50,9 @@ class ApplicationPreview extends BaseModel
 
     protected static function booted(): void
     {
+        static::deleted(function (ApplicationPreview $model) {
+            ControllerIngress::forget($model);
+        });
         static::forceDeleting(function (ApplicationPreview $preview): void {
             $server = $preview->application->destination->server;
             $application = $preview->application;

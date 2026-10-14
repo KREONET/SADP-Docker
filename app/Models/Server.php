@@ -651,7 +651,37 @@ class Server extends BaseModel
 
     public function proxySet()
     {
-        return $this->proxyType() && $this->proxyType() !== 'NONE' && $this->isFunctional() && ! $this->isSwarmWorker() && $this->canHostResources();
+        return $this->proxyType() && $this->proxyType() !== 'NONE' && $this->isFunctional() && ! $this->isSwarmWorker() && $this->canHostResources() && ! $this->isRoutedThroughController();
+    }
+
+    /**
+     * A worker on the internal network that runs no proxy of its own: the controller's proxy (the
+     * server that runs PADED) receives its traffic and forwards it to the worker's internal IP.
+     */
+    public function isRoutedThroughController(): bool
+    {
+        return $this->id !== 0 && (bool) $this->settings?->is_routed_through_controller;
+    }
+
+    /**
+     * The server whose proxy receives the public traffic of this server's resources.
+     */
+    public function trafficEntryServer(): Server
+    {
+        if (! $this->isRoutedThroughController()) {
+            return $this;
+        }
+
+        return Server::find(0) ?? $this;
+    }
+
+    /**
+     * True when public traffic reaches this server's resources through a Cloudflare Tunnel. Cloudflare
+     * terminates TLS, so the proxy serves those domains over plain HTTP.
+     */
+    public function servesTrafficThroughCloudflareTunnel(): bool
+    {
+        return (bool) $this->trafficEntryServer()->settings?->is_cloudflare_tunnel_ingress_enabled;
     }
 
     public function setupDefaultRedirect()
@@ -759,7 +789,8 @@ class Server extends BaseModel
             } else {
                 $url = Url::fromString($settings->fqdn);
                 $host = $url->getHost();
-                $schema = $url->getScheme();
+                // Cloudflare terminates TLS for tunnel traffic, so the proxy serves the dashboard over HTTP.
+                $schema = $this->servesTrafficThroughCloudflareTunnel() ? 'http' : $url->getScheme();
                 $traefik_dynamic_conf = [
                     'http' => [
                         'middlewares' => [
@@ -906,7 +937,8 @@ class Server extends BaseModel
             } else {
                 $url = Url::fromString($settings->fqdn);
                 $host = $url->getHost();
-                $schema = $url->getScheme();
+                // Cloudflare terminates TLS for tunnel traffic, so the proxy serves the dashboard over HTTP.
+                $schema = $this->servesTrafficThroughCloudflareTunnel() ? 'http' : $url->getScheme();
                 $siteAddress = $this->dashboardCaddySiteAddress($settings, $schema, $host);
                 $caddy_file = "
 $siteAddress {
@@ -1662,7 +1694,7 @@ $siteAddress {
     public function isProxyShouldRun()
     {
         // TODO: Do we need "|| $this->proxy->force_stop" here?
-        if ($this->proxyType() === ProxyTypes::NONE->value || $this->isBuildServer()) {
+        if ($this->proxyType() === ProxyTypes::NONE->value || $this->isBuildServer() || $this->isRoutedThroughController()) {
             return false;
         }
 

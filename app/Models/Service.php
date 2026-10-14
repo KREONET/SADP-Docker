@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\ContainerStatusAggregator;
+use App\Services\ControllerIngress\ControllerIngress;
 use App\Support\DomainPortOverrides;
 use App\Support\ResourceStartActivity;
 use App\Traits\Auditable;
@@ -80,6 +81,9 @@ class Service extends BaseModel
 
     protected static function booted()
     {
+        static::deleted(function (Service $model) {
+            ControllerIngress::forget($model);
+        });
         static::creating(function ($service) {
             if (blank($service->name)) {
                 $service->name = 'service-'.new_public_id();

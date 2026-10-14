@@ -16,6 +16,10 @@ class StartProxy
     public function handle(Server $server, bool $async = true, bool $force = false, bool $restarting = false): string|Activity
     {
         $proxyType = $server->proxyType();
+        if ($server->isRoutedThroughController()) {
+            // The controller's proxy receives this worker's traffic.
+            return 'OK';
+        }
         if ((is_null($proxyType) || $proxyType === 'NONE' || $server->proxy->force_stop || $server->isBuildServer()) && $force === false) {
             return 'OK';
         }

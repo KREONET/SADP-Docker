@@ -238,6 +238,9 @@ class Domains extends Component
         $this->dnsValidationEnabled = (bool) data_get($settings, 'is_dns_validation_enabled', true);
 
         $server = $this->service->server;
+        // DNS points to the proxy that receives the traffic: the controller for a routed worker. Behind a
+        // Cloudflare Tunnel, Cloudflare owns the records, so there is no server IP to point them to.
+        $server = $server?->servesTrafficThroughCloudflareTunnel() ? null : $server?->trafficEntryServer();
         if ($server) {
             if ($server->id === 0) {
                 $configured = data_get($settings, 'public_ipv4')

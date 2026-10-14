@@ -28,6 +28,11 @@ class CheckProxy
 
             return false;
         }
+        if ($server->isRoutedThroughController()) {
+            // The controller's proxy receives this worker's traffic. Server validation calls this
+            // from the UI too, so it returns instead of throwing.
+            return false;
+        }
         $proxyType = $server->proxyType();
         if ((is_null($proxyType) || $proxyType === 'NONE' || $server->proxy->force_stop) && ! $fromUI) {
             return false;

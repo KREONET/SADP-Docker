@@ -1355,7 +1355,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
         }
     }
 
-    return applyWildcardCertificateLabels($labels, $application->destination->server)->all();
+    return applyProxyEntryLabels($labels, $application->destination->server)->all();
 }
 
 function isDatabaseImage(?string $image = null, ?array $serviceConfig = null)

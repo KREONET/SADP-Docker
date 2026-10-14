@@ -8,6 +8,7 @@ use App\Enums\BuildPackTypes;
 use App\Enums\ProxyTypes;
 use App\Exceptions\DeploymentException;
 use App\Services\ConfigurationGenerator;
+use App\Services\ControllerIngress\ControllerIngress;
 use App\Services\DeploymentConfiguration\ApplicationConfigurationSnapshot;
 use App\Services\DeploymentConfiguration\ConfigurationDiff;
 use App\Services\DeploymentConfiguration\ConfigurationDiffer;
@@ -291,6 +292,9 @@ class Application extends BaseModel
 
     protected static function booted()
     {
+        static::deleted(function (Application $model) {
+            ControllerIngress::forget($model);
+        });
         static::creating(function ($application) {
             $application->manual_webhook_secret_github ??= Str::random(40);
             $application->manual_webhook_secret_gitlab ??= Str::random(40);
@@ -636,6 +640,11 @@ class Application extends BaseModel
      */
     public function proxyMismatchReason(Server $server): ?string
     {
+        $primaryServer = $this->destination?->server;
+        if ($primaryServer && $primaryServer->isRoutedThroughController() !== $server->isRoutedThroughController()) {
+            return "Either all servers of an application are routed through the controller or none. {$server->name} and the primary server differ, so the same domain would be served by two proxies.";
+        }
+
         $routingProxies = [ProxyTypes::TRAEFIK->value, ProxyTypes::CADDY->value];
         $primaryProxy = $this->destination?->server?->proxyType();
         $serverProxy = $server->proxyType();

@@ -23,6 +23,7 @@ use App\Models\SwarmDocker;
 use App\Models\VulnerabilityScan;
 use App\Notifications\Application\DeploymentFailed;
 use App\Notifications\Application\DeploymentSuccess;
+use App\Services\ControllerIngress\ControllerIngress;
 use App\Services\Platform\SourcePolicy;
 use App\Services\Security\TrivyScanner;
 use App\Services\Swarm\SwarmClusterManager;
@@ -90,6 +91,9 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
     public static int $batch_counter = 0;
 
     private bool $newVersionIsHealthy = false;
+
+    /** @var array<int, string>|null Routed containers of a Compose deployment on a worker behind the controller. */
+    private ?array $controllerIngressContainers = null;
 
     private ApplicationDeploymentQueue $application_deployment_queue;
 
@@ -802,7 +806,9 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
                 $composeFile = $this->add_build_secrets_to_compose($composeFile);
             }
 
-            $yaml = Yaml::dump(convertToArray($composeFile), 10);
+            $composeFile = $this->prepareControllerIngress(convertToArray($composeFile));
+            $this->controllerIngressContainers = ControllerIngress::routedContainerNames($composeFile);
+            $yaml = Yaml::dump($composeFile, 10);
         }
         $this->docker_compose_base64 = base64_encode($yaml);
         $this->execute_remote_command([
@@ -909,6 +915,11 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
         }
 
         $this->start_docker_compose_services();
+        if ($this->controllerIngressContainers !== null) {
+            $this->activateControllerIngress($this->controllerIngressContainers);
+        } elseif ($this->mainServer->isRoutedThroughController()) {
+            $this->application_deployment_queue->addLogEntry('Raw Docker Compose deployments are not routed through the controller. Publish the ports yourself.', 'stderr');
+        }
 
         $this->application_deployment_queue->addLogEntry('New container started.');
     }
@@ -2496,11 +2507,16 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
                     }
                     $this->stop_running_container(force: true);
                     $this->start_by_compose_file();
+                    $this->activateControllerIngress([$this->container_name]);
                 } else {
                     $this->application_deployment_queue->addLogEntry('----------------------------------------');
                     $this->application_deployment_queue->addLogEntry('Rolling update started.');
                     $this->start_by_compose_file();
                     $this->health_check();
+                    if ($this->newVersionIsHealthy) {
+                        // Move the controller's traffic to the new container before the old one stops.
+                        $this->activateControllerIngress([$this->container_name], sync: true);
+                    }
                     $this->stop_running_container();
                     $this->application_deployment_queue->addLogEntry('Rolling update completed.');
                 }
@@ -3882,6 +3898,50 @@ COPY ./nginx.conf /etc/nginx/conf.d/default.conf");
         }
     }
 
+    /**
+     * On a worker routed through the controller, publishes the routed containers on the worker's
+     * internal IP and records their routes. They take traffic once activateControllerIngress() runs.
+     *
+     * @param  array<string, mixed>  $compose
+     * @return array<string, mixed>
+     */
+    private function prepareControllerIngress(array $compose): array
+    {
+        if (! $this->mainServer->isRoutedThroughController() || $this->mainServer->isSwarm()) {
+            return $compose;
+        }
+
+        // A Compose build pack keeps its service names; a single-container application's key is its generated container name.
+        $serviceName = $this->application->build_pack === 'dockercompose' ? null : 'application';
+        $compose = ControllerIngress::prepareCompose($this->mainServer, $this->preview ?? $this->application, $this->controllerIngressResourceKey(), $compose, serviceName: $serviceName);
+        $this->application_deployment_queue->addLogEntry('The controller receives the traffic of this server. Container ports are published on its internal IP '.$this->mainServer->settings->internal_ip.'.');
+
+        return $compose;
+    }
+
+    /**
+     * @param  array<int, string>  $containerNames
+     */
+    private function activateControllerIngress(array $containerNames, bool $sync = false): void
+    {
+        if (! $this->mainServer->isRoutedThroughController() || $this->mainServer->isSwarm()) {
+            return;
+        }
+
+        try {
+            ControllerIngress::activate($this->mainServer, $this->controllerIngressResourceKey(), $containerNames, $sync);
+            $this->application_deployment_queue->addLogEntry('Updated the routes on the controller.');
+        } catch (Throwable $e) {
+            $this->application_deployment_queue->addLogEntry("Warning: could not update the routes on the controller now, retrying in the background: {$e->getMessage()}", 'stderr');
+            SyncControllerIngressJob::dispatch();
+        }
+    }
+
+    private function controllerIngressResourceKey(): string
+    {
+        return ControllerIngress::applicationResourceKey($this->application, $this->pull_request_id);
+    }
+
     private function generate_compose_file()
     {
         $this->checkForCancellation();
@@ -3907,6 +3967,8 @@ COPY ./nginx.conf /etc/nginx/conf.d/default.conf");
             $labels = collect(generateLabelsApplication($this->application, $this->preview));
         }
         $labels = $this->useDestinationNetworkInCaddyLabels($labels);
+        // Saved custom labels may predate a Cloudflare Tunnel; the adjustment is idempotent.
+        $labels = applyCloudflareTunnelLabels(collect($labels), $this->mainServer);
         if ($this->application->settings->is_container_label_escape_enabled) {
             $labels = $labels->map(function ($value, $key) {
                 return escapeDollarSign($value);
@@ -4125,6 +4187,7 @@ COPY ./nginx.conf /etc/nginx/conf.d/default.conf");
             }
         }
 
+        $docker_compose = $this->prepareControllerIngress($docker_compose);
         $this->docker_compose = Yaml::dump($docker_compose, 10);
         $this->docker_compose_base64 = base64_encode($this->docker_compose);
         $this->execute_remote_command([executeInDocker($this->deployment_uuid, "echo '{$this->docker_compose_base64}' | base64 -d | tee {$this->workdir}/docker-compose.yaml > /dev/null"), 'hidden' => true, 'skip_command_log' => true]);
