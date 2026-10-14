@@ -20,6 +20,7 @@ class DeployServiceApplication
         $composeServiceName = $serviceApplication->name;
 
         $service->parse();
+        StartService::routeThroughController($service);
         $service->saveComposeConfigs();
         $service->isConfigurationChanged(save: true);
 

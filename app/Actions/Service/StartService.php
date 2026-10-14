@@ -7,6 +7,7 @@ use App\Models\LocalFileVolume;
 use App\Models\Service;
 use App\Models\ServiceApplication;
 use App\Models\ServiceDatabase;
+use App\Services\ControllerIngress\ControllerIngress;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -27,6 +28,7 @@ class StartService
         if ($this->shouldStopBeforeStarting($pullLatestImages, $stopBeforeStart)) {
             StopService::run(service: $service, dockerCleanup: false);
         }
+        self::routeThroughController($service);
         $service->saveComposeConfigs();
         $service->isConfigurationChanged(save: true);
         $service->applications()->get()->each->resetRestartLimit();
@@ -62,6 +64,26 @@ class StartService
         $commands = array_merge($commands, $this->logDrainNetworkConnectCommands($service));
 
         return remote_process($commands, $service->server, type_uuid: $service->uuid, callEventOnFinish: 'ServiceStatusChanged');
+    }
+
+    /**
+     * On a worker routed through the controller, publishes the routed containers on the worker's
+     * internal IP. A service replaces its containers in place, so the routes are active at once.
+     */
+    public static function routeThroughController(Service $service): void
+    {
+        $server = $service->destination?->server;
+        if (! $server?->isRoutedThroughController() || blank($service->docker_compose)) {
+            return;
+        }
+
+        $compose = Yaml::parse($service->docker_compose);
+        if (! is_array($compose)) {
+            return;
+        }
+
+        $compose = ControllerIngress::prepareCompose($server, $service, ControllerIngress::serviceResourceKey($service), $compose, activate: true);
+        $service->docker_compose = Yaml::dump($compose, 10, 2);
     }
 
     /**

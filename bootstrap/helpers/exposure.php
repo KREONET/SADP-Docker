@@ -86,7 +86,8 @@ const PROXY_AUTH_VERIFY_PATH = '/proxy-auth/verify';
  */
 function proxyAuthPanelUrlForServer(Server $server): string
 {
-    return $server->id === 0
+    // A worker routed through the controller is served by the controller's proxy.
+    return $server->trafficEntryServer()->id === 0
         ? rtrim((string) config('constants.proxy_auth.internal_url'), '/')
         : proxyAuthPanelUrl();
 }
@@ -96,7 +97,7 @@ function proxyAuthPanelUrlForServer(Server $server): string
  */
 function traefikIpAllowListMiddleware(Server $server): string
 {
-    $version = ltrim((string) $server->detected_traefik_version, 'v');
+    $version = ltrim((string) $server->trafficEntryServer()->detected_traefik_version, 'v');
 
     return filled($version) && version_compare($version, '2.11.0', '<') ? 'ipwhitelist' : 'ipallowlist';
 }

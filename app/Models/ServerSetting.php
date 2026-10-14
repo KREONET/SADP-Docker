@@ -141,6 +141,10 @@ class ServerSetting extends Model
         'dns_challenge_credentials',
         'dns_challenge_email',
         'dns_challenge_resolvers',
+        'is_routed_through_controller',
+        'internal_ip',
+        'is_cloudflare_tunnel_ingress_enabled',
+        'cloudflare_tunnel_ingress_token',
     ];
 
     /**
@@ -152,6 +156,8 @@ class ServerSetting extends Model
     protected $attributes = [
         'is_traffic_analytics_enabled' => false,
         'is_dns_challenge_enabled' => false,
+        'is_routed_through_controller' => false,
+        'is_cloudflare_tunnel_ingress_enabled' => false,
     ];
 
     protected $casts = [
@@ -182,6 +188,9 @@ class ServerSetting extends Model
         'is_dns_challenge_enabled' => 'boolean',
         'dns_challenge_credentials' => 'encrypted:array',
         'ssh_host_key_trusted_at' => 'datetime',
+        'is_routed_through_controller' => 'boolean',
+        'is_cloudflare_tunnel_ingress_enabled' => 'boolean',
+        'cloudflare_tunnel_ingress_token' => 'encrypted',
     ];
 
     /**
@@ -199,6 +208,7 @@ class ServerSetting extends Model
         'logdrain_custom_config_parser',
         'geoip_maxmind_license_key',
         'dns_challenge_credentials',
+        'cloudflare_tunnel_ingress_token',
     ];
 
     protected static function booted()
