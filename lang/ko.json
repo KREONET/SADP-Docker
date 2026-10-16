@@ -5519,5 +5519,6 @@
     "Stored encrypted. It is never shown again.": "암호화해 저장하며 다시 표시하지 않습니다.",
     "cloudflared is started or removed on this server.": "이 서버에서 cloudflared를 시작하거나 제거합니다.",
     "Redeploy applications and restart services afterwards so their proxy labels follow the change.": "이후 프록시 라벨에 변경 사항이 반영되도록 애플리케이션을 다시 배포하고 서비스를 다시 시작하세요.",
-    "Servers routed through the controller cannot join a Swarm cluster. Turn off routing through the controller first.": "컨트롤러를 통해 라우팅되는 서버는 Swarm 클러스터에 참여할 수 없습니다. 먼저 컨트롤러 라우팅을 끄세요."
+    "Servers routed through the controller cannot join a Swarm cluster. Turn off routing through the controller first.": "컨트롤러를 통해 라우팅되는 서버는 Swarm 클러스터에 참여할 수 없습니다. 먼저 컨트롤러 라우팅을 끄세요.",
+    "Deactivated": "비활성화됨"
 }
