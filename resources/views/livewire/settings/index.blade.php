@@ -8,7 +8,7 @@
             {{-- instance_timezone auto-saves via $wire.set + submit; exclude it so
                  the bar does not flash while the snapshot catches up. --}}
             <x-unsaved-bar action="submit"
-                targets="fqdn,instance_name,public_ipv4,public_ipv6,dev_helper_version" />
+                targets="fqdn,public_domain,instance_name,public_ipv4,public_ipv6,dev_helper_version" />
             <x-application.settings-section :title="__('General')">
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div @class([
@@ -50,6 +50,12 @@
                             'label' => $timezone,
                         ])->all()" :disabled="! auth()->user()->can('update', $settings)" />
                 </div>
+            </x-application.settings-section>
+
+            <x-application.settings-section :title="__('Public domain')">
+                <x-forms.input canGate="update" :canResource="$settings" id="public_domain"
+                    :label="__('Public domain')" placeholder="https://apps.example.com"
+                    :helper="__('Generate domain creates addresses such as app-id.apps.example.com under this domain. A server wildcard domain takes priority. Leave empty to use sslip.io. Configure wildcard DNS (*.apps.example.com) to point to the server receiving traffic.')" />
             </x-application.settings-section>
 
             <x-application.settings-section :title="__('Network addresses')">

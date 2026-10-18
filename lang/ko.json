@@ -5471,5 +5471,9 @@
     "Password set": "비밀번호 설정 완료",
     "Your password is set. Select Configure 2FA again to continue the setup.": "비밀번호가 설정되었습니다. '2FA 구성'을 다시 눌러 설정을 계속하세요.",
     "The :brand documentation is not finished yet, so the Coolify documentation opens instead. Features added in :brand may work differently or be missing there.": ":brand 설명서는 아직 작성 중이라 Coolify 공식 문서(Coolify Docs)를 대신 보여드립니다. :brand에서 추가하거나 바꾼 기능은 Coolify 문서와 다르거나 빠져 있을 수 있습니다.",
-    "Open Coolify Docs": "Coolify Docs 열기"
+    "Open Coolify Docs": "Coolify Docs 열기",
+    "Public domain": "공용 도메인",
+    "Enter a public domain URL such as https://apps.example.com.": "https://apps.example.com 형식으로 공용 도메인을 입력하세요.",
+    "Enter a public domain URL without a wildcard, port, path, query, or credentials.": "와일드카드(*), 포트, 경로, 쿼리, 인증 정보 없이 공용 도메인 URL을 입력하세요.",
+    "Generate domain creates addresses such as app-id.apps.example.com under this domain. A server wildcard domain takes priority. Leave empty to use sslip.io. Configure wildcard DNS (*.apps.example.com) to point to the server receiving traffic.": "도메인 생성을 누르면 app-id.apps.example.com과 같이 이 도메인의 하위 주소를 생성합니다. 서버별 와일드카드 도메인이 있으면 우선 사용하며, 비워 두면 sslip.io를 사용합니다. 와일드카드 DNS(*.apps.example.com)는 트래픽을 받는 서버로 연결하세요."
 }

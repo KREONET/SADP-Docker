@@ -3567,3 +3567,40 @@ it('restarts a preview dns check when the domain already has a completed result'
 
     Queue::assertPushed(CheckDomainDnsJob::class);
 });
+
+it('generates application and compose addresses under the registered public domain', function (bool $compose) {
+    Queue::fake();
+    InstanceSettings::get()->update(['public_domain' => 'https://apps.example.com']);
+    if ($compose) {
+        $this->application->update([
+            'build_pack' => 'dockercompose',
+            'docker_compose_raw' => "services:\n  web:\n    image: nginx:alpine\n",
+            'docker_compose_domains' => null,
+        ]);
+    }
+
+    Livewire::test(Domains::class, ['application' => $this->application->fresh()])
+        ->call('generateDomain', $compose ? 'web' : null)
+        ->assertDispatched('success')
+        ->assertNotDispatched('error');
+
+    $application = $this->application->fresh();
+    $domain = $compose ? json_decode($application->docker_compose_domains, true)['web']['domain'] : $application->fqdn;
+    expect($domain)->toStartWith('https://')->toEndWith('.apps.example.com');
+})->with([false, true]);
+
+it('generates preview addresses under the registered public domain when the application has no domain', function () {
+    InstanceSettings::get()->update(['public_domain' => 'https://apps.example.com']);
+    $preview = ApplicationPreview::create([
+        'application_id' => $this->application->id,
+        'pull_request_id' => 99,
+        'pull_request_html_url' => 'https://github.com/example/app/pull/99',
+    ]);
+
+    Livewire::test(PreviewDomains::class, ['preview' => $preview])
+        ->call('generateDomain')
+        ->assertDispatched('success')
+        ->assertNotDispatched('error');
+
+    expect($preview->fresh()->fqdn)->toStartWith('https://')->toEndWith('.apps.example.com');
+});
