@@ -25,6 +25,9 @@ class Index extends Component
     #[Validate('nullable|string|max:255|url')]
     public ?string $fqdn = null;
 
+    #[Validate(['nullable', 'string', 'max:255', 'url:http,https', 'regex:~\Ahttps?://[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?/?\z~i'], onUpdate: false)]
+    public ?string $public_domain = null;
+
     #[Validate('boolean')]
     public bool $is_dashboard_force_https_enabled = true;
 
@@ -70,6 +73,8 @@ class Index extends Component
     {
         return [
             'fqdn.url' => __('Invalid instance URL.'),
+            'public_domain.url' => __('Enter a public domain URL such as https://apps.example.com.'),
+            'public_domain.regex' => __('Enter a public domain URL without a wildcard, port, path, query, or credentials.'),
             'fqdn.max' => __('URL must not exceed 255 characters.'),
             'dev_helper_version.regex' => __('Dev helper version must match Docker tag format (alphanumeric, _, ., -; first char cannot be . or -).'),
         ];
@@ -90,6 +95,7 @@ class Index extends Component
             $this->server = Server::findOrFail(0);
         }
         $this->fqdn = $this->settings->fqdn;
+        $this->public_domain = $this->settings->public_domain;
         $this->is_dashboard_force_https_enabled = $this->settings->is_dashboard_force_https_enabled;
         $this->public_port_min = $this->settings->public_port_min;
         $this->public_port_max = $this->settings->public_port_max;
@@ -190,6 +196,7 @@ class Index extends Component
         $this->authorize('update', $this->settings);
         $this->validate();
         $this->settings->fqdn = $this->fqdn ? trim($this->fqdn) : $this->fqdn;
+        $this->settings->public_domain = filled($this->public_domain) ? rtrim($this->public_domain, '/') : null;
         $this->settings->is_dashboard_force_https_enabled = $this->is_dashboard_force_https_enabled;
         $this->settings->public_port_min = $this->public_port_min;
         $this->settings->public_port_max = $this->public_port_max;

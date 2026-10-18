@@ -1217,3 +1217,14 @@ it('restarts a service dns check when the domain already has a completed result'
 
     Queue::assertPushed(CheckDomainDnsJob::class);
 });
+
+it('generates service addresses under the registered public domain', function () {
+    InstanceSettings::get()->update(['public_domain' => 'https://apps.example.com']);
+
+    $component = Livewire::test(Domains::class, ['service' => $this->service->fresh(['applications', 'server'])])
+        ->set('newServiceApplicationId', $this->webApp->id)
+        ->call('generateDomain')
+        ->assertNotDispatched('error');
+
+    expect($component->get('newDomain'))->toStartWith('https://')->toEndWith('.apps.example.com');
+});

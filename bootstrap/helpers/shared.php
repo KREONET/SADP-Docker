@@ -1446,7 +1446,7 @@ function generateUrl(Server $server, string $random, bool $forceHttps = false): 
 {
     $wildcard = data_get($server, 'settings.wildcard_domain');
     if (is_null($wildcard) || $wildcard === '') {
-        $wildcard = sslip($server);
+        $wildcard = data_get(instanceSettings(), 'public_domain') ?: sslip($server);
     }
     $url = Url::fromString($wildcard);
     $host = $url->getHost();
@@ -1463,7 +1463,7 @@ function generateFqdn(Server $server, string $random, bool $forceHttps = false, 
 
     $wildcard = data_get($server, 'settings.wildcard_domain');
     if (is_null($wildcard) || $wildcard === '') {
-        $wildcard = sslip($server);
+        $wildcard = data_get(instanceSettings(), 'public_domain') ?: sslip($server);
     }
     $url = Url::fromString($wildcard);
     $host = $url->getHost();
