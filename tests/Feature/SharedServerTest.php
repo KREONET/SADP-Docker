@@ -293,3 +293,16 @@ describe('domains on a shared server', function () {
         expect($ownApplication->fresh()->fqdn)->toBe('https://custom.example.org');
     });
 });
+
+it('accepts generated public domain addresses on a shared server', function () {
+    InstanceSettings::get()->update(['public_domain' => 'https://public.example.com']);
+    $this->sharedServer->settings->update(['wildcard_domain' => null]);
+    $application = sharedTestApplication($this->team, $this->sharedDestination);
+    $domain = generateUrl($this->sharedServer, new_public_id());
+
+    $application->update(['fqdn' => $domain]);
+
+    expect($application->fresh()->fqdn)->toBe($domain)->toEndWith('.public.example.com');
+    expect(fn () => $application->update(['fqdn' => 'https://admin.public.example.com']))
+        ->toThrow(ValidationException::class);
+});

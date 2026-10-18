@@ -5520,5 +5520,9 @@
     "cloudflared is started or removed on this server.": "이 서버에서 cloudflared를 시작하거나 제거합니다.",
     "Redeploy applications and restart services afterwards so their proxy labels follow the change.": "이후 프록시 라벨에 변경 사항이 반영되도록 애플리케이션을 다시 배포하고 서비스를 다시 시작하세요.",
     "Servers routed through the controller cannot join a Swarm cluster. Turn off routing through the controller first.": "컨트롤러를 통해 라우팅되는 서버는 Swarm 클러스터에 참여할 수 없습니다. 먼저 컨트롤러 라우팅을 끄세요.",
-    "Deactivated": "비활성화됨"
+    "Deactivated": "비활성화됨",
+    "Public domain": "공용 도메인",
+    "Enter a public domain URL such as https://apps.example.com.": "https://apps.example.com 형식으로 공용 도메인을 입력하세요.",
+    "Enter a public domain URL without a wildcard, port, path, query, or credentials.": "와일드카드(*), 포트, 경로, 쿼리, 인증 정보 없이 공용 도메인 URL을 입력하세요.",
+    "Generate domain creates addresses such as app-id.apps.example.com under this domain. A server wildcard domain takes priority. Leave empty to use sslip.io. Configure wildcard DNS (*.apps.example.com) to point to the server receiving traffic.": "도메인 생성을 누르면 app-id.apps.example.com과 같이 이 도메인의 하위 주소를 생성합니다. 서버별 와일드카드 도메인이 있으면 우선 사용하며, 비워 두면 sslip.io를 사용합니다. 와일드카드 DNS(*.apps.example.com)는 트래픽을 받는 서버로 연결하세요."
 }
