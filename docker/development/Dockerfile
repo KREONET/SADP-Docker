@@ -1,7 +1,8 @@
 # Versions
 # https://hub.docker.com/r/serversideup/php/tags?name=8.4-fpm-nginx-alpine
 # Pinned to PHP >= 8.4.27 for CVE-2026-109618 / CVE-2026-109619 ("php2shell"); never go below this.
-ARG SERVERSIDEUP_PHP_VERSION=8.4.27-fpm-nginx-alpine-v4.5.3
+# Keep the serversideup v5 line (-v5.x suffix): v4 images ignore s6-overlay user-bundles.d, so Reverb/Horizon/migrations never start.
+ARG SERVERSIDEUP_PHP_VERSION=8.4.27-fpm-nginx-alpine-v5.0.2
 # https://github.com/cloudflare/cloudflared/releases
 ARG CLOUDFLARED_VERSION=2025.7.0
 # https://www.postgresql.org/support/versioning/
