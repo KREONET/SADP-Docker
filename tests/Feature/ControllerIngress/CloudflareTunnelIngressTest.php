@@ -84,7 +84,7 @@ describe('labels behind a Cloudflare Tunnel', function () {
         $result = applyCloudflareTunnelLabels($labels, $server, true)->values()->all();
 
         expect($result)->toContain('traefik.http.routers.https-0-abc.entryPoints=http')
-            ->and($result)->toContain('traefik.http.routers.https-0-abc.middlewares=internal-only-abc,gzip')
+            ->and($result)->toContain('traefik.http.routers.https-0-abc.middlewares=internal-only-abc,coolify-hsts,gzip')
             ->and($result)->toContain('traefik.http.services.https-0-abc.loadbalancer.server.port=3000')
             ->and(collect($result)->filter(fn ($label) => str_starts_with($label, 'traefik.http.routers.http-0-abc.'))->all())->toBe([])
             ->and(collect($result)->filter(fn ($label) => str_starts_with($label, 'traefik.http.services.http-0-abc.'))->all())->toBe([])
