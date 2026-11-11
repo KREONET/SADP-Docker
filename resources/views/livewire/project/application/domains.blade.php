@@ -184,6 +184,26 @@
         </div>
     @endif
 
+    @if ($cloudflareTunnelAvailable || $isCloudflareTunnelEnabled)
+        <div class="flex flex-wrap items-center justify-end gap-2 service-domains-https">
+            <label for="isCloudflareTunnelEnabled-trigger" class="mb-0! text-[12px]!">{{ __('Traffic entry') }}</label>
+            <x-helper :helper="__('Direct: DNS points to the server IP and the proxy issues the certificates. Cloudflare Tunnel: add the domain as a public hostname of the tunnel in Cloudflare (service HTTP, URL coolify-proxy:80). Cloudflare handles HTTPS. Redeploy after changing.')" />
+            <div class="w-40 shrink-0">
+                <x-forms.listbox canGate="update" :canResource="$application" id="isCloudflareTunnelEnabled"
+                    onChange="updateCloudflareTunnel" portal
+                    :options="[
+                        ['value' => false, 'label' => __('Direct (public IP)')],
+                        ['value' => true, 'label' => __('Cloudflare Tunnel')],
+                    ]" :disabled="! auth()->user()->can('update', $application)" />
+            </div>
+        </div>
+        @if ($isCloudflareTunnelEnabled && ! $cloudflareTunnelAvailable)
+            <x-callout type="warning" :title="__('Cloudflare Tunnel is off')">
+                {{ __('This resource is set to the Cloudflare Tunnel, but the tunnel is not running for its server. Its domains are served directly until the tunnel is turned on.') }}
+            </x-callout>
+        @endif
+    @endif
+
     {{-- Table / empty --}}
     <div id="domains-table-section"
         class="application-settings-section-body mt-1 scroll-mt-28 {{ $hasRows ? 'is-flush' : '' }} w-full">

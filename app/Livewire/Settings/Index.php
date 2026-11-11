@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Settings;
 
+use App\Actions\Server\ConfigureCloudflareTunnelIngress;
 use App\Models\InstanceSettings;
 use App\Models\Server;
 use App\Services\BrandingLogoStorageService;
@@ -30,6 +31,9 @@ class Index extends Component
 
     #[Validate('boolean')]
     public bool $is_dashboard_force_https_enabled = true;
+
+    #[Validate('boolean')]
+    public bool $is_cloudflare_tunnel_allowed = true;
 
     #[Validate('required|integer|min:1025|max:65535')]
     public int $public_port_min;
@@ -97,6 +101,7 @@ class Index extends Component
         $this->fqdn = $this->settings->fqdn;
         $this->public_domain = $this->settings->public_domain;
         $this->is_dashboard_force_https_enabled = $this->settings->is_dashboard_force_https_enabled;
+        $this->is_cloudflare_tunnel_allowed = (bool) $this->settings->is_cloudflare_tunnel_allowed;
         $this->public_port_min = $this->settings->public_port_min;
         $this->public_port_max = $this->settings->public_port_max;
         $this->instance_name = $this->settings->instance_name;
@@ -107,6 +112,28 @@ class Index extends Component
         $this->dev_helper_version = $this->settings->dev_helper_version;
         $this->brand_name = $this->settings->brand_name;
         $this->internal_network_cidrs = $this->settings->internal_network_cidrs;
+    }
+
+    public function updateCloudflareTunnelSupport(): void
+    {
+        $this->authorize('update', $this->settings);
+        $this->validateOnly('is_cloudflare_tunnel_allowed');
+
+        $this->settings->update(['is_cloudflare_tunnel_allowed' => $this->is_cloudflare_tunnel_allowed]);
+        auditLog('ui.instance.cloudflare_tunnel_support_updated', ['allowed' => $this->is_cloudflare_tunnel_allowed]);
+
+        if ($this->is_cloudflare_tunnel_allowed) {
+            $this->dispatch('success', __('Cloudflare Tunnel support is on. Server admins can turn on tunnels in the proxy settings.'));
+
+            return;
+        }
+
+        $failed = ConfigureCloudflareTunnelIngress::disableEverywhere();
+        $message = __('Cloudflare Tunnel support is off. cloudflared was stopped on every server. Redeploy resources that used the tunnel so they are served directly.');
+        if ($failed !== []) {
+            $this->dispatch('error', __('cloudflared could not be stopped on: :servers', ['servers' => implode(', ', $failed)]));
+        }
+        $this->dispatch('success', $message);
     }
 
     public function saveInternalNetworks(): void

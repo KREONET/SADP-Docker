@@ -3351,7 +3351,7 @@ function parseDockerComposeFile(Service|Application $resource, bool $isNew = fal
                         });
                     }
                 }
-                data_set($service, 'labels', applyProxyEntryLabels($serviceLabels, $resource->server)->toArray());
+                data_set($service, 'labels', applyProxyEntryLabels($serviceLabels, $resource->server, $savedService instanceof ServiceApplication && $savedService->usesCloudflareTunnel())->toArray());
                 data_forget($service, 'is_database');
                 if (! data_get($service, 'restart')) {
                     data_set($service, 'restart', RESTART_MODE);
@@ -4194,7 +4194,7 @@ function parseDockerComposeFile(Service|Application $resource, bool $isNew = fal
                     });
                 }
             }
-            data_set($service, 'labels', applyProxyEntryLabels($serviceLabels, $server)->toArray());
+            data_set($service, 'labels', applyProxyEntryLabels($serviceLabels, $server, $resource->usesCloudflareTunnel())->toArray());
             data_forget($service, 'is_database');
             if (! data_get($service, 'restart')) {
                 data_set($service, 'restart', RESTART_MODE);
@@ -4358,6 +4358,18 @@ function convertToKeyValueCollection($environment)
 function instanceSettings()
 {
     return InstanceSettings::get();
+}
+
+/**
+ * Instance admins can turn Cloudflare Tunnel traffic off for every server. Missing settings allow it.
+ */
+function isCloudflareTunnelAllowed(): bool
+{
+    try {
+        return (bool) (instanceSettings()?->is_cloudflare_tunnel_allowed ?? true);
+    } catch (Throwable) {
+        return true;
+    }
 }
 
 /**

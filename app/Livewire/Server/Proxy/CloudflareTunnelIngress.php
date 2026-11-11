@@ -48,6 +48,17 @@ class CloudflareTunnelIngress extends Component
             }
 
             $settings = $this->server->settings;
+            // Pasting a new token while the tunnel is off means the user wants it running. Without
+            // this, the token is stored but cloudflared never starts and Cloudflare shows the tunnel
+            // as inactive.
+            if ($token !== null && ! $this->isEnabled && ! $settings->is_cloudflare_tunnel_ingress_enabled) {
+                $this->isEnabled = true;
+            }
+            $blockers = $this->isEnabled ? ConfigureCloudflareTunnelIngress::blockers($this->server) : [];
+            if ($blockers !== []) {
+                $this->isEnabled = false;
+                throw ValidationException::withMessages(['isEnabled' => $blockers[0]]);
+            }
             $settings->is_cloudflare_tunnel_ingress_enabled = $this->isEnabled;
             if ($token !== null) {
                 $settings->cloudflare_tunnel_ingress_token = $token;
@@ -63,9 +74,12 @@ class CloudflareTunnelIngress extends Component
             ]);
             $this->syncFromSettings();
 
-            $message = $restarted
+            $message = $this->isEnabled
+                ? __('cloudflared is running and connects to the Cloudflare Tunnel.')
+                : __('Cloudflare Tunnel is off. cloudflared was removed from this server.');
+            $message .= ' '.($restarted
                 ? __('Configuration saved. The proxy is restarting to apply it.')
-                : __('Configuration saved. It applies the next time the proxy starts.');
+                : __('Configuration saved. It applies the next time the proxy starts.'));
             $this->dispatch('success', $message.' '.__('Redeploy applications and restart services so their proxy labels follow the change.'));
         } catch (ValidationException $e) {
             throw $e;

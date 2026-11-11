@@ -3991,7 +3991,7 @@ COPY ./nginx.conf /etc/nginx/conf.d/default.conf");
         }
         $labels = $this->useDestinationNetworkInCaddyLabels($labels);
         // Saved custom labels may predate a Cloudflare Tunnel; the adjustment is idempotent.
-        $labels = applyCloudflareTunnelLabels(collect($labels), $this->mainServer);
+        $labels = applyCloudflareTunnelLabels(collect($labels), $this->mainServer, $this->application->usesCloudflareTunnel());
         if ($this->application->settings->is_container_label_escape_enabled) {
             $labels = $labels->map(function ($value, $key) {
                 return escapeDollarSign($value);

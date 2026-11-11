@@ -455,13 +455,13 @@ function applyWildcardCertificateLabels(Collection $labels, ?Server $server): Co
  * Final adjustments of generated proxy labels for the proxy that receives the server's traffic:
  * the DNS-01 wildcard certificate, then Cloudflare Tunnel.
  */
-function applyProxyEntryLabels(Collection $labels, ?Server $server): Collection
+function applyProxyEntryLabels(Collection $labels, ?Server $server, bool $throughCloudflareTunnel = false): Collection
 {
-    return applyCloudflareTunnelLabels(applyWildcardCertificateLabels($labels, $server), $server);
+    return applyCloudflareTunnelLabels(applyWildcardCertificateLabels($labels, $server), $server, $throughCloudflareTunnel);
 }
 
 /**
- * Serves every domain over plain HTTP when public traffic arrives through a Cloudflare Tunnel.
+ * Serves a resource's domains over plain HTTP when it chose to receive traffic through the Cloudflare Tunnel.
  * Cloudflare terminates TLS and cloudflared forwards to the proxy's HTTP port, so an HTTPS router
  * would never match and an HTTP-to-HTTPS redirect would loop.
  *
@@ -469,9 +469,10 @@ function applyProxyEntryLabels(Collection $labels, ?Server $server): Collection
  * (access restrictions, basic auth, ...), and replaces its HTTP twin (the router with the same rule).
  * Caddy: site addresses become `http://host`, so Caddy requests no certificate and does not redirect.
  */
-function applyCloudflareTunnelLabels(Collection $labels, ?Server $server): Collection
+function applyCloudflareTunnelLabels(Collection $labels, ?Server $server, bool $throughCloudflareTunnel = false): Collection
 {
-    if (! $server?->servesTrafficThroughCloudflareTunnel()) {
+    // Domains set to "direct" keep their HTTPS routers, so both entries work side by side.
+    if (! $throughCloudflareTunnel || ! $server?->servesTrafficThroughCloudflareTunnel()) {
         return $labels;
     }
 
