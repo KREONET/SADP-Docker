@@ -186,6 +186,20 @@
                     class="application-settings-section-body is-flush overflow-visible">
                     <div class="flex w-full flex-wrap items-center gap-3 rounded-t-lg border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-white/[0.04]">
                         <span class="min-w-0 flex-1 truncate text-sm font-medium text-black dark:text-white">{{ $heading }}</span>
+                        @if ($cloudflareTunnelAvailable || ($cloudflareTunnelRoutes[$appId] ?? false))
+                            <div class="flex w-full items-center gap-2 sm:w-auto service-domains-https">
+                                <label for="service-cloudflare-tunnel-{{ $appId }}-trigger" class="mb-0! whitespace-nowrap text-[12px]!">{{ __('Traffic entry') }}</label>
+                                <x-helper :helper="__('Direct: DNS points to the server IP and the proxy issues the certificates. Cloudflare Tunnel: add the domain as a public hostname of the tunnel in Cloudflare (service HTTP, URL coolify-proxy:80). Cloudflare handles HTTPS. Redeploy after changing.')" />
+                                <x-forms.listbox canGate="update" :canResource="$service" id="cloudflareTunnelRoutes.{{ $appId }}"
+                                    htmlId="service-cloudflare-tunnel-{{ $appId }}" preserveValue
+                                    onChange="updateCloudflareTunnel"
+                                    :onChangeArgs="[(int) $appId]"
+                                    :options="[
+                                        ['value' => false, 'label' => __('Direct (public IP)')],
+                                        ['value' => true, 'label' => __('Cloudflare Tunnel')],
+                                    ]" :disabled="! auth()->user()->can('update', $service)" />
+                            </div>
+                        @endif
                         @if ($hasHttpsDomains)
                             <div class="flex w-full items-center gap-2 sm:w-auto service-domains-https">
                                 <label for="service-force-https-{{ $appId }}-trigger" class="mb-0! whitespace-nowrap text-[12px]!">{{ __('Redirect HTTP to HTTPS') }}</label>

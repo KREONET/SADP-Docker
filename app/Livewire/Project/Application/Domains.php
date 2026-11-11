@@ -34,6 +34,12 @@ class Domains extends Component
 
     public bool $isForceHttpsEnabled = true;
 
+    /** Domains arrive through the server's Cloudflare Tunnel instead of the public IP. */
+    public bool $isCloudflareTunnelEnabled = false;
+
+    /** The proxy that receives this application's traffic runs a Cloudflare Tunnel. */
+    public bool $cloudflareTunnelAvailable = false;
+
     /**
      * Per compose-service www/non-www redirect direction.
      * Keys are wire-safe (dots encoded) — use serviceRedirectWireKey().
@@ -146,6 +152,7 @@ class Domains extends Component
             'editingRedirect' => 'string|required|in:both,www,non-www',
             'redirect' => 'string|required|in:both,www,non-www',
             'isForceHttpsEnabled' => 'boolean',
+            'isCloudflareTunnelEnabled' => 'boolean',
             'serviceRedirects' => 'array',
             'serviceRedirects.*' => 'string|in:both,www,non-www',
         ];
@@ -250,6 +257,26 @@ class Domains extends Component
         $this->dispatch('success', __('HTTP to HTTPS redirect updated.'));
     }
 
+    public function updateCloudflareTunnel(): void
+    {
+        $this->authorize('update', $this->application);
+        $this->validateOnly('isCloudflareTunnelEnabled');
+        if ($this->isCloudflareTunnelEnabled && ! $this->cloudflareTunnelAvailable) {
+            $this->isCloudflareTunnelEnabled = false;
+            $this->dispatch('error', __('Cloudflare Tunnel is not running for this server. Turn it on in the proxy settings first.'));
+
+            return;
+        }
+
+        $this->application->settings->is_cloudflare_tunnel_enabled = $this->isCloudflareTunnelEnabled;
+        $this->application->settings->save();
+        $this->application->refresh();
+        $this->resetDefaultLabels();
+        $this->refreshDomains();
+        $this->dispatch('configurationChanged')->to(ConfigurationChecker::class);
+        $this->dispatch('success', __('Traffic entry updated. Redeploy the application to apply it.'));
+    }
+
     public function loadDomainState(): void
     {
         $this->application->refresh();
@@ -261,6 +288,8 @@ class Domains extends Component
             $this->redirect = $this->application->redirect ?? 'both';
         }
         $this->isForceHttpsEnabled = $this->application->isForceHttpsEnabled();
+        $this->isCloudflareTunnelEnabled = (bool) $this->application->settings->is_cloudflare_tunnel_enabled;
+        $this->cloudflareTunnelAvailable = (bool) $this->application->destination?->server?->servesTrafficThroughCloudflareTunnel();
 
         $settings = instanceSettings();
         $this->dnsValidationEnabled = (bool) data_get($settings, 'is_dns_validation_enabled', true);
@@ -268,7 +297,7 @@ class Domains extends Component
         $server = $this->application->destination?->server;
         // DNS points to the proxy that receives the traffic: the controller for a routed worker. Behind a
         // Cloudflare Tunnel, Cloudflare owns the records, so there is no server IP to point them to.
-        $server = $server?->servesTrafficThroughCloudflareTunnel() ? null : $server?->trafficEntryServer();
+        $server = $this->application->usesCloudflareTunnel() ? null : $server?->trafficEntryServer();
         if ($server) {
             if ($server->id === 0) {
                 $configured = data_get($settings, 'public_ipv4')

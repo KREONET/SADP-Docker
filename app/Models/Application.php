@@ -700,6 +700,16 @@ class Application extends BaseModel
         return data_get($this, 'settings.is_force_https_enabled', false);
     }
 
+    /**
+     * True when this application's domains are served through the Cloudflare Tunnel of the proxy
+     * that receives the server's traffic, instead of directly on the public IP.
+     */
+    public function usesCloudflareTunnel(): bool
+    {
+        return (bool) data_get($this, 'settings.is_cloudflare_tunnel_enabled', false)
+            && (bool) $this->destination?->server?->servesTrafficThroughCloudflareTunnel();
+    }
+
     public function isStripprefixEnabled()
     {
         return data_get($this, 'settings.is_stripprefix_enabled', true);

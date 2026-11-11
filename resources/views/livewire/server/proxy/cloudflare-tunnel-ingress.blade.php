@@ -12,17 +12,24 @@
                     <li>{{ __('In Cloudflare Zero Trust, open Networks → Tunnels and create a tunnel of type Cloudflared.') }}</li>
                     <li>{{ __('Copy the token from the install command (the long value after --token) and paste it below.') }}</li>
                     <li>{{ __('Add a public hostname for each domain, or one wildcard such as *.example.com, with the service type HTTP and the URL coolify-proxy:80.') }}</li>
+                    <li>{{ __('In the domain settings of each application or service, set Traffic entry to Cloudflare Tunnel and redeploy. Domains set to Direct keep working on the public IP.') }}</li>
                     <li>
                         {{ __('Cloudflare creates the DNS record for each public hostname. For a wildcard, add a proxied CNAME record * that points to :target.', ['target' => ($tunnelId ?? '<tunnel-id>').'.cfargotunnel.com']) }}
                     </li>
                 </ol>
             </x-callout>
 
+            @if ($hasStoredToken && ! $isEnabled)
+                <x-callout type="warning" :title="__('The tunnel is off')">
+                    {{ __('A token is saved, but cloudflared is not running on this server, so Cloudflare shows the tunnel as inactive. Turn on the option below and apply.') }}
+                </x-callout>
+            @endif
+
             {{-- Applying restarts the proxy, so only the confirmation modal submits. --}}
             <form x-on:submit.prevent class="flex flex-col gap-4">
-                <x-forms.checkbox canGate="update" :canResource="$server" id="isEnabled"
+                <x-forms.checkbox canGate="update" :canResource="$server" id="isEnabled" live
                     :label="__('Receive public traffic through a Cloudflare Tunnel')"
-                    :helper="__('Domains are served over HTTP behind the tunnel, because Cloudflare handles HTTPS. Applications still see https as the original scheme. This also covers servers routed through this one.')" />
+                    :helper="__('Only domains whose Traffic entry is Cloudflare Tunnel are served over HTTP behind the tunnel, because Cloudflare handles HTTPS. Other domains and the dashboard stay direct. This also covers servers routed through this one.')" />
                 <div class="grid gap-4 lg:grid-cols-2">
                     <x-forms.input canGate="update" :canResource="$server" id="token" type="password"
                         autocomplete="new-password" :label="__('Tunnel token')"

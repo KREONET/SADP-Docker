@@ -3,6 +3,7 @@
 use App\Actions\Proxy\SaveProxyConfiguration;
 use App\Actions\Server\ConfigureCloudflareTunnelIngress;
 use App\Jobs\RestartProxyJob;
+use App\Livewire\Project\Application\Domains;
 use App\Livewire\Server\Proxy\CloudflareTunnelIngress;
 use App\Models\Application;
 use App\Models\Environment;
@@ -80,7 +81,7 @@ describe('labels behind a Cloudflare Tunnel', function () {
             'traefik_ip_middleware' => 'ipallowlist',
         ]);
 
-        $result = applyCloudflareTunnelLabels($labels, $server)->values()->all();
+        $result = applyCloudflareTunnelLabels($labels, $server, true)->values()->all();
 
         expect($result)->toContain('traefik.http.routers.https-0-abc.entryPoints=http')
             ->and($result)->toContain('traefik.http.routers.https-0-abc.middlewares=internal-only-abc,gzip')
@@ -93,7 +94,7 @@ describe('labels behind a Cloudflare Tunnel', function () {
     it('serves Caddy sites over plain HTTP', function () {
         $server = tunnelServer($this->team, proxy: 'CADDY');
 
-        expect(applyCloudflareTunnelLabels(collect(['caddy_0=http://a.example.com, https://a.example.com', 'caddy_1=https://b.example.com']), $server)->all())
+        expect(applyCloudflareTunnelLabels(collect(['caddy_0=http://a.example.com, https://a.example.com', 'caddy_1=https://b.example.com']), $server, true)->all())
             ->toBe(['caddy_0=http://a.example.com', 'caddy_1=http://b.example.com']);
     });
 
@@ -101,17 +102,61 @@ describe('labels behind a Cloudflare Tunnel', function () {
         $labels = fqdnLabelsForTraefik('abc', collect(['https://app.example.com']), is_force_https_enabled: true, onlyPort: 3000);
         $tunnel = tunnelServer($this->team);
 
-        expect(applyCloudflareTunnelLabels($labels, tunnelServer($this->team, tunnel: false))->all())->toBe($labels->all());
+        expect(applyCloudflareTunnelLabels($labels, tunnelServer($this->team, tunnel: false), true)->all())->toBe($labels->all());
 
-        $once = applyCloudflareTunnelLabels($labels, $tunnel);
-        expect(applyCloudflareTunnelLabels($once, $tunnel)->all())->toBe($once->all());
+        $once = applyCloudflareTunnelLabels($labels, $tunnel, true);
+        expect(applyCloudflareTunnelLabels($once, $tunnel, true)->all())->toBe($once->all());
+    });
+
+    it('keeps direct HTTPS labels for resources that did not choose the tunnel', function () {
+        $labels = fqdnLabelsForTraefik('abc', collect(['https://app.example.com']), is_force_https_enabled: true, onlyPort: 3000);
+
+        expect(applyCloudflareTunnelLabels($labels, tunnelServer($this->team))->all())->toBe($labels->all());
+    });
+
+    it('serves only the applications set to the tunnel over HTTP', function () {
+        $server = tunnelServer($this->team);
+        $direct = tunnelApplication($server, 'https://direct.example.com');
+        $tunneled = tunnelApplication($server, 'https://tunnel.example.com');
+        $tunneled->settings->forceFill(['is_cloudflare_tunnel_enabled' => true])->save();
+
+        $directLabels = collect(generateLabelsApplication($direct->fresh()));
+        $tunnelLabels = collect(generateLabelsApplication($tunneled->fresh()));
+
+        expect($direct->fresh()->usesCloudflareTunnel())->toBeFalse()
+            ->and($tunneled->fresh()->usesCloudflareTunnel())->toBeTrue()
+            ->and($directLabels->filter(fn ($label) => str_contains($label, 'entryPoints=https'))->isNotEmpty())->toBeTrue()
+            ->and($tunnelLabels->filter(fn ($label) => str_contains($label, 'entryPoints=https'))->all())->toBe([]);
+    });
+
+    it('serves the dashboard directly while the tunnel runs', function () {
+        $server = tunnelServer($this->team);
+
+        expect($server->servesTrafficThroughCloudflareTunnel())->toBeTrue();
+        $source = file_get_contents(app_path('Models/Server.php'));
+        expect($source)->not->toContain("servesTrafficThroughCloudflareTunnel() ? 'http'");
+    });
+
+    it('falls back to direct when an admin turns Cloudflare Tunnel support off', function () {
+        $server = tunnelServer($this->team);
+        $application = tunnelApplication($server);
+        $application->settings->forceFill(['is_cloudflare_tunnel_enabled' => true])->save();
+
+        InstanceSettings::query()->whereKey(0)->update(['is_cloudflare_tunnel_allowed' => false]);
+        Once::flush();
+
+        expect($server->fresh()->servesTrafficThroughCloudflareTunnel())->toBeFalse()
+            ->and($application->fresh()->usesCloudflareTunnel())->toBeFalse()
+            ->and(ConfigureCloudflareTunnelIngress::blockers($server->fresh()))->toContain(__('An instance admin turned off Cloudflare Tunnel support.'));
     });
 
     it('generates HTTP-only labels for an application on a worker behind the controller tunnel', function () {
         tunnelServer($this->team, attributes: ['id' => 0, 'ip' => 'host.docker.internal']);
         $worker = tunnelServer($this->team, tunnel: false, settings: ['is_routed_through_controller' => true, 'internal_ip' => '10.0.0.12']);
+        $application = tunnelApplication($worker);
+        $application->settings->forceFill(['is_cloudflare_tunnel_enabled' => true])->save();
 
-        $labels = collect(generateLabelsApplication(tunnelApplication($worker)));
+        $labels = collect(generateLabelsApplication($application->fresh()));
 
         expect($labels->filter(fn ($label) => str_contains($label, 'entryPoints=https'))->all())->toBe([])
             ->and($labels->filter(fn ($label) => str_contains($label, 'entryPoints=http'))->isNotEmpty())->toBeTrue();
@@ -183,6 +228,89 @@ describe('tunnel settings', function () {
         $component->assertDontSee(tunnelToken());
         Process::assertRan(fn ($process) => str_contains($process->command, 'coolify-cloudflared-ingress') && str_contains($process->command, 'up -d'));
         Queue::assertPushed(RestartProxyJob::class);
+    });
+
+    it('starts cloudflared when a token is pasted while the tunnel is off', function () {
+        $server = tunnelServer($this->team, tunnel: false);
+        $server->proxy->set('status', 'running');
+        $server->save();
+
+        Livewire::test(CloudflareTunnelIngress::class, ['server' => $server->fresh()])
+            ->set('token', tunnelToken())
+            ->call('applyAndRestart')
+            ->assertHasNoErrors()
+            ->assertSet('isEnabled', true);
+
+        expect($server->fresh()->settings->is_cloudflare_tunnel_ingress_enabled)->toBeTrue();
+        Process::assertRan(fn ($process) => str_contains($process->command, 'coolify-cloudflared-ingress') && str_contains($process->command, 'up -d'));
+    });
+
+    it('warns when a token is saved but the tunnel is off', function () {
+        $server = tunnelServer($this->team, tunnel: false, settings: ['cloudflare_tunnel_ingress_token' => tunnelToken()]);
+
+        Livewire::test(CloudflareTunnelIngress::class, ['server' => $server])
+            ->assertSee(__('The tunnel is off'))
+            ->assertSeeHtml('wire:model.live=isEnabled');
+    });
+
+    it('keeps the tunnel off when it was on and is turned off with a new token', function () {
+        $server = tunnelServer($this->team);
+
+        Livewire::test(CloudflareTunnelIngress::class, ['server' => $server])
+            ->set('isEnabled', false)
+            ->set('token', tunnelToken())
+            ->call('applyAndRestart')
+            ->assertHasNoErrors();
+
+        expect($server->fresh()->settings->is_cloudflare_tunnel_ingress_enabled)->toBeFalse();
+    });
+
+    it('lets an admin stop cloudflared everywhere and allow it again', function () {
+        $server = tunnelServer($this->team);
+        InstanceSettings::query()->whereKey(0)->update(['is_cloudflare_tunnel_allowed' => false]);
+        Once::flush();
+
+        expect(ConfigureCloudflareTunnelIngress::disableEverywhere())->toBe([]);
+        expect($server->fresh()->settings->is_cloudflare_tunnel_ingress_enabled)->toBeFalse()
+            ->and($server->fresh()->settings->cloudflare_tunnel_ingress_token)->toBe(tunnelToken());
+        Process::assertRan(fn ($process) => str_contains($process->command, 'docker rm -f coolify-cloudflared-ingress'));
+
+        Livewire::test(CloudflareTunnelIngress::class, ['server' => $server->fresh()])
+            ->set('isEnabled', true)
+            ->call('applyAndRestart')
+            ->assertHasErrors(['isEnabled']);
+        expect($server->fresh()->settings->is_cloudflare_tunnel_ingress_enabled)->toBeFalse();
+        Process::assertNotRan(fn ($process) => str_contains($process->command, 'up -d'));
+
+        InstanceSettings::query()->whereKey(0)->update(['is_cloudflare_tunnel_allowed' => true]);
+        Once::flush();
+        expect(ConfigureCloudflareTunnelIngress::blockers($server->fresh()))->toBe([]);
+    });
+
+    it('chooses the traffic entry per application in the domain settings', function () {
+        $server = tunnelServer($this->team);
+        $application = tunnelApplication($server);
+
+        Livewire::test(Domains::class, ['application' => $application])
+            ->assertSet('cloudflareTunnelAvailable', true)
+            ->set('isCloudflareTunnelEnabled', true)
+            ->call('updateCloudflareTunnel')
+            ->assertSet('isCloudflareTunnelEnabled', true);
+
+        expect($application->fresh()->settings->is_cloudflare_tunnel_enabled)->toBeTrue()
+            ->and($application->fresh()->usesCloudflareTunnel())->toBeTrue();
+    });
+
+    it('refuses the tunnel entry when the server has no tunnel', function () {
+        $server = tunnelServer($this->team, tunnel: false);
+        $application = tunnelApplication($server);
+
+        Livewire::test(Domains::class, ['application' => $application])
+            ->set('isCloudflareTunnelEnabled', true)
+            ->call('updateCloudflareTunnel')
+            ->assertSet('isCloudflareTunnelEnabled', false);
+
+        expect($application->fresh()->settings->is_cloudflare_tunnel_enabled)->toBeFalse();
     });
 
     it('rejects a value that is not a tunnel token', function () {

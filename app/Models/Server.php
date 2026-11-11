@@ -676,12 +676,13 @@ class Server extends BaseModel
     }
 
     /**
-     * True when public traffic reaches this server's resources through a Cloudflare Tunnel. Cloudflare
-     * terminates TLS, so the proxy serves those domains over plain HTTP.
+     * True when the proxy that receives this server's traffic runs a Cloudflare Tunnel. Domains reach
+     * it either directly or through the tunnel; each resource chooses in its domain settings.
      */
     public function servesTrafficThroughCloudflareTunnel(): bool
     {
-        return (bool) $this->trafficEntryServer()->settings?->is_cloudflare_tunnel_ingress_enabled;
+        return isCloudflareTunnelAllowed()
+            && (bool) $this->trafficEntryServer()->settings?->is_cloudflare_tunnel_ingress_enabled;
     }
 
     public function setupDefaultRedirect()
@@ -789,8 +790,8 @@ class Server extends BaseModel
             } else {
                 $url = Url::fromString($settings->fqdn);
                 $host = $url->getHost();
-                // Cloudflare terminates TLS for tunnel traffic, so the proxy serves the dashboard over HTTP.
-                $schema = $this->servesTrafficThroughCloudflareTunnel() ? 'http' : $url->getScheme();
+                // The dashboard is always served directly. Only domains set to the Cloudflare Tunnel switch to HTTP.
+                $schema = $url->getScheme();
                 $traefik_dynamic_conf = [
                     'http' => [
                         'middlewares' => [
@@ -937,8 +938,8 @@ class Server extends BaseModel
             } else {
                 $url = Url::fromString($settings->fqdn);
                 $host = $url->getHost();
-                // Cloudflare terminates TLS for tunnel traffic, so the proxy serves the dashboard over HTTP.
-                $schema = $this->servesTrafficThroughCloudflareTunnel() ? 'http' : $url->getScheme();
+                // The dashboard is always served directly. Only domains set to the Cloudflare Tunnel switch to HTTP.
+                $schema = $url->getScheme();
                 $siteAddress = $this->dashboardCaddySiteAddress($settings, $schema, $host);
                 $caddy_file = "
 $siteAddress {

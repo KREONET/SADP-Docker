@@ -52,6 +52,13 @@
                 </div>
             </x-application.settings-section>
 
+            <x-application.settings-section :title="__('Cloudflare Tunnel')">
+                <x-forms.checkbox canGate="update" :canResource="$settings" id="is_cloudflare_tunnel_allowed"
+                    instantSave="updateCloudflareTunnelSupport"
+                    :label="__('Allow Cloudflare Tunnel traffic')"
+                    :helper="__('When off, cloudflared is stopped on every server and all domains are served directly. Saved tunnel tokens are kept, so tunnels can be turned on again.')" />
+            </x-application.settings-section>
+
             <x-application.settings-section :title="__('Public domain')">
                 <x-forms.input canGate="update" :canResource="$settings" id="public_domain"
                     :label="__('Public domain')" placeholder="https://apps.example.com"

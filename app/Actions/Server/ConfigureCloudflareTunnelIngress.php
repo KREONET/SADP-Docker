@@ -34,13 +34,13 @@ class ConfigureCloudflareTunnelIngress
      */
     public function handle(Server $server): bool
     {
-        $blockers = self::blockers($server);
+        $settings = $server->settings;
+        $enabled = (bool) $settings->is_cloudflare_tunnel_ingress_enabled;
+        // Turning the tunnel off must always work, also after an admin stopped Cloudflare support.
+        $blockers = $enabled ? self::blockers($server) : [];
         if ($blockers !== []) {
             throw new RuntimeException($blockers[0]);
         }
-
-        $settings = $server->settings;
-        $enabled = (bool) $settings->is_cloudflare_tunnel_ingress_enabled;
         $directory = self::directory();
 
         if ($enabled) {
@@ -88,6 +88,9 @@ class ConfigureCloudflareTunnelIngress
     public static function blockers(Server $server): array
     {
         $blockers = [];
+        if (! isCloudflareTunnelAllowed()) {
+            $blockers[] = __('An instance admin turned off Cloudflare Tunnel support.');
+        }
         if ($server->isRoutedThroughController()) {
             $blockers[] = __('This server has no proxy of its own. Set up the tunnel on the controller, which receives its traffic.');
         }
@@ -118,6 +121,30 @@ class ConfigureCloudflareTunnelIngress
         }
 
         return preg_match('/^[0-9a-f-]{36}$/i', $payload['t']) === 1 ? strtolower($payload['t']) : null;
+    }
+
+    /**
+     * Stops cloudflared on every server that runs it, keeping the stored tokens so the tunnels can
+     * be turned back on. Used when an instance admin turns Cloudflare Tunnel support off.
+     *
+     * @return array<int, string> Names of servers that could not be updated.
+     */
+    public static function disableEverywhere(): array
+    {
+        $failed = [];
+        Server::query()
+            ->whereRelation('settings', 'is_cloudflare_tunnel_ingress_enabled', true)
+            ->each(function (Server $server) use (&$failed) {
+                $server->settings->forceFill(['is_cloudflare_tunnel_ingress_enabled' => false])->save();
+                try {
+                    self::run($server->fresh());
+                } catch (\Throwable $e) {
+                    report($e);
+                    $failed[] = $server->name;
+                }
+            });
+
+        return $failed;
     }
 
     public static function directory(): string
