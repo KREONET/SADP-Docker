@@ -40,6 +40,7 @@ class ServiceApplication extends BaseModel
         'is_gzip_enabled',
         'is_stripprefix_enabled',
         'is_force_https_enabled',
+        'is_cloudflare_tunnel_enabled',
         'last_online_at',
         'is_migrated',
     ];
@@ -56,6 +57,7 @@ class ServiceApplication extends BaseModel
 
     protected $attributes = [
         'is_force_https_enabled' => true,
+        'is_cloudflare_tunnel_enabled' => false,
         'max_restart_count' => 0,
     ];
 
@@ -66,6 +68,7 @@ class ServiceApplication extends BaseModel
             'domain_port_overrides' => 'array',
             'noindex_domains' => 'array',
             'is_force_https_enabled' => 'boolean',
+            'is_cloudflare_tunnel_enabled' => 'boolean',
         ];
     }
 
@@ -146,6 +149,16 @@ class ServiceApplication extends BaseModel
     public function isForceHttpsEnabled(): bool
     {
         return $this->is_force_https_enabled;
+    }
+
+    /**
+     * True when this service application's domains are served through the Cloudflare Tunnel of
+     * the proxy that receives the server's traffic, instead of directly on the public IP.
+     */
+    public function usesCloudflareTunnel(): bool
+    {
+        return (bool) $this->is_cloudflare_tunnel_enabled
+            && (bool) $this->service?->server?->servesTrafficThroughCloudflareTunnel();
     }
 
     public function type()

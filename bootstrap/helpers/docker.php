@@ -1355,7 +1355,7 @@ function generateLabelsApplication(Application $application, ?ApplicationPreview
         }
     }
 
-    return applyProxyEntryLabels($labels, $application->destination->server)->all();
+    return applyProxyEntryLabels($labels, $application->destination->server, $application->usesCloudflareTunnel())->all();
 }
 
 function isDatabaseImage(?string $image = null, ?array $serviceConfig = null)

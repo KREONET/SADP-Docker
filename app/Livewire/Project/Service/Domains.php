@@ -44,6 +44,16 @@ class Domains extends Component
     /** @var array<int|string, bool> */
     public array $forceHttpsRedirects = [];
 
+    /**
+     * Per service application: domains arrive through the server's Cloudflare Tunnel.
+     *
+     * @var array<int, bool>
+     */
+    public array $cloudflareTunnelRoutes = [];
+
+    /** The proxy that receives this service's traffic runs a Cloudflare Tunnel. */
+    public bool $cloudflareTunnelAvailable = false;
+
     /** Service application id when a pending domain conflict belongs to setServiceRedirect. */
     public ?int $pendingRedirectServiceApplicationId = null;
 
@@ -140,6 +150,8 @@ class Domains extends Component
             'serviceRedirects.*' => 'string|in:both,www,non-www',
             'forceHttpsRedirects' => 'array',
             'forceHttpsRedirects.*' => 'boolean',
+            'cloudflareTunnelRoutes' => 'array',
+            'cloudflareTunnelRoutes.*' => 'boolean',
         ];
     }
 
@@ -230,6 +242,30 @@ class Domains extends Component
         $this->dispatch('success', __('HTTP to HTTPS redirect updated.'));
     }
 
+    public function updateCloudflareTunnel(int $serviceApplicationId, bool $enabled): void
+    {
+        $application = $this->service->applications()->findOrFail($serviceApplicationId);
+        $this->authorize('update', $application);
+
+        if ($enabled && ! $this->cloudflareTunnelAvailable) {
+            $this->cloudflareTunnelRoutes[$serviceApplicationId] = false;
+            $this->dispatch('error', __('Cloudflare Tunnel is not running for this server. Turn it on in the proxy settings first.'));
+
+            return;
+        }
+
+        $this->cloudflareTunnelRoutes[$serviceApplicationId] = $enabled;
+        $this->validateOnly("cloudflareTunnelRoutes.{$serviceApplicationId}");
+
+        $application->is_cloudflare_tunnel_enabled = $enabled;
+        $application->save();
+        $this->service->refresh();
+        $this->service->parse();
+        $this->refreshDomains();
+        $this->dispatch('configurationChanged')->to(ConfigurationChecker::class);
+        $this->dispatch('success', __('Traffic entry updated. Restart the service to apply it.'));
+    }
+
     public function loadDomainState(): void
     {
         $this->service->loadMissing(['applications', 'server']);
@@ -240,7 +276,11 @@ class Domains extends Component
         $server = $this->service->server;
         // DNS points to the proxy that receives the traffic: the controller for a routed worker. Behind a
         // Cloudflare Tunnel, Cloudflare owns the records, so there is no server IP to point them to.
-        $server = $server?->servesTrafficThroughCloudflareTunnel() ? null : $server?->trafficEntryServer();
+        $this->cloudflareTunnelAvailable = (bool) $server?->servesTrafficThroughCloudflareTunnel();
+        // DNS checks compare against the server IP, which tunnel domains do not use.
+        $server = $this->service->applications->contains(fn (ServiceApplication $app) => $app->usesCloudflareTunnel())
+            ? null
+            : $server?->trafficEntryServer();
         if ($server) {
             if ($server->id === 0) {
                 $configured = data_get($settings, 'public_ipv4')
@@ -259,6 +299,10 @@ class Domains extends Component
 
         $this->forceHttpsRedirects = $this->service->applications
             ->mapWithKeys(fn (ServiceApplication $app) => [$app->id => $app->isForceHttpsEnabled()])
+            ->all();
+
+        $this->cloudflareTunnelRoutes = $this->service->applications
+            ->mapWithKeys(fn (ServiceApplication $app) => [$app->id => (bool) $app->is_cloudflare_tunnel_enabled])
             ->all();
 
         $this->serviceApps = $this->service->applications

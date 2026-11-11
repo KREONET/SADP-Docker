@@ -11,6 +11,7 @@ class InstanceSettings extends Model
 {
     protected $attributes = [
         'is_dashboard_force_https_enabled' => true,
+        'is_cloudflare_tunnel_allowed' => true,
     ];
 
     protected $fillable = [
@@ -18,6 +19,7 @@ class InstanceSettings extends Model
         'public_ipv6',
         'fqdn',
         'public_domain',
+        'is_cloudflare_tunnel_allowed',
         'public_port_min',
         'public_port_max',
         'do_not_track',
@@ -133,6 +135,7 @@ class InstanceSettings extends Model
         'webhook_allowed_internal_hosts' => 'array',
         'webhook_allow_localhost' => 'boolean',
         'is_dashboard_force_https_enabled' => 'boolean',
+        'is_cloudflare_tunnel_allowed' => 'boolean',
         'is_sso_only_login_enabled' => 'boolean',
         'is_source_allowlist_enabled' => 'boolean',
         'forgejo_bot_token' => 'encrypted',
