@@ -108,6 +108,15 @@ describe('labels behind a Cloudflare Tunnel', function () {
         expect(applyCloudflareTunnelLabels($once, $tunnel, true)->all())->toBe($once->all());
     });
 
+    it('keeps the labels a YAML list after dropping the HTTP twin routers', function () {
+        $labels = fqdnLabelsForTraefik('abc', collect(['https://app.example.com']), is_force_https_enabled: true, onlyPort: 3000);
+
+        $result = applyProxyEntryLabels($labels, tunnelServer($this->team), true);
+
+        expect(array_is_list($result->all()))->toBeTrue()
+            ->and(Yaml::dump(['labels' => $result->all()]))->not->toMatch('/^\s+\d+: /m');
+    });
+
     it('keeps direct HTTPS labels for resources that did not choose the tunnel', function () {
         $labels = fqdnLabelsForTraefik('abc', collect(['https://app.example.com']), is_force_https_enabled: true, onlyPort: 3000);
 

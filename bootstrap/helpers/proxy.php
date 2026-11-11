@@ -542,7 +542,11 @@ function applyCloudflareTunnelLabels(Collection $labels, ?Server $server, bool $
         $result[$key] = $label;
     }
 
-    return collect($result);
+    // Dropped labels leave gaps in a list, which YAML would write as a map with numeric keys
+    // ("non-string key in services.*.labels" in Docker Compose).
+    $hasOnlyIntegerKeys = $result === [] || count(array_filter(array_keys($result), 'is_int')) === count($result);
+
+    return collect($hasOnlyIntegerKeys ? array_values($result) : $result);
 }
 
 /**
