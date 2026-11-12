@@ -48,7 +48,7 @@ it('reloads containers after a status check when the first load found none', fun
     $component->containersLoaded = true;
 
     $listener = $component->getListeners()["echo-private:team.{$team->id},ServiceChecked"];
-    expect($listener)->toBe('loadAllContainers');
+    expect($listener)->toBe('refreshContainers');
 
     $component->{$listener}();
 
@@ -83,4 +83,33 @@ it('keeps the container lookup error instead of reporting no running containers'
     expect($html)->toContain('Could not load containers')
         ->and($html)->toContain('No query results for model [App\\Models\\PrivateKey]')
         ->and($html)->not->toContain('No containers are running');
+});
+
+it('keeps the visible container list when a background refresh fails transiently', function () {
+    Storage::fake('ssh-keys');
+    Storage::fake('ssh-mux');
+    [, $server, $application] = runtimeLogsApplication();
+    // A server without its private key fails the SSH lookup before any command runs.
+    $server->updateQuietly(['private_key_id' => 999999]);
+
+    $previous = [['ID' => 'abc123', 'Names' => 'app-container']];
+
+    $component = new Logs;
+    $component->resource = $application;
+    $component->servers = collect([$server]);
+    $component->serverContainers = [$server->id => $previous];
+    $component->containersLoaded = true;
+
+    $component->refreshContainers();
+
+    expect($component->serverContainers[$server->id])->toBe($previous)
+        ->and($component->serverErrors)->toBe([]);
+});
+
+it('does not hide the log list while a status check refreshes containers', function () {
+    $view = file_get_contents(resource_path('views/livewire/project/shared/logs.blade.php'));
+
+    // The loading state only covers the initial load; background refreshes use refreshContainers.
+    expect($view)->toContain('wire:target="loadAllContainers"')
+        ->and($view)->not->toContain('wire:target="refreshContainers"');
 });
