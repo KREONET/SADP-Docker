@@ -51,8 +51,61 @@ class Logs extends Component
     public function getListeners()
     {
         return $this->teamChannelListeners([
-            'ServiceChecked' => 'loadAllContainers',
+            'ServiceChecked' => 'refreshContainers',
         ]);
+    }
+
+    /**
+     * Background refresh triggered by status checks.
+     *
+     * Unlike the initial load, it runs without the loading state (so the open log list stays visible),
+     * keeps the previous containers of a server whose lookup fails transiently, and skips the render
+     * when nothing changed so open log panels are not re-rendered on every status check.
+     */
+    public function refreshContainers(): void
+    {
+        if (! $this->containersLoaded) {
+            $this->skipRender();
+
+            return;
+        }
+
+        $previousContainers = $this->serverContainers;
+        $previousErrors = $this->serverErrors;
+
+        foreach ($this->servers as $server) {
+            unset($this->serverErrors[$server->id]);
+            $containers = $this->getContainersForServer($server);
+
+            if (isset($this->serverErrors[$server->id]) && ! empty($previousContainers[$server->id] ?? [])) {
+                unset($this->serverErrors[$server->id]);
+
+                continue;
+            }
+
+            $this->serverContainers[$server->id] = $containers;
+        }
+
+        if ($this->containerIdentities($this->serverContainers) === $this->containerIdentities($previousContainers)
+            && $this->serverErrors === $previousErrors) {
+            $this->skipRender();
+        }
+    }
+
+    /**
+     * @param  array<int, array<int, mixed>>  $serverContainers
+     * @return array<int, array<int, string>>
+     */
+    private function containerIdentities(array $serverContainers): array
+    {
+        return collect($serverContainers)
+            ->map(fn ($containers) => collect($containers)
+                ->map(fn ($container) => data_get($container, 'ID').'|'.data_get($container, 'Names'))
+                ->sort()
+                ->values()
+                ->all())
+            ->sortKeys()
+            ->all();
     }
 
     public function loadAllContainers()
