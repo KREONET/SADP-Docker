@@ -28,7 +28,7 @@ return [
         // Read by the versions helpers only; this distribution never runs the upstream upgrade script.
         'upgrade_script_url' => env('UPGRADE_SCRIPT_URL', env('CDN_URL', 'https://cdn.coollabs.io').'/coolify/upgrade.sh'),
         'releases_url' => env('RELEASES_URL', 'https://cdn.coollabs.io/coolify/releases.json'),
-        'github_releases_url' => env('GITHUB_RELEASES_URL', 'https://github.com/KREONET/SADP-Docker/releases'),
+        'github_releases_url' => env('GITHUB_RELEASES_URL', 'https://github.com/KREONET/SADP-Docker-Personal/releases'),
         // "sequential" or "concurrent". Empty uses sequential on self-hosted and concurrent on Coolify Cloud.
         'scheduled_jobs_dispatch_mode' => env('SCHEDULED_JOBS_DISPATCH_MODE'),
     ],
