@@ -1,0 +1,239 @@
+/*
+ * 디자인 토큰 — 화면 밀도(컨트롤 크기)와 글자 크기를 이 파일 한 곳에서 관리합니다.
+ *
+ * ┌ 어떻게 동작하나요? ───────────────────────────────────────────────────────────┐
+ * │ 1. 사용자가 [프로필 → 화면 설정]에서 "밀도"와 "글자 크기"를 고릅니다.          │
+ * │ 2. 선택값은 브라우저(localStorage)에 저장되고, 페이지가 그려지기 전에           │
+ * │    <html data-density="…" data-text-size="…"> 속성으로 적용됩니다.            │
+ * │    (적용 코드: resources/views/layouts/base.blade.php 의 applyUiPreferences)   │
+ * │ 3. 이 파일의 변수(--ui-*)가 속성에 따라 바뀌고, 버튼·입력·메뉴 등 공통 스타일이  │
+ * │    그 변수를 읽어 크기를 정합니다.                                              │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ *
+ * 크기를 바꾸고 싶다면?
+ *   - 모든 화면의 버튼/입력 높이를 바꾸려면 아래 --ui-h-md 값을 수정하세요.
+ *   - 새 컴포넌트를 만들 때는 `h-8` 대신 `h-[var(--ui-h-md)]` 또는 아래 "보정 층"에
+ *     있는 `h-8` 같은 기존 클래스를 그대로 쓰면 밀도 설정을 자동으로 따라갑니다.
+ *   - 미리 보고 싶다면 개발 모드에서 /dev/ui (UI 컴포넌트 카탈로그)를 여세요.
+ *
+ * 단위는 rem 입니다. 글자 크기 설정이 <html>의 font-size 를 바꾸므로, rem 으로 쓴
+ * 크기는 글자 크기와 함께 자동으로 커집니다. (px 로 쓴 글자는 --ui-text-scale 로 보정)
+ */
+
+/* ── 밀도(density) ─────────────────────────────────────────────────────────── */
+
+/*
+ * comfortable(편안하게) — 기본값.
+ * 선택자에 `[data-density]` 를 쓰므로 <html> 뿐 아니라 어떤 요소에 붙여도 그 안쪽만
+ * 해당 밀도가 적용됩니다. (화면 설정의 "미리보기" 카드가 이 성질을 사용합니다.)
+ */
+:root,
+[data-density="comfortable"] {
+    --ui-h-sm: 2rem;       /* 작은 컨트롤: 아이콘 버튼, 탭 (기존 h-7)   */
+    --ui-h-md: 2.25rem;    /* 일반 컨트롤: 버튼, 입력, 메뉴 (기존 h-8)  */
+    --ui-h-lg: 2.5rem;     /* 큰 컨트롤 (기존 h-9)                       */
+    --ui-h-xl: 2.75rem;    /* 아주 큰 컨트롤 (기존 h-10)                 */
+    --ui-text-control: 13px;       /* 버튼·메뉴 글자 */
+    --ui-list-option-height: 2.25rem;  /* 드롭다운 항목 높이 */
+    --ui-table-row-height: 3.25rem;    /* 표의 한 줄 높이   */
+    --ui-table-header-height: 2.5rem;  /* 표 머리글 높이    */
+}
+
+/* compact(촘촘하게) — 이전 디자인과 같은 크기. 한 화면에 많은 정보를 볼 때. */
+[data-density="compact"] {
+    --ui-h-sm: 1.75rem;
+    --ui-h-md: 2rem;
+    --ui-h-lg: 2.25rem;
+    --ui-h-xl: 2.5rem;
+    --ui-text-control: 13px;
+    --ui-list-option-height: 2rem;
+    --ui-table-row-height: 3rem;
+    --ui-table-header-height: 2.5rem;
+}
+
+/* touch(터치) — 손가락으로 누르기 쉬운 크기. 일반 컨트롤 44px 이상. */
+[data-density="touch"] {
+    --ui-h-sm: 2.5rem;
+    --ui-h-md: 2.75rem;
+    --ui-h-lg: 3rem;
+    --ui-h-xl: 3.25rem;
+    --ui-text-control: 14px;
+    --ui-list-option-height: 2.75rem;
+    --ui-table-row-height: 3.75rem;
+    --ui-table-header-height: 2.75rem;
+}
+
+/* ── 글자 크기(text size) ──────────────────────────────────────────────────── */
+
+:root {
+    --ui-text-scale: 1;
+}
+
+/* rem 으로 쓴 글자·여백은 <html> 의 font-size 와 함께 커지고,
+   px 로 쓴 글자(text-[12px] 등)는 아래 --ui-text-scale 로 같은 비율만큼 커집니다. */
+html[data-text-size="small"] {
+    font-size: 90%;
+    --ui-text-scale: 0.9;
+}
+
+html[data-text-size="large"] {
+    font-size: 112.5%;
+    --ui-text-scale: 1.125;
+}
+
+html[data-text-size="xlarge"] {
+    font-size: 125%;
+    --ui-text-scale: 1.25;
+}
+
+/* ── 보정 층: 화면 곳곳에 이미 쓰인 고정 크기 클래스가 토큰을 따르게 합니다 ───── */
+
+/*
+ * Blade 파일 160여 곳에 `h-8`, `size-7` 같은 Tailwind 클래스가 직접 쓰여 있습니다.
+ * 그 파일들을 하나하나 고치는 대신, 같은 클래스를 토큰으로 다시 정의합니다.
+ *   h-7 → --ui-h-sm,  h-8 → --ui-h-md,  h-9 → --ui-h-lg,  h-10 → --ui-h-xl
+ * compact 밀도에서는 값이 원래 Tailwind 값과 같아서 이전 화면과 똑같이 보입니다.
+ *
+ * 주의: `sm:h-8` 처럼 앞에 붙은 변형 클래스(반응형 등)는 영향을 받지 않습니다.
+ * 한 요소를 정사각형으로 만들 때는 `h-8 w-8` 대신 `size-8` 을 쓰세요.
+ * (h-8 만 커지고 w-8 은 그대로라 찌그러집니다.)
+ */
+.h-7 {
+    height: var(--ui-h-sm);
+}
+
+.h-8 {
+    height: var(--ui-h-md);
+}
+
+.min-h-8 {
+    min-height: var(--ui-h-md);
+}
+
+.h-9 {
+    height: var(--ui-h-lg);
+}
+
+.min-h-9 {
+    min-height: var(--ui-h-lg);
+}
+
+.h-10 {
+    height: var(--ui-h-xl);
+}
+
+.min-h-10 {
+    min-height: var(--ui-h-xl);
+}
+
+.size-7 {
+    width: var(--ui-h-sm);
+    height: var(--ui-h-sm);
+}
+
+.size-8 {
+    width: var(--ui-h-md);
+    height: var(--ui-h-md);
+}
+
+.size-9 {
+    width: var(--ui-h-lg);
+    height: var(--ui-h-lg);
+}
+
+/*
+ * px 로 쓴 글자 크기(text-[12px] 등)도 글자 크기 설정을 따르게 합니다.
+ * 설정이 "보통"이면 --ui-text-scale 이 1 이라 값이 그대로입니다.
+ * `text-[12px]!` 처럼 !important 가 붙은 클래스도 함께 처리합니다.
+ * 새로운 px 크기를 쓰게 되면 아래 목록에 한 줄 추가하세요.
+ */
+.text-\[9px\] {
+    font-size: calc(9px * var(--ui-text-scale));
+}
+
+.text-\[10px\] {
+    font-size: calc(10px * var(--ui-text-scale));
+}
+
+.text-\[11px\] {
+    font-size: calc(11px * var(--ui-text-scale));
+}
+
+.text-\[12px\] {
+    font-size: calc(12px * var(--ui-text-scale));
+}
+
+.text-\[13px\] {
+    font-size: calc(13px * var(--ui-text-scale));
+}
+
+.text-\[14px\] {
+    font-size: calc(14px * var(--ui-text-scale));
+}
+
+.text-\[15px\] {
+    font-size: calc(15px * var(--ui-text-scale));
+}
+
+.text-\[20px\] {
+    font-size: calc(20px * var(--ui-text-scale));
+}
+
+.text-\[24px\] {
+    font-size: calc(24px * var(--ui-text-scale));
+}
+
+/*
+ * `!` 가 붙은 클래스(h-8!, text-[12px]! 등)를 위한 보정.
+ *
+ * CSS 에서 !important 는 일반 규칙과 우선순위가 "반대로" 동작합니다.
+ * 레이어 안의 !important 는 레이어 밖의 !important 보다 항상 이기고, 레이어끼리는
+ * 먼저 선언된 레이어가 이깁니다. Tailwind 의 `text-[12px]!` 는 utilities 레이어에 있으므로,
+ * 이를 덮으려면 더 앞선 레이어(base)에 !important 로 써야 합니다.
+ * (레이어 밖에 쓰면 아무리 !important 를 붙여도 적용되지 않습니다.)
+ */
+@layer base {
+    .text-\[9px\]\! {
+        font-size: calc(9px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[10px\]\! {
+        font-size: calc(10px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[11px\]\! {
+        font-size: calc(11px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[12px\]\! {
+        font-size: calc(12px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[13px\]\! {
+        font-size: calc(13px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[14px\]\! {
+        font-size: calc(14px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[15px\]\! {
+        font-size: calc(15px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[20px\]\! {
+        font-size: calc(20px * var(--ui-text-scale)) !important;
+    }
+
+    .text-\[24px\]\! {
+        font-size: calc(24px * var(--ui-text-scale)) !important;
+    }
+
+    .h-8\! {
+        height: var(--ui-h-md) !important;
+    }
+
+    .h-9\! {
+        height: var(--ui-h-lg) !important;
+    }
+}

@@ -1,0 +1,37 @@
+# The authorized key is the local .dev/testing-host-key.pub. Start the VM with the command the
+# server page shows, which replaces __COOLIFY_DEV_SSH_PUBLIC_KEY__ with it.
+images:
+  - location: https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img
+    arch: x86_64
+  - location: https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img
+    arch: aarch64
+
+cpus: 2
+memory: 2GiB
+disk: 20GiB
+
+containerd:
+  system: false
+  user: false
+
+mounts: []
+
+ssh:
+  localPort: 2222
+  loadDotSSHPubKeys: false
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+
+      install -d -m 700 /root/.ssh
+      cat >/root/.ssh/authorized_keys <<'EOF'
+      __COOLIFY_DEV_SSH_PUBLIC_KEY__
+      EOF
+      chmod 600 /root/.ssh/authorized_keys
+
+      sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+      sed -i 's/^#\?PubkeyAuthentication .*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+      systemctl restart ssh

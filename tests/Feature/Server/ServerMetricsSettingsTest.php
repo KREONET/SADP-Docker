@@ -1,0 +1,89 @@
+<?php
+
+use App\Livewire\Server\Charts;
+use App\Models\Server;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->user = User::factory()->create();
+    $this->team = $this->user->teams()->first();
+    makePlatformAdmin($this->user);
+    $this->actingAs($this->user);
+    session(['currentTeam' => $this->team]);
+});
+
+it('saves metrics collection settings from the server metrics page', function () {
+    Queue::fake();
+
+    $server = Server::factory()->create(['team_id' => $this->team->id]);
+    $server->settings->is_sentinel_enabled = true;
+    $server->settings->is_metrics_enabled = true;
+    $server->settings->save();
+
+    Livewire::test(Charts::class, ['server_uuid' => $server->uuid])
+        ->set('sentinelMetricsRefreshRateSeconds', 15)
+        ->set('sentinelMetricsHistoryDays', 14)
+        ->set('sentinelPushIntervalSeconds', 90)
+        ->call('saveMetricsSettings')
+        ->assertHasNoErrors();
+
+    $settings = $server->settings->fresh();
+
+    expect($settings->sentinel_metrics_refresh_rate_seconds)->toBe(15)
+        ->and($settings->sentinel_metrics_history_days)->toBe(14)
+        ->and($settings->sentinel_push_interval_seconds)->toBe(90);
+});
+
+it('forbids team owners who are not platform admins from saving metrics settings', function () {
+    $owner = User::factory()->create();
+    $team = $owner->teams()->first();
+    $this->actingAs($owner);
+    session(['currentTeam' => $team]);
+
+    $server = Server::factory()->create(['team_id' => $team->id]);
+    $originalRefreshRate = $server->settings->sentinel_metrics_refresh_rate_seconds;
+
+    Livewire::test(Charts::class, ['server_uuid' => $server->uuid])
+        ->set('sentinelMetricsRefreshRateSeconds', 15)
+        ->call('saveMetricsSettings')
+        ->assertNotDispatched('success');
+
+    expect($server->settings->fresh()->sentinel_metrics_refresh_rate_seconds)->toBe($originalRefreshRate);
+});
+
+it('validates metrics collection settings on the server metrics page', function () {
+    $server = Server::factory()->create(['team_id' => $this->team->id]);
+
+    Livewire::test(Charts::class, ['server_uuid' => $server->uuid])
+        ->set('sentinelMetricsRefreshRateSeconds', 0)
+        ->set('sentinelMetricsHistoryDays', 0)
+        ->set('sentinelPushIntervalSeconds', 9)
+        ->call('saveMetricsSettings')
+        ->assertHasErrors([
+            'sentinelMetricsRefreshRateSeconds',
+            'sentinelMetricsHistoryDays',
+            'sentinelPushIntervalSeconds',
+        ]);
+});
+
+it('refreshes short server metric ranges live and starts long ranges paused', function () {
+    $server = Server::factory()->create(['team_id' => $this->team->id]);
+    $server->settings->is_sentinel_enabled = true;
+    $server->settings->is_metrics_enabled = true;
+    $server->settings->saveQuietly();
+
+    $component = Livewire::test(Charts::class, ['server_uuid' => $server->uuid])
+        ->assertSet('live', true);
+    expect($component->instance()->pollSeconds())->toBe(5);
+
+    $component->set('interval', 43200)->assertSet('live', false);
+    expect($component->instance()->pollSeconds())->toBeNull();
+
+    $component->set('live', true);
+    expect($component->instance()->pollSeconds())->toBe(60);
+});

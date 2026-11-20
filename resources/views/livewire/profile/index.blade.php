@@ -1,0 +1,349 @@
+<div x-data="{
+    emailModalOpen: @js($show_verification),
+    openEmailModal() {
+        this.emailModalOpen = true;
+        this.$nextTick(() => this.$refs.newEmailInput?.focus());
+    },
+}"
+    @close-email-change-modal.window="emailModalOpen = false">
+    <x-slot:title>{{ __('Profile') }} | {{ brand_name() }}</x-slot>
+    <div class="mt-8 flex w-full max-w-none flex-col gap-6 lg:mt-3">
+
+        <form wire:submit="submit">
+            <x-unsaved-bar action="submit" />
+            <section class="application-settings-section">
+                <div class="application-settings-section-header">
+                    <div>
+                        <h2>{{ __('Profile details') }}</h2>
+                        <p>Your avatar, display name, and verified sign-in address.</p>
+                    </div>
+                </div>
+                <div class="application-settings-section-body grid gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2" x-data="{
+                        preview: null,
+                        processing: false,
+                        uploadError: null,
+                        async prepareAvatar(event) {
+                            const file = event.target.files?.[0];
+                            if (!file) return;
+                            this.processing = true;
+                            this.uploadError = null;
+                    <div class="sm:col-span-2 sm:max-w-sm">
+                        <x-forms.listbox id="locale" :label="__('Language')" onChange="updateLocale"
+                            :options="[
+                                ['value' => 'default', 'label' => __('Instance default (:language)', ['language' => \App\Support\InterfaceLocale::available()[\App\Support\InterfaceLocale::instanceDefault()]])],
+                                ...collect(\App\Support\InterfaceLocale::available())->map(fn ($name, $code) => ['value' => $code, 'label' => $name])->values()->all(),
+                            ]" />
+                    </div>
+                            try {
+                                const dataUrl = await new Promise((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onload = () => resolve(reader.result);
+                                    reader.onerror = reject;
+                                    reader.readAsDataURL(file);
+                                });
+                                const image = await new Promise((resolve, reject) => {
+                                    const element = new Image();
+                                    element.onload = () => resolve(element);
+                                    element.onerror = reject;
+                                    element.src = dataUrl;
+                                });
+                                const cropSize = Math.min(image.naturalWidth, image.naturalHeight);
+                                const canvas = document.createElement('canvas');
+                                canvas.width = 256;
+                                canvas.height = 256;
+                                const context = canvas.getContext('2d');
+                                context.fillStyle = '#ffffff';
+                                context.fillRect(0, 0, 256, 256);
+                                context.drawImage(
+                                    image,
+                                    (image.naturalWidth - cropSize) / 2,
+                                    (image.naturalHeight - cropSize) / 2,
+                                    cropSize,
+                                    cropSize,
+                                    0,
+                                    0,
+                                    256,
+                                    256,
+                                );
+                                const blob = await new Promise((resolve, reject) => {
+                                    canvas.toBlob(value => value ? resolve(value) : reject(new Error('JPEG compression failed')), 'image/jpeg', 0.8);
+                                });
+                                const previewUrl = URL.createObjectURL(blob);
+                                const compressed = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+                                this.$wire.upload('avatar', compressed, async () => {
+                                    try {
+                                        const uploaded = await this.$wire.uploadAvatar();
+                                        if (uploaded) {
+                                            if (this.preview) URL.revokeObjectURL(this.preview);
+                                            this.preview = previewUrl;
+                                        } else {
+                                            URL.revokeObjectURL(previewUrl);
+                                        }
+                                    } catch (error) {
+                                        URL.revokeObjectURL(previewUrl);
+                                        this.uploadError = 'The image could not be uploaded.';
+                                    } finally {
+                                        this.processing = false;
+                                    }
+                                }, () => {
+                                    URL.revokeObjectURL(previewUrl);
+                                    this.processing = false;
+                                    this.uploadError = 'The image could not be uploaded.';
+                                });
+                            } catch (error) {
+                                this.processing = false;
+                                this.uploadError = 'The image could not be processed in this browser.';
+                            }
+                        },
+                    }">
+                        <div class="mb-2 text-sm font-medium leading-4">Avatar</div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-200 text-2xl font-semibold text-neutral-700 dark:bg-white/[0.1] dark:text-fg">
+                                <img x-cloak x-show="preview" :src="preview" alt="{{ __('Profile picture preview') }}"
+                                    class="h-full w-full object-cover">
+                                @if (auth()->user()->avatar_path)
+                                    <img src="{{ profile_avatar_url(auth()->user()) }}"
+                                        x-show="!preview" alt="{{ auth()->user()->name }}" class="h-full w-full object-cover">
+                                @else
+                                    <span x-show="!preview">
+                                        {{ strtoupper(mb_substr(auth()->user()->name ?: auth()->user()->email, 0, 1)) }}
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="flex min-w-0 flex-1 flex-col gap-2">
+                                <div class="flex flex-wrap gap-2">
+                                    <input x-ref="avatarInput" type="file" x-on:change="prepareAvatar($event)"
+                                        accept="image/jpeg,image/png,image/webp" class="hidden">
+                                    <x-forms.button type="button" x-on:click="$refs.avatarInput.click()"
+                                        x-bind:disabled="processing">
+                                        <span x-text="processing ? 'Uploading…' : 'Browse…'"></span>
+                                    </x-forms.button>
+                                    @if (auth()->user()->avatar_path)
+                                        <x-forms.button type="button" wire:click="removeAvatar" x-bind:disabled="processing"
+                                            isError>{{ __('Remove') }}</x-forms.button>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-fg-dim">JPG, PNG, or WebP. Shown in the user menu and team member lists.</p>
+                                <p x-cloak x-show="uploadError" x-text="uploadError" class="text-xs text-red-500"></p>
+                                @error('avatar')
+                                    <p class="text-xs text-red-500">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                    <x-forms.input id="name" :label="__('Name')" required />
+                    <div class="flex items-end gap-2">
+                        <x-forms.input id="email" :label="__('Email')" readonly />
+                        <x-forms.button @click="openEmailModal()" type="button"
+                            :disabled="$uses_sso" x-bind:disabled="emailModalOpen || {{ \Illuminate\Support\Js::from($uses_sso) }}">
+                            {{ __('Change') }}
+                        </x-forms.button>
+                    </div>
+                </div>
+             </section>
+         </form>
+
+         @if ($uses_sso)
+             <x-callout type="info" :title="__('Email managed by SSO')">
+                 @if ($sso_provider_label)
+                     {{ __('Signed in with SSO (:provider).', ['provider' => $sso_provider_label]) }}
+                 @else
+                     {{ __('Signed in with SSO.') }}
+                 @endif
+                 {{ __('Email is managed by your SSO provider.') }}
+             </x-callout>
+         @endif
+
+         @if (! $uses_sso)
+         <template x-teleport="body">
+            <div x-show="emailModalOpen" x-cloak
+                class="fixed inset-0 z-99 flex h-screen w-screen items-center justify-center p-4">
+                <div class="absolute inset-0 h-full w-full bg-black/55 backdrop-blur-[3px]"></div>
+                <div x-show="emailModalOpen" x-trap.inert.noscroll="emailModalOpen"
+                    class="application-settings-form application-settings-section relative w-full max-w-xl overflow-hidden"
+                    style="box-shadow: 0 0 0 1px var(--coollabs-hairline), var(--shadow-modal)">
+                    <header>
+                        <div>
+                            <h3>{{ $show_verification ? __('Verify new email') : __('Change email') }}</h3>
+                            <p class="mt-1 text-xs text-neutral-500 dark:text-fg-dim">
+                                @if ($show_verification)
+                                    {{ __('Code sent to :email.', ['email' => $new_email ?: auth()->user()->pending_email]) }}
+                                @else
+                                    {{ __('A six-digit verification code will be sent to the new address.') }}
+                                @endif
+                            </p>
+                        </div>
+                        <button type="button"
+                            @click="@if ($show_verification) $wire.cancelEmailChange().then(() => emailModalOpen = false) @else emailModalOpen = false @endif"
+                            class="icon-button shrink-0" aria-label="{{ __('Close') }}">
+                            <x-reicon name="x" class="size-4" />
+                        </button>
+                    </header>
+
+                    @if ($show_verification)
+                        <form wire:submit="verifyEmailChange" class="application-settings-section-body space-y-4">
+                            <x-forms.input id="email_verification_code" :label="__('Verification code')" required
+                                inputmode="numeric" maxlength="6" />
+                            <p class="text-xs text-neutral-500 dark:text-fg-dim">
+                                {{ __('The code expires after :minutes minutes.', ['minutes' => config('constants.email_change.verification_code_expiry_minutes', 10)]) }}
+                            </p>
+                            <div class="flex justify-end gap-2">
+                                <x-forms.button wire:click="resendVerificationCode" type="button">{{ __('Resend code') }}</x-forms.button>
+                                <x-forms.button type="submit" isHighlighted>{{ __('Verify email') }}</x-forms.button>
+                            </div>
+                        </form>
+                    @else
+                        <form wire:submit="requestEmailChange" class="application-settings-section-body space-y-4">
+                            <x-forms.input id="new_email" :label="__('New email address')" required type="email"
+                                x-ref="newEmailInput" />
+                            <div class="flex justify-end">
+                                <x-forms.button type="submit" isHighlighted>{{ __('Send code') }}</x-forms.button>
+                            </div>
+                        </form>
+                    @endif
+                </div>
+            </div>
+         </template>
+         @endif
+
+        <form wire:submit="resetPassword">
+            <section class="application-settings-section">
+                <div class="application-settings-section-header">
+                    <div>
+                        <h2>{{ __('Password') }}</h2>
+                        <p>{{ __('Changing your password signs out every active session.') }}</p>
+                    </div>
+                    <x-forms.button type="submit">{{ __('Change password') }}</x-forms.button>
+                </div>
+                <div class="application-settings-section-body grid gap-4 sm:grid-cols-2">
+                    <x-forms.input class="sm:col-span-2" id="current_password" :label="__('Current password')"
+                        required type="password" :copyable="false" />
+                    <x-forms.input id="new_password" label="New password" required type="password" :copyable="false" />
+                    <x-forms.input id="new_password_confirmation" :label="__('Confirm new password')" required
+                        type="password" :copyable="false" />
+                </div>
+            </section>
+        </form>
+
+        <section class="application-settings-section">
+            @if (session('status') === 'initial-password-set')
+                <x-callout type="success" :title="__('Password set')">
+                    {{ __('Your password is set. Select Configure 2FA again to continue the setup.') }}
+                </x-callout>
+            @endif
+            <div class="application-settings-section-header">
+                <div>
+                    <h2>{{ __('Two-factor authentication') }}</h2>
+                    <p>{{ __('Add a time-based one-time password to protect your account.') }}</p>
+                </div>
+                @if (request()->user()->two_factor_confirmed_at)
+                    <x-status-badge :status="__('Enabled')" type="success" />
+                @elseif (session('status') !== 'two-factor-authentication-enabled')
+                    <form action="/user/two-factor-authentication" method="POST">
+                        @csrf
+                        <x-forms.button type="submit">{{ __('Configure 2FA') }}</x-forms.button>
+                    </form>
+                @endif
+            </div>
+            <div class="application-settings-section-body">
+                @if (session('status') === 'two-factor-authentication-enabled')
+                    <div class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+                        <div
+                            class="flex aspect-square items-center justify-center rounded-[10px] border border-neutral-200 bg-white p-5 dark:border-white/[0.07]">
+                            {!! request()->user()->twoFactorQrCodeSvg() !!}
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-black dark:text-fg">{{ __('Finish setup') }}</h3>
+                                <p class="mt-1 text-sm text-neutral-500 dark:text-fg-dim">
+                                    {{ __('Scan the QR code, then enter the current code from your authenticator.') }}
+                                </p>
+                            </div>
+                            <form action="/user/confirmed-two-factor-authentication" method="POST"
+                                class="flex items-end gap-2"
+                                x-init="$nextTick(() => $el.querySelector('input[name=code]')?.focus())">
+                                @csrf
+                                <x-forms.input name="code" type="text" inputmode="numeric" pattern="[0-9]*" id="code"
+                                    :label="__('One-time code')" required />
+                                <x-forms.button type="submit">{{ __('Validate 2FA') }}</x-forms.button>
+                            </form>
+                            <div x-data="{ showCode: false }">
+                                <div x-cloak x-show="showCode" class="space-y-2 pb-3">
+                                    <x-forms.copy-input
+                                        :text="decrypt(request()->user()->two_factor_secret)" />
+                                    <x-forms.copy-input :text="request()->user()->twoFactorQrCodeUrl()" />
+                                </div>
+                                <x-forms.button type="button" x-on:click="showCode = !showCode">
+                                    <span x-text="showCode ? @js(__('Hide manual setup')) : @js(__('Show manual setup'))"></span>
+                                </x-forms.button>
+                            </div>
+                        </div>
+                    </div>
+                @elseif (request()->user()->two_factor_confirmed_at)
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <form action="/user/two-factor-recovery-codes" method="POST">
+                                @csrf
+                                <x-forms.button type="submit">{{ __('Regenerate recovery codes') }}</x-forms.button>
+                            </form>
+                            <form action="/user/two-factor-authentication" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <x-forms.button type="submit" isError>{{ __('Disable 2FA') }}</x-forms.button>
+                            </form>
+                        </div>
+                        @if (session('status') === 'two-factor-authentication-confirmed'
+                                || session('status') === 'recovery-codes-generated')
+                            <div
+                                class="grid gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 font-mono text-xs text-neutral-700 sm:grid-cols-2 dark:border-white/[0.07] dark:bg-white/[0.05] dark:text-fg-dim">
+                                @foreach (request()->user()->recoveryCodes() as $code)
+                                    <div>{{ $code }}</div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @else
+                    <x-empty size="sm" :title="__('Two-factor authentication is off')"
+                        :description="__('Configure an authenticator app to add another sign-in check.')"
+                        icon-name="keys" />
+                @endif
+            </div>
+        </section>
+
+        <livewire:profile.passkeys />
+        @if (auth()->id() !== 0)
+            <section class="application-settings-section">
+                <div class="application-settings-section-header">
+                    <div>
+                        <h2>{{ __('Danger zone') }}</h2>
+                        <p>{{ __('Destructive actions for your account cannot be undone.') }}</p>
+                    </div>
+                </div>
+                <div class="application-settings-section-body">
+                    <x-danger-zone :title="__('Delete account')">
+                        <p>{{ __('Withdraw from this platform. Your account is permanently deleted and you are signed out.') }}</p>
+                        <p>{{ __('Teams where you are the only member are deleted together with their servers, applications, databases, and services. Ownership of shared teams moves to another member.') }}</p>
+                        <x-slot:action>
+                            <x-modal-confirmation :title="__('Delete your account?')" :buttonTitle="__('Delete account')"
+                                isErrorButton submitAction="deleteAccount"
+                                :actions="[
+                                    __('Your account, sessions, and API tokens will be permanently deleted.'),
+                                    __('Teams where you are the only member will be deleted with all their resources.'),
+                                ]"
+                                confirmationText="{{ auth()->user()->email }}"
+                                :confirmationLabel="__('Enter your email address to confirm account deletion')"
+                                :shortConfirmationLabel="__('Email')"
+                                :step2ButtonText="__('Permanently Delete')" />
+                        </x-slot:action>
+                    </x-danger-zone>
+                </div>
+            </section>
+        @endif
+        @if (session()->has('errors'))
+            <x-callout type="danger" :title="__('Profile update failed')">
+                {{ __('Something went wrong. Please review the fields and try again.') }}
+            </x-callout>
+        @endif
+    </div>
+</div>
