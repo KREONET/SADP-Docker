@@ -5,14 +5,14 @@
 
     <header class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0">
-            <h1 class="truncate text-[24px]! leading-7! font-semibold! tracking-tight!">Storage</h1>
+            <h1 class="truncate text-[24px]! leading-7! font-semibold! tracking-tight!">{{ __('Storage') }}</h1>
             <p class="mt-1 text-[13px] text-neutral-500 dark:text-fg-dim">
                 {{ trans_choice(':count storage destination for backups|:count storage destinations for backups', $s3->count()) }}
             </p>
         </div>
         @can('create', App\Models\S3Storage::class)
             <div class="w-fit shrink-0">
-                <x-modal-input title="New Storage" :closeOutside="false">
+                <x-modal-input :title="__('New Storage')" :closeOutside="false">
                     <x-slot:content>
                         <button type="button"
                             class="button button-highlighted">
@@ -27,8 +27,8 @@
     </header>
 
     @if ($s3->isEmpty())
-        <x-empty title="No storage yet"
-            description="Add an S3-compatible, SFTP, FTPS, or WebDAV destination to store backups outside your servers."
+        <x-empty :title="__('No storage yet')"
+            :description="__('Add an S3-compatible, SFTP, FTPS, or WebDAV destination to store backups outside your servers.')"
             icon-name="storages" />
     @else
         @php

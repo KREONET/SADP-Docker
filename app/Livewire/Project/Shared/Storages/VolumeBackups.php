@@ -174,7 +174,7 @@ class VolumeBackups extends Component
 
         $this->resetErrorBag('s3StorageIds');
         $this->backup = $this->persistBackup($this->enabled);
-        $this->dispatch('success', 'S3 storages updated.');
+        $this->dispatch('success', __('S3 storages updated.'));
     }
 
     public function toggleS3(): void
@@ -326,7 +326,7 @@ class VolumeBackups extends Component
 
         $execution = $this->backup?->executions()->whereKey($executionId)->first();
         if (! $execution || ! $execution->hasPendingRecovery()) {
-            $this->dispatch('error', 'No pending recovery found for this backup execution.');
+            $this->dispatch('error', __('No pending recovery found for this backup execution.'));
 
             return;
         }
@@ -342,7 +342,7 @@ class VolumeBackups extends Component
             'backup_uuid' => $this->backup->uuid,
             'execution_uuid' => $execution->uuid,
         ]);
-        $this->dispatch('success', 'Backup recovery queued.');
+        $this->dispatch('success', __('Backup recovery queued.'));
     }
 
     public function downloadBackup(int $executionId): void

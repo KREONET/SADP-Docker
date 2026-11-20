@@ -112,7 +112,7 @@
                         </div>
                         <div class="flex justify-end">
                             <a class="icon-button" {{ wireNavigate() }} href="{{ $backupRoute }}"
-                                title="Manage backup schedule" aria-label="Manage backup schedule">
+                                title="{{ __('Manage backup schedule') }}" aria-label="{{ __('Manage backup schedule') }}">
                                 <x-reicon name="settings" class="size-3.5" />
                             </a>
                         </div>

@@ -18,7 +18,7 @@
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div class="lg:col-span-2">
                         @can('update', $settings)
-                            <x-forms.input type="password" :required="$webhookEnabled" id="webhookUrl" label="Webhook URL"
+                            <x-forms.input type="password" :required="$webhookEnabled" id="webhookUrl" :label="__('Webhook URL')"
                                 :helper="__('Coolify sends POST requests to this HTTP or HTTPS endpoint.')" />
                         @else
                             <x-forms.input disabled :label="__('Webhook URL')" :value="__('Hidden (only admins can view)')" />

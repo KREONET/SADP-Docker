@@ -21,8 +21,8 @@
                     <x-forms.input required id="newName" :label="__('New name')" />
                 </div>
                 <div class="mt-4 max-w-md">
-                    <x-forms.checkbox id="cloneVolumeData" live label="Clone volume data"
-                        helper="Copies the data of the persistent volumes to the clones. Running source resources are stopped while the data is copied and started again afterwards." />
+                    <x-forms.checkbox id="cloneVolumeData" live :label="__('Clone volume data')"
+                        :helper="__('Copies the data of the persistent volumes to the clones. Running source resources are stopped while the data is copied and started again afterwards.')" />
                 </div>
             </div>
         </section>
@@ -145,7 +145,7 @@
                     @if ($cloneVolumeData)
                         @foreach (['environment' => 'Clone to environment', 'project' => 'Clone to project'] as $cloneType => $cloneLabel)
                             <div wire:key="clone-with-volume-data-{{ $cloneType }}">
-                                <x-modal-confirmation title="Clone with volume data?" submitAction="clone('{{ $cloneType }}')"
+                                <x-modal-confirmation :title="__('Clone with volume data?')" submitAction="clone('{{ $cloneType }}')"
                                     :ignoreWire="false" :confirmWithText="false" :confirmWithPassword="false"
                                     :step2ButtonText="$cloneLabel"
                                     warningMessage="Running source resources are unavailable while their volume data is copied."

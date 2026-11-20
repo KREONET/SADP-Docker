@@ -217,7 +217,7 @@ class Proxy extends Component
             $this->server->save();
             $this->customErrorPage = null;
             $this->server->setupDefaultRedirect();
-            $this->dispatch('success', 'Default error page restored.');
+            $this->dispatch('success', __('Default error page restored.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }

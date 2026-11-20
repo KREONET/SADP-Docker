@@ -8,13 +8,13 @@
 <div class="contents">
     @if ($scans->isNotEmpty())
         <x-application.settings-section id="packages-section" title="{{ __('Packages and SBOM') }}" collapsible flush
-            helper="The software packages that Coolify found in the image, with their versions and licenses. The SBOM (software bill of materials) is the full list of these packages in a standard format (CycloneDX or SPDX). Download it for audits or for other security tools.">
+            :helper="__('The software packages that Coolify found in the image, with their versions and licenses. The SBOM (software bill of materials) is the full list of these packages in a standard format (CycloneDX or SPDX). Download it for audits or for other security tools.')">
             <x-slot:actions>
                 <x-table.dropdown role="menu" panel-class="min-w-56! p-1!">
                     <x-slot:trigger>
                         <button type="button" class="button normal-case!" aria-haspopup="menu" :aria-expanded="open">
                             <x-reicon name="download" class="size-3.5" />
-                            Download SBOM
+                            {{ __('Download SBOM') }}
                             <x-reicon name="chevron-down" class="size-3.5" />
                         </button>
                     </x-slot:trigger>

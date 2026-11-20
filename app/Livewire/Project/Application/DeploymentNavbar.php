@@ -60,7 +60,7 @@ class DeploymentNavbar extends Component
             $this->application_deployment_queue->refresh();
 
             if (! $started) {
-                $this->dispatch('info', 'This deployment is no longer queued, so it was not started again.');
+                $this->dispatch('info', __('This deployment is no longer queued, so it was not started again.'));
             }
         } catch (\Throwable $e) {
             return handleError($e, $this);

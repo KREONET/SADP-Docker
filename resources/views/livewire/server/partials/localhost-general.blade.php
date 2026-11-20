@@ -82,7 +82,7 @@
                                 id="connectionTimeout" :label="__('Connection timeout')"
                                 :helper="__('Seconds to wait before an SSH connection fails.')" min="1" max="300"
                                 required :disabled="$isValidating" />
-                            <x-forms.listbox searchable id="serverTimezone" label="Server timezone"
+                            <x-forms.listbox searchable id="serverTimezone" :label="__('Server timezone')"
                                 :helper="__('Used for backup schedules, cron jobs, and displayed timestamps.')"
                                 searchPlaceholder="Search timezones" searchEmptyText="No matching timezone"
                                 :options="collect($this->timezones)->map(fn ($timezone) => [

@@ -334,7 +334,7 @@ class ValidateAndInstall extends Component
                     CheckAndStartSentinelJob::dispatch($this->server);
                 }
                 if (! $this->server->isProxyShouldRun()) {
-                    $this->dispatch('success', 'Server validated.');
+                    $this->dispatch('success', __('Server validated.'));
 
                     return;
                 }

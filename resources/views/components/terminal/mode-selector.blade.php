@@ -13,7 +13,7 @@
     @keydown.escape.window="modeOpen = false">
     <button type="button"
         class="terminal-theme-trigger flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
-        @click="modeOpen = !modeOpen" aria-label="Choose terminal mode" aria-haspopup="menu" :aria-expanded="modeOpen">
+        @click="modeOpen = !modeOpen" aria-label="{{ __('Choose terminal mode') }}" aria-haspopup="menu" :aria-expanded="modeOpen">
         <svg class="size-3.5 text-white/45" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="m5 8 3 3-3 3M12 16h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
                 stroke-linejoin="round" />

@@ -324,7 +324,7 @@
                     <template x-if="customOption">
                         <button type="button" class="listbox-option" role="option" aria-selected="false"
                             @click="choose(customOption)">
-                            <span class="truncate">Use <span class="font-mono" x-text="customOption.label"></span></span>
+                            <span class="truncate">{{ __('Use') }} <span class="font-mono" x-text="customOption.label"></span></span>
                         </button>
                     </template>
                 @endif

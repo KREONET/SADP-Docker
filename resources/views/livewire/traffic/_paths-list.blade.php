@@ -56,7 +56,7 @@
                     class="flex min-h-11 items-center gap-3 border-t border-neutral-200 px-4 py-2 transition-colors hover:bg-neutral-50 dark:border-white/[0.07] dark:hover:bg-white/[0.03]">
                     @if ($isOther)
                         <span class="min-w-0 flex-1 truncate text-[12px] text-neutral-500 dark:text-fg-dim"
-                            title="All paths outside the top paths that Sentinel tracks">Other paths</span>
+                            title="{{ __('All paths outside the top paths that Sentinel tracks') }}">{{ __('Other paths') }}</span>
                     @else
                         <span class="flex min-w-0 flex-1 items-baseline gap-1.5">
                             @if ($href)
@@ -71,7 +71,7 @@
                         </span>
                     @endif
                     <div class="hidden h-1 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-100 sm:block dark:bg-white/[0.06]"
-                        title="Request volume relative to the busiest row in this list">
+                        title="{{ __('Request volume relative to the busiest row in this list') }}">
                         <div class="h-full rounded-full bg-[var(--chart-status-3xx)]" style="width: {{ $width }}%;"></div>
                     </div>
                     <span class="w-16 shrink-0 text-right text-[12px] font-medium tabular-nums text-black dark:text-fg"

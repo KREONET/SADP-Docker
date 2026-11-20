@@ -23,7 +23,7 @@
         <button type="button" class="button normal-case!" aria-haspopup="menu" :aria-expanded="open"
             @disabled($count === 0)>
             <x-reicon name="download" class="size-3.5" />
-            Export
+            {{ __('Export') }}
             <x-reicon name="chevron-down" class="size-3.5" />
         </button>
     </x-slot:trigger>

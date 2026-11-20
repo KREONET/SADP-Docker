@@ -134,7 +134,7 @@ class Actions extends Component
 
         if ($result['success']) {
             $this->auditSubscriptionChange('refunded');
-            $this->dispatch('success', 'Subscription refunded successfully.');
+            $this->dispatch('success', __('Subscription refunded successfully.'));
             $this->redirect(route('subscription.index'), navigate: true);
 
             return true;
@@ -187,7 +187,7 @@ class Actions extends Component
 
         if ($result['success']) {
             $this->auditSubscriptionChange('cancellation_scheduled', ['cancel_at_period_end' => true]);
-            $this->dispatch('success', 'Subscription will be cancelled at the end of the billing period.');
+            $this->dispatch('success', __('Subscription will be cancelled at the end of the billing period.'));
 
             return true;
         }
@@ -204,7 +204,7 @@ class Actions extends Component
 
         if ($result['success']) {
             $this->auditSubscriptionChange('resumed');
-            $this->dispatch('success', 'Subscription resumed successfully.');
+            $this->dispatch('success', __('Subscription resumed successfully.'));
 
             return true;
         }

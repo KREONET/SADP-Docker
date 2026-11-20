@@ -8,7 +8,7 @@
         @endif
 
         <x-forms.input id="email" type="email" readonly :label="__('Email')" />
-        <x-forms.input id="password" type="password" :copyable="false" autocomplete="new-password" autofocus label="New password"
+        <x-forms.input id="password" type="password" :copyable="false" autocomplete="new-password" autofocus :label="__('New password')"
             required />
         <x-forms.input id="password_confirmation" type="password" :copyable="false" autocomplete="new-password"
             :label="__('Confirm new password')" required />

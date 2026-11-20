@@ -20,11 +20,11 @@
                     @endif
                 </div>
                 @if (! $counts)
-                    <p class="text-xs text-neutral-500 dark:text-fg-dim">Nothing uses this key.</p>
+                    <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Nothing uses this key.') }}</p>
                 @else
                     @if (array_sum($counts) > 5)
-                        <input type="search" class="input mb-2" placeholder="Search by name"
-                            aria-label="Search where this key is used" wire:model.live.debounce.300ms="usageSearch"
+                        <input type="search" class="input mb-2" placeholder="{{ __('Search by name') }}"
+                            aria-label="{{ __('Search where this key is used') }}" wire:model.live.debounce.300ms="usageSearch"
                             x-on:keydown.enter.prevent />
                     @endif
                     <ul class="max-h-48 divide-y divide-neutral-200 overflow-y-auto rounded-md border border-neutral-200 text-sm dark:divide-white/[0.06] dark:border-white/[0.08]">
@@ -38,7 +38,7 @@
                                 @endif
                             </li>
                         @empty
-                            <li class="px-3 py-1 text-xs text-neutral-500 dark:text-fg-dim">No match.</li>
+                            <li class="px-3 py-1 text-xs text-neutral-500 dark:text-fg-dim">{{ __('No match.') }}</li>
                         @endforelse
                         @if ($matches > $rows->count())
                             <li class="px-3 py-1 text-xs text-neutral-500 dark:text-fg-dim">and {{ $matches - $rows->count() }} more</li>

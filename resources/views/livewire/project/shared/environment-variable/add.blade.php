@@ -25,8 +25,7 @@
         @if (!$shared)
             <div x-cloak x-show="!isMultiline" wire:key="env-value-tip"
                 class="mt-1.5 text-xs text-neutral-500 dark:text-fg-faint">
-                Tip: Type <span class="font-mono text-coollabs dark:text-brand-light">{{ '{{' }}</span> to reference a
-                shared environment variable
+                {{ __('Tip: Type') }} <span class="font-mono text-coollabs dark:text-brand-light">{{ '{{' }}</span> {{ __('to reference a shared environment variable') }}
             </div>
         @endif
     </div>

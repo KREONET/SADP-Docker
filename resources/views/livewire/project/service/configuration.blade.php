@@ -30,8 +30,8 @@
                             localStorage.setItem('service-compose-resources-view', mode);
                         }
                     }">
-                        <x-application.settings-section id="compose-resources-section" title="Compose resources"
-                            description="Applications and databases defined in this service." flush>
+                        <x-application.settings-section id="compose-resources-section" :title="__('Compose resources')"
+                            :description="__('Applications and databases defined in this service.')" flush>
                             <x-slot:actions>
                                 @if ($applications->isNotEmpty() || $databases->isNotEmpty())
                                     <x-canvas-view-toggle />

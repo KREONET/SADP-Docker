@@ -40,7 +40,7 @@
                 @if ($resource->is_removed_from_compose)
                 <span class="inline-flex h-6 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-2 text-xs font-medium leading-none text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300">
                     <span class="size-1.5 shrink-0 rounded-full bg-red-500"></span>
-                    <span class="truncate">Not in Compose file</span>
+                    <span class="truncate">{{ __('Not in Compose file') }}</span>
                 </span>
             @else
                 <x-status-badge :status="$statusLabel" :type="$statusType" />
@@ -50,7 +50,7 @@
 
             @if ($resource->is_removed_from_compose)
                 <p class="mt-2 text-xs leading-5 text-neutral-500 dark:text-fg-dim">
-                    This resource is not in the Docker Compose file. Add it back to use it again, or delete it in its settings.
+                    {{ __('This resource is not in the Docker Compose file. Add it back to use it again, or delete it in its settings.') }}
                 </p>
             @elseif ($resource->configuration_required)
                 <div class="mt-2">
@@ -116,11 +116,11 @@
             {{ $resource->image }}
         </div>
         <div class="flex flex-wrap items-center gap-1"
-            @if ($resource->is_removed_from_compose) title="Not in the Docker Compose file. Add it back to use it again, or delete it in its settings." @endif>
+            @if ($resource->is_removed_from_compose) title="{{ __('Not in the Docker Compose file. Add it back to use it again, or delete it in its settings.') }}" @endif>
             @if ($resource->is_removed_from_compose)
                 <span class="inline-flex h-6 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-2 text-xs font-medium leading-none text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300">
                     <span class="size-1.5 shrink-0 rounded-full bg-red-500"></span>
-                    <span class="truncate">Not in Compose file</span>
+                    <span class="truncate">{{ __('Not in Compose file') }}</span>
                 </span>
             @else
                 <x-status-badge :status="$statusLabel" :type="$statusType" />
@@ -133,14 +133,14 @@
         @endphp
         <div class="flex items-center justify-end">
             @if ($hasBackupsAction || $hasDomainsAction)
-                <x-table.row-actions label="Resource actions">
+                <x-table.row-actions :label="__('Resource actions')">
                     @if ($hasBackupsAction)
-                        <x-table.row-action :href="route('project.service.volume-backups.index', $parameters)">Backups</x-table.row-action>
+                        <x-table.row-action :href="route('project.service.volume-backups.index', $parameters)">{{ __('Backups') }}</x-table.row-action>
                     @endif
                     @if ($hasDomainsAction)
-                        <x-table.row-action :href="route('project.service.domains', $parameters)">Domains</x-table.row-action>
+                        <x-table.row-action :href="route('project.service.domains', $parameters)">{{ __('Domains') }}</x-table.row-action>
                     @endif
-                    <x-table.row-action @click="modalOpen = true">Settings</x-table.row-action>
+                    <x-table.row-action @click="modalOpen = true">{{ __('Settings') }}</x-table.row-action>
                 </x-table.row-actions>
             @else
                 <button type="button" class="icon-button" title="{{ __('Resource settings') }}" aria-label="{{ __('Resource settings') }}"

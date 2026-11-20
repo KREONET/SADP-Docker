@@ -498,7 +498,7 @@ class Show extends Component
                 $storedKey = $this->env->fresh()?->key;
                 if ($storedKey === null || $this->key !== $storedKey) {
                     $this->key = $storedKey ?? $this->key;
-                    $this->dispatch('error', 'Compose-linked environment variable names cannot be changed.');
+                    $this->dispatch('error', __('Compose-linked environment variable names cannot be changed.'));
 
                     return;
                 }
@@ -506,7 +506,7 @@ class Show extends Component
 
             if ($this->keyBelongsToAnotherVariable()) {
                 $this->key = $this->env->key;
-                $this->dispatch('error', 'Environment variable already exists.');
+                $this->dispatch('error', __('Environment variable already exists.'));
 
                 return;
             }

@@ -67,7 +67,7 @@
                 <x-application.settings-section :title="__('Cloud token')"
                     :helper="__('Cloud credentials are available for servers created through a supported provider.')">
                     <x-empty size="sm" :title="__('No cloud provider integration')"
-                        description="This server was not created through a supported cloud provider, so it does not require a managed cloud token."
+                        :description="__('This server was not created through a supported cloud provider, so it does not require a managed cloud token.')"
                         icon-name="keys" />
                 </x-application.settings-section>
             @endif

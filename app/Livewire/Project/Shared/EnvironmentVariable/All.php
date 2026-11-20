@@ -187,7 +187,7 @@ class All extends Component
                 return;
             }
 
-            $this->dispatch('success', 'Log redaction setting updated.');
+            $this->dispatch('success', __('Log redaction setting updated.'));
         } catch (\Throwable $e) {
             if ($this->hasLogRedactionSetting()) {
                 $this->resource->refresh();
@@ -234,7 +234,7 @@ class All extends Component
                 $this->resource->include_coolify_default_variables = $this->include_coolify_default_variables;
                 $this->resource->save();
             }
-            $this->dispatch('success', 'Environment variable settings updated.');
+            $this->dispatch('success', __('Environment variable settings updated.'));
             $this->dispatch('configurationChanged');
         } catch (\Throwable $e) {
             return handleError($e, $this);

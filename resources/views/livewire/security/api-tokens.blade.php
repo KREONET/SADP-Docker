@@ -26,7 +26,7 @@
 
         <div class="application-settings-form flex flex-col gap-6">
             <x-api-disabled-callout
-                message="REST API requests are rejected. Tokens still authenticate the MCP endpoint when the MCP server is enabled." />
+                :message="__('REST API requests are rejected. Tokens still authenticate the MCP endpoint when the MCP server is enabled.')" />
 
             @if ($tokensOverPolicy->isNotEmpty())
                 <x-callout type="warning" :title="__('Tokens exceed the lifetime policy')">
@@ -92,7 +92,7 @@
                                 </button>
                             </div>
                             <x-helper label="{{ __('Search help') }}"
-                                helper="Search by token name, ability, or the name of a project, environment, or resource that the token can use." />
+                                :helper="__('Search by token name, ability, or the name of a project, environment, or resource that the token can use.')" />
                         </div>
                     @endif
 
@@ -124,7 +124,7 @@
                                         </div>
                                         <div class="truncate text-[11px] text-neutral-500 dark:text-fg-dim">
                                             @if ($token->scopes === null)
-                                                All resources in the team
+                                                {{ __('All resources in the team') }}
                                             @else
                                                 @php
                                                     $tokenScopes = collect($token->scopes)
@@ -140,7 +140,7 @@
                                                 {{-- The modal is wire:ignore, so a new key re-renders it when the scopes change. --}}
                                                 <x-modal-input title="Access of {{ $token->name }}"
                                                     wire:key="api-token-scopes-{{ $token->id }}-{{ md5(json_encode($token->scopes)) }}"
-                                                    subtitle="This token can use only these projects, environments, and resources.">
+                                                    :subtitle="__('This token can use only these projects, environments, and resources.')">
                                                     <x-slot:content>
                                                         <button type="button"
                                                             class="max-w-full truncate underline decoration-dotted underline-offset-2 hover:text-black dark:hover:text-fg">

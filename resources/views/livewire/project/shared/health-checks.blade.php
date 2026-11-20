@@ -27,26 +27,25 @@
         @if ($customHealthcheckFound)
             <div class="mb-4">
                 @if ($healthCheckEnabled)
-                    <x-callout type="warning" title="Dockerfile HEALTHCHECK replaced">
-                        This healthcheck replaces the HEALTHCHECK from the Dockerfile. Disable it to use the
-                        Dockerfile HEALTHCHECK again.
+                    <x-callout type="warning" :title="__('Dockerfile HEALTHCHECK replaced')">
+                        {{ __('This healthcheck replaces the HEALTHCHECK from the Dockerfile. Disable it to use the Dockerfile HEALTHCHECK again.') }}
                     </x-callout>
                 @else
-                    <x-callout type="info" title="Dockerfile HEALTHCHECK in use">
-                        The application uses the HEALTHCHECK from its Dockerfile. Enabling this healthcheck replaces it.
+                    <x-callout type="info" :title="__('Dockerfile HEALTHCHECK in use')">
+                        {{ __('The application uses the HEALTHCHECK from its Dockerfile. Enabling this healthcheck replaces it.') }}
                     </x-callout>
                 @endif
             </div>
         @endif
 
         <div class="max-w-xs">
-            <x-forms.listbox id="healthCheckType" label="Check type" required :options="[
+            <x-forms.listbox id="healthCheckType" :label="__('Check type')" required :options="[
                 ['value' => 'http', 'label' => __('HTTP request')],
                 ['value' => 'cmd', 'label' => __('Container command')],
             ]" :disabled="! $canUpdate" />
         </div>
         <div x-show="$wire.healthCheckType === 'http'" @if ($healthCheckType !== 'http') x-cloak @endif>
-            <x-application.settings-subsection id="healthcheck-request-section" title="HTTP request"
+            <x-application.settings-subsection id="healthcheck-request-section" :title="__('HTTP request')"
                 :helper="__('Coolify sends this request from inside the container and evaluates the response.')">
                 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <x-forms.listbox id="healthCheckMethod" :label="__('Method')" required :options="[
@@ -79,9 +78,9 @@
             </x-application.settings-subsection>
         </div>
         <div x-show="$wire.healthCheckType !== 'http'" @if ($healthCheckType === 'http') x-cloak @endif>
-            <x-application.settings-subsection id="healthcheck-command-section" title="Container command"
-                helper="The command must exit with code 0 for the container to be considered healthy.">
-                <x-callout type="warning" title="Shell operators are not supported">
+            <x-application.settings-subsection id="healthcheck-command-section" :title="__('Container command')"
+                :helper="__('The command must exit with code 0 for the container to be considered healthy.')">
+                <x-callout type="warning" :title="__('Shell operators are not supported')">
                     The command runs directly inside the container. Operators such as ;, |, &amp;, $, &gt;, and &lt;
                     are blocked.
                 </x-callout>
@@ -94,7 +93,7 @@
             </x-application.settings-subsection>
         </div>
 
-        <x-application.settings-subsection id="healthcheck-timing-section" title="Timing and retries"
+        <x-application.settings-subsection id="healthcheck-timing-section" :title="__('Timing and retries')"
             :helper="__('Control how quickly healthchecks start, repeat, and fail.')">
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <x-forms.input canGate="update" :canResource="$resource" min="1" type="number"

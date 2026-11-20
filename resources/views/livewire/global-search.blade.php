@@ -432,11 +432,11 @@
                         x-init="$watch('modalOpen', value => { if (value) setTimeout(() => $refs.searchInput.focus(), 100) })"
                         class="command-palette-input" autocomplete="off" spellcheck="false" />
                     <div x-show="pageItems.length > 0" x-cloak class="command-palette-scope" role="group"
-                        aria-label="Search scope" title="Press Tab to switch between global search and this page">
+                        aria-label="{{ __('Search scope') }}" title="{{ __('Press Tab to switch between global search and this page') }}">
                         <button type="button" @click="setScope('global')" :aria-pressed="scope === 'global'"
-                            class="command-palette-scope-option">Global</button>
+                            class="command-palette-scope-option">{{ __('Global') }}</button>
                         <button type="button" @click="setScope('page')" :aria-pressed="scope === 'page'"
-                            class="command-palette-scope-option">This page</button>
+                            class="command-palette-scope-option">{{ __('This page') }}</button>
                     </div>
                 </div>
 
@@ -674,7 +674,7 @@
                     <div wire:ignore>
                         <template x-if="pageResults.length > 0 && !$wire.isSelectingResource">
                         <div class="command-palette-section">
-                            <div class="command-palette-group-label">This page</div>
+                            <div class="command-palette-group-label">{{ __('This page') }}</div>
                             <template x-for="item in pageResults" :key="item.href">
                                 <a :href="item.element ? (item.element.id ? '#' + item.element.id : '#') : item.href" @click.prevent="openPageItem(item)"
                                     class="search-result-item command-palette-item">
@@ -807,9 +807,9 @@
 
                         <template x-if="scope === 'page' && pageResults.length === 0">
                             <div class="command-palette-empty">
-                                <p class="command-palette-empty-title">Nothing on this page</p>
+                                <p class="command-palette-empty-title">{{ __('Nothing on this page') }}</p>
                                 <p class="command-palette-empty-desc">
-                                    Press <span class="font-medium">Tab</span> to search everything.
+                                    {{ __('Press') }} <span class="font-medium">Tab</span> {{ __('to search everything.') }}
                                 </p>
                             </div>
                         </template>

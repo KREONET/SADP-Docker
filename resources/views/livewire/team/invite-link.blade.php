@@ -39,12 +39,12 @@
                                 title="{{ \App\Livewire\Team\Member\Access::summary($grants) }}"
                                 wire:click="$dispatch('open-invitation-access', { access: {{ Js::from($grants) }} })">
                                 <x-reicon name="keys" class="size-3.5" />
-                                Scopes
+                                {{ __('Scopes') }}
                             </x-forms.button>
                         </div>
                     </div>
                     <p x-show="$wire.role === 'member'" class="text-[12px] text-neutral-500 lg:col-span-2 dark:text-fg-faint">
-                        Scopes: <span class="text-neutral-700 dark:text-fg-dim">{{ \App\Livewire\Team\Member\Access::summary($grants) }}</span>
+                        {{ __('Scopes:') }} <span class="text-neutral-700 dark:text-fg-dim">{{ \App\Livewire\Team\Member\Access::summary($grants) }}</span>
                     </p>
                 </div>
             </x-application.settings-section>

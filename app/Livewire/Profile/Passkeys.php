@@ -21,7 +21,7 @@ class Passkeys extends Component
     public function registered(): void
     {
         $this->show_form = false;
-        $this->dispatch('success', 'Passkey added.');
+        $this->dispatch('success', __('Passkey added.'));
     }
 
     public function rename(int $id, string $name): bool
@@ -36,7 +36,7 @@ class Passkeys extends Component
         )->validate();
 
         $passkey->update(['name' => $validated['name']]);
-        $this->dispatch('success', 'Passkey renamed.');
+        $this->dispatch('success', __('Passkey renamed.'));
 
         return true;
     }
@@ -52,7 +52,7 @@ class Passkeys extends Component
         }
 
         app(DeletePasskey::class)(Auth::user(), $passkey);
-        $this->dispatch('success', 'Passkey deleted.');
+        $this->dispatch('success', __('Passkey deleted.'));
 
         return true;
     }

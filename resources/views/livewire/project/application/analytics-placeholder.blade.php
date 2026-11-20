@@ -25,7 +25,7 @@
         <x-skeleton.table :rows="6" flush />
     </x-application.settings-section>
 
-    <x-application.settings-section id="analytics-country-section" title="Locations" flush>
+    <x-application.settings-section id="analytics-country-section" :title="__('Locations')" flush>
         <x-slot:actions>
             <x-skeleton class="h-9 w-36 rounded-lg" />
         </x-slot:actions>

@@ -7,7 +7,7 @@
         @if ($this->databases->count() > 1)
             <div class="max-w-sm">
                 <x-forms.listbox id="selectedDatabaseUuid" :label="__('Database')" live required canGate="update"
-                    :canResource="$service" placeholder="Select a database"
+                    :canResource="$service" :placeholder="__('Select a database')"
                     :options="$this->databases->map(fn ($database) => [
                         'value' => $database->uuid,
                         'label' => $database->human_name ?: $database->name,

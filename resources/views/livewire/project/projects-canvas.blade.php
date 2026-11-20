@@ -1,6 +1,6 @@
 <div class="h-full">
     <x-slot:title>
-        Projects > Canvas | Coolify
+        {{ __('Projects > Canvas | Coolify') }}
     </x-slot>
     <div data-environment-canvas data-endpoint="/projects/canvas"
         data-empty="{{ __('No resources in your projects yet') }}"

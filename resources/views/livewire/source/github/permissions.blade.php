@@ -28,16 +28,16 @@
                 </x-application.settings-section>
 
                 @php($missingDeploymentRequirements = $github_app->missingDeploymentRequirements())
-                <x-application.settings-section title="GitHub deployments"
-                    description="Coolify creates a GitHub deployment for each deployment and updates its status, so branches and pull requests show what is deployed.">
+                <x-application.settings-section :title="__('GitHub deployments')"
+                    :description="__('Coolify creates a GitHub deployment for each deployment and updates its status, so branches and pull requests show what is deployed.')">
                     <div class="grid gap-4 lg:grid-cols-3">
                         <x-forms.input canGate="view" :canResource="$github_app"
-                            label="Deployments" readonly placeholder="N/A" :value="$github_app->deployments"
-                            helper="Repository permission. Write access is needed to create deployments and their statuses." />
+                            :label="__('Deployments')" readonly placeholder="N/A" :value="$github_app->deployments"
+                            :helper="__('Repository permission. Write access is needed to create deployments and their statuses.')" />
                     </div>
                     @if ($missingDeploymentRequirements !== [])
-                        <x-callout type="info" title="Not ready for GitHub deployments" class="mt-4">
-                            Update the App on GitHub, then click Refetch. Missing:
+                        <x-callout type="info" :title="__('Not ready for GitHub deployments')" class="mt-4">
+                            {{ __('Update the App on GitHub, then click Refetch. Missing:') }}
                             <ul class="mt-1 list-disc pl-4">
                                 @foreach ($missingDeploymentRequirements as $requirement)
                                     <li>{{ $requirement }}</li>
@@ -57,24 +57,24 @@
                 </x-application.settings-section>
 
                 @php($missingRunnerRequirements = $github_app->missingRunnerRequirements())
-                <x-application.settings-section title="GitHub Actions runners"
-                    description="Your servers can run the organization's workflow jobs in Docker containers. Configure them in the GitHub Runners menu of a server.">
+                <x-application.settings-section :title="__('GitHub Actions runners')"
+                    :description="__('Your servers can run the organization\'s workflow jobs in Docker containers. Configure them in the GitHub Runners menu of a server.')">
                     <div class="grid gap-4 lg:grid-cols-3">
                         <x-forms.input canGate="view" :canResource="$github_app"
-                            label="Self-hosted runners" readonly placeholder="N/A"
+                            :label="__('Self-hosted runners')" readonly placeholder="N/A"
                             :value="$github_app->organization_self_hosted_runners"
-                            helper="Organization permission. Write access is needed to register runners." />
+                            :helper="__('Organization permission. Write access is needed to register runners.')" />
                         <x-forms.input canGate="view" :canResource="$github_app"
-                            label="Actions" readonly placeholder="N/A" :value="$github_app->actions"
-                            helper="Repository permission. Read access is needed for the Workflow job webhook event." />
+                            :label="__('Actions')" readonly placeholder="N/A" :value="$github_app->actions"
+                            :helper="__('Repository permission. Read access is needed for the Workflow job webhook event.')" />
                         <x-forms.input canGate="view" :canResource="$github_app"
-                            label="Webhook events" readonly placeholder="N/A"
+                            :label="__('Webhook events')" readonly placeholder="N/A"
                             :value="implode(', ', $github_app->webhook_events ?? [])"
-                            helper="Refetch to update this list after you change the App on GitHub." />
+                            :helper="__('Refetch to update this list after you change the App on GitHub.')" />
                     </div>
                     @if ($missingRunnerRequirements !== [])
-                        <x-callout type="info" title="Not ready for runners" class="mt-4">
-                            Update the App on GitHub, then click Refetch. Missing:
+                        <x-callout type="info" :title="__('Not ready for runners')" class="mt-4">
+                            {{ __('Update the App on GitHub, then click Refetch. Missing:') }}
                             <ul class="mt-1 list-disc pl-4">
                                 @foreach ($missingRunnerRequirements as $requirement)
                                     <li>{{ $requirement }}</li>

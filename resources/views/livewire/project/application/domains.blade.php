@@ -78,7 +78,7 @@
         </x-callout>
     @endcannot
 
-    <x-application.settings-section id="domains-section" title="Domains" :flush="$hasRows" class="scroll-mt-28">
+    <x-application.settings-section id="domains-section" :title="__('Domains')" :flush="$hasRows" class="scroll-mt-28">
         <x-slot:actions>
             @if ($hasRows)
                 <div class="relative w-full sm:w-64">
@@ -273,12 +273,12 @@
     </x-application.settings-section>
 
     @if ($hasRows && ! $labelsAreWritable)
-        <x-application.settings-section id="domain-redirects-section" title="Redirects"
-            helper="Applies to all domains of this application.">
+        <x-application.settings-section id="domain-redirects-section" :title="__('Redirects')"
+            :helper="__('Applies to all domains of this application.')">
             <div class="grid gap-4 lg:grid-cols-2">
                 @if ($hasHttpsDomains)
                     <x-forms.listbox canGate="update" :canResource="$application" id="isForceHttpsEnabled"
-                        label="Redirect HTTP to HTTPS" onChange="updateForceHttps"
+                        :label="__('Redirect HTTP to HTTPS')" onChange="updateForceHttps"
                         :helper="__('Disable only when Cloudflare Tunnel or another proxy connects to Coolify over HTTP. Keep enabled when Cloudflare uses Full or Full (Strict) SSL.')"
                         :options="[
                             ['value' => true, 'label' => __('Enabled')],
@@ -286,8 +286,8 @@
                         ]" :disabled="! auth()->user()->can('update', $application) || (!$canDisableForceHttps && $isForceHttpsEnabled)" />
                 @endif
                 <x-forms.listbox canGate="update" :canResource="$application" id="isPermanentRedirectEnabled"
-                    label="Redirect type" onChange="updatePermanentRedirect"
-                    helper="Applies to the HTTP to HTTPS and www redirects. Permanent (301/308) is better for SEO, but browsers cache it. Use Temporary (302/307) while you test a redirect."
+                    :label="__('Redirect type')" onChange="updatePermanentRedirect"
+                    :helper="__('Applies to the HTTP to HTTPS and www redirects. Permanent (301/308) is better for SEO, but browsers cache it. Use Temporary (302/307) while you test a redirect.')"
                     :options="[
                         ['value' => false, 'label' => 'Temporary'],
                         ['value' => true, 'label' => 'Permanent'],

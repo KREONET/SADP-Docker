@@ -53,50 +53,50 @@
         @can('manageMembers', currentTeam())
             @if ($member->id !== Auth::id())
                 @if (data_get($member, 'pivot.role') === 'owner' && ! Auth::user()->isOwner())
-                    <x-modal-confirmation title="Remove team member?" submitAction="remove"
+                    <x-modal-confirmation :title="__('Remove team member?')" submitAction="remove"
                         :actions="['This user loses access to all resources of this team.']"
                         :confirmWithText="false" :confirmWithPassword="false"
-                        step2ButtonText="Remove member">
+                        :step2ButtonText="__('Remove member')">
                         <x-slot:trigger>
                             <button type="button"
                                 class="icon-button shrink-0 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                                title="Remove member" aria-label="Remove {{ $member->name }}">
+                                title="{{ __('Remove member') }}" aria-label="Remove {{ $member->name }}">
                                 <x-reicon name="trash" class="size-3.5" />
                             </button>
                         </x-slot:trigger>
                     </x-modal-confirmation>
                 @else
-                    <x-table.row-actions label="Member actions">
+                    <x-table.row-actions :label="__('Member actions')">
                         @if (Auth::user()->isOwner())
                             @if (data_get($member, 'pivot.role') !== 'owner')
-                                <x-table.row-action wire:click="makeOwner">Make owner</x-table.row-action>
+                                <x-table.row-action wire:click="makeOwner">{{ __('Make owner') }}</x-table.row-action>
                             @endif
                             @if (data_get($member, 'pivot.role') !== 'admin')
-                                <x-table.row-action wire:click="makeAdmin">Make admin</x-table.row-action>
+                                <x-table.row-action wire:click="makeAdmin">{{ __('Make admin') }}</x-table.row-action>
                             @endif
                             @if (data_get($member, 'pivot.role') !== 'member')
-                                <x-table.row-action wire:click="makeReadonly">Make member</x-table.row-action>
+                                <x-table.row-action wire:click="makeReadonly">{{ __('Make member') }}</x-table.row-action>
                             @endif
                         @elseif (Auth::user()->isAdmin())
                             @if (data_get($member, 'pivot.role') === 'admin')
-                                <x-table.row-action wire:click="makeReadonly">Make member</x-table.row-action>
+                                <x-table.row-action wire:click="makeReadonly">{{ __('Make member') }}</x-table.row-action>
                             @elseif (data_get($member, 'pivot.role') === 'member')
-                                <x-table.row-action wire:click="makeAdmin">Make admin</x-table.row-action>
+                                <x-table.row-action wire:click="makeAdmin">{{ __('Make admin') }}</x-table.row-action>
                             @endif
                         @endif
                         @if (data_get($member, 'pivot.role') === 'member')
                             <x-table.row-action
                                 wire:click="$dispatch('open-member-access', { memberId: {{ $member->id }} })">
-                                Edit access
+                                {{ __('Edit access') }}
                             </x-table.row-action>
                         @endif
                         <x-slot:danger>
-                            <x-modal-confirmation title="Remove team member?" buttonFullWidth submitAction="remove"
+                            <x-modal-confirmation :title="__('Remove team member?')" buttonFullWidth submitAction="remove"
                                 :actions="['This user loses access to all resources of this team.']"
                                 :confirmWithText="false" :confirmWithPassword="false"
-                                step2ButtonText="Remove member">
+                                :step2ButtonText="__('Remove member')">
                                 <x-slot:trigger>
-                                    <x-table.row-action>Remove member</x-table.row-action>
+                                    <x-table.row-action>{{ __('Remove member') }}</x-table.row-action>
                                 </x-slot:trigger>
                             </x-modal-confirmation>
                         </x-slot:danger>

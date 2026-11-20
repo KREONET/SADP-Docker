@@ -9,7 +9,7 @@
     @elseif ($type === 'database')
         <livewire:project.database.heading :database="$resource" />
     @elseif ($type === 'service')
-        <livewire:project.service.heading :service="$resource" :parameters="$parameters" title="Terminal" />
+        <livewire:project.service.heading :service="$resource" :parameters="$parameters" :title="__('Terminal')" />
     @else
         <livewire:server.navbar :server="$servers->first()" />
     @endif

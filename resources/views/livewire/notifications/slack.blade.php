@@ -7,7 +7,7 @@
     <div class="application-settings-form flex flex-col gap-6">
         <form wire:submit="submit">
             <x-unsaved-bar action="submit" />
-            <x-application.settings-section title="Slack"
+            <x-application.settings-section :title="__('Slack')"
                 :description="__('Send team notifications to Slack through an incoming webhook.')">
                 <x-slot:actions>
                     <x-notification.channel-actions :enabled="$slackEnabled" enabledProperty="slackEnabled"
@@ -18,7 +18,7 @@
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div class="lg:col-span-2">
                         @can('update', $settings)
-                            <x-forms.input type="password" :required="$slackEnabled" id="slackWebhookUrl" label="Webhook URL"
+                            <x-forms.input type="password" :required="$slackEnabled" id="slackWebhookUrl" :label="__('Webhook URL')"
                                 :helper="__('Create an incoming webhook in your Slack app settings.')" />
                         @else
                             <x-forms.input disabled :label="__('Webhook URL')" :value="__('Hidden (only admins can view)')" />

@@ -131,7 +131,7 @@
                                     <span class="env-type-desktop text-[13px] text-neutral-500 dark:text-fg-dim">{{ __(str($type)->headline()->value()) }}</span>
                                     <span class="min-w-0 truncate font-mono text-[13px]" title="{{ $env->value }}">{{ $env->value }}</span>
                                     <span class="data-table-cell-dash">-</span>
-                                    <span class="justify-self-end text-neutral-400 dark:text-fg-faint" title="Built-in variable, managed by Coolify"><x-reicon name="keys" class="size-3.5" /></span>
+                                    <span class="justify-self-end text-neutral-400 dark:text-fg-faint" title="{{ __('Built-in variable, managed by Coolify') }}"><x-reicon name="keys" class="size-3.5" /></span>
                                 </div>
                             </div>
                         @else
@@ -164,8 +164,7 @@
             <form wire:submit="submit" class="flex flex-col gap-4 p-4">
                 <x-unsaved-bar action="submit" />
                 <x-callout type="info" :title="__('Note')">
-                    To make a variable literal, put <code class="font-mono"># coolify: literal</code> directly above
-                    its line. Without this line, the flag does not change.
+                    {{ __('To make a variable literal, put') }} <code class="font-mono"># coolify: literal</code> {{ __('directly above its line. Without this line, the flag does not change.') }}
                 </x-callout>
                 <x-forms.textarea canGate="create" :canResource="App\Models\SharedEnvironmentVariable::class" rows="20"
                     class="whitespace-pre-wrap" id="variables" wire:model="variables" monospace

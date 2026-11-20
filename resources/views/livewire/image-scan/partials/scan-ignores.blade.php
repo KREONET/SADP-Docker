@@ -17,7 +17,7 @@
                     @if ($ignore->vulnerability_id)
                         <span class="font-mono">{{ $ignore->vulnerability_id }}</span>
                     @else
-                        All findings in <span class="font-mono">{{ $ignore->package }}</span>
+                        {{ __('All findings in') }} <span class="font-mono">{{ $ignore->package }}</span>
                     @endif
                 </div>
                 <div class="min-w-0 truncate text-[12px] text-neutral-600 dark:text-fg-dim"

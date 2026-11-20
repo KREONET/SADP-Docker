@@ -50,7 +50,7 @@
                             event.target.value = '';
                         },
                     }">
-                        <div class="mb-2 text-sm font-medium leading-4">Avatar</div>
+                        <div class="mb-2 text-sm font-medium leading-4">{{ __('Avatar') }}</div>
                         <div class="flex items-center gap-4">
                             <x-team.avatar :team="$team" class="size-16 rounded-xl! text-2xl" />
                             @can('update', $team)
@@ -61,10 +61,10 @@
                                             <span x-text="processing ? 'Uploading…' : 'Browse…'"></span>
                                         </x-forms.button>
                                         @if ($team->avatar_path)
-                                            <x-forms.button type="button" wire:click="removeAvatar" x-bind:disabled="processing" isError>Remove</x-forms.button>
+                                            <x-forms.button type="button" wire:click="removeAvatar" x-bind:disabled="processing" isError>{{ __('Remove') }}</x-forms.button>
                                         @endif
                                     </div>
-                                    <p class="text-xs text-neutral-500 dark:text-fg-dim">JPG, PNG, or WebP. Shown in the team switcher.</p>
+                                    <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('JPG, PNG, or WebP. Shown in the team switcher.') }}</p>
                                     <p x-cloak x-show="uploadError" x-text="uploadError" class="text-xs text-red-500"></p>
                                     @error('avatar') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
@@ -92,8 +92,8 @@
                     </div>
                     <div class="lg:col-span-2">
                         <x-forms.listbox canGate="update" :canResource="$team" id="is_two_factor_required"
-                            label="Two-factor authentication"
-                            helper="When required, members without two-factor authentication must configure it before they can use this team."
+                            :label="__('Two-factor authentication')"
+                            :helper="__('When required, members without two-factor authentication must configure it before they can use this team.')"
                             :disabled="! auth()->user()->can('update', $team)" :options="[
                                 ['value' => false, 'label' => 'Optional for members'],
                                 ['value' => true, 'label' => 'Required for all members'],

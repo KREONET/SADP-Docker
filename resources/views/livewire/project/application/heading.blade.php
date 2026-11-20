@@ -5,10 +5,10 @@
     @endteleport
     <div>
         @if ($application->build_pack === 'nixpacks')
-            <x-callout type="warning" title="Nixpacks is deprecated" class="mb-4">
+            <x-callout type="warning" :title="__('Nixpacks is deprecated')" class="mb-4">
                 {{ config('deprecations.nixpacks') }}
                 <a class="underline" href="{{ route('project.application.configuration', $parameters) }}" {{ wireNavigate() }}>
-                    Switch to Railpack in General settings.
+                    {{ __('Switch to Railpack in General settings.') }}
                 </a>
             </x-callout>
         @endif
@@ -43,11 +43,11 @@
                 @if ($this->needsComposeFile())
                     <div class="flex items-center gap-1">
                         @can('update', $application)
-                            <x-forms.button wire:click="loadComposeFile">Load compose</x-forms.button>
+                            <x-forms.button wire:click="loadComposeFile">{{ __('Load compose') }}</x-forms.button>
                         @endcan
                         @can('deploy', $application)
                             <x-forms.button id="application-mobile-actions" disabled default-class="split-action-main rounded-md!"
-                                tooltip="Load the Compose file before you deploy.">
+                                :tooltip="__('Load the Compose file before you deploy.')">
                                 <x-reicon name="play-circle" class="size-3.5" />
                                 {{ __('Deploy') }}
                             </x-forms.button>
@@ -91,13 +91,13 @@
                                 @else
                                     <x-slot:main wire:click="deploy">
                                         <x-reicon name="refresh" class="size-3.5" />
-                                        Redeploy
+                                        {{ __('Redeploy') }}
                                     </x-slot:main>
                                     <button type="button" class="listbox-option justify-start! gap-2.5!"
                                         wire:click="{{ str($application->status)->startsWith('running') ? 'force_deploy_without_cache' : 'deploy(true)' }}"
                                         @click="open = false" role="menuitem">
                                         <x-reicon name="refresh" class="size-3.5 opacity-70" />
-                                        Redeploy (without cache)
+                                        {{ __('Redeploy (without cache)') }}
                                     </button>
                                     @if ($application->build_pack !== 'dockercompose')
                                         <button type="button" class="listbox-option justify-start! gap-2.5!"
@@ -169,11 +169,11 @@
                     @endif
                     @if ($this->needsComposeFile())
                         @can('update', $application)
-                            <x-forms.button wire:click="loadComposeFile">Load compose</x-forms.button>
+                            <x-forms.button wire:click="loadComposeFile">{{ __('Load compose') }}</x-forms.button>
                         @endcan
                         @can('deploy', $application)
                             <x-forms.button id="application-desktop-actions" disabled default-class="split-action-main rounded-md!"
-                                tooltip="Load the Compose file before you deploy.">
+                                :tooltip="__('Load the Compose file before you deploy.')">
                                 <x-reicon name="play-circle" class="size-3.5" />
                                 {{ __('Deploy') }}
                             </x-forms.button>
@@ -219,13 +219,13 @@
                                     @else
                                         <x-slot:main wire:click="deploy">
                                             <x-reicon name="refresh" class="size-3.5" />
-                                            Redeploy
+                                            {{ __('Redeploy') }}
                                         </x-slot:main>
                                         <button type="button" class="listbox-option justify-start! gap-2.5!"
                                             wire:click="{{ str($application->status)->startsWith('running') ? 'force_deploy_without_cache' : 'deploy(true)' }}"
                                             @click="open = false" role="menuitem">
                                             <x-reicon name="refresh" class="size-3.5 opacity-70" />
-                                            Redeploy (without cache)
+                                            {{ __('Redeploy (without cache)') }}
                                         </button>
                                         @if ($application->build_pack !== 'dockercompose')
                                             <button type="button" class="listbox-option justify-start! gap-2.5!"

@@ -43,7 +43,7 @@ trait ManagesDatabaseBackup
 
         $database = $backup->database->refresh();
         if ($database->id !== 0 && ! str($database->status)->startsWith('running')) {
-            $this->dispatch('error', 'The database must be running to start a backup.');
+            $this->dispatch('error', __('The database must be running to start a backup.'));
 
             return null;
         }
@@ -55,7 +55,7 @@ trait ManagesDatabaseBackup
             'database_name' => $database->name,
             'backup_uuid' => $backup->uuid,
         ]);
-        $this->dispatch('success', 'Backup queued. It will be available in a few minutes.');
+        $this->dispatch('success', __('Backup queued. It will be available in a few minutes.'));
 
         if ($database instanceof ServiceDatabase) {
             return redirect()->route('project.service.database.backup.executions', [

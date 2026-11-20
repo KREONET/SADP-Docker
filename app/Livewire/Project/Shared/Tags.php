@@ -91,7 +91,7 @@ class Tags extends Component
             // The tag stays, also without resources. Delete it on the Tags page.
             $this->resource->tags()->detach($id);
             $this->refresh();
-            $this->dispatch('success', 'Tag removed.');
+            $this->dispatch('success', __('Tag removed.'));
         } catch (\Exception $e) {
             return handleError($e, $this);
         }

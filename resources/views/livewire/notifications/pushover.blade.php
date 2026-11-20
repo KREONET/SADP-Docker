@@ -7,7 +7,7 @@
     <div class="application-settings-form flex flex-col gap-6">
         <form wire:submit="submit">
             <x-unsaved-bar action="submit" />
-            <x-application.settings-section title="Pushover"
+            <x-application.settings-section :title="__('Pushover')"
                 :description="__('Deliver team alerts through your Pushover application.')">
                 <x-slot:actions>
                     <x-notification.channel-actions :enabled="$pushoverEnabled" enabledProperty="pushoverEnabled"
@@ -17,9 +17,9 @@
 
                 <div class="grid gap-4 lg:grid-cols-2">
                     @can('update', $settings)
-                        <x-forms.input type="password" :required="$pushoverEnabled" id="pushoverUserKey" label="User key"
+                        <x-forms.input type="password" :required="$pushoverEnabled" id="pushoverUserKey" :label="__('User key')"
                             :helper="__('Find this in the Pushover dashboard.')" />
-                        <x-forms.input type="password" :required="$pushoverEnabled" id="pushoverApiToken" label="API token"
+                        <x-forms.input type="password" :required="$pushoverEnabled" id="pushoverApiToken" :label="__('API token')"
                             :helper="__('Create an application in Pushover to generate this token.')" />
                     @else
                         <x-forms.input disabled :label="__('User key')" :value="__('Hidden (only admins can view)')" />

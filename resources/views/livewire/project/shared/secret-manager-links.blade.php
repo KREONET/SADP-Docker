@@ -8,16 +8,16 @@
         @if (! $link && $availableTokens->isEmpty())
             @can('viewAny', \App\Models\IntegrationToken::class)
                 <x-empty :title="__('No secret manager tokens')"
-                    description="Add a Doppler, Infisical, or HashiCorp Vault token first."
+                    :description="__('Add a Doppler, Infisical, or HashiCorp Vault token first.')"
                     icon-name="keys" size="sm">
                     <x-slot:actions>
                         <a class="button" href="{{ route('security.integration-tokens') }}" {{ wireNavigate() }}>
-                            Integration tokens
+                            {{ __('Integration tokens') }}
                         </a>
                     </x-slot:actions>
                 </x-empty>
             @else
-                <x-empty title="No secret manager source" description="This resource does not use a secret manager."
+                <x-empty :title="__('No secret manager source')" :description="__('This resource does not use a secret manager.')"
                     icon-name="keys" size="sm" />
             @endcan
         @else
@@ -102,7 +102,7 @@
                                                 </div>
                                                 @if (isset($invalidKeys[$key]))
                                                     <span class="shrink-0 text-[11px] text-neutral-500 dark:text-fg-dim">
-                                                        Not a valid variable name
+                                                        {{ __('Not a valid variable name') }}
                                                     </span>
                                                 @else
                                                     <x-forms.button wire:click="addReference({{ \Illuminate\Support\Js::from($key) }})"
@@ -134,7 +134,7 @@
                         </span>
                     </div>
                 @else
-                    <x-empty title="No secret manager source" description="This resource does not use a secret manager."
+                    <x-empty :title="__('No secret manager source')" :description="__('This resource does not use a secret manager.')"
                         icon-name="keys" size="sm" />
                 @endif
             @endcan

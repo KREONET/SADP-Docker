@@ -73,7 +73,7 @@
                             </div>
                             <p class="mt-1.5 text-xs text-neutral-500 dark:text-fg-dim">
                                 @if ($isServiceSqlDatabase)
-                                    Add one or more database names. Leave empty to back up the database that the container env names.
+                                    {{ __('Add one or more database names. Leave empty to back up the database that the container env names.') }}
                                 @else
                                     {{ __('Add one or more database names. Leave empty to include the default database.') }}
                                 @endif
@@ -101,7 +101,7 @@
                     :helper="__('Uses the deployment server timezone, or the instance timezone when none is configured.')"
                     required />
                 <x-forms.input :label="__('Timeout')" id="timeout" type="number" min="60"
-                    helper="Maximum runtime in seconds of the complete backup run: the dumps and S3 uploads of all databases." required />
+                    :helper="__('Maximum runtime in seconds of the complete backup run: the dumps and S3 uploads of all databases.')" required />
                 <x-forms.input :label="__('Missing backup alert after')" id="missingBackupNotificationDays" type="number"
                     min="0" max="365" :suffix="__('days')" canGate="manageBackups" :canResource="$backup->database"
                     :helper="__('Notify through backup failure channels after this many days without an execution. Use 0 to disable.')" required />

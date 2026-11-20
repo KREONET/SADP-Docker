@@ -276,7 +276,7 @@
                         useCustomWebhookEndpoint: $wire.entangle('use_custom_webhook_endpoint').live,
                         customWebhookEndpoint: $wire.entangle('custom_webhook_endpoint').live,
                     }">
-                    <x-application.settings-section title="Automated installation" class="[&>.application-settings-section-body]:flex [&>.application-settings-section-body]:flex-1 [&>.application-settings-section-body]:flex-col"
+                    <x-application.settings-section :title="__('Automated installation')" class="[&>.application-settings-section-body]:flex [&>.application-settings-section-body]:flex-1 [&>.application-settings-section-body]:flex-col"
                         :description="__('Register through GitHub\'s manifest flow with permissions and webhooks preconfigured.')">
                         <x-slot:actions>
                             <x-status-badge :label="__('Recommended')" type="success" />
@@ -321,13 +321,13 @@
                                 :helper="__('Write access lets Coolify post deployment status and links on pull requests.')" />
 
                             <x-forms.listbox id="deployment_status_permissions"
-                                label="GitHub deployments" :options="[
+                                :label="__('GitHub deployments')" :options="[
                                     ['value' => false, 'label' => 'Do not create GitHub deployments'],
                                     ['value' => true, 'label' => 'Create GitHub deployments'],
                                 ]"
-                                helper="Deployments (write) access lets Coolify show each deployment and its status on GitHub, so pull requests show the preview as deployed." />
+                                :helper="__('Deployments (write) access lets Coolify show each deployment and its status on GitHub, so pull requests show the preview as deployed.')" />
 
-                            <x-forms.listbox id="github_runners" label="GitHub Actions runners"
+                            <x-forms.listbox id="github_runners" :label="__('GitHub Actions runners')"
                                 :disabled="blank($github_app->organization)"
                                 :options="[
                                     ['value' => false, 'label' => 'Do not run workflow jobs'],
@@ -347,7 +347,7 @@
                 </div>
 
                 <div class="application-settings-form flex">
-                    <x-application.settings-section title="Manual installation" class="[&>.application-settings-section-body]:flex [&>.application-settings-section-body]:flex-1 [&>.application-settings-section-body]:flex-col"
+                    <x-application.settings-section :title="__('Manual installation')" class="[&>.application-settings-section-body]:flex [&>.application-settings-section-body]:flex-1 [&>.application-settings-section-body]:flex-col"
                         :description="__('Enter GitHub App credentials manually for GitHub Enterprise or custom permission sets.')">
                         <x-slot:actions>
                             <x-status-badge :label="__('Advanced')" type="neutral" />

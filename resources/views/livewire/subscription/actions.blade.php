@@ -33,7 +33,7 @@
     @keydown.escape.window="if (showModal) { closeAdjust(); }">
     @if (subscriptionProvider() === 'stripe')
         {{-- Plan Overview --}}
-        <x-application.settings-section title="Plan and billing">
+        <x-application.settings-section :title="__('Plan and billing')">
             <div class="flex flex-col gap-4">
                 <div class="space-y-3">
                     <div class="flex flex-wrap items-center gap-3">
@@ -46,9 +46,9 @@
                         </h2>
                         <span class="text-sm text-neutral-500">{{ $billingInterval === 'yearly' ? 'Yearly' : 'Monthly' }} billing</span>
                         @if (currentTeam()->subscription->stripe_cancel_at_period_end)
-                            <x-status-badge type="warning" label="Cancelling at end of period" />
+                            <x-status-badge type="warning" :label="__('Cancelling at end of period')" />
                         @else
-                            <x-status-badge type="success" label="Active" />
+                            <x-status-badge type="success" :label="__('Active')" />
                         @endif
                     </div>
                     <div class="text-sm flex items-center gap-2 flex-wrap">
@@ -61,7 +61,7 @@
                         </span>
                         @if ($refundCheckLoading)
                             <span class="text-neutral-500">&middot;</span>
-                            <x-loading compact text="Loading..." />
+                            <x-loading compact :text="__('Loading...')" />
                         @elseif ($nextBillingDate)
                             <span class="text-neutral-500">&middot;</span>
                             <span class="text-neutral-500">
@@ -83,7 +83,7 @@
                 @endif
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <x-forms.button isHighlighted @click="openAdjust()">Adjust server limit</x-forms.button>
+                    <x-forms.button isHighlighted @click="openAdjust()">{{ __('Adjust server limit') }}</x-forms.button>
                     <x-forms.button class="gap-2" wire:click="stripeCustomerPortal">
                         <x-reicon name="subscription" class="size-3.5" />
                         {{ __('Open billing portal') }}
@@ -163,7 +163,7 @@
                                                 <span class="dark:text-white" x-text="fmt(preview?.recurring_tax)"></span>
                                             </div>
                                             <div class="flex justify-between gap-6 text-sm font-bold pt-1.5 border-t dark:border-coolgray-400 border-neutral-200">
-                                                <span class="dark:text-white">Total / <span x-text="preview?.billing_interval === __('year') ? __('year') : __('month')">month</span></span>
+                                                <span class="dark:text-white">{{ __('Total /') }} <span x-text="preview?.billing_interval === __('year') ? __('year') : __('month')">month</span></span>
                                                 <span class="dark:text-white" x-text="fmt(preview?.recurring_total)"></span>
                                             </div>
                                         </div>
@@ -203,12 +203,12 @@
             </div>
         </x-application.settings-section>
 
-        <x-application.settings-section title="Manage subscription">
+        <x-application.settings-section :title="__('Manage subscription')">
             {{-- Cancel Subscription --}}
             <section aria-labelledby="subscription-cancellation" class="flex flex-col gap-3">
                 <div class="space-y-1">
-                    <h3 id="subscription-cancellation" class="text-sm! font-medium!">Cancel subscription</h3>
-                    <p class="text-sm text-neutral-500">Keep access until the end of your billing period, or cancel immediately.</p>
+                    <h3 id="subscription-cancellation" class="text-sm! font-medium!">{{ __('Cancel subscription') }}</h3>
+                    <p class="text-sm text-neutral-500">{{ __('Keep access until the end of your billing period, or cancel immediately.') }}</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     @if (currentTeam()->subscription->stripe_cancel_at_period_end)
@@ -265,13 +265,13 @@
                     @endif
                 </div>
                 @if (currentTeam()->subscription->stripe_cancel_at_period_end)
-                    <p class="text-sm text-neutral-500">Your subscription is set to cancel at the end of the billing period.</p>
+                    <p class="text-sm text-neutral-500">{{ __('Your subscription is set to cancel at the end of the billing period.') }}</p>
                 @endif
             </section>
 
             {{-- Refund --}}
             <section aria-labelledby="subscription-refund" class="mt-5 flex flex-col gap-3 border-t border-neutral-200 pt-5 dark:border-white/[0.08]">
-                <h3 id="subscription-refund" class="text-sm! font-medium!">Refund</h3>
+                <h3 id="subscription-refund" class="text-sm! font-medium!">{{ __('Refund') }}</h3>
                 @if (! $refundCheckLoading && $isRefundEligible)
                     <div class="flex flex-wrap items-center gap-2">
                         <x-modal-confirmation :title="__('Request Full Refund?')" :buttonTitle="__('Request Full Refund')"
@@ -287,9 +287,9 @@
                 @endif
                 <div class="text-sm text-neutral-500">
                     @if ($refundCheckLoading)
-                        <x-loading compact text="Checking refund eligibility..." />
+                        <x-loading compact :text="__('Checking refund eligibility...')" />
                     @elseif ($isRefundEligible)
-                        Eligible for a full refund &mdash; <strong class="dark:text-warning">{{ $refundDaysRemaining }}</strong> days remaining.
+                        {{ __('Eligible for a full refund —') }} <strong class="dark:text-warning">{{ $refundDaysRemaining }}</strong> {{ __('days remaining.') }}
                     @elseif ($refundAlreadyUsed)
                         {{ __('Refund already processed. Each team is eligible for one refund only.') }}
                     @else

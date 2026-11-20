@@ -47,7 +47,7 @@
                         @endif
                         {{-- Disabling forgets the cached state, but the files stay on the server. --}}
                         @if (! $enabled || $hasScannerData)
-                            <x-modal-confirmation title="{{ __('Delete scanner data?') }}" buttonTitle="Delete scanner data"
+                            <x-modal-confirmation title="{{ __('Delete scanner data?') }}" :buttonTitle="__('Delete scanner data')"
                                 isErrorButton submitAction="deleteScannerData" temporaryDisableTwoStepConfirmation
                                 :confirmWithText="false" :confirmWithPassword="false" :actions="[
                                     'Coolify removes the stored SBOMs, the vulnerability database, and the scanner images from this server.',
@@ -75,8 +75,7 @@
                         description="{{ $costText }}">
                         @cannot('update', $server)
                             <x-slot:actions>
-                                <span class="text-[13px] text-neutral-500 dark:text-fg-faint">Ask a team admin to turn it
-                                    on.</span>
+                                <span class="text-[13px] text-neutral-500 dark:text-fg-faint">{{ __('Ask a team admin to turn it on.') }}</span>
                             </x-slot:actions>
                         @endcannot
                     </x-empty>
@@ -109,24 +108,24 @@
                         $cannotUpdate = auth()->user()->cannot('update', $server);
                     @endphp
                     <x-application.settings-subsection id="image-scan-limits-section" title="{{ __('Scanner limits') }}"
-                        helper="Limits of each scanner step on this server. Raise one when a scan stops because it took too long or ran out of memory. A new limit applies to the next scan."
+                        :helper="__('Limits of each scanner step on this server. Raise one when a scan stops because it took too long or ran out of memory. A new limit applies to the next scan.')"
                         first>
                         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                             <x-forms.listbox id="scannerSyftTimeout" label="{{ __('Syft time limit') }}" onChange="$commit"
                                 :disabled="$cannotUpdate"
-                                helper="Time to list the packages of one image. Large images need more time."
+                                :helper="__('Time to list the packages of one image. Large images need more time.')"
                                 :options="$timeoutOptions" />
                             <x-forms.listbox id="scannerGrypeTimeout" label="{{ __('Grype time limit') }}" onChange="$commit"
                                 :disabled="$cannotUpdate"
-                                helper="Time to match the packages of one image with the vulnerability database."
+                                :helper="__('Time to match the packages of one image with the vulnerability database.')"
                                 :options="$timeoutOptions" />
                             <x-forms.listbox id="scannerCpus" label="{{ __('Scanner CPU limit') }}" onChange="$commit"
                                 :disabled="$cannotUpdate"
-                                helper="CPUs that each scanner step can use. Values above the CPU count of this server are not listed."
+                                :helper="__('CPUs that each scanner step can use. Values above the CPU count of this server are not listed.')"
                                 :options="$cpuOptions" />
                             <x-forms.listbox id="scannerMemoryMb" label="{{ __('Scanner memory limit') }}" onChange="$commit"
                                 :disabled="$cannotUpdate"
-                                helper="Memory that each scanner step can use. Values above the memory of this server are not listed. The server must also have this much free memory when a scan runs."
+                                :helper="__('Memory that each scanner step can use. Values above the memory of this server are not listed. The server must also have this much free memory when a scan runs.')"
                                 :options="$memoryOptions" />
                         </div>
                     </x-application.settings-subsection>

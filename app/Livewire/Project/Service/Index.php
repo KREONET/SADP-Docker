@@ -267,8 +267,8 @@ class Index extends Component
             $this->serviceDatabase->delete();
             $this->auditServiceSubResource('deleted', $this->serviceDatabase, ['container_removed' => $containerRemoved]);
             $containerRemoved
-                ? $this->dispatch('success', 'Database deleted.')
-                : $this->dispatch('warning', 'Database deleted from Coolify. The server does not respond, so its container is removed when the service starts again.');
+                ? $this->dispatch('success', __('Database deleted.'))
+                : $this->dispatch('warning', __('Database deleted from Coolify. The server does not respond, so its container is removed when the service starts again.'));
 
             return redirectRoute($this, 'project.service.configuration', $this->parameters);
         } catch (\Throwable $e) {
@@ -559,8 +559,8 @@ class Index extends Component
             $this->serviceApplication->delete();
             $this->auditServiceSubResource('deleted', $this->serviceApplication, ['container_removed' => $containerRemoved]);
             $containerRemoved
-                ? $this->dispatch('success', 'Application deleted.')
-                : $this->dispatch('warning', 'Application deleted from Coolify. The server does not respond, so its container is removed when the service starts again.');
+                ? $this->dispatch('success', __('Application deleted.'))
+                : $this->dispatch('warning', __('Application deleted from Coolify. The server does not respond, so its container is removed when the service starts again.'));
 
             return redirectRoute($this, 'project.service.configuration', $this->parameters);
         } catch (\Throwable $e) {

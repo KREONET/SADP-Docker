@@ -14,10 +14,10 @@
                 :helper="__('Proxy SSH traffic through Cloudflare so the server SSH port can remain closed.')">
                 <x-slot:actions>
                     @if ($isCloudflareTunnelsEnabled && auth()->user()->can('update', $server))
-                        <x-forms.button wire:click="updateCloudflareTunnel">Update Cloudflare Tunnel</x-forms.button>
+                        <x-forms.button wire:click="updateCloudflareTunnel">{{ __('Update Cloudflare Tunnel') }}</x-forms.button>
                         <x-process-dialog @cloudflare-tunnel-update-started.window="processDialogOpen = true"
                             closeWithX size="xl">
-                            <x-slot:title>Cloudflare Tunnel Update Logs</x-slot:title>
+                            <x-slot:title>{{ __('Cloudflare Tunnel Update Logs') }}</x-slot:title>
                             <x-slot:content>
                                 <livewire:activity-monitor fullHeight />
                             </x-slot:content>
@@ -48,7 +48,7 @@
                 @if ($isCloudflareTunnelsEnabled)
                     @if (filled($server->settings->cloudflare_tunnel_id))
                         <p class="mb-4 text-sm leading-6 text-neutral-600 dark:text-fg-dim">
-                            Coolify manages this tunnel through the Cloudflare API (tunnel
+                            {{ __('Coolify manages this tunnel through the Cloudflare API (tunnel') }}
                             <code>{{ \App\Services\CloudflareTunnelService::tunnelName($server) }}</code>).
                         </p>
                     @endif
@@ -90,23 +90,22 @@
                         </x-callout>
                     @else
                         <x-process-dialog @automated.window="processDialogOpen = true" closeWithX size="xl">
-                            <x-slot:title>Cloudflare Tunnel Configuration Logs</x-slot:title>
+                            <x-slot:title>{{ __('Cloudflare Tunnel Configuration Logs') }}</x-slot:title>
                             <x-slot:content>
                                 <livewire:activity-monitor fullHeight />
                             </x-slot:content>
                         </x-process-dialog>
 
                         @if ($tunnelTokens->isEmpty())
-                            <x-callout type="info" title="No Cloudflare token can manage tunnels">
+                            <x-callout type="info" :title="__('No Cloudflare token can manage tunnels')">
                                 @if ($hasCloudflareTokens)
-                                    Enable the Cloudflare Tunnel capability on a Cloudflare token
+                                    {{ __('Enable the Cloudflare Tunnel capability on a Cloudflare token') }}
                                 @else
-                                    Add a Cloudflare token with the DNS and Cloudflare Tunnel capabilities
+                                    {{ __('Add a Cloudflare token with the DNS and Cloudflare Tunnel capabilities') }}
                                 @endif
                                 in
                                 <a href="{{ route('security.integration-tokens') }}" class="font-medium underline"
-                                    {{ wireNavigate() }}>Integration tokens</a>.
-                                The token needs Account - Cloudflare Tunnel - Edit, Zone - DNS - Edit, and Zone - Zone - Read.
+                                    {{ wireNavigate() }}>{{ __('Integration tokens') }}</a>{{ __('. The token needs Account - Cloudflare Tunnel - Edit, Zone - DNS - Edit, and Zone - Zone - Read.') }}
                             </x-callout>
                             @can('create', App\Models\IntegrationToken::class)
                                 <div class="mt-4">
@@ -114,7 +113,7 @@
                                         <x-slot:content>
                                             <button type="button" class="button button-highlighted">
                                                 <x-reicon name="plus" class="size-3.5" />
-                                                Add Cloudflare token
+                                                {{ __('Add Cloudflare token') }}
                                             </button>
                                         </x-slot:content>
                                         <livewire:security.integration-token-form :modal_mode="true"
@@ -125,25 +124,25 @@
                         @else
                             <form wire:submit="apiCloudflareConfig">
                                 <div class="grid gap-4 lg:grid-cols-2">
-                                    <x-forms.listbox id="cloudflare_integration_token_id" label="Cloudflare token"
-                                        required placeholder="Select a token"
+                                    <x-forms.listbox id="cloudflare_integration_token_id" :label="__('Cloudflare token')"
+                                        required :placeholder="__('Select a token')"
                                         :options="$tunnelTokens->map(fn ($token) => ['value' => $token->id, 'label' => $token->name])->all()" />
-                                    <x-forms.input id="api_ssh_domain" label="SSH hostname" required
+                                    <x-forms.input id="api_ssh_domain" :label="__('SSH hostname')" required
                                         placeholder="ssh.example.com"
                                         helper="A hostname in a zone of the selected token. Cloudflare routes it to SSH port {{ $server->port }} of this server." />
                                 </div>
                                 <div class="mt-4 flex justify-end">
-                                    <x-forms.button type="submit" isHighlighted>Set up tunnel</x-forms.button>
+                                    <x-forms.button type="submit" isHighlighted>{{ __('Set up tunnel') }}</x-forms.button>
                                 </div>
                             </form>
                             @if ($dnsConflict)
                                 <div class="mt-4">
-                                    <x-callout type="warning" title="A DNS record already exists">
+                                    <x-callout type="warning" :title="__('A DNS record already exists')">
                                         {{ $dnsConflict['hostname'] }} already points to {{ $dnsConflict['current'] }}.
                                         Replace it with the tunnel record to continue.
                                     </x-callout>
                                     <div class="mt-4">
-                                        <x-modal-confirmation title="Replace DNS record?" buttonTitle="Replace DNS record"
+                                        <x-modal-confirmation :title="__('Replace DNS record?')" :buttonTitle="__('Replace DNS record')"
                                             submitAction="replaceDnsAndConfigure" :actions="[
                                                 'The DNS record of '.$dnsConflict['hostname'].' will point to the Cloudflare tunnel.',
                                                 'Traffic that uses the current record value will stop.',
@@ -154,20 +153,19 @@
                         @endif
 
                         <div class="mt-4 border-t border-neutral-200 pt-4 dark:border-white/[0.08]">
-                            <x-forms.collapsible title="Use an existing tunnel with its tunnel token">
+                            <x-forms.collapsible :title="__('Use an existing tunnel with its tunnel token')">
                                 <p class="text-sm leading-6 text-neutral-600 dark:text-fg-dim">
-                                    For a tunnel you created in the Cloudflare dashboard. Coolify does not need a
-                                    Cloudflare API token for this.
+                                    {{ __('For a tunnel you created in the Cloudflare dashboard. Coolify does not need a Cloudflare API token for this.') }}
                                 </p>
                                 <form class="mt-4" @submit.prevent="$wire.dispatch('automatedCloudflareConfig')">
                                     <div class="grid gap-4 lg:grid-cols-2">
-                                        <x-forms.input id="cloudflare_token" required label="Tunnel token" type="password"
-                                            helper="The token of the tunnel connector, from the Cloudflare dashboard." />
+                                        <x-forms.input id="cloudflare_token" required :label="__('Tunnel token')" type="password"
+                                            :helper="__('The token of the tunnel connector, from the Cloudflare dashboard.')" />
                                         <x-forms.input id="ssh_domain" :label="__('SSH domain')" required
-                                            helper="The public hostname of the tunnel that routes to SSH on this server, without a protocol." />
+                                            :helper="__('The public hostname of the tunnel that routes to SSH on this server, without a protocol.')" />
                                     </div>
                                     <div class="mt-4 flex justify-end">
-                                        <x-forms.button type="submit">Configure tunnel</x-forms.button>
+                                        <x-forms.button type="submit">{{ __('Configure tunnel') }}</x-forms.button>
                                     </div>
                                 </form>
                             </x-forms.collapsible>

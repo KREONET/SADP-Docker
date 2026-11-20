@@ -55,8 +55,8 @@
     @if ($inheritedPortExpression)
         <div class="min-w-0 sm:col-span-3"
             x-show="!({{ $inheritedPortExpression }}) && !$wire.{{ $id }}?.port" x-cloak>
-            <x-callout type="danger" title="Port is required">
-                The proxy cannot route this domain. Enter the port your container listens on in the Port field.
+            <x-callout type="danger" :title="__('Port is required')">
+                {{ __('The proxy cannot route this domain. Enter the port your container listens on in the Port field.') }}
             </x-callout>
         </div>
     @endif

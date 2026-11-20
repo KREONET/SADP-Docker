@@ -6,7 +6,7 @@
             <p class="text-xs text-error">{{ $message }}</p>
         @enderror
     @endif
-    <x-forms.input placeholder="0 0 * * * or daily" id="frequency"
+    <x-forms.input :placeholder="__('0 0 * * * or daily')" id="frequency"
         :helper="__('You can use every_minute, hourly, daily, weekly, monthly, yearly or a cron expression.')" :label="__('Frequency')"
         required />
     <div class="flex justify-end border-t border-neutral-200 pt-4 dark:border-white/[0.08]">

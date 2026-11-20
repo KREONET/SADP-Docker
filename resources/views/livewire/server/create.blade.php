@@ -103,7 +103,7 @@
                                 <div class="mt-auto pt-5">
                                     <h3 class="text-[13px]! font-semibold! text-black dark:text-fg">Hostinger</h3>
                                     <p class="mt-1 text-[11px] leading-4 text-neutral-500 dark:text-fg-faint">
-                                        Purchase and provision a new VPS.
+                                        {{ __('Purchase and provision a new VPS.') }}
                                     </p>
                                 </div>
                             </a>

@@ -222,14 +222,14 @@ class General extends Component
             $volumeName = $this->database->anonymousDataVolume();
             if ($volumeName === null) {
                 $this->anonymousDataVolume = null;
-                $this->dispatch('info', 'This database already uses its data volume.');
+                $this->dispatch('info', __('This database already uses its data volume.'));
 
                 return;
             }
 
             $this->database->keepAnonymousDataVolume($volumeName);
             $this->anonymousDataVolume = null;
-            $this->dispatch('success', 'The current data volume is now the data volume of this database. You can restart it safely.');
+            $this->dispatch('success', __('The current data volume is now the data volume of this database. You can restart it safely.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }

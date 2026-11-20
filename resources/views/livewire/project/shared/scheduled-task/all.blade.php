@@ -1,6 +1,6 @@
 <div>
     @if ($selectedTask)
-        <x-modal-input title="Edit scheduled task" :subtitle="$selectedTask->name" wireOpen="taskModalOpen" :wireIgnore="false" isLarge fixedHeight>
+        <x-modal-input :title="__('Edit scheduled task')" :subtitle="$selectedTask->name" wireOpen="taskModalOpen" :wireIgnore="false" isLarge fixedHeight>
             <x-slot:content><span></span></x-slot:content>
 
             <livewire:project.shared.scheduled-task.show :resource="$resource" :task="$selectedTask"

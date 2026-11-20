@@ -67,7 +67,7 @@
                 </template>
                 <template x-if="!neverAllowed">
                     <x-forms.listbox id="image-scan-ignore-expires" label="{{ __('Expires') }}" :wire="false" x-model="expires" value="90"
-                        helper="Attackers are using or are likely to use this problem, so its ignore expires."
+                        :helper="__('Attackers are using or are likely to use this problem, so its ignore expires.')"
                         :options="[
                             ['value' => '30', 'label' => '30 days'],
                             ['value' => '90', 'label' => '90 days'],

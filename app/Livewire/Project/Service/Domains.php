@@ -315,7 +315,7 @@ class Domains extends Component
         $this->service->parse();
         $this->refreshDomains();
         $this->dispatch('configurationChanged')->to(ConfigurationChecker::class);
-        $this->dispatch('success', 'Redirect type updated.');
+        $this->dispatch('success', __('Redirect type updated.'));
     }
 
     public function loadDomainState(): void

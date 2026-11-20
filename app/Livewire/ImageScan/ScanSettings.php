@@ -113,7 +113,7 @@ class ScanSettings extends Component
         $application->settings->is_image_scan_enabled = $this->appScanEnabled === '1';
         $application->settings->save();
         $this->audit($application, 'is_image_scan_enabled');
-        $this->dispatch('success', 'Saved.');
+        $this->dispatch('success', __('Saved.'));
     }
 
     public function updatedBuildsByTeam(): void
@@ -126,7 +126,7 @@ class ScanSettings extends Component
         $application->settings->image_builds_by_team = self::optionToBool($this->buildsByTeam);
         $application->settings->save();
         $this->audit($application, 'image_builds_by_team');
-        $this->dispatch('success', 'Saved.');
+        $this->dispatch('success', __('Saved.'));
     }
 
     public function updatedScanNewServers(): void
@@ -139,7 +139,7 @@ class ScanSettings extends Component
         $team->scan_images_on_new_servers = $this->scanNewServers === '1';
         $team->save();
         $this->audit($team, 'scan_images_on_new_servers');
-        $this->dispatch('success', 'Saved.');
+        $this->dispatch('success', __('Saved.'));
     }
 
     /**
@@ -173,7 +173,7 @@ class ScanSettings extends Component
             'vulnerability_id' => $ignore->vulnerability_id,
             'package' => $ignore->package,
         ]);
-        $this->dispatch('success', 'Removed.');
+        $this->dispatch('success', __('Removed.'));
     }
 
     private function saveRule(string $column, string $property): void
@@ -191,7 +191,7 @@ class ScanSettings extends Component
         $policy = ImageScanPolicyResolver::forScope($scope);
         if ($column === 'gate_mode' && $scope instanceof Application && ! $scope->settings?->is_image_scan_enabled) {
             $this->gateMode = $policy->gate_mode?->value ?? '';
-            $this->dispatch('error', 'Turn on the scan for this app first.');
+            $this->dispatch('error', __('Turn on the scan for this app first.'));
 
             return;
         }
@@ -203,7 +203,7 @@ class ScanSettings extends Component
             $this->refreshStatuses($scope);
         }
         $this->audit($scope, $column);
-        $this->dispatch('success', 'Saved.');
+        $this->dispatch('success', __('Saved.'));
     }
 
     /**

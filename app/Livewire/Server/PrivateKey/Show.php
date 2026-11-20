@@ -48,7 +48,7 @@ class Show extends Component
         }
         $this->authorize('update', $this->server);
         if ($this->server->isTransferredAway()) {
-            $this->dispatch('error', 'The private key of a transferred server cannot be changed.');
+            $this->dispatch('error', __('The private key of a transferred server cannot be changed.'));
 
             return;
         }

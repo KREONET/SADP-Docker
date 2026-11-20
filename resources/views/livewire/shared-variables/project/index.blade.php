@@ -11,7 +11,7 @@
             }
         }">
             @if ($projects->isEmpty())
-                <x-empty title="No projects" description="Projects that you can read show here. Create a project to add project-wide variables."
+                <x-empty :title="__('No projects')" :description="__('Projects that you can read show here. Create a project to add project-wide variables.')"
                     icon-name="projects" />
             @else
                 <x-shared-variables.view-controls :label="__('projects')" storage-key="shared-variables-projects-view" />

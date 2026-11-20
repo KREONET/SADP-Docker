@@ -64,7 +64,7 @@ $approxBadge = fn (string $tooltip) => '<span title="'.e($tooltip).'" class="ml-
                                 <x-loading compact :aria-label="__('Loading analytics')" />
                             </div>
                         </div>
-                        <x-live-toggle :active="$live" storageKey="traffic-live" title="Turn live refresh on or off (updates every 60 seconds)" />
+                        <x-live-toggle :active="$live" storageKey="traffic-live" :title="__('Turn live refresh on or off (updates every 60 seconds)')" />
                     </div>
                 </x-slot:actions>
 

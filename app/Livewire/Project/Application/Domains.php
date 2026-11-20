@@ -320,7 +320,7 @@ class Domains extends Component
         $this->saveApplicationSettingsWithAudit($this->application);
         $this->resetDefaultLabels();
         $this->dispatch('configurationChanged')->to(ConfigurationChecker::class);
-        $this->dispatch('success', 'Redirect type updated.');
+        $this->dispatch('success', __('Redirect type updated.'));
     }
 
     public function loadDomainState(bool $parseCompose = true): void

@@ -66,35 +66,35 @@ class ApiTokenForm extends Form
     {
         // Re-evaluate policies fresh — never trust stored snapshot booleans.
         if ($permissionToUpdate == 'root' && ! auth()->user()->can('useRootPermissions', PersonalAccessToken::class)) {
-            $this->getComponent()->dispatch('error', 'You do not have permission to use root permissions.');
+            $this->getComponent()->dispatch('error', __('You do not have permission to use root permissions.'));
             $this->permissions = array_diff($this->permissions, ['root']);
 
             return;
         }
 
         if (in_array($permissionToUpdate, ['write', 'write:sensitive'], true) && ! auth()->user()->can('useWritePermissions', PersonalAccessToken::class)) {
-            $this->getComponent()->dispatch('error', 'You do not have permission to use write permissions.');
+            $this->getComponent()->dispatch('error', __('You do not have permission to use write permissions.'));
             $this->permissions = array_diff($this->permissions, ['write', 'write:sensitive']);
 
             return;
         }
 
         if ($permissionToUpdate == 'deploy' && ! auth()->user()->can('useDeployPermissions', PersonalAccessToken::class)) {
-            $this->getComponent()->dispatch('error', 'You do not have permission to use deploy permissions.');
+            $this->getComponent()->dispatch('error', __('You do not have permission to use deploy permissions.'));
             $this->permissions = array_diff($this->permissions, ['deploy']);
 
             return;
         }
 
         if ($permissionToUpdate == 'read:sensitive' && ! auth()->user()->can('useSensitivePermissions', PersonalAccessToken::class)) {
-            $this->getComponent()->dispatch('error', 'You do not have permission to use read:sensitive permissions.');
+            $this->getComponent()->dispatch('error', __('You do not have permission to use read:sensitive permissions.'));
             $this->permissions = array_diff($this->permissions, ['read:sensitive']);
 
             return;
         }
 
         if ($permissionToUpdate == 'delete' && ! auth()->user()->can('useDeletePermissions', PersonalAccessToken::class)) {
-            $this->getComponent()->dispatch('error', 'You do not have permission to use delete permissions.');
+            $this->getComponent()->dispatch('error', __('You do not have permission to use delete permissions.'));
             $this->permissions = array_diff($this->permissions, ['delete']);
 
             return;

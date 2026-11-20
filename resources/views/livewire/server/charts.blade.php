@@ -54,7 +54,7 @@
                             ]" />
                         </div>
                         <p class="mt-3 text-xs leading-5 text-neutral-500 dark:text-fg-dim">
-                            Ranges up to one hour refresh live every five seconds. Longer ranges load once; turn on live refresh to update them every minute.
+                            {{ __('Ranges up to one hour refresh live every five seconds. Longer ranges load once; turn on live refresh to update them every minute.') }}
                         </p>
                     </x-application.settings-section>
                 </form>
@@ -62,8 +62,8 @@
                 {{-- CPU is the primary signal, so it spans full width; the other four
                      charts fall into a 2x2 below (mirrors the fleet /metrics layout). --}}
                 <div class="grid gap-6 lg:grid-cols-2">
-                    <x-application.settings-section id="server-cpu-metrics-section" title="CPU usage" class="lg:col-span-2"
-                        helper="Average usage of all CPU cores on this server. 100% means that all cores are fully busy. For example, on a server with 8 cores, one fully busy core shows as 12.5%.">
+                    <x-application.settings-section id="server-cpu-metrics-section" :title="__('CPU usage')" class="lg:col-span-2"
+                        :helper="__('Average usage of all CPU cores on this server. 100% means that all cores are fully busy. For example, on a server with 8 cores, one fully busy core shows as 12.5%.')">
                         <x-slot:actions>
                             <div wire:ignore id="{!! $chartId !!}-cpu-legend" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"></div>
                         </x-slot:actions>
@@ -78,24 +78,24 @@
                         <div wire:ignore id="{!! $chartId !!}-memory" class="min-h-[240px] w-full"></div>
                     </x-application.settings-section>
 
-                    <x-application.settings-section id="server-network-metrics-section" title="Network throughput"
-                        helper="Receive and transmit rate across the server's network interfaces.">
+                    <x-application.settings-section id="server-network-metrics-section" :title="__('Network throughput')"
+                        :helper="__('Receive and transmit rate across the server\'s network interfaces.')">
                         <x-slot:actions>
                             <div wire:ignore id="{!! $chartId !!}-network-legend" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"></div>
                         </x-slot:actions>
                         <div wire:ignore id="{!! $chartId !!}-network" class="min-h-[240px] w-full"></div>
                     </x-application.settings-section>
 
-                    <x-application.settings-section id="server-load-metrics-section" title="Load average"
-                        helper="One minute load average reported by the server.">
+                    <x-application.settings-section id="server-load-metrics-section" :title="__('Load average')"
+                        :helper="__('One minute load average reported by the server.')">
                         <x-slot:actions>
                             <div wire:ignore id="{!! $chartId !!}-load-legend" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"></div>
                         </x-slot:actions>
                         <div wire:ignore id="{!! $chartId !!}-load" class="min-h-[240px] w-full"></div>
                     </x-application.settings-section>
 
-                    <x-application.settings-section id="server-disk-metrics-section" title="Disk usage"
-                        helper="Percentage of the root filesystem used by this server.">
+                    <x-application.settings-section id="server-disk-metrics-section" :title="__('Disk usage')"
+                        :helper="__('Percentage of the root filesystem used by this server.')">
                         <x-slot:actions>
                             <div wire:ignore id="{!! $chartId !!}-disk-legend" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"></div>
                         </x-slot:actions>

@@ -126,7 +126,7 @@ class Access extends Component
         ]);
 
         $this->open = false;
-        $this->dispatch('success', 'Access saved.');
+        $this->dispatch('success', __('Access saved.'));
         $this->dispatch('reloadWindow');
     }
 

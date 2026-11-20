@@ -183,7 +183,7 @@ class CloudflareTunnel extends Component
         $token = $conflict === null ? null : $this->tunnelTokens()->firstWhere('id', $conflict['token_id']);
         if ($conflict === null || $token === null) {
             $this->dnsConflict = null;
-            $this->dispatch('error', 'The DNS conflict is no longer available. Set up the tunnel again.');
+            $this->dispatch('error', __('The DNS conflict is no longer available. Set up the tunnel again.'));
 
             return;
         }

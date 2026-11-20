@@ -7,7 +7,7 @@
     <div class="application-settings-form flex flex-col gap-6">
         <form wire:submit="submit">
             <x-unsaved-bar action="submit" />
-            <x-application.settings-section title="Telegram"
+            <x-application.settings-section :title="__('Telegram')"
                 :description="__('Deliver team notifications through a Telegram bot and chat.')">
                 <x-slot:actions>
                     <x-notification.channel-actions :enabled="$telegramEnabled" enabledProperty="telegramEnabled"

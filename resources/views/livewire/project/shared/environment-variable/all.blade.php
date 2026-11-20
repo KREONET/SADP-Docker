@@ -49,14 +49,14 @@
                     </div>
                 @endif
                 <x-forms.checkbox instantSave="saveCoolifyDefaultVariables" id="include_coolify_default_variables"
-                    label="Include Coolify default variables"
-                    helper="Adds COOLIFY_APP_NAME, COOLIFY_PROJECT_NAME, COOLIFY_ENVIRONMENT_NAME and COOLIFY_SERVER_IP to the container at runtime. A variable that you define with the same name wins. Takes effect after the next deploy or restart."
+                    :label="__('Include Coolify default variables')"
+                    :helper="__('Adds COOLIFY_APP_NAME, COOLIFY_PROJECT_NAME, COOLIFY_ENVIRONMENT_NAME and COOLIFY_SERVER_IP to the container at runtime. A variable that you define with the same name wins. Takes effect after the next deploy or restart.')"
                     :disabled="! auth()->user()->can('manageEnvironment', $resource)" />
                 @if ($this->hasLogRedactionSetting())
                     <div class="grid w-full items-end gap-4 sm:grid-cols-2">
-                        <x-forms.listbox id="redact_all_env_values_in_logs" label="Environment values in logs"
+                        <x-forms.listbox id="redact_all_env_values_in_logs" :label="__('Environment values in logs')"
                             onChange="saveLogRedactionSetting"
-                            helper="Hide every environment variable value in deployment logs, scheduled task output, copied or downloaded logs, and logs from the API and MCP. Live log streaming is not changed. Locked variables and known secret formats are always hidden."
+                            :helper="__('Hide every environment variable value in deployment logs, scheduled task output, copied or downloaded logs, and logs from the API and MCP. Live log streaming is not changed. Locked variables and known secret formats are always hidden.')"
                             :options="[
                                 ['value' => true, 'label' => 'Hide all values'],
                                 ['value' => false, 'label' => 'Hide locked values only'],
@@ -70,7 +70,7 @@
                     <x-callout type="info" :title="__('Note')">
                         {!! __('Inline comments with space before # (e.g., :example) are stripped.', ['example' => '<code class="font-mono">KEY=value #comment</code>']) !!}
                         To set flags, put <code class="font-mono"># coolify: literal buildtime=false runtime=false</code>
-                        directly above a variable line. Without this line, the flags of a variable do not change.
+                        {{ __('directly above a variable line. Without this line, the flags of a variable do not change.') }}
                     </x-callout>
                     @if ($sensitiveConfirmationRequired)
                         <x-sensitive-confirmation action="confirmSensitiveAccess" wire:key="env-dev-view-confirm"
@@ -207,7 +207,7 @@
         @if (! $readyToLoad)
             <div id="environment-table-section"
                 class="application-settings-section-body is-flush mt-1 w-full scroll-mt-28" role="status">
-                <span class="sr-only">Loading environment variables</span>
+                <span class="sr-only">{{ __('Loading environment variables') }}</span>
                 <x-skeleton.table flush :rows="6" />
             </div>
         @else
@@ -230,7 +230,7 @@
                                 wire:loading.class="pointer-events-none opacity-40 blur-[2px]"
                                 wire:target="toggleVariableFilter,toggleServiceFilter,clearFilters,setEnvironmentFilter,setTableSort,setEnvironmentVariablePage,previousEnvironmentVariablePage,nextEnvironmentVariablePage">
                             <div class="data-table-header env-table-grid {{ $showEnvironmentType ? '' : 'env-table-grid-no-type' }}">
-                            <x-table.sort-header label="Name" asc="name_asc" desc="name_desc"
+                            <x-table.sort-header :label="__('Name')" asc="name_asc" desc="name_desc"
                                 action="setTableSort" :current="$tableSort" />
                             <span class="text-center">{{ __('Managed') }}</span>
                             @if ($showEnvironmentType)

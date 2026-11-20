@@ -215,20 +215,20 @@ class Vulnerabilities extends Component
         $owners = $this->owners();
 
         if ($this->progress($owners) !== null) {
-            $this->dispatch('error', 'A scan is already running.');
+            $this->dispatch('error', __('A scan is already running.'));
 
             return;
         }
 
         $policy = ImageScanPolicyResolver::for($resource);
         if ($policy->scanServer instanceof Server && $policy->scanServer->isTransferredAway()) {
-            $this->dispatch('error', 'Another Coolify instance manages this server now.');
+            $this->dispatch('error', __('Another Coolify instance manages this server now.'));
 
             return;
         }
 
         if (! $policy->scanEnabled) {
-            $this->dispatch('error', 'Image scanning is off for this resource.');
+            $this->dispatch('error', __('Image scanning is off for this resource.'));
 
             return;
         }
@@ -237,7 +237,7 @@ class Vulnerabilities extends Component
         if ($resource instanceof Application) {
             $imageRefs = $this->applicationImageRefs($resource);
             if ($imageRefs === []) {
-                $this->dispatch('error', 'Deploy the app first.');
+                $this->dispatch('error', __('Deploy the app first.'));
 
                 return;
             }
@@ -255,7 +255,7 @@ class Vulnerabilities extends Component
         );
 
         if (! $started) {
-            $this->dispatch('error', 'A scan started less than a minute ago. Try again later.');
+            $this->dispatch('error', __('A scan started less than a minute ago. Try again later.'));
 
             return;
         }
@@ -265,7 +265,7 @@ class Vulnerabilities extends Component
             'resource_type' => $resource->getMorphClass(),
             'resource_uuid' => $this->resourceUuid,
         ]);
-        $this->dispatch('success', 'Scan started');
+        $this->dispatch('success', __('Scan started'));
     }
 
     /**
@@ -277,7 +277,7 @@ class Vulnerabilities extends Component
         $this->authorize('update', $resource);
         abort_unless($resource instanceof Application && $resource->build_pack === 'dockercompose', 404);
         if ($resource->destination?->server?->isTransferredAway()) {
-            $this->dispatch('error', 'Another Coolify instance manages this server now.');
+            $this->dispatch('error', __('Another Coolify instance manages this server now.'));
 
             return;
         }
@@ -297,7 +297,7 @@ class Vulnerabilities extends Component
             'service' => $service,
             'user_id' => auth()->id(),
         ]);
-        $this->dispatch('success', 'The next deploy uses the image of the compose file.');
+        $this->dispatch('success', __('The next deploy uses the image of the compose file.'));
     }
 
     /**
@@ -337,7 +337,7 @@ class Vulnerabilities extends Component
             throw $e;
         } catch (Throwable $e) {
             report($e);
-            $this->dispatch('error', 'The update could not start.');
+            $this->dispatch('error', __('The update could not start.'));
 
             return true;
         }
@@ -345,7 +345,7 @@ class Vulnerabilities extends Component
         $this->loadedOwners = null;
         $this->scans = null;
         $this->rows = null;
-        $this->dispatch('success', 'Update started.');
+        $this->dispatch('success', __('Update started.'));
 
         return true;
     }
@@ -387,7 +387,7 @@ class Vulnerabilities extends Component
             throw $e;
         } catch (Throwable $e) {
             report($e);
-            $this->dispatch('error', 'The update could not start.');
+            $this->dispatch('error', __('The update could not start.'));
 
             return true;
         }
@@ -395,7 +395,7 @@ class Vulnerabilities extends Component
         $this->loadedOwners = null;
         $this->scans = null;
         $this->rows = null;
-        $this->dispatch('success', 'Update started.');
+        $this->dispatch('success', __('Update started.'));
 
         return true;
     }
@@ -426,24 +426,24 @@ class Vulnerabilities extends Component
 
         $running = SecurityCard::runningDeployment($application);
         if (! $running instanceof ApplicationDeploymentQueue) {
-            $this->dispatch('error', 'Deploy the app first.');
+            $this->dispatch('error', __('Deploy the app first.'));
 
             return true;
         }
         if (! SecurityCard::knowsRunningCommit($application, $running)) {
-            $this->dispatch('error', 'Coolify does not know which commit runs now. Redeploy the app first.');
+            $this->dispatch('error', __('Coolify does not know which commit runs now. Redeploy the app first.'));
 
             return true;
         }
 
         $server = $application->deploymentServer($running);
         if (! $server instanceof Server) {
-            $this->dispatch('error', 'The server of the running deployment is no longer one of this app.');
+            $this->dispatch('error', __('The server of the running deployment is no longer one of this app.'));
 
             return true;
         }
         if ($server->isTransferredAway()) {
-            $this->dispatch('error', 'Another Coolify instance manages this server now.');
+            $this->dispatch('error', __('Another Coolify instance manages this server now.'));
 
             return true;
         }
@@ -468,13 +468,13 @@ class Vulnerabilities extends Component
             throw $e;
         } catch (Throwable $e) {
             report($e);
-            $this->dispatch('error', 'The rebuild could not start.');
+            $this->dispatch('error', __('The rebuild could not start.'));
 
             return true;
         }
 
         if (($result['status'] ?? null) !== 'queued') {
-            $this->dispatch('error', 'The rebuild did not start.', (string) ($result['message'] ?? ''));
+            $this->dispatch('error', __('The rebuild did not start.'), (string) ($result['message'] ?? ''));
 
             return true;
         }
@@ -485,7 +485,7 @@ class Vulnerabilities extends Component
             'resource_uuid' => (string) $application->uuid,
             'commit' => $running->commit,
         ]);
-        $this->dispatch('success', 'Rebuild started.');
+        $this->dispatch('success', __('Rebuild started.'));
 
         return true;
     }
@@ -568,7 +568,7 @@ class Vulnerabilities extends Component
             'package' => $ignore->package,
             'expires_at' => $ignore->expires_at?->toIso8601String(),
         ]);
-        $this->dispatch('success', 'Ignored');
+        $this->dispatch('success', __('Ignored'));
 
         return true;
     }

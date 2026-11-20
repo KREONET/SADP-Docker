@@ -10,13 +10,13 @@
             <div class="order-first mr-1 hidden items-center gap-1 xl:flex">
                 @php($databaseRunning = str($database->status)->startsWith('running'))
                 @if ($backup->enabled)
-                    <x-forms.button type="button" wire:click="toggleEnabled">Disable backup</x-forms.button>
+                    <x-forms.button type="button" wire:click="toggleEnabled">{{ __('Disable backup') }}</x-forms.button>
                 @else
-                    <x-forms.button type="button" wire:click="toggleEnabled" isHighlighted>Enable backup</x-forms.button>
+                    <x-forms.button type="button" wire:click="toggleEnabled" isHighlighted>{{ __('Enable backup') }}</x-forms.button>
                 @endif
                 <x-forms.button type="button" wire:click="backupNow" :disabled="! $databaseRunning"
                     :tooltip="! $databaseRunning ? 'The database must be running to start a backup.' : null">
-                    Back up now
+                    {{ __('Back up now') }}
                 </x-forms.button>
             </div>
         @endteleport

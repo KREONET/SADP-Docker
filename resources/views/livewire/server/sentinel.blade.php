@@ -39,7 +39,7 @@
                     <div class="space-y-3">
                         <p>{{ __('Sentinel has not reported within the expected interval. Check these items before syncing again:') }}</p>
                         @if ($sentinelPushProblem = $server->sentinelPushProblem())
-                            <p><span class="font-medium">Last error:</span> <code class="break-all">{{ $sentinelPushProblem }}</code></p>
+                            <p><span class="font-medium">{{ __('Last error:') }}</span> <code class="break-all">{{ $sentinelPushProblem }}</code></p>
                         @endif
                         <ul class="list-disc space-y-1 pl-4">
                             <li>{!! __('Confirm that the <code>coolify-sentinel</code> container is running.') !!}</li>
@@ -106,9 +106,8 @@
                 </x-slot:actions>
                 <div class="flex flex-col gap-4">
                     @if ($this->isPushUrlInsecure())
-                        <x-callout type="warning" title="Sentinel reports over plain HTTP">
-                            Sentinel sends its token with every report. Over HTTP, the token and the server data are not
-                            encrypted on the network. Set an HTTPS Coolify URL.
+                        <x-callout type="warning" :title="__('Sentinel reports over plain HTTP')">
+                            {{ __('Sentinel sends its token with every report. Over HTTP, the token and the server data are not encrypted on the network. Set an HTTPS Coolify URL.') }}
                         </x-callout>
                     @endif
                     <div class="grid gap-4 lg:grid-cols-2">

@@ -39,7 +39,7 @@
                 </x-callout>
             @endif
 
-            <x-application.settings-section id="access-section" title="Access and API">
+            <x-application.settings-section id="access-section" :title="__('Access and API')">
                 <div class="grid gap-4 lg:grid-cols-2">
                      <x-forms.listbox id="is_registration_enabled" :label="__('Registration')"
                         :helper="__('Allow users to create their own account. When disabled, only administrators can create accounts.')"
@@ -54,8 +54,8 @@
                              ['value' => false, 'label' => __('Allow password registration')],
                              ['value' => true, 'label' => __('Disable when OAuth is enabled')],
                          ]" />
-                    <x-forms.listbox canGate="update" :canResource="$settings" id="is_passkey_enabled" label="Passkeys"
-                        helper="Let users sign in with a passkey. Passkeys need an HTTPS instance URL. Stored passkeys are kept when this is disabled."
+                    <x-forms.listbox canGate="update" :canResource="$settings" id="is_passkey_enabled" :label="__('Passkeys')"
+                        :helper="__('Let users sign in with a passkey. Passkeys need an HTTPS instance URL. Stored passkeys are kept when this is disabled.')"
                         :options="[
                             ['value' => true, 'label' => __('Enabled')],
                             ['value' => false, 'label' => __('Disabled')],
@@ -76,8 +76,8 @@
                                 ['value' => false, 'label' => __('Disabled')],
                             ]" />
                         <div class="lg:col-span-2">
-                            <x-forms.input id="allowed_ips" label="Allowed IPs"
-                                helper="Applies to the REST API and the MCP endpoint. Comma-separated IPs or CIDR ranges. Empty or 0.0.0.0 allows all sources."
+                            <x-forms.input id="allowed_ips" :label="__('Allowed IPs')"
+                                :helper="__('Applies to the REST API and the MCP endpoint. Comma-separated IPs or CIDR ranges. Empty or 0.0.0.0 allows all sources.')"
                                 placeholder="192.168.1.100, 10.0.0.0/8" />
                         </div>
                     </div>
@@ -90,10 +90,10 @@
                         <x-callout type="info" :title="__('MCP endpoint')" class="mt-4">
                             <div class="flex items-center gap-1">
                                 <code>{{ url('/mcp') }}</code>
-                                <x-copy-button :value="url('/mcp')" label="Copy MCP endpoint" />
+                                <x-copy-button :value="url('/mcp')" :label="__('Copy MCP endpoint')" />
                             </div>
-                            Authenticate with a bearer token from
-                            <a href="{{ route('security.api-tokens') }}" class="font-medium underline" {{ wireNavigate() }}>Keys & Tokens → API Tokens</a>.
+                            {{ __('Authenticate with a bearer token from') }}
+                            <a href="{{ route('security.api-tokens') }}" class="font-medium underline" {{ wireNavigate() }}>{{ __('Keys & Tokens → API Tokens') }}</a>.
                         </x-callout>
                     @endif
                 </x-application.settings-subsection>
@@ -112,7 +112,7 @@
             </x-application.settings-section>
 
             <x-application.settings-section id="network-section" title="{{ __('Network') }}"
-                helper="Domain validation and the internal targets that outbound requests may reach.">
+                :helper="__('Domain validation and the internal targets that outbound requests may reach.')">
                 <x-application.settings-subsection first id="dns-section" title="{{ __('DNS validation') }}">
                     <div class="grid gap-4 lg:grid-cols-2">
                         <x-forms.listbox id="is_dns_validation_enabled" :label="__('DNS validation')"
@@ -150,17 +150,17 @@
                         </div>
                     </x-application.settings-subsection>
                     <x-application.settings-subsection id="server-validation-section" title="{{ __('Server validation') }}"
-                        helper="Limits failed SSH validations, so users cannot make Coolify Cloud try logins on hosts that they do not own. Successful connections do not count.">
+                        :helper="__('Limits failed SSH validations, so users cannot make Coolify Cloud try logins on hosts that they do not own. Successful connections do not count.')">
                         <div class="grid gap-4 lg:grid-cols-3">
                             <x-forms.input id="server_validation_rate_limit_seconds" type="number" min="60" max="86400"
-                                label="Rate limit window (seconds)"
-                                helper="The period in which Coolify counts failed validations. From 60 to 86400 seconds." />
+                                :label="__('Rate limit window (seconds)')"
+                                :helper="__('The period in which Coolify counts failed validations. From 60 to 86400 seconds.')" />
                             <x-forms.input id="server_validation_max_failures_per_ip" type="number" min="1" max="1000"
-                                label="Max failed validations per IP"
-                                helper="For one target IP, from all teams together, in the window. From 1 to 1000." />
+                                :label="__('Max failed validations per IP')"
+                                :helper="__('For one target IP, from all teams together, in the window. From 1 to 1000.')" />
                             <x-forms.input id="server_validation_max_failures_per_team" type="number" min="1" max="10000"
-                                label="Max failed validations per team"
-                                helper="For one team, to all IPs together, in the window. From 1 to 10000." />
+                                :label="__('Max failed validations per team')"
+                                :helper="__('For one team, to all IPs together, in the window. From 1 to 10000.')" />
                         </div>
                     </x-application.settings-subsection>
                 @endif
@@ -231,14 +231,14 @@
             </x-application.settings-section>
 
             <x-application.settings-section id="storage-section" title="{{ __('Storage') }}"
-                helper="Where Coolify stores uploaded images and how users download files.">
+                :helper="__('Where Coolify stores uploaded images and how users download files.')">
                 <x-application.settings-subsection first id="avatar-storage-section" title="{{ __('Image storage') }}"
                     :helper="__('Choose where compressed profile pictures and project icons are stored. Use S3 for multi-instance or cloud deployments so every application replica can access the same files.')">
                     <div class="flex max-w-md flex-col gap-4">
                         <x-forms.listbox id="avatar_storage" :label="__('Storage destination')" onChange="instantSave"
                             :options="$avatar_storage_options" />
                         <x-forms.input id="image_cdn_url" :label="__('Image CDN URL')"
-                            helper="Optional public URL (for example a CDN or public bucket domain) that serves profile pictures and project icons stored on S3. Leave empty to serve them through Coolify." placeholder="https://images.example.com" />
+                            :helper="__('Optional public URL (for example a CDN or public bucket domain) that serves profile pictures and project icons stored on S3. Leave empty to serve them through Coolify.')" placeholder="https://images.example.com" />
                     </div>
                     @if (count($avatar_storage_options) === 1)
                         <x-callout type="info" :title="__('No usable S3 storage configured')" class="mt-4">
@@ -246,19 +246,18 @@
                         </x-callout>
                     @endif
                 </x-application.settings-subsection>
-                <x-application.settings-subsection id="file-download-storage-section" title="File downloads"
-                    helper="Choose how files from the container file browser and backups are downloaded. Streaming sends each file through this Coolify instance (file browser: up to 1 GB). With S3, the server uploads the file to the bucket and the browser downloads it from S3, up to 5 GB; larger backups are streamed. S3 download links expire after 15 minutes, and the files are deleted after 6 hours.">
+                <x-application.settings-subsection id="file-download-storage-section" :title="__('File downloads')"
+                    :helper="__('Choose how files from the container file browser and backups are downloaded. Streaming sends each file through this Coolify instance (file browser: up to 1 GB). With S3, the server uploads the file to the bucket and the browser downloads it from S3, up to 5 GB; larger backups are streamed. S3 download links expire after 15 minutes, and the files are deleted after 6 hours.')">
                     <div class="flex max-w-md flex-col gap-4">
-                        <x-forms.listbox id="file_download_storage" label="Download method" onChange="instantSave"
+                        <x-forms.listbox id="file_download_storage" :label="__('Download method')" onChange="instantSave"
                             :options="[
                                 ['value' => 'stream', 'label' => 'Stream through Coolify'],
                                 ...array_values(array_filter($avatar_storage_options, fn ($option) => $option['value'] !== 'local')),
                             ]" />
                     </div>
-                    <x-callout type="info" title="Bucket auto-delete rule" class="mt-4">
-                        When you select an S3 storage, Coolify adds a lifecycle rule that deletes objects under
-                        <span class="font-mono">coolify-file-downloads/</span> after 1 day, as a safety net. The selected
-                        storage must be reachable from your servers, and the S3 provider must support lifecycle rules.
+                    <x-callout type="info" :title="__('Bucket auto-delete rule')" class="mt-4">
+                        {{ __('When you select an S3 storage, Coolify adds a lifecycle rule that deletes objects under') }}
+                        <span class="font-mono">coolify-file-downloads/</span> {{ __('after 1 day, as a safety net. The selected storage must be reachable from your servers, and the S3 provider must support lifecycle rules.') }}
                     </x-callout>
                 </x-application.settings-subsection>
             </x-application.settings-section>

@@ -121,7 +121,7 @@ class Transfer extends Component
 
             $this->server->refresh();
             $this->lastWarnings = [];
-            $this->dispatch('success', 'All checks passed. The transfer started.');
+            $this->dispatch('success', __('All checks passed. The transfer started.'));
         } catch (Throwable $e) {
             // A failed check is saved in the transfer log, so show it.
             $this->server->refresh();
@@ -145,7 +145,7 @@ class Transfer extends Component
             ]);
 
             $this->server->refresh();
-            $this->dispatch('success', 'The other instance started the transfer back.');
+            $this->dispatch('success', __('The other instance started the transfer back.'));
         } catch (Throwable $e) {
             handleError($e, $this);
         } finally {

@@ -3,12 +3,12 @@
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             @if ($isApplication)
                 <x-forms.listbox id="appScanEnabled" label="{{ __('Scan this app') }}" onChange="$commit"
-                    :disabled="! $canEdit" helper="Off stops the scans of this app's image."
+                    :disabled="! $canEdit" :helper="__('Off stops the scans of this app\'s image.')"
                     :options="[['value' => '1', 'label' => 'On'], ['value' => '0', 'label' => 'Off']]" />
                 @if ($isDockerImage)
                     <x-forms.listbox id="buildsByTeam" label="{{ __('Who builds this image') }}" onChange="$commit"
                         :disabled="! $canEdit"
-                        helper="Coolify detects whether your team builds this image. Set it when the detection is wrong."
+                        :helper="__('Coolify detects whether your team builds this image. Set it when the detection is wrong.')"
                         :options="[
                             ['value' => '', 'label' => 'Detect automatically'],
                             ['value' => '1', 'label' => 'My team'],
@@ -18,7 +18,7 @@
             @else
                 <x-forms.listbox id="scanNewServers" label="{{ __('Scan images on new servers') }}" onChange="$commit"
                     :disabled="! $canEdit"
-                    helper="Pre-selects image scanning when someone adds a server to this team. They can change it."
+                    :helper="__('Pre-selects image scanning when someone adds a server to this team. They can change it.')"
                     :options="$onOff" />
             @endif
         </div>
@@ -35,10 +35,10 @@
         </div>
         <x-forms.inherited-listbox id="onScanError" label="{{ __('If the scan cannot run') }}" :disabled="! $canEdit"
             :inheritLabel="$inheritLabels['on_scan_error'] ?? null" :options="$onScanErrorOptions"
-            helper="Applies when Block deploys is On or Strict." />
+            :helper="__('Applies when Block deploys is On or Strict.')" />
         <x-forms.inherited-listbox id="countMedium" label="{{ __('Count medium problems') }}" :disabled="! $canEdit"
             :inheritLabel="$inheritLabels['count_medium'] ?? null" :options="$countMediumOptions"
-            helper="Medium problems that an update fixes give a security update. Problems that attackers are likely to use always count." />
+            :helper="__('Medium problems that an update fixes give a security update. Problems that attackers are likely to use always count.')" />
     </div>
 
     @if (in_array($scopeType, ['instance', 'team', 'server'], true))

@@ -13,7 +13,7 @@
                 <div class="application-settings-section-header">
                     <div>
                         <h2>{{ __('Project details') }}</h2>
-                        <p>Icon, name, and description shown across the dashboard.</p>
+                        <p>{{ __('Icon, name, and description shown across the dashboard.') }}</p>
                     </div>
                 </div>
                 <div class="application-settings-section-body grid gap-4 sm:grid-cols-2">
@@ -65,7 +65,7 @@
                 }
             },
         }">
-                        <div class="mb-2 text-sm font-medium leading-4">Icon</div>
+                        <div class="mb-2 text-sm font-medium leading-4">{{ __('Icon') }}</div>
                         <div class="flex items-center gap-4">
                             <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-200 text-neutral-700 dark:bg-white/[0.1] dark:text-fg">
                                 <img x-cloak x-show="preview" :src="preview" :alt="__('Project icon preview')" class="h-full w-full object-cover">
@@ -89,7 +89,7 @@
                                             isError>{{ __('Remove') }}</x-forms.button>
                                     @endif
                                 </div>
-                                <p class="text-xs text-neutral-500 dark:text-fg-dim">JPG, PNG, or WebP. Shown in the projects list.</p>
+                                <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('JPG, PNG, or WebP. Shown in the projects list.') }}</p>
                                 <p x-cloak x-show="uploadError" x-text="uploadError" class="text-xs text-red-500"></p>
                                 @error('icon')
                                     <p class="text-xs text-red-500">{{ $message }}</p>

@@ -299,7 +299,7 @@
                 @if ($menuItem['disabled'] ?? false)
                     <span wire:key="{{ $placement }}-server-settings-link-{{ str($menuItem['label'])->slug() }}"
                         class="menu-item cursor-not-allowed opacity-40" aria-disabled="true"
-                        title="Validate the server connection first.">
+                        title="{{ __('Validate the server connection first.') }}">
                         <x-reicon :name="$menuItem['icon']" class="menu-item-icon" />
                         <span class="menu-item-label">{{ $menuItem['label'] }}</span>
                     </span>

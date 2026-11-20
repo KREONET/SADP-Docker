@@ -1,6 +1,6 @@
 <div>
         <x-process-dialog @startupdate.window="processDialogOpen = true" closeWithX size="xl">
-            <x-slot:title>Package Update Logs</x-slot:title>
+            <x-slot:title>{{ __('Package Update Logs') }}</x-slot:title>
             <x-slot:content>
                 <div class="flex h-full min-h-0 flex-col">
                     <livewire:activity-monitor fullHeight />
@@ -12,8 +12,8 @@
             $rebootRequired = data_get($result, 'reboot_required') === true;
             $hostScanError = $hostScan?->error_code?->message([...($hostScan->error_context ?? []), 'server' => $server->name]);
         @endphp
-        <x-application.settings-section id="server-host-vulnerabilities-section" title="Vulnerabilities"
-            helper="Known vulnerabilities in the operating system packages of this server. Coolify scans them with the image scanner every day and after a package update. Problems that the distribution does not fix are not shown."
+        <x-application.settings-section id="server-host-vulnerabilities-section" :title="__('Vulnerabilities')"
+            :helper="__('Known vulnerabilities in the operating system packages of this server. Coolify scans them with the image scanner every day and after a package update. Problems that the distribution does not fix are not shown.')"
             flush>
             <x-slot:badges>
                 @if ($hostScanError && ! $hostScanRunning)
@@ -51,10 +51,10 @@
                             <x-forms.button type="button" wire:click="scanHostPackages" :disabled="$hostScanRunning">
                                 @if ($hostScanRunning)
                                     <x-loading compact />
-                                    Scanning…
+                                    {{ __('Scanning…') }}
                                 @else
                                     <x-reicon name="refresh" class="size-3.5" />
-                                    Scan now
+                                    {{ __('Scan now') }}
                                 @endif
                             </x-forms.button>
                         @endcan
@@ -65,9 +65,9 @@
             @if (! $hostScanAvailable && ! $hostScan)
                 <div class="p-4">
                     <x-empty size="sm" icon-name="shield-alert" title="Image scanning is off for {{ $server->name }}."
-                        description="Enable image scanning below to also scan the operating system packages of this server.">
+                        :description="__('Enable image scanning below to also scan the operating system packages of this server.')">
                         <x-slot:actions>
-                            <a class="text-[13px] font-medium underline" href="#server-image-scanning-section">Image scanning settings</a>
+                            <a class="text-[13px] font-medium underline" href="#server-image-scanning-section">{{ __('Image scanning settings') }}</a>
                         </x-slot:actions>
                     </x-empty>
                 </div>
@@ -75,7 +75,7 @@
                 <div class="flex flex-col gap-3 p-4" @if ($hostScanRunning) wire:poll.10s="loadResult" @endif>
                     <div class="flex flex-wrap items-center gap-2 text-sm text-neutral-600 dark:text-fg-dim">
                         <span>
-                            Last scan:
+                            {{ __('Last scan:') }}
                             @if ($hostScan?->scanned_at)
                                 <span title="{{ $hostScan->scanned_at->toDateTimeString() }}">{{ $hostScan->scanned_at->diffForHumans() }}</span>
                             @else
@@ -94,31 +94,31 @@
                     @if ($hostFindings !== [] && ($hostScan->findings_truncated || ! $result))
                         <p class="text-[12px] text-neutral-500 dark:text-fg-faint">
                             @if ($hostScan->findings_truncated)
-                                Only the most important vulnerabilities of a larger result are shown.
+                                {{ __('Only the most important vulnerabilities of a larger result are shown.') }}
                             @endif
                             @if (! $result)
-                                Run "Check for updates" to see which packages have an update.
+                                {{ __('Run "Check for updates" to see which packages have an update.') }}
                             @endif
                         </p>
                     @endif
 
                     @if ($rebootRequired)
-                        <x-callout type="warning" title="Reboot required">
+                        <x-callout type="warning" :title="__('Reboot required')">
                             <div class="flex flex-wrap items-center justify-between gap-3">
                                 <span>
                                     @if (($kernelStatusCounts['fixed_after_reboot'] ?? 0) > 0)
-                                        The server runs kernel <span class="font-mono">{{ $runningKernel }}</span>, which has {{ $kernelStatusCounts['fixed_after_reboot'] }}
+                                        {{ __('The server runs kernel') }} <span class="font-mono">{{ $runningKernel }}</span>, which has {{ $kernelStatusCounts['fixed_after_reboot'] }}
                                         listed {{ Str::plural('vulnerability', $kernelStatusCounts['fixed_after_reboot']) }}. The fixed kernel
-                                        <span class="font-mono">{{ $bootKernel }}</span> is installed and is the boot kernel. Reboot the server to start it.
+                                        <span class="font-mono">{{ $bootKernel }}</span> {{ __('is installed and is the boot kernel. Reboot the server to start it.') }}
                                     @elseif ($runningKernel && $bootKernel && $bootKernel !== $runningKernel)
-                                        Kernel <span class="font-mono">{{ $bootKernel }}</span> is installed and starts after a reboot. The server now runs
-                                        <span class="font-mono">{{ $runningKernel }}</span>. No listed vulnerability needs this reboot.
+                                        {{ __('Kernel') }} <span class="font-mono">{{ $bootKernel }}</span> {{ __('is installed and starts after a reboot. The server now runs') }}
+                                        <span class="font-mono">{{ $runningKernel }}</span>{{ __('. No listed vulnerability needs this reboot.') }}
                                     @else
-                                        Some installed updates apply only after a reboot.
+                                        {{ __('Some installed updates apply only after a reboot.') }}
                                     @endif
                                 </span>
                                 @can('update', $server)
-                                    <x-modal-confirmation title="Reboot server?" buttonTitle="Reboot server" isErrorButton
+                                    <x-modal-confirmation :title="__('Reboot server?')" :buttonTitle="__('Reboot server')" isErrorButton
                                         submitAction="rebootServer"
                                     warningMessage="The containers on this server stop until the server is back." :actions="[
                                             'The server reboots in a few seconds.',
@@ -126,9 +126,9 @@
                                             'The server is not reachable for a few minutes.',
                                         ]"
                                         confirmationText="{{ $server->name }}"
-                                        confirmationLabel="Enter the server name to confirm"
-                                        shortConfirmationLabel="Server name" :confirmWithPassword="false"
-                                        step2ButtonText="Reboot server" />
+                                        :confirmationLabel="__('Enter the server name to confirm')"
+                                        :shortConfirmationLabel="__('Server name')" :confirmWithPassword="false"
+                                        :step2ButtonText="__('Reboot server')" />
                                 @endcan
                             </div>
                         </x-callout>
@@ -141,13 +141,13 @@
                             </button>
                             @if ($hasOldKernels)
                                 @can('update', $server)
-                                    <x-server.remove-unused-packages-button :packageManager="data_get($result, 'package_manager')" buttonTitle="Remove old kernels" />
+                                    <x-server.remove-unused-packages-button :packageManager="data_get($result, 'package_manager')" :buttonTitle="__('Remove old kernels')" />
                                 @endcan
                             @endif
                         </div>
                     @endif
                     @if ($hostScanError)
-                        <x-callout type="danger" title="The last scan failed">
+                        <x-callout type="danger" :title="__('The last scan failed')">
                             {{ $hostScanError }}
                             @can('update', $server)
                                 <x-image-scan.error-log :detail="data_get($hostScan->error_context, 'detail')" />
@@ -155,29 +155,29 @@
                         </x-callout>
                     @endif
                     @if ($hostScan?->eol)
-                        <x-callout type="warning" title="Operating system is end of life">
+                        <x-callout type="warning" :title="__('Operating system is end of life')">
                             {{ data_get($hostScan->eol, 'name') }} {{ data_get($hostScan->eol, 'version') }} gets no
                             security updates anymore. Upgrade the operating system of this server.
                         </x-callout>
                     @endif
                     @if ($hostScan?->scanned_at && $hostFindings === [])
-                        <x-empty size="sm" title="No relevant vulnerabilities"
-                            description="The installed packages have no critical, high, or exploited vulnerabilities."
+                        <x-empty size="sm" :title="__('No relevant vulnerabilities')"
+                            :description="__('The installed packages have no critical, high, or exploited vulnerabilities.')"
                             icon-name="check-circle" />
                     @endif
                 </div>
 
                 @if ($hostFindings !== [] && $shownHostFindings->isEmpty())
                     <div class="border-t border-neutral-200 p-6 dark:border-white/[0.08]">
-                        <x-empty size="sm" title="No matching vulnerabilities"
-                            description="Try another ID or package, or clear the search." icon-name="search" />
+                        <x-empty size="sm" :title="__('No matching vulnerabilities')"
+                            :description="__('Try another ID or package, or clear the search.')" icon-name="search" />
                     </div>
                 @elseif ($hostFindings !== [])
                     <div class="data-table">
                         <div class="data-table-header host-vulnerabilities-table-grid">
-                            <x-table.sort-header label="Vulnerability" asc="vulnerability_asc" desc="vulnerability_desc" action="sortFindings" :current="$sortBy" />
+                            <x-table.sort-header :label="__('Vulnerability')" asc="vulnerability_asc" desc="vulnerability_desc" action="sortFindings" :current="$sortBy" />
                             <x-table.sort-header label="{{ __('Package') }}" asc="package_asc" desc="package_desc" action="sortFindings" :current="$sortBy" />
-                            <x-table.sort-header label="Fixed in" asc="fixed_asc" desc="fixed_desc" action="sortFindings" :current="$sortBy" />
+                            <x-table.sort-header :label="__('Fixed in')" asc="fixed_asc" desc="fixed_desc" action="sortFindings" :current="$sortBy" />
                             <div class="flex justify-end">
                                 <x-table.sort-header label="{{ __('Severity') }}" asc="severity_asc" desc="severity_desc" first="desc" action="sortFindings" :current="$sortBy" />
                             </div>
@@ -255,7 +255,7 @@
                                         @if ($fixingUpdates !== [])
                                             @can('update', $server)
                                                 @if ($updateRiskLabels !== [])
-                                                    <x-modal-confirmation title="Update {{ $isOwnUpdate ? $finding->package : 'the kernel' }}?" buttonTitle="Update"
+                                                    <x-modal-confirmation title="Update {{ $isOwnUpdate ? $finding->package : 'the kernel' }}?" :buttonTitle="__('Update')"
                                                         submitAction="updateVulnerablePackage({{ Js::from($finding->package) }})" :actions="[
                                                             'Coolify updates ' . collect($fixingUpdates)->pluck('package')->implode(', ') . '.',
                                                             ...$updateRiskLabels,
@@ -278,14 +278,14 @@
                                     @if (filled($finding->summary ?: $finding->title))
                                         <dd class="col-span-2 mb-1 max-w-3xl leading-5">{{ $finding->summary ?: $finding->title }}</dd>
                                     @endif
-                                    <dt class="text-neutral-500 dark:text-fg-faint">Package</dt>
+                                    <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Package') }}</dt>
                                     <dd class="min-w-0 break-all font-mono">{{ $finding->package }}</dd>
-                                    <dt class="text-neutral-500 dark:text-fg-faint">Installed</dt>
+                                    <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Installed') }}</dt>
                                     <dd class="min-w-0 break-all font-mono">{{ $finding->version }}</dd>
-                                    <dt class="text-neutral-500 dark:text-fg-faint">Fixed in</dt>
+                                    <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Fixed in') }}</dt>
                                     <dd class="min-w-0 break-all font-mono">{{ $finding->fixedIn ?? 'No fix yet' }}</dd>
                                     @if ($fixingUpdates !== [])
-                                        <dt class="text-neutral-500 dark:text-fg-faint">Update</dt>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Update') }}</dt>
                                         <dd class="min-w-0 break-words">
                                             @foreach ($fixingUpdates as $fixingUpdate)
                                                 <span class="block break-all font-mono">{{ data_get($fixingUpdate, 'package') }} {{ data_get($fixingUpdate, 'new_version') }}</span>
@@ -296,34 +296,34 @@
                                         </dd>
                                     @endif
                                     @if ($kernelStatus !== null || $isOtherKernel)
-                                        <dt class="text-neutral-500 dark:text-fg-faint">Kernel</dt>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Kernel') }}</dt>
                                         <dd class="min-w-0 break-words">
                                             @if ($kernelStatus === 'fixed_after_reboot')
-                                                The server runs kernel <span class="font-mono">{{ $runningKernel }}</span>. The kernel that starts after a reboot has the fix. Reboot the server to use it.
+                                                {{ __('The server runs kernel') }} <span class="font-mono">{{ $runningKernel }}</span>{{ __('. The kernel that starts after a reboot has the fix. Reboot the server to use it.') }}
                                             @elseif ($isOldKernel)
-                                                No risk now: the server does not run this kernel (it runs <span class="font-mono">{{ $runningKernel }}</span>).
+                                                {{ __('No risk now: the server does not run this kernel (it runs') }} <span class="font-mono">{{ $runningKernel }}</span>).
                                             @else
-                                                This kernel is installed, but the server runs it only after a reboot.
+                                                {{ __('This kernel is installed, but the server runs it only after a reboot.') }}
                                             @endif
                                         </dd>
                                     @endif
                                     @if ($finding->cvssScore !== null)
-                                        <dt class="text-neutral-500 dark:text-fg-faint">CVSS score</dt>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('CVSS score') }}</dt>
                                         <dd>{{ number_format($finding->cvssScore, 1) }}</dd>
                                     @endif
                                     @if ($finding->kev)
-                                        <dt class="text-neutral-500 dark:text-fg-faint">Exploited</dt>
-                                        <dd>Attackers are using this, according to CISA.</dd>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Exploited') }}</dt>
+                                        <dd>{{ __('Attackers are using this, according to CISA.') }}</dd>
                                     @elseif ($likelihood !== null)
-                                        <dt class="text-neutral-500 dark:text-fg-faint">Exploit likelihood</dt>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Exploit likelihood') }}</dt>
                                         <dd>{{ $likelihood }}</dd>
                                     @endif
                                     @if ($aliases !== [])
-                                        <dt class="text-neutral-500 dark:text-fg-faint">Also known as</dt>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Also known as') }}</dt>
                                         <dd class="min-w-0 break-all font-mono">{{ implode(', ', $aliases) }}</dd>
                                     @endif
                                     @if ($advisoryUrl !== null)
-                                        <dt class="text-neutral-500 dark:text-fg-faint">Advisory</dt>
+                                        <dt class="text-neutral-500 dark:text-fg-faint">{{ __('Advisory') }}</dt>
                                         <dd><a href="{{ $advisoryUrl }}" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4">Open {{ $finding->displayId }}</a></dd>
                                     @endif
                                 </dl>

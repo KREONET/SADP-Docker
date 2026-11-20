@@ -82,9 +82,9 @@
 
                     <div class="mt-auto flex items-center gap-2 pt-4">
                         @if ($destination->getMorphClass() === 'App\Models\SwarmDocker')
-                            <x-status-badge label="Docker Swarm" type="warning" />
+                            <x-status-badge :label="__('Docker Swarm')" type="warning" />
                         @else
-                            <x-status-badge label="Standalone Docker" type="success" />
+                            <x-status-badge :label="__('Standalone Docker')" type="success" />
                         @endif
                     </div>
                 </a>

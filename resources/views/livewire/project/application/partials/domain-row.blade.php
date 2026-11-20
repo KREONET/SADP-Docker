@@ -151,19 +151,19 @@
                         @endif
                     @endif
                 @else
-                    <x-table.row-actions label="Domain actions">
+                    <x-table.row-actions :label="__('Domain actions')">
                         <x-table.row-action wire:click="checkDomainDns({{ $index }})"
                             wire:loading.attr="disabled"
                             wire:target="checkDomainDns({{ $index }}),checkAllDns">
-                            Check DNS
+                            {{ __('Check DNS') }}
                         </x-table.row-action>
                         <x-table.row-action
                             x-on:click="openEditDomain({{ \Illuminate\Support\Js::from($index) }}, {{ \Illuminate\Support\Js::from($row['url']) }}, {{ \Illuminate\Support\Js::from($editingParts) }}, {{ \Illuminate\Support\Js::from($row['service']) }}, {{ \Illuminate\Support\Js::from($isNoindexed ? 'noindex' : 'index') }}, {{ \Illuminate\Support\Js::from($rowDirection) }}, {{ \Illuminate\Support\Js::from($row['inherited_port'] ?? null) }})"
                             aria-label="Edit {{ $publicUrl }}">
-                            Edit
+                            {{ __('Edit') }}
                         </x-table.row-action>
                         <x-slot:danger>
-                            <x-modal-confirmation buttonFullWidth title="Remove domain?" buttonTitle="Remove"
+                            <x-modal-confirmation buttonFullWidth :title="__('Remove domain?')" :buttonTitle="__('Remove')"
                                 isErrorButton canGate="update" :canResource="$application"
                                 submitAction="removeDomainByKey({{ $domainKey }})" :actions="[
                                     __('This domain will be removed from the application.'),
@@ -171,7 +171,7 @@
                                 ]" :checkboxes="[['id' => 'deleteManagedDns', 'label' => __('Also delete the DNS record created by Coolify, if present.')]]"
                                 :confirmWithPassword="false" :confirmWithText="false" :step2ButtonText="__('Remove domain')">
                                 <x-slot:trigger>
-                                    <x-table.row-action>Delete</x-table.row-action>
+                                    <x-table.row-action>{{ __('Delete') }}</x-table.row-action>
                                 </x-slot:trigger>
                             </x-modal-confirmation>
                         </x-slot:danger>
