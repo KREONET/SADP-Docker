@@ -16,11 +16,11 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Builds a Docker Swarm cluster from PADED servers.
+ * Builds a Docker Swarm cluster from SADP-Docker servers.
  *
  * The manager node also runs workloads, so a single server is already a working cluster;
  * more servers join it as worker nodes. The manager runs the Traefik proxy as a stack and a
- * private registry that every node pulls the built images from. The server that runs PADED
+ * private registry that every node pulls the built images from. The server that runs SADP-Docker
  * itself (id 0) is never part of a cluster.
  */
 class SwarmClusterManager
@@ -37,7 +37,7 @@ class SwarmClusterManager
         $blockers = [];
 
         if ($server->id === 0) {
-            $blockers[] = __('The server that runs PADED cannot join a Swarm cluster. Add another server and make it the manager.');
+            $blockers[] = __('The server that runs SADP-Docker cannot join a Swarm cluster. Add another server and make it the manager.');
         }
         if ($server->isSwarm()) {
             $blockers[] = __('This server is already part of a Swarm cluster.');
@@ -80,7 +80,7 @@ class SwarmClusterManager
             $blockers[] = __('The server belongs to another team.');
         }
         if ($server->id === 0) {
-            $blockers[] = __('The server that runs PADED cannot join a Swarm cluster. Add another server and make it the manager.');
+            $blockers[] = __('The server that runs SADP-Docker cannot join a Swarm cluster. Add another server and make it the manager.');
         }
         if ($server->isSwarm()) {
             $blockers[] = __('This server is already part of a Swarm cluster.');
@@ -329,7 +329,7 @@ class SwarmClusterManager
     }
 
     /**
-     * Nodes reported by the manager, matched to PADED servers by address.
+     * Nodes reported by the manager, matched to SADP-Docker servers by address.
      *
      * @return list<array{id: string, hostname: string, role: string, availability: string, state: string, address: string, cpus: float, memory_bytes: int, leader: bool, server: ?Server}>
      */

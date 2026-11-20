@@ -104,8 +104,8 @@
                 </x-slot:actions>
                 <div class="grid gap-4 lg:grid-cols-2">
                     <x-forms.input canGate="update" :canResource="$settings" id="brand_name" :label="__('Site name')"
-                        maxlength="60" placeholder="PADED"
-                        :helper="__('Leave empty to use the default name (PADED).')" />
+                        maxlength="60" placeholder="SADP-Docker"
+                        :helper="__('Leave empty to use the default name (SADP-Docker).')" />
 
                     <div class="flex min-w-0 flex-col gap-2" x-data>
                         <span class="text-sm font-medium">{{ __('Logo') }}</span>

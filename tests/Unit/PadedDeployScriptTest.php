@@ -7,7 +7,7 @@ function padedDeployScript(): string
     return file_get_contents(dirname(__DIR__, 2).'/scripts/paded-deploy.sh');
 }
 
-it('builds the PADED image from the checkout and keeps it across restarts and auto-updates', function () {
+it('builds the SADP-Docker image from the checkout and keeps it across restarts and auto-updates', function () {
     expect(padedDeployScript())
         ->toContain('docker build -f "$REPO_DIR/docker/production/Dockerfile" -t "$IMAGE" "$REPO_DIR"')
         ->toContain('IMAGE="coollabsio/coolify:${IMAGE_TAG}"')
