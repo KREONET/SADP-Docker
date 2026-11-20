@@ -1,75 +1,81 @@
 <div>
-    <x-slot:title>{{ __('Logs') }} | {{ __('Platform Admin') }} | {{ brand_name() }}</x-slot>
+    <x-slot:title>{{ $canManageLogs ? __('Logs').' | '.__('Platform Admin') : __('Audit logs') }} | {{ brand_name() }}</x-slot>
 
-    <x-platform.layout>
+    {{-- Auditors get a read-only page without the platform admin menu or any setting forms. --}}
+    <x-dynamic-component :component="$canManageLogs ? 'platform.layout' : 'platform.auditor-layout'">
         <div class="flex min-w-0 flex-col gap-6">
-            <form wire:submit="saveCollection">
-                <x-application.settings-section :title="__('Log collection')"
-                    :description="__('Collect user activity, Coolify system logs (warning and above) and application container logs for every team. Turning the master switch off stops all collection and Loki shipping.')">
-                    <div class="grid gap-4">
-                        <x-forms.checkbox id="isLogCollectionEnabled" :label="__('Enable log collection (master switch)')" />
-                        <div class="grid gap-1 lg:grid-cols-3">
-                            <x-forms.checkbox id="isAuditLogCollectionEnabled" :label="__('User activity (audit events)')"
-                                :helper="__('Logins, failed logins and resource changes. Audit events are always kept for 90 days for team audit logs; this switch controls whether they are included here and in Loki.')" />
-                            <x-forms.checkbox id="isSystemLogCollectionEnabled" :label="__('Coolify system logs')"
-                                :helper="__('Warnings and errors written by Coolify itself (web, queue workers, scheduler).')" />
-                            <x-forms.checkbox id="isContainerLogCollectionEnabled" :label="__('Application container logs')"
-                                :helper="__('Every 5 minutes, new lines (up to 500 per container) of running application and service containers are read over SSH. Swarm servers are skipped.')" />
+            @if ($canManageLogs)
+                <form wire:submit="saveCollection">
+                    <x-application.settings-section :title="__('Log collection')"
+                        :description="__('User activity (audit events) is always collected. The master switch controls Coolify system logs (warning and above), application container logs and Loki shipping for every team.')">
+                        <div class="grid gap-4">
+                            <x-forms.checkbox id="isLogCollectionEnabled" :label="__('Enable log collection (master switch)')" />
+                            <div class="grid gap-1 lg:grid-cols-3">
+                                <x-forms.checkbox id="isAuditLogCollectionEnabled" :label="__('User activity (audit events)')" disabled
+                                    :helper="__('Logins, failed logins and resource changes are a security record, so they are always collected and cannot be turned off. They are kept for :days days.', ['days' => $auditRetentionDays])" />
+                                <x-forms.checkbox id="isSystemLogCollectionEnabled" :label="__('Coolify system logs')"
+                                    :helper="__('Warnings and errors written by Coolify itself (web, queue workers, scheduler).')" />
+                                <x-forms.checkbox id="isContainerLogCollectionEnabled" :label="__('Application container logs')"
+                                    :helper="__('Every 5 minutes, new lines (up to 500 per container) of running application and service containers are read over SSH. Swarm servers are skipped.')" />
+                            </div>
+                            <div class="grid gap-4 lg:grid-cols-2">
+                                <x-forms.input id="logRetentionDays" type="number" :min="$minLogRetentionDays" :max="$maxLogRetentionDays" required
+                                    :label="__('Keep system and container logs (days)')"
+                                    :helper="__('Older collected lines are deleted daily. The security policy requires at least :days days. Loki keeps its own retention.', ['days' => $minLogRetentionDays])" />
+                            </div>
+                            <div class="flex justify-end">
+                                <x-forms.button type="submit" isHighlighted>{{ __('Save collection settings') }}</x-forms.button>
+                            </div>
                         </div>
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <x-forms.input id="logRetentionDays" type="number" min="1" max="365" required
-                                :label="__('Keep system and container logs (days)')"
-                                :helper="__('Older collected lines are deleted daily. Loki keeps its own retention.')" />
-                        </div>
-                        <div class="flex justify-end">
-                            <x-forms.button type="submit" isHighlighted>{{ __('Save collection settings') }}</x-forms.button>
-                        </div>
-                    </div>
-                </x-application.settings-section>
-            </form>
+                    </x-application.settings-section>
+                </form>
 
-            <form wire:submit="saveLoki">
-                <x-application.settings-section :title="__('Loki / Grafana')"
-                    :description="__('Send collected logs to Grafana Loki with the push API. In Grafana, add Loki as a data source and query {service_name=`coolify`} | json in Explore.')">
-                    <div class="grid gap-4">
-                        <x-forms.checkbox id="isLokiShippingEnabled" :label="__('Ship logs to Loki')" />
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <x-forms.input id="lokiUrl" :label="__('Loki URL')" placeholder="https://loki.example.com"
-                                :helper="__('Base URL or full push URL. /loki/api/v1/push is added when missing.')" />
-                            <x-forms.input id="lokiTenantId" :label="__('Tenant ID (X-Scope-OrgID)')"
-                                :helper="__('Only for multi-tenant Loki. Leave empty otherwise.')" />
-                            <x-forms.input id="lokiUsername" :label="__('Basic auth username')"
-                                :helper="__('For Grafana Cloud, use the Loki user ID. Leave empty when Loki has no authentication.')" />
-                            <x-forms.input id="lokiPassword" type="password" allowToPeak :label="__('Basic auth password or API token')"
-                                :helper="__('Leave empty to keep the stored value.')" />
+                <form wire:submit="saveLoki">
+                    <x-application.settings-section :title="__('Loki / Grafana')"
+                        :description="__('Send collected logs to Grafana Loki with the push API. In Grafana, add Loki as a data source and query {service_name=`coolify`} | json in Explore.')">
+                        <div class="grid gap-4">
+                            <x-forms.checkbox id="isLokiShippingEnabled" :label="__('Ship logs to Loki')" />
+                            <div class="grid gap-4 lg:grid-cols-2">
+                                <x-forms.input id="lokiUrl" :label="__('Loki URL')" placeholder="https://loki.example.com"
+                                    :helper="__('Base URL or full push URL. /loki/api/v1/push is added when missing.')" />
+                                <x-forms.input id="lokiTenantId" :label="__('Tenant ID (X-Scope-OrgID)')"
+                                    :helper="__('Only for multi-tenant Loki. Leave empty otherwise.')" />
+                                <x-forms.input id="lokiUsername" :label="__('Basic auth username')"
+                                    :helper="__('For Grafana Cloud, use the Loki user ID. Leave empty when Loki has no authentication.')" />
+                                <x-forms.input id="lokiPassword" type="password" allowToPeak :label="__('Basic auth password or API token')"
+                                    :helper="__('Leave empty to keep the stored value.')" />
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-[11px] text-neutral-600 dark:text-fg-dim">
+                                @if ($lokiActive)
+                                    <x-status-badge :status="__('Shipping')" type="success" />
+                                @else
+                                    <x-status-badge :status="__('Not shipping')" type="neutral" />
+                                @endif
+                                @if ($hasLokiPassword)
+                                    <x-status-badge :status="__('Password stored')" type="success" />
+                                    <x-forms.button type="button" wire:click="clearLokiPassword" isError>{{ __('Remove password') }}</x-forms.button>
+                                @endif
+                                @if ($lokiActive)
+                                    <span>{{ __('Waiting to send: :count', ['count' => number_format($lokiPending)]) }}</span>
+                                    @if ($lokiParked > 0)
+                                        <span>· {{ __('Rejected by Loki, not retried: :count', ['count' => number_format($lokiParked)]) }}</span>
+                                    @endif
+                                @endif
+                                @if ($lokiLastPushedAt)
+                                    <span title="{{ $lokiLastPushedAt->toDayDateTimeString() }}">· {{ __('Last push :time', ['time' => $lokiLastPushedAt->diffForHumans()]) }}</span>
+                                @endif
+                            </div>
+                            @if ($lokiLastError)
+                                <x-callout type="warning" :title="__('Last Loki error')">{{ $lokiLastError }}</x-callout>
+                            @endif
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <x-forms.button type="button" wire:click="testLokiConnection">{{ __('Send test line') }}</x-forms.button>
+                                <x-forms.button type="submit" isHighlighted>{{ __('Save Loki settings') }}</x-forms.button>
+                            </div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 text-[11px] text-neutral-600 dark:text-fg-dim">
-                            @if ($lokiActive)
-                                <x-status-badge :status="__('Shipping')" type="success" />
-                            @else
-                                <x-status-badge :status="__('Not shipping')" type="neutral" />
-                            @endif
-                            @if ($hasLokiPassword)
-                                <x-status-badge :status="__('Password stored')" type="success" />
-                                <x-forms.button type="button" wire:click="clearLokiPassword" isError>{{ __('Remove password') }}</x-forms.button>
-                            @endif
-                            @if ($lokiActive)
-                                <span>{{ __('Waiting to send: :count', ['count' => number_format($lokiPending)]) }}</span>
-                            @endif
-                            @if ($lokiLastPushedAt)
-                                <span title="{{ $lokiLastPushedAt->toDayDateTimeString() }}">· {{ __('Last push :time', ['time' => $lokiLastPushedAt->diffForHumans()]) }}</span>
-                            @endif
-                        </div>
-                        @if ($lokiLastError)
-                            <x-callout type="warning" :title="__('Last Loki error')">{{ $lokiLastError }}</x-callout>
-                        @endif
-                        <div class="flex flex-wrap justify-end gap-2">
-                            <x-forms.button type="button" wire:click="testLokiConnection">{{ __('Send test line') }}</x-forms.button>
-                            <x-forms.button type="submit" isHighlighted>{{ __('Save Loki settings') }}</x-forms.button>
-                        </div>
-                    </div>
-                </x-application.settings-section>
-            </form>
+                    </x-application.settings-section>
+                </form>
+            @endif
 
             <x-application.settings-section :title="__('Log viewer')" flush>
                 <x-slot:actions>
@@ -130,12 +136,19 @@
                                         class="text-[11px] text-neutral-500 dark:text-fg-faint">
                                         {{ $time?->format('Y-m-d H:i:s') }}
                                     </time>
-                                    <div>
+                                    <div class="flex flex-col items-start gap-1">
                                         <x-status-badge :status="$entry->level" :type="match ($entry->level) {
                                             'info', 'debug', 'notice' => 'neutral',
                                             'warning' => 'warning',
                                             default => 'error',
                                         }" />
+                                        @if ($entry instanceof \App\Models\AuditEvent && $entry->result)
+                                            <x-status-badge :status="__(Str::headline($entry->result))" :type="match ($entry->result) {
+                                                'success' => 'success',
+                                                'denied' => 'warning',
+                                                default => 'error',
+                                            }" />
+                                        @endif
                                     </div>
                                     <div class="min-w-0 text-[12px]">
                                         @if ($entry instanceof \App\Models\AuditEvent)
@@ -170,5 +183,5 @@
                 @endif
             </x-application.settings-section>
         </div>
-    </x-platform.layout>
+    </x-dynamic-component>
 </div>

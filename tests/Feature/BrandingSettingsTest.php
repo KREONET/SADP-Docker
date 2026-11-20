@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Once;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -30,6 +31,7 @@ beforeEach(function () {
 
     $this->platformAdmin = User::factory()->create();
     $this->rootTeam->members()->attach($this->platformAdmin->id, ['role' => 'admin']);
+    TwoFactor::confirm($this->platformAdmin);
     $this->rootMember = User::factory()->create();
     $this->rootTeam->members()->attach($this->rootMember->id, ['role' => 'member']);
 

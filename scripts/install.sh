@@ -14,6 +14,9 @@
 ## REGISTRY_URL - Custom registry URL for Docker images (default: docker.io)
 ## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, e.g. 127.0.0.1 to reach the panel only through the proxy domain or an SSH tunnel (default: all addresses)
 ## COOLIFY_REALTIME_BIND_ADDRESS - IPv4 address for the direct Reverb/terminal ports 6001/6002 (default: 127.0.0.1; the panel port proxies /app/ and /terminal/ws)
+## APP_URL - Panel URL, e.g. https://coolify.example.com (an https URL also enables Secure session cookies)
+## COOLIFY_REQUIRE_CHECKSUMS - Set to "true" to refuse downloaded files without a published SHA-256 checksum
+## CHECKSUM_URL_SUFFIX - Suffix of the checksum file next to each downloaded file (default: .sha256)
 
 ## Arguments that can be passed:
 ## --preview or --nightly - Install the newest version of the preview or nightly channel and switch the instance to that update channel
@@ -736,7 +739,12 @@ fi
 
 install_docker() {
     set +e
-    curl -fsSL https://get.docker.com | sh 2>&1 || true
+    # Download first so a truncated transfer is never executed
+    GET_DOCKER_SCRIPT=$(mktemp)
+    if curl -fsSL https://get.docker.com -o "$GET_DOCKER_SCRIPT"; then
+        sh "$GET_DOCKER_SCRIPT" 2>&1 || true
+    fi
+    rm -f "$GET_DOCKER_SCRIPT"
     if ! [ -x "$(command -v docker)" ]; then
         echo "Automated Docker installation failed. Trying manual installation."
         install_docker_manually
@@ -918,19 +926,78 @@ fi
 
 step_done
 
+# Downloaded files are verified against "<url>.sha256" (CHECKSUM_URL_SUFFIX changes the suffix) before
+# they replace the current copy. A mismatch always fails; a missing checksum only warns, unless
+# COOLIFY_REQUIRE_CHECKSUMS=true is set in the environment or in .env.
+if [ -z "${COOLIFY_REQUIRE_CHECKSUMS:-}" ] && [ -f "$ENV_FILE" ]; then
+    COOLIFY_REQUIRE_CHECKSUMS=$(grep "^COOLIFY_REQUIRE_CHECKSUMS=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+fi
+COOLIFY_REQUIRE_CHECKSUMS=${COOLIFY_REQUIRE_CHECKSUMS:-false}
+CHECKSUM_URL_SUFFIX=${CHECKSUM_URL_SUFFIX:-.sha256}
+
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    else
+        openssl dgst -sha256 -r "$1" | awk '{print $1}'
+    fi
+}
+
+# Usage: download_verified <url> <destination>
+# Returns 1 when the download fails, 2 on a checksum mismatch, 3 when a required checksum is missing.
+# The destination is only replaced after a successful check. Set CHECKSUM_WARNINGS_FILE to collect
+# the URLs that had no checksum.
+download_verified() {
+    local url="$1"
+    local dest="$2"
+    local tmp="${dest}.download"
+    local expected actual
+
+    rm -f "$tmp"
+    if ! curl -fsSL -L "$url" -o "$tmp"; then
+        rm -f "$tmp"
+        echo "ERROR: Failed to download $url"
+        return 1
+    fi
+
+    expected=$(curl -fsSL -L "${url}${CHECKSUM_URL_SUFFIX}" 2>/dev/null | tr -d '\r' | awk 'NR==1 {print tolower($1)}' || true)
+    if [[ $expected =~ ^[0-9a-f]{64}$ ]]; then
+        actual=$(sha256_of "$tmp")
+        if [ "$actual" != "$expected" ]; then
+            rm -f "$tmp"
+            echo "ERROR: Checksum mismatch for $url (expected $expected, got $actual)"
+            return 2
+        fi
+        echo "Verified SHA-256 checksum of $url"
+    elif [ "$COOLIFY_REQUIRE_CHECKSUMS" = "true" ]; then
+        rm -f "$tmp"
+        echo "ERROR: No checksum published at ${url}${CHECKSUM_URL_SUFFIX} and COOLIFY_REQUIRE_CHECKSUMS=true"
+        return 3
+    else
+        echo "WARNING: No checksum published at ${url}${CHECKSUM_URL_SUFFIX}, the integrity of $url was not verified"
+        if [ -n "${CHECKSUM_WARNINGS_FILE:-}" ]; then
+            echo "$url" >>"$CHECKSUM_WARNINGS_FILE"
+        fi
+    fi
+
+    mv -f "$tmp" "$dest"
+}
+# End of download_verified
+
 step_start "Downloading required files from CDN"
 log "Downloading configuration files in parallel..."
+CHECKSUM_WARNINGS_FILE=$(mktemp)
 
 # Download files in parallel for faster installation
-curl -fsSL -L $CDN/docker-compose.yml -o /data/coolify/source/docker-compose.yml &
+download_verified "$CDN/docker-compose.yml" /data/coolify/source/docker-compose.yml &
 PID1=$!
-curl -fsSL -L $CDN/docker-compose.prod.yml -o /data/coolify/source/docker-compose.prod.yml &
+download_verified "$CDN/docker-compose.prod.yml" /data/coolify/source/docker-compose.prod.yml &
 PID2=$!
-curl -fsSL -L $CDN/.env.production -o /data/coolify/source/.env.production &
+download_verified "$CDN/.env.production" /data/coolify/source/.env.production &
 PID3=$!
-curl -fsSL -L $CDN/upgrade.sh -o /data/coolify/source/upgrade.sh &
+download_verified "$CDN/upgrade.sh" /data/coolify/source/upgrade.sh &
 PID4=$!
-curl -fsSL -L $CDN/upgrade-postgres.sh -o /data/coolify/source/upgrade-postgres.sh &
+download_verified "$CDN/upgrade-postgres.sh" /data/coolify/source/upgrade-postgres.sh &
 PID5=$!
 
 # Wait for all downloads to complete and check for errors
@@ -942,9 +1009,15 @@ for PID in $PID1 $PID2 $PID3 $PID4 $PID5; do
 done
 
 if [ "$DOWNLOAD_FAILED" = true ]; then
-    echo " - ERROR: One or more downloads failed. Please check your network connection."
+    rm -f "$CHECKSUM_WARNINGS_FILE"
+    echo " - ERROR: One or more downloads failed or did not match their published SHA-256 checksum. Please check your network connection and the log."
     exit 1
 fi
+
+if [ -s "$CHECKSUM_WARNINGS_FILE" ]; then
+    warn "No checksums are published for the downloaded files, their integrity was not verified. Set COOLIFY_REQUIRE_CHECKSUMS=true to refuse unverified files."
+fi
+rm -f "$CHECKSUM_WARNINGS_FILE"
 
 chmod +x /data/coolify/source/upgrade.sh /data/coolify/source/upgrade-postgres.sh
 log "All configuration files downloaded successfully"
@@ -980,6 +1053,20 @@ update_env_var() {
     elif ! grep -q "^${key}=" "$ENV_FILE"; then
         printf '%s=%s\n' "$key" "$value" >>"$ENV_FILE"
         echo " - Added ${key} and its value as the variable was missing"
+    fi
+}
+
+# Sets a value even when the variable already has one (for values the operator passed explicitly)
+set_env_var() {
+    local key="$1"
+    local value="$2"
+
+    if grep -q "^${key}=" "$ENV_FILE"; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+        echo " - Updated ${key}"
+    else
+        printf '%s=%s\n' "$key" "$value" >>"$ENV_FILE"
+        echo " - Added ${key}"
     fi
 }
 
@@ -1037,19 +1124,10 @@ if [ "$AUTOUPDATE" = "false" ]; then
     update_env_var "AUTOUPDATE" "false"
 fi
 
-set_env_var() {
-    local key="$1"
-    local value="$2"
-
-    if grep -q "^${key}=" "$ENV_FILE"; then
-        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
-    else
-        printf '%s=%s\n' "$key" "$value" >>"$ENV_FILE"
-    fi
-}
-
-# Direct ports: 8000 (plain-HTTP panel) is published on all addresses unless COOLIFY_BIND_ADDRESS is set;
-# 6001/6002 are loopback-only unless COOLIFY_REALTIME_BIND_ADDRESS is set, because the panel port proxies them.
+# Direct ports (8000, 6001, 6002): 8000 (plain-HTTP panel) is published on all addresses unless
+# COOLIFY_BIND_ADDRESS is set, e.g. 127.0.0.1 so the panel is reachable only through the proxy domain
+# (or an SSH tunnel). 6001/6002 are loopback-only unless COOLIFY_REALTIME_BIND_ADDRESS is set, because
+# the panel port proxies /app/ and /terminal/ws.
 for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     BIND_VALUE="${!BIND_VAR:-}"
     if [ -n "$BIND_VALUE" ]; then
@@ -1061,6 +1139,18 @@ for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     fi
 done
 COOLIFY_BIND_ADDRESS=$(grep "^COOLIFY_BIND_ADDRESS=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+
+# An https panel URL means the panel is served over TLS: mark the session cookie Secure
+if [ -n "${APP_URL:-}" ]; then
+    if [[ $APP_URL =~ ^https?://[A-Za-z0-9.-]+(:[0-9]+)?/?$ ]]; then
+        set_env_var "APP_URL" "${APP_URL%/}"
+    else
+        warn "Ignoring invalid APP_URL: $APP_URL (expected e.g. https://coolify.example.com)"
+    fi
+fi
+if grep -q "^APP_URL=https://" "$ENV_FILE"; then
+    update_env_var "SESSION_SECURE_COOKIE" "true"
+fi
 
 if [ "$DOCKER_POOL_BASE_PROVIDED" = true ]; then
     update_env_var "DOCKER_ADDRESS_POOL_BASE" "$DOCKER_ADDRESS_POOL_BASE"
@@ -1203,6 +1293,41 @@ if [ "$HEALTH" != "healthy" ]; then
     exit 1
 fi
 
+# The root user is created from ROOT_USER_PASSWORD on the first start (RootUserSeeder reads it from the
+# container environment, which keeps it). Once the user exists, the plaintext password is not kept on disk.
+root_user_exists() {
+    local db_user db_name
+    db_user=$(grep "^DB_USERNAME=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+    db_name=$(grep "^DB_DATABASE=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+    [ "$(docker exec coolify-db psql -U "${db_user:-coolify}" -d "${db_name:-coolify}" -tAc 'select count(*) from users where id = 0' 2>/dev/null | tr -d '[:space:]')" = "1" ]
+}
+
+remove_root_password_from_env() {
+    local env_copy
+    for env_copy in "$ENV_FILE" "$ENV_FILE-$DATE"; do
+        if [ -f "$env_copy" ] && grep -q '^ROOT_USER_PASSWORD=.' "$env_copy"; then
+            sed -i 's|^ROOT_USER_PASSWORD=.*|ROOT_USER_PASSWORD=|' "$env_copy"
+            echo " - Removed ROOT_USER_PASSWORD from $env_copy"
+        fi
+    done
+}
+
+if grep -q '^ROOT_USER_PASSWORD=.' "$ENV_FILE"; then
+    ROOT_USER_CREATED=false
+    for _ in $(seq 1 15); do
+        if root_user_exists; then
+            ROOT_USER_CREATED=true
+            break
+        fi
+        sleep 2
+    done
+    if [ "$ROOT_USER_CREATED" = true ]; then
+        remove_root_password_from_env
+    else
+        warn "The root user was not created yet, so ROOT_USER_PASSWORD is still in $ENV_FILE. Remove it after the first sign-in."
+    fi
+fi
+
 # Coolify manages this server over SSH from its container (host.docker.internal). A host firewall that
 # drops incoming traffic (UFW, firewalld) makes that time out, so allow SSH from the Coolify network only.
 CONFIGURE_FIREWALL=${CONFIGURE_FIREWALL:-true}
@@ -1280,7 +1405,8 @@ if [ "$INTERNAL_SIGNUP" = "false" ]; then
     printf '\n  %sRoot account (built-in sign-up is off)%s\n' "$C_BOLD" "$C_RESET" >&3
     printf '  Email      %s%s%s\n' "$C_BOLD" "$(grep '^ROOT_USER_EMAIL=' "$ENV_FILE" | cut -d '=' -f2-)" "$C_RESET" >&3
     if [ "$GENERATED_ROOT_PASSWORD" = true ]; then
-        printf '  Password   %s%s%s\n' "$C_BOLD" "$(grep '^ROOT_USER_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2-)" "$C_RESET" >&3
+        printf '  Password   %s%s%s\n' "$C_BOLD" "$ROOT_USER_PASSWORD" "$C_RESET" >&3
+        printf '  %sShown only once: it is not kept in .env. Store it in a password manager now.%s\n' "$C_YELLOW" "$C_RESET" >&3
     fi
     printf '\n  %s! OIDC를 연동하세요: root로 로그인한 뒤 설정 → OAuth에서 OIDC를 켜면 다른 사용자는 OIDC로 가입하고 로그인합니다.%s\n' "$C_YELLOW" "$C_RESET" >&3
     printf '  %s  (Connect OIDC: sign in as root, then enable OIDC in Settings → OAuth.)%s\n' "$C_DIM" "$C_RESET" >&3

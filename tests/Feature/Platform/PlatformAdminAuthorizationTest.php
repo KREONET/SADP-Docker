@@ -23,7 +23,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Server::flushIdentityMap();
     $this->withoutVite();
-    InstanceSettings::forceCreate(['id' => 0, 'disable_two_step_confirmation' => true]);
+    InstanceSettings::forceCreate(['id' => 0]);
 
     $this->rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']);
     $this->platformAdmin = User::factory()->create();
@@ -116,7 +116,7 @@ test('platform admins can delete an application owned by another team', function
     Queue::fake();
     actAsPlatformUser($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Applications::class)->call('delete', $this->application->uuid, '');
+    Livewire::test(Applications::class)->call('delete', $this->application->uuid, 'password');
 
     Queue::assertPushed(DeleteResourceJob::class, fn (DeleteResourceJob $job) => $job->resource->is($this->application));
 });
@@ -151,8 +151,8 @@ test('platform admins can rename teams and projects', function () {
 test('teams with resources and the root team cannot be deleted', function () {
     actAsPlatformUser($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Groups::class)->call('deleteTeam', $this->otherTeam->id, '')->assertReturned(fn ($result) => is_string($result));
-    Livewire::test(Groups::class)->call('deleteTeam', 0, '')->assertReturned('The root team cannot be deleted.');
+    Livewire::test(Groups::class)->call('deleteTeam', $this->otherTeam->id, 'password')->assertReturned(fn ($result) => is_string($result));
+    Livewire::test(Groups::class)->call('deleteTeam', 0, 'password')->assertReturned('The root team cannot be deleted.');
 
     expect(Team::find($this->otherTeam->id))->not->toBeNull()
         ->and(Team::find(0))->not->toBeNull();
@@ -164,7 +164,7 @@ test('an empty team can be deleted and its members detached', function () {
     $emptyTeam->members()->attach($member->id, ['role' => 'owner']);
     actAsPlatformUser($this->platformAdmin, $this->rootTeam);
 
-    Livewire::test(Groups::class)->call('deleteTeam', $emptyTeam->id, '')->assertReturned(true);
+    Livewire::test(Groups::class)->call('deleteTeam', $emptyTeam->id, 'password')->assertReturned(true);
 
     expect(Team::find($emptyTeam->id))->toBeNull()
         ->and($member->teams()->where('team_id', $emptyTeam->id)->exists())->toBeFalse();

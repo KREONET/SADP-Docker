@@ -11,13 +11,12 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-test('instance admin can toggle registration via listbox instantSave', function () {
+test('instance admin can change registration after confirming the password', function () {
     $rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0]);
     Server::factory()->create(['id' => 0, 'team_id' => $rootTeam->id]);
     $settings = InstanceSettings::forceCreate([
         'id' => 0,
         'is_registration_enabled' => false,
-        'disable_two_step_confirmation' => false,
     ]);
     Once::flush();
 
@@ -27,19 +26,26 @@ test('instance admin can toggle registration via listbox instantSave', function 
     $this->actingAs($user);
     session(['currentTeam' => ['id' => $rootTeam->id]]);
 
-    Livewire::test(Advanced::class)
+    $component = Livewire::test(Advanced::class)
         ->assertSet('is_registration_enabled', false)
         ->assertSee('Registration')
-        ->assertSee('Destructive action confirmation')
         ->assertDontSee('Only administrators can create accounts.')
         ->set('is_registration_enabled', true)
-        ->call('instantSave')
-        ->assertDispatched('success');
+        ->call('instantSave');
 
+    // Registration is password protected, so the listbox no longer saves it instantly.
+    expect((bool) $settings->fresh()->is_registration_enabled)->toBeFalse();
+
+    $component->call('submit')
+        ->assertDispatched('confirm-security-settings');
+    expect((bool) $settings->fresh()->is_registration_enabled)->toBeFalse();
+
+    $component->call('submit', 'password')
+        ->assertDispatched('success');
     expect((bool) $settings->fresh()->is_registration_enabled)->toBeTrue();
 });
 
-test('instance admin can toggle two-step confirmation via listbox instantSave', function () {
+test('the two-step confirmation bypass is no longer offered', function () {
     $rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0]);
     Server::factory()->create(['id' => 0, 'team_id' => $rootTeam->id]);
     $settings = InstanceSettings::forceCreate([
@@ -56,12 +62,12 @@ test('instance admin can toggle two-step confirmation via listbox instantSave', 
     session(['currentTeam' => ['id' => $rootTeam->id]]);
 
     Livewire::test(Advanced::class)
-        ->assertSet('disable_two_step_confirmation', false)
-        ->set('disable_two_step_confirmation', true)
+        ->assertDontSee('Destructive action confirmation')
+        ->assertDontSee('Skip two-step confirmation')
         ->call('instantSave')
         ->assertDispatched('success');
 
-    expect((bool) $settings->fresh()->disable_two_step_confirmation)->toBeTrue();
+    expect((bool) $settings->fresh()->disable_two_step_confirmation)->toBeFalse();
 });
 
 test('instance admin can configure the image CDN URL at runtime', function () {

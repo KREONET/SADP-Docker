@@ -43,7 +43,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'invalid-token')
             ->set('form.permissions', $permissions)
-            ->call('addNewToken');
+            ->call('addNewToken', 'password');
 
         expect($this->member->tokens()->count())->toBe(0);
     })->with([
@@ -60,7 +60,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'my-root-token')
             ->set('form.permissions', ['root'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
 
         expect($this->member->tokens()->count())->toBe(0);
@@ -73,7 +73,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'my-write-token')
             ->set('form.permissions', ['write'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
 
         expect($this->member->tokens()->count())->toBe(0);
@@ -86,7 +86,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'my-deploy-token')
             ->set('form.permissions', ['deploy'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
 
         expect($this->member->tokens()->count())->toBe(0);
@@ -99,7 +99,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'my-sensitive-token')
             ->set('form.permissions', ['read', 'read:sensitive'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
 
         expect($this->member->tokens()->count())->toBe(0);
@@ -123,7 +123,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'my-read-token')
             ->set('form.permissions', ['read'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertNotDispatched('error');
 
         expect($this->member->tokens()->count())->toBe(1);
@@ -137,7 +137,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'my-root-token')
             ->set('form.permissions', ['root'])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertNotDispatched('error');
 
         expect($this->owner->tokens()->count())->toBe(1);
@@ -151,7 +151,7 @@ describe('Livewire ApiTokens — member cannot create elevated tokens', function
         Livewire::test(ApiTokens::class)
             ->set('form.description', 'owner-wildcard-token')
             ->set('form.permissions', ['*'])
-            ->call('addNewToken');
+            ->call('addNewToken', 'password');
 
         expect($this->owner->tokens()->count())->toBe(0);
     });

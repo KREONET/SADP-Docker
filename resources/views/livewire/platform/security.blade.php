@@ -3,6 +3,19 @@
 
     <x-platform.layout>
         <div class="flex min-w-0 flex-col gap-6">
+            {{-- Opened by saveLogin() when SSO-only login changes; it calls saveLogin(password)
+                 after the administrator re-enters their password. --}}
+            <div class="fixed">
+                <x-modal-confirmation :title="__('Confirm login policy change')" submitAction="saveLogin"
+                    :confirmWithText="false" :step3ButtonText="__('Save login policy')"
+                    :warningMessage="e(__('This setting decides whether users may sign in with a password.'))"
+                    :actions="[__('Change whether only SSO login is allowed for every user except the root user.')]">
+                    <x-slot:trigger>
+                        <span x-on:confirm-login-policy.window="modalOpen = true"></span>
+                    </x-slot:trigger>
+                </x-modal-confirmation>
+            </div>
+
             <form wire:submit="saveLogin">
                 <x-application.settings-section :title="__('Login policy')"
                     :description="__('Require company SSO (OIDC). The root user keeps password login as a break-glass account. Configure the OIDC provider under Settings → Authentication or with php artisan platform:configure-oidc.')">

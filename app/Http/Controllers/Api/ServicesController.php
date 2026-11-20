@@ -19,6 +19,7 @@ use App\Models\StandaloneDocker;
 use App\Models\SwarmDocker;
 use App\Services\Dns\ManagedDnsRecordCleanup;
 use App\Services\Dns\ResourceDnsRecords;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\ValidationPatterns;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -545,6 +546,15 @@ class ServicesController extends Controller
                     ], 422);
                 }
 
+                if ($hostAccessViolation = ContainerPrivilegePolicy::composeViolation(null, $dockerComposeRaw, $request->user())) {
+                    return response()->json([
+                        'message' => 'Validation failed.',
+                        'errors' => [
+                            'type' => [$hostAccessViolation],
+                        ],
+                    ], 422);
+                }
+
                 $servicePayload = [
                     'name' => "$oneClickServiceName-".str()->random(10),
                     'docker_compose_raw' => $dockerComposeRaw,
@@ -756,6 +766,15 @@ class ServicesController extends Controller
                     'message' => 'Validation failed.',
                     'errors' => [
                         'docker_compose_raw' => $e->getMessage(),
+                    ],
+                ], 422);
+            }
+
+            if ($hostAccessViolation = ContainerPrivilegePolicy::composeViolation(null, $dockerComposeRaw, $request->user())) {
+                return response()->json([
+                    'message' => 'Validation failed.',
+                    'errors' => [
+                        'docker_compose_raw' => [$hostAccessViolation],
                     ],
                 ], 422);
             }
@@ -1312,6 +1331,21 @@ class ServicesController extends Controller
                     'message' => 'Validation failed.',
                     'errors' => [
                         'docker_compose_raw' => $e->getMessage(),
+                    ],
+                ], 422);
+            }
+
+            $hostAccessViolation = ContainerPrivilegePolicy::composeViolation(
+                $service->docker_compose_raw,
+                $dockerComposeRaw,
+                $request->user(),
+                ContainerPrivilegePolicy::allowedHostDirectories($service),
+            );
+            if ($hostAccessViolation !== null) {
+                return response()->json([
+                    'message' => 'Validation failed.',
+                    'errors' => [
+                        'docker_compose_raw' => [$hostAccessViolation],
                     ],
                 ], 422);
             }

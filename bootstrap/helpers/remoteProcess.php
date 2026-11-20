@@ -9,6 +9,7 @@ use App\Models\Application;
 use App\Models\ApplicationDeploymentQueue;
 use App\Models\PrivateKey;
 use App\Models\Server;
+use App\Services\Ssh\KnownHosts;
 use App\Services\Security\SensitiveDataRedactor;
 use App\Support\RemoteProcessCommand;
 use Carbon\Carbon;
@@ -103,6 +104,7 @@ function instant_scp(string $source, string $dest, Server $server, $throwError =
             $exitCode = $process->exitCode();
 
             if ($exitCode !== 0) {
+                KnownHosts::failIfHostKeyChanged($server, $process->errorOutput(), $exitCode);
                 excludeCertainErrors($process->errorOutput(), $exitCode);
             }
 
@@ -133,6 +135,7 @@ function instant_scp_from_server(string $remoteSource, string $localDest, Server
             $exitCode = $process->exitCode();
 
             if ($exitCode !== 0) {
+                KnownHosts::failIfHostKeyChanged($server, $process->errorOutput(), $exitCode);
                 excludeCertainErrors($process->errorOutput(), $exitCode);
             }
 
@@ -209,6 +212,7 @@ function instant_remote_process_with_timeout(Collection|array $command, Server $
             $exitCode = $process->exitCode();
 
             if ($exitCode !== 0) {
+                KnownHosts::failIfHostKeyChanged($server, $process->errorOutput(), $exitCode);
                 excludeCertainErrors($process->errorOutput(), $exitCode);
             }
 
@@ -246,6 +250,7 @@ function instant_remote_process(Collection|array $command, Server $server, bool 
             $exitCode = $process->exitCode();
 
             if ($exitCode !== 0) {
+                KnownHosts::failIfHostKeyChanged($server, $process->errorOutput(), $exitCode);
                 excludeCertainErrors($process->errorOutput(), $exitCode);
             }
 

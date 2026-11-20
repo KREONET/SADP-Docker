@@ -3,15 +3,20 @@
 namespace Database\Seeders;
 
 use App\Models\S3Storage;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class S3StorageSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
+        $this->refuseToRunInProduction();
+
         S3Storage::create([
             'uuid' => 'minio',
             'name' => 'Local MinIO',

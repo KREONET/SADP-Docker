@@ -7,7 +7,7 @@
         ['label' => 'Users', 'route' => 'platform.users', 'icon' => 'profile', 'gate' => 'operatePlatform'],
         ['label' => 'Sources', 'route' => 'platform.sources', 'icon' => 'globe', 'gate' => 'accessPlatformAdmin'],
         ['label' => 'Security', 'route' => 'platform.security', 'icon' => 'keys', 'gate' => 'accessPlatformAdmin'],
-        ['label' => 'Logs', 'route' => 'platform.logs', 'icon' => 'file-content', 'gate' => 'accessPlatformAdmin'],
+        ['label' => 'Logs', 'route' => 'platform.logs', 'icon' => 'file-content', 'gate' => 'viewAuditLogs'],
     ], fn (array $menuItem): bool => \Illuminate\Support\Facades\Gate::allows($menuItem['gate']));
 @endphp
 

@@ -33,19 +33,15 @@
                     </button>
 
                     <div x-cloak x-show="dropdownOpen" x-transition.origin.top.right role="menu"
-                        class="listbox-panel left-auto! right-0! z-[90]! w-52! min-w-52!">
-                        <button type="button" class="listbox-option justify-start! gap-2.5!"
-                            wire:click="generatePrivateKey('ed25519')" @click="dropdownOpen = false"
-                            role="menuitem">
-                            <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
-                            {{ __('Generate ED25519') }}
-                        </button>
-                        <button type="button" class="listbox-option justify-start! gap-2.5!"
-                            wire:click="generatePrivateKey('rsa')" @click="dropdownOpen = false"
-                            role="menuitem">
-                            <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
-                            {{ __('Generate RSA') }}
-                        </button>
+                        class="listbox-panel left-auto! right-0! z-[90]! w-72! min-w-72!">
+                        @foreach (\App\Enums\SshKeyType::cases() as $keyType)
+                            <button type="button" class="listbox-option justify-start! gap-2.5!"
+                                wire:click="generatePrivateKey('{{ $keyType->value }}')" @click="dropdownOpen = false"
+                                role="menuitem">
+                                <x-reicon name="keys" class="size-3.5 shrink-0 opacity-70" />
+                                {{ $keyType->generateLabel() }}
+                            </button>
+                        @endforeach
                         <x-modal-input :title="__('Add Private Key Manually')">
                             <x-slot:content>
                                 <button type="button" @click="dropdownOpen = false"

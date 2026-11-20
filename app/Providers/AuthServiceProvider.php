@@ -165,6 +165,9 @@ class AuthServiceProvider extends ServiceProvider
         // platform roles, instance settings and security settings stay with accessPlatformAdmin
         Gate::define('operatePlatform', fn (User $user): bool => $user->canOperatePlatform());
 
+        // Read-only access to the instance logs: platform administrators and auditors (separation of duties)
+        Gate::define('viewAuditLogs', fn (User $user): bool => (bool) $user->is_auditor || $user->isInstanceAdmin());
+
         // Register gate for terminal access; platform administrators reach every team's servers
         Gate::define('canAccessTerminal', function ($user) {
             return $user->isAdmin() || $user->isOwner() || $user->isInstanceAdmin();

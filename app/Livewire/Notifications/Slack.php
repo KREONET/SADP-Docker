@@ -76,6 +76,8 @@ class Slack extends Component
     public bool $traefikOutdatedSlackNotifications = true;
 
     #[Validate(['boolean'])]
+    public bool $securityAlertSlackNotifications = true;
+
     public bool $imageVulnerabilitiesSlackNotifications = false;
 
     public function mount()
@@ -112,6 +114,7 @@ class Slack extends Component
             $this->settings->server_unreachable_slack_notifications = $this->serverUnreachableSlackNotifications;
             $this->settings->server_patch_slack_notifications = $this->serverPatchSlackNotifications;
             $this->settings->traefik_outdated_slack_notifications = $this->traefikOutdatedSlackNotifications;
+            $this->settings->security_alert_slack_notifications = $this->securityAlertSlackNotifications;
             $this->settings->image_vulnerabilities_slack_notifications = $this->imageVulnerabilitiesSlackNotifications;
 
             $changedFields = array_keys($this->settings->getDirty());
@@ -139,6 +142,7 @@ class Slack extends Component
             $this->serverUnreachableSlackNotifications = $this->settings->server_unreachable_slack_notifications;
             $this->serverPatchSlackNotifications = $this->settings->server_patch_slack_notifications;
             $this->traefikOutdatedSlackNotifications = $this->settings->traefik_outdated_slack_notifications;
+            $this->securityAlertSlackNotifications = $this->settings->security_alert_slack_notifications;
             $this->imageVulnerabilitiesSlackNotifications = $this->settings->image_vulnerabilities_slack_notifications;
         }
     }

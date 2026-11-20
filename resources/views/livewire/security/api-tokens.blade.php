@@ -18,15 +18,21 @@
 
         @php
             $expirationList = collect($expirationOptions)
-                ->map(fn ($label, $days) => ['value' => (string) $days, 'label' => __($label)])
+                ->map(fn ($label, $days) => ['value' => (string) $days, 'label' => $label])
                 ->values()
-                ->push(['value' => '', 'label' => __('Never')])
                 ->all();
+            $tokensOverPolicy = $tokens->filter(fn ($token) => $this->exceedsLifetimePolicy($token));
         @endphp
 
         <div class="application-settings-form flex flex-col gap-6">
             <x-api-disabled-callout
                 message="REST API requests are rejected. Tokens still authenticate the MCP endpoint when the MCP server is enabled." />
+
+            @if ($tokensOverPolicy->isNotEmpty())
+                <x-callout type="warning" :title="__('Tokens exceed the lifetime policy')">
+                    {{ __(':count issued token(s) never expire or outlive the maximum token lifetime. Create replacement tokens that expire and revoke the old ones.', ['count' => $tokensOverPolicy->count()]) }}
+                </x-callout>
+            @endif
 
             <x-application.settings-section :title="__('Issued tokens')" flush>
                 @can('create', App\Models\PersonalAccessToken::class)
@@ -172,7 +178,12 @@
                                         {{ $token->created_at->format('Y-m-d') }}
                                     </div>
                                     <div class="text-[11px] text-neutral-500 dark:text-fg-dim">
-                                        @if (!$token->expires_at)
+                                        @if ($this->exceedsLifetimePolicy($token))
+                                            <span class="flex flex-wrap items-center gap-1.5">
+                                                {{ $token->expires_at?->format('Y-m-d') ?? __('Never') }}
+                                                <x-status-badge :label="__('Exceeds policy')" type="warning" />
+                                            </span>
+                                        @elseif (!$token->expires_at)
                                             {{ __('Never') }}
                                         @elseif ($token->expires_at->isPast())
                                             <x-status-badge label="{{ __('Expired') }}" type="error" size="sm" />
@@ -191,6 +202,7 @@
                                                     wire:click="setPaused({{ $token->id }}, {{ $token->isPaused() ? 'false' : 'true' }})">
                                                     {{ $token->isPaused() ? 'Resume' : 'Pause' }}
                                                 </x-table.row-action>
+                                                @unless ($this->exceedsLifetimePolicy($token))
                                                 <x-modal-confirmation title="{{ __('Roll API Token?') }}" buttonFullWidth
                                                     submitAction="roll({{ $token->id }})" :actions="[
                                                         'A new secret replaces this token. The current secret stops working at once.',
@@ -199,11 +211,12 @@
                                                     confirmationText="{{ $token->name }}"
                                                     :confirmationLabel="__('Enter the token description to confirm')"
                                                     :shortConfirmationLabel="__('Token description')"
-                                                    :confirmWithPassword="false" step2ButtonText="{{ __('Roll token') }}">
+                                                    :step2ButtonText="__('Continue')" :step3ButtonText="__('Roll token')">
                                                     <x-slot:trigger>
                                                         <x-table.row-action>{{ __('Roll') }}</x-table.row-action>
                                                     </x-slot:trigger>
                                                 </x-modal-confirmation>
+                                                @endunless
                                                 <x-slot:danger>
                                                 <x-modal-confirmation title="{{ __('Confirm API Token Revocation?') }}" buttonFullWidth
                                                     submitAction="revoke({{ $token->id }})" :actions="[
@@ -245,7 +258,8 @@
                 @open-api-token-create.window="modalOpen = true" @api-token-issued.window="modalOpen = false">
                 <x-slot:content><span></span></x-slot:content>
 
-                <form wire:submit="addNewToken" id="api-token-create-form" class="lg:w-3xl">
+                <form x-on:submit.prevent="document.getElementById('api-token-create-confirm-trigger')?.click()"
+                    id="api-token-create-form" class="lg:w-3xl">
                     @include('livewire.security.partials.api-token-fields', [
                         'form' => 'form',
                         'expiryOptions' => $expirationList,
@@ -258,6 +272,16 @@
                     <x-forms.button isHighlighted type="submit" form="api-token-create-form">{{ __('Create token') }}</x-forms.button>
                 </x-slot:footer>
             </x-modal-input>
+
+            <x-modal-confirmation :title="__('Create API token?')" submitAction="addNewToken"
+                :confirmWithText="false" isHighlightedButton
+                :warningMessage="e(__('The token can act on this team\'s resources with the selected permissions until it expires.'))"
+                :actions="[__('Issue a new API token with the selected permissions and expiry.')]"
+                :step2ButtonText="__('Continue')" :step3ButtonText="__('Create token')">
+                <x-slot:trigger>
+                    <button id="api-token-create-confirm-trigger" type="button" class="hidden" aria-hidden="true"></button>
+                </x-slot:trigger>
+            </x-modal-confirmation>
 
             <x-modal-input title="{{ __('Edit API token') }}" :wireIgnore="false" :closeOutside="false"
                 @open-api-token-edit.window="modalOpen = true" @api-token-updated.window="modalOpen = false">

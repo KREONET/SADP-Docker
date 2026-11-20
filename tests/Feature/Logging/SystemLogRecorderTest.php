@@ -89,9 +89,9 @@ test('long messages are truncated', function () {
 });
 
 test('collected log lines older than the retention period are pruned', function () {
-    LogEntry::factory()->create(['created_at' => now()->subDays(8)]);
-    $recent = LogEntry::factory()->create(['created_at' => now()->subDays(6)]);
+    LogEntry::factory()->create(['created_at' => now()->subDays(181)]);
+    $recent = LogEntry::factory()->create(['created_at' => now()->subDays(179)]);
 
-    expect(LogEntry::pruneOlderThan(instanceSettings()->logRetentionDays()))->toBe(1)
+    expect(LogEntry::pruneOlderThan(LogEntry::retentionDays()))->toBe(1)
         ->and(LogEntry::query()->pluck('id')->all())->toBe([$recent->id]);
 });

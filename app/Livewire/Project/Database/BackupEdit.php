@@ -100,6 +100,9 @@ class BackupEdit extends Component
     #[Validate(['required', 'integer', 'min:0', 'max:365'])]
     public int $missingBackupNotificationDays = 0;
 
+    #[Validate(['required', 'boolean'])]
+    public bool $encryptBackup = false;
+
     public function getListeners(): array
     {
         // Keep "Backup Now" in sync when the database starts/stops without a full page refresh.
@@ -187,6 +190,9 @@ class BackupEdit extends Component
             $this->backup->dump_all = $this->dumpAll;
             $this->backup->timeout = $this->timeout;
             $this->backup->missing_backup_notification_days = $this->missingBackupNotificationDays;
+            $this->backup->encrypt_backup = $this->encryptBackup = $this->encryptBackup && $this->backup->supportsEncryption();
+            $encryptionChanged = $this->backup->isDirty('encrypt_backup');
+
             $storageIds = $this->customValidate();
             // The team of the schedule, because the instance database has no environment to read it from.
             if ($this->backup->newS3StorageIds($storageIds)->isNotEmpty()
@@ -199,6 +205,16 @@ class BackupEdit extends Component
             }
             $changedFields = auditChangedFields($this->backup);
             $this->backup->save();
+            if ($encryptionChanged) {
+                $database = $this->backup->database;
+                auditLog('ui.database.backup_encryption_changed', [
+                    'team_id' => $database?->team()?->id,
+                    'database_uuid' => $database?->uuid,
+                    'backup_uuid' => $this->backup->uuid,
+                    'encrypt_backup' => $this->backup->encrypt_backup,
+                    'result' => 'success',
+                ]);
+            }
 
             $previousStorageIds = $this->backup->s3Storages()->pluck('s3_storages.id')->sort()->values()->all();
             $this->backup->syncS3Storages($storageIds->all());
@@ -225,6 +241,7 @@ class BackupEdit extends Component
             $this->dumpAll = $this->backup->dump_all;
             $this->timeout = $this->backup->timeout;
             $this->missingBackupNotificationDays = $this->backup->missing_backup_notification_days;
+            $this->encryptBackup = (bool) $this->backup->encrypt_backup;
         }
 
         return [];

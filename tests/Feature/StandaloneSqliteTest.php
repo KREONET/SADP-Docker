@@ -74,7 +74,7 @@ it('generates a compose file that passes the database files to the image', funct
     expect($service)->not->toHaveKey('command')
         ->and($service['environment'])->toContain('SQLITE_DATABASES=app.db,jobs.db', 'COOLIFY_RESOURCE_UUID='.$this->database->uuid)
         ->and($service['healthcheck']['test'])->toBe(['CMD', 'healthcheck.sh'])
-        ->and($service['volumes'])->toBe(['sqlite-data-'.$this->database->uuid.':/var/lib/sqlite']);
+        ->and($service['volumes'])->toBe([$this->database->persistentStorages()->value('name').':/var/lib/sqlite']);
 });
 
 it('uses the server log drain driver when log draining is enabled', function () {

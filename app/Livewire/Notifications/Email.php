@@ -134,6 +134,8 @@ class Email extends Component
     public bool $traefikOutdatedEmailNotifications = true;
 
     #[Validate(['boolean'])]
+    public bool $securityAlertEmailNotifications = true;
+
     public bool $imageVulnerabilitiesEmailNotifications = true;
 
     #[Validate(['nullable', 'email'])]
@@ -188,6 +190,10 @@ class Email extends Component
             $this->settings->server_unreachable_email_notifications = $this->serverUnreachableEmailNotifications;
             $this->settings->server_patch_email_notifications = $this->serverPatchEmailNotifications;
             $this->settings->traefik_outdated_email_notifications = $this->traefikOutdatedEmailNotifications;
+            $this->settings->security_alert_email_notifications = $this->securityAlertEmailNotifications;
+            $changedFields = array_keys($this->settings->getDirty());
+            $this->settings->save();
+            $this->auditNotificationSettings($changedFields);
             $this->settings->image_vulnerabilities_email_notifications = $this->imageVulnerabilitiesEmailNotifications;
             $this->saveEmailSettings();
 
@@ -235,6 +241,7 @@ class Email extends Component
             $this->serverUnreachableEmailNotifications = $this->settings->server_unreachable_email_notifications;
             $this->serverPatchEmailNotifications = $this->settings->server_patch_email_notifications;
             $this->traefikOutdatedEmailNotifications = $this->settings->traefik_outdated_email_notifications;
+            $this->securityAlertEmailNotifications = $this->settings->security_alert_email_notifications;
             $this->imageVulnerabilitiesEmailNotifications = $this->settings->image_vulnerabilities_email_notifications;
         }
     }

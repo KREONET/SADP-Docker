@@ -86,7 +86,7 @@ it('lets users create API tokens for MCP while the REST API is disabled', functi
         ->assertSee('API access is turned off')
         ->assertSee('Create token')
         ->set('form.description', 'MCP client')
-        ->call('addNewToken')
+        ->call('addNewToken', 'password')
         ->assertHasNoErrors();
 
     expect($this->teamAdmin->tokens()->where('name', 'MCP client')->exists())->toBeTrue();

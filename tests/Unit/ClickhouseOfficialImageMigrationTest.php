@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\Server;
+use App\Models\ServerSetting;
 use App\Models\StandaloneClickhouse;
+use App\Models\StandaloneDocker;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -41,25 +44,12 @@ test('clickhouse external url uses correct database', function () {
     $clickhouse->is_public = true;
     $clickhouse->public_port = 8123;
 
-    $clickhouse->destination = new class
-    {
-        public $server;
-
-        public function __construct()
-        {
-            $this->server = new class
-            {
-                public function __get($name)
-                {
-                    if ($name === 'getIp') {
-                        return '1.2.3.4';
-                    }
-                }
-            };
-        }
-    };
+    $server = (new Server)->forceFill(['ip' => '1.2.3.4']);
+    $server->setRelation('settings', new ServerSetting);
+    $clickhouse->setRelation('destination', (new StandaloneDocker)->setRelation('server', $server));
     $externalUrl = $clickhouse->external_db_url;
 
-    expect($externalUrl)->toContain('production');
+    expect($externalUrl)->toContain('production')
+        ->toContain('@prod-uuid.1.2.3.4.sslip.io:8123/');
 
 });

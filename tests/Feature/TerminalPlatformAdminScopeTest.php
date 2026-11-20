@@ -11,6 +11,7 @@ use App\Services\TerminalSessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -26,6 +27,7 @@ beforeEach(function () {
 
     $this->platformAdmin = User::factory()->create();
     $this->rootTeam->members()->attach($this->platformAdmin->id, ['role' => 'admin']);
+    TwoFactor::confirm($this->platformAdmin);
     $this->adminTeam = Team::factory()->create(['name' => 'Admin Personal']);
     $this->adminTeam->members()->attach($this->platformAdmin->id, ['role' => 'owner']);
 

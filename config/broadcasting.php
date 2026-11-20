@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\ReverbSettings;
+
 /*
  * Server-side host for the bundled Reverb server. Older installs could set
  * PUSHER_BACKEND_HOST to the removed "coolify-realtime" container, so that
@@ -9,6 +11,12 @@ $backendHost = env('PUSHER_BACKEND_HOST');
 if (blank($backendHost) || $backendHost === 'coolify-realtime') {
     $backendHost = '127.0.0.1';
 }
+
+/*
+ * Must match the secret of the Reverb app in config/reverb.php. Outside development a
+ * missing PUSHER_APP_SECRET is derived from APP_KEY instead of the public "coolify" value.
+ */
+$appSecret = ReverbSettings::secret(env('PUSHER_APP_SECRET'), env('APP_ENV'), env('APP_KEY'));
 
 return [
 
@@ -43,7 +51,7 @@ return [
         'reverb' => [
             'driver' => 'reverb',
             'key' => env('PUSHER_APP_KEY', 'coolify'),
-            'secret' => env('PUSHER_APP_SECRET', 'coolify'),
+            'secret' => $appSecret,
             'app_id' => env('PUSHER_APP_ID', 'coolify'),
             'options' => [
                 'host' => $backendHost,
@@ -63,7 +71,7 @@ return [
         'pusher' => [
             'driver' => 'pusher',
             'key' => env('PUSHER_APP_KEY', 'coolify'),
-            'secret' => env('PUSHER_APP_SECRET', 'coolify'),
+            'secret' => $appSecret,
             'app_id' => env('PUSHER_APP_ID', 'coolify'),
             'options' => [
                 'host' => $backendHost,

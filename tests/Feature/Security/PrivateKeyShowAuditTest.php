@@ -91,7 +91,11 @@ it('audits a failed reveal and does not return the key', function () {
         ->call('revealPrivateKey', 'wrong-password')
         ->assertReturned(null);
 
-    expect(privateKeyAuditEvents())->toBe(['ui.private_key.reveal_failed']);
+    expect(privateKeyAuditEvents())->toBe([
+        'auth.reauthentication.failed',
+        'secret.private_key.revealed',
+        'ui.private_key.reveal_failed',
+    ]);
 });
 
 it('blocks reveal after too many attempts, also with the correct password', function () {

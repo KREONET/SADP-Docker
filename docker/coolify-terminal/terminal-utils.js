@@ -345,6 +345,8 @@ export function isAuthorizedTargetHost(targetHost, authorizedHosts = []) {
 const REQUIRED_SSH_OPTIONS = new Set([
     'StrictHostKeyChecking',
     'UserKnownHostsFile',
+    'GlobalKnownHostsFile',
+    'HostKeyAlias',
     'PasswordAuthentication',
     'IdentitiesOnly',
     'ClearAllForwardings',
@@ -355,8 +357,26 @@ const REQUIRED_SSH_OPTIONS = new Set([
     'LogLevel',
 ]);
 
+/**
+ * Host keys are verified against the per-server known_hosts file that Coolify
+ * maintains (trust on first use). Host key checking can never be turned off.
+ */
+const KNOWN_HOSTS_FILE_PATTERN = /^\/var\/www\/html\/storage\/app\/ssh\/known_hosts\/[a-zA-Z0-9_-]+$/;
+const HOST_KEY_ALIAS_PATTERN = /^coolify-[a-zA-Z0-9_-]+$/;
+
+/**
+ * Pinned algorithm lists (FIPS 140-3 defaults from config/security.php). Only
+ * plain names are accepted: a leading +, - or ^ would extend the OpenSSH defaults.
+ */
+const ALGORITHM_OPTIONS = new Set(['Ciphers', 'KexAlgorithms', 'MACs', 'HostKeyAlgorithms']);
+const ALGORITHM_LIST_PATTERN = /^[A-Za-z0-9@._-]+(,[A-Za-z0-9@._-]+)*$/;
+
 function isAllowedSshOption(name, value) {
     const fixedOptions = {
+        GlobalKnownHostsFile: '/dev/null',
+        CheckHostIP: 'no',
+        UpdateHostKeys: 'no',
+        HashKnownHosts: 'no',
         PasswordAuthentication: 'no',
         IdentitiesOnly: 'yes',
         ClearAllForwardings: 'yes',
@@ -371,15 +391,19 @@ function isAllowedSshOption(name, value) {
     }
 
     if (name === 'StrictHostKeyChecking') {
-        return value === 'yes' || value === 'no';
+        return value === 'yes' || value === 'accept-new';
     }
 
     if (name === 'UserKnownHostsFile') {
-        return value === '/dev/null' || /^\/var\/www\/html\/storage\/app\/ssh\/known_hosts\/known_hosts_[a-zA-Z0-9_-]+$/.test(value);
+        return KNOWN_HOSTS_FILE_PATTERN.test(value);
     }
 
     if (name === 'HostKeyAlias') {
-        return /^coolify-[a-zA-Z0-9_-]+$/.test(value);
+        return HOST_KEY_ALIAS_PATTERN.test(value);
+    }
+
+    if (ALGORITHM_OPTIONS.has(name)) {
+        return ALGORITHM_LIST_PATTERN.test(value);
     }
 
     if (name === 'RequestTTY') {
@@ -403,6 +427,7 @@ export function validateSshArgs(sshArgs, authorizedHosts = []) {
     }
 
     const seenOptions = new Set();
+    const optionValues = new Map();
     let hasIdentityFile = false;
     let hasPort = false;
     let hasConfigFile = false;
@@ -472,6 +497,7 @@ export function validateSshArgs(sshArgs, authorizedHosts = []) {
                 return false;
             }
             seenOptions.add(name);
+            optionValues.set(name, value);
             continue;
         }
 
@@ -483,8 +509,13 @@ export function validateSshArgs(sshArgs, authorizedHosts = []) {
         !['ControlMaster', 'ControlPath', 'ControlPersist'].some(option => seenOptions.has(option))
         || ['ControlMaster', 'ControlPath', 'ControlPersist'].every(option => seenOptions.has(option));
 
+    // The alias must name the same server as the known_hosts file.
+    const knownHostsServer = optionValues.get('UserKnownHostsFile')?.split('/').pop();
+    const hasMatchingHostKeyAlias = optionValues.get('HostKeyAlias') === `coolify-${knownHostsServer}`;
+
     return hasIdentityFile
         && hasPort
+        && hasMatchingHostKeyAlias
         && hasConfigFile
         && targetHost !== null
         && hasRequiredOptions

@@ -9,6 +9,7 @@ use App\Models\LogEntry;
 use App\Services\Logging\LokiClient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -20,7 +21,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * [한국어] 플랫폼 관리자 로그 화면(/platform/logs)의 동작입니다. 화면 파일: resources/views/livewire/platform/logs.blade.php
  * 하는 일: ① 수집 켜기/끄기(마스터 + 항목별) ② 로그 조회·검색 ③ 내보내기 ④ Loki 연결 설정·테스트.
+ * 사용자 활동(감사 로그)은 보안 기록이라 항상 수집되며 끌 수 없습니다. 시스템·컨테이너 로그 보관 기간은 최소값(security.audit.system_log_min_retention_days) 이상이어야 합니다.
  * 화면을 열 때와 설정 저장·내보내기 같은 동작은 서버에서 플랫폼 관리자인지 확인합니다. 새 동작을 추가할 때도 같은 확인을 넣으세요.
+ * 감사자(users.is_auditor)는 viewAuditLogs 게이트로 조회·검색·내보내기만 할 수 있습니다. 설정을 바꾸는 동작은 모두 authorizePlatformAdmin()으로 막습니다.
+ *
+ * Auditors (`users.is_auditor`) pass the `viewAuditLogs` gate: they may view, filter and export every
+ * team's logs, but every action that changes settings still requires the platform admin gate.
  */
 class Logs extends Component
 {
@@ -41,7 +47,7 @@ class Logs extends Component
 
     public bool $isContainerLogCollectionEnabled = false;
 
-    public int $logRetentionDays = 7;
+    public int $logRetentionDays = 180;
 
     public bool $isLokiShippingEnabled = false;
 
@@ -69,7 +75,7 @@ class Logs extends Component
 
     public function mount(): void
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizeLogViewer();
         $this->syncFromSettings();
 
         if (! in_array($this->source, self::SOURCES, true)) {
@@ -99,17 +105,18 @@ class Logs extends Component
     public function saveCollection(): void
     {
         $this->authorizePlatformAdmin();
+        // Audit events are a security record; the switch cannot be turned off.
+        $this->isAuditLogCollectionEnabled = true;
         $this->validate([
             'isLogCollectionEnabled' => ['boolean'],
-            'isAuditLogCollectionEnabled' => ['boolean'],
             'isSystemLogCollectionEnabled' => ['boolean'],
             'isContainerLogCollectionEnabled' => ['boolean'],
-            'logRetentionDays' => ['required', 'integer', 'min:1', 'max:365'],
+            'logRetentionDays' => ['required', 'integer', 'min:'.LogEntry::minimumRetentionDays(), 'max:'.LogEntry::maximumRetentionDays()],
         ]);
 
         instanceSettings()->update([
             'is_log_collection_enabled' => $this->isLogCollectionEnabled,
-            'is_audit_log_collection_enabled' => $this->isAuditLogCollectionEnabled,
+            'is_audit_log_collection_enabled' => true,
             'is_system_log_collection_enabled' => $this->isSystemLogCollectionEnabled,
             'is_container_log_collection_enabled' => $this->isContainerLogCollectionEnabled,
             'log_retention_days' => $this->logRetentionDays,
@@ -117,7 +124,7 @@ class Logs extends Component
 
         auditLog('platform.logs.collection_updated', [
             'enabled' => $this->isLogCollectionEnabled,
-            'audit' => $this->isAuditLogCollectionEnabled,
+            'audit' => true,
             'system' => $this->isSystemLogCollectionEnabled,
             'container' => $this->isContainerLogCollectionEnabled,
             'retention_days' => $this->logRetentionDays,
@@ -194,7 +201,7 @@ class Logs extends Component
 
     public function export(string $format = 'ndjson'): ?StreamedResponse
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizeLogViewer();
         if (! in_array($format, ['ndjson', 'csv'], true)) {
             $this->dispatch('error', __('Unknown export format.'));
 
@@ -215,7 +222,7 @@ class Logs extends Component
         return response()->streamDownload(function () use ($query, $format): void {
             $output = fopen('php://output', 'w');
             if ($format === 'csv') {
-                fputcsv($output, ['time', 'source', 'level', 'actor', 'resource', 'message', 'details'], escape: '\\');
+                fputcsv($output, ['time', 'source', 'level', 'result', 'actor', 'resource', 'message', 'details'], escape: '\\');
             }
 
             foreach ($query->lazy(500) as $row) {
@@ -239,10 +246,11 @@ class Logs extends Component
 
     public function render(): View
     {
-        $this->authorizePlatformAdmin();
+        $this->authorizeLogViewer();
         $settings = instanceSettings();
 
         return view('livewire.platform.logs', [
+            'canManageLogs' => $this->canManageLogs(),
             'entries' => $this->entriesQuery()->paginate($this->perPage),
             'levelOptions' => $this->currentSource() === self::SOURCE_AUDIT
                 ? ['info', 'warning', 'error']
@@ -257,7 +265,27 @@ class Logs extends Component
             'lokiLastPushedAt' => $settings->loki_last_pushed_at,
             'lokiLastError' => $settings->loki_last_error,
             'lokiPending' => $settings->isLokiShippingActive() ? $this->pendingLokiCount($settings->loki_shipping_started_at) : 0,
+            'lokiParked' => $settings->isLokiShippingActive() ? $this->parkedLokiCount($settings->loki_shipping_started_at) : 0,
+            'minLogRetentionDays' => LogEntry::minimumRetentionDays(),
+            'maxLogRetentionDays' => LogEntry::maximumRetentionDays(),
+            'auditRetentionDays' => AuditEvent::retentionDays(),
         ]);
+    }
+
+    /**
+     * Viewing, filtering and exporting logs: platform administrators and auditors.
+     */
+    protected function authorizeLogViewer(): void
+    {
+        abort_unless(auth()->check() && Gate::allows('viewAuditLogs'), 403);
+    }
+
+    /**
+     * Whether the current user may change log collection and Loki settings (platform administrators only).
+     */
+    private function canManageLogs(): bool
+    {
+        return auth()->check() && Gate::allows('accessPlatformAdmin');
     }
 
     /**
@@ -279,11 +307,16 @@ class Logs extends Component
         $settings = instanceSettings();
 
         $this->isLogCollectionEnabled = (bool) $settings->is_log_collection_enabled;
-        $this->isAuditLogCollectionEnabled = (bool) ($settings->is_audit_log_collection_enabled ?? true);
+        $this->isAuditLogCollectionEnabled = true;
         $this->isSystemLogCollectionEnabled = (bool) ($settings->is_system_log_collection_enabled ?? true);
         $this->isContainerLogCollectionEnabled = (bool) $settings->is_container_log_collection_enabled;
-        $this->logRetentionDays = $settings->logRetentionDays();
+        $this->logRetentionDays = LogEntry::retentionDays($settings);
         $this->isLokiShippingEnabled = (bool) $settings->is_loki_shipping_enabled;
+        if (! $this->canManageLogs()) {
+            // Auditors never see the Loki connection; it is not part of the log record.
+            return;
+        }
+
         $this->lokiUrl = $settings->loki_url;
         $this->lokiUsername = $settings->loki_username;
         $this->lokiPassword = null;
@@ -313,14 +346,18 @@ class Logs extends Component
 
     private function pendingLokiCount(mixed $since): int
     {
-        $since ??= now();
+        return ShipLogsToLokiJob::pendingQuery(AuditEvent::query(), $since)->count()
+            + ShipLogsToLokiJob::pendingQuery(LogEntry::query(), $since)->count();
+    }
 
-        return AuditEvent::query()->whereNull('loki_shipped_at')->where('created_at', '>=', $since)->count()
-            + LogEntry::query()->whereNull('loki_shipped_at')->where('created_at', '>=', $since)->count();
+    private function parkedLokiCount(mixed $since): int
+    {
+        return ShipLogsToLokiJob::parkedQuery(AuditEvent::query(), $since)->count()
+            + ShipLogsToLokiJob::parkedQuery(LogEntry::query(), $since)->count();
     }
 
     /**
-     * @return array{time: ?string, source: string, level: string, actor: ?string, resource: ?string, message: string, details: array<string, mixed>}
+     * @return array{time: ?string, source: string, level: string, result: ?string, actor: ?string, resource: ?string, message: string, details: array<string, mixed>}
      */
     private function exportRecord(AuditEvent|LogEntry $row): array
     {
@@ -329,6 +366,7 @@ class Logs extends Component
                 'time' => $row->created_at?->toIso8601String(),
                 'source' => self::SOURCE_AUDIT,
                 'level' => (string) $row->level,
+                'result' => $row->result,
                 'actor' => $row->actor_email ?: $row->actor_name ?: $row->actor_type,
                 'resource' => $row->resource_name ?: $row->resource_uuid,
                 'message' => (string) $row->description,
@@ -348,6 +386,7 @@ class Logs extends Component
             'time' => $row->logged_at?->format('Y-m-d\TH:i:s.uP'),
             'source' => $row->source,
             'level' => $row->level,
+            'result' => null,
             'actor' => null,
             'resource' => $row->resource_name,
             'message' => $row->message,

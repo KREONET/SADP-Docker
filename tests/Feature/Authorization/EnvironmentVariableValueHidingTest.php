@@ -13,6 +13,7 @@ use App\Models\StandaloneDocker;
 use App\Models\StandalonePostgresql;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -111,7 +112,12 @@ test('admin sees unlocked env value in Show component', function () {
     // Values hydrate lazily; the edit modal triggers loadValues() on open.
     expect($component->get('value'))->toBeNull();
 
+    // Revealing a secret value requires a recent re-authentication.
     $component->call('loadValues');
+    expect($component->get('value'))->toBeNull()
+        ->and($component->get('sensitiveConfirmationRequired'))->toBeTrue();
+
+    $component->call('confirmSensitiveAccess', 'password');
 
     expect($component->get('value'))->toBe('secret-unlocked-value');
 });
@@ -171,6 +177,8 @@ test('admin has isValueHidden flag set to false', function () {
 test('admin dev view shows unlocked env value', function () {
     $this->actingAs($this->admin);
     session(['currentTeam' => $this->team]);
+    // Revealing values in the developer view requires a recent re-authentication.
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
 
     $component = Livewire::test(EnvironmentVariableAll::class, [
         'resource' => $this->application,

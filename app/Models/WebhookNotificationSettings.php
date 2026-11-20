@@ -33,6 +33,7 @@ class WebhookNotificationSettings extends Model
         'server_unreachable_webhook_notifications',
         'server_patch_webhook_notifications',
         'traefik_outdated_webhook_notifications',
+        'security_alert_webhook_notifications',
         'image_vulnerabilities_webhook_notifications',
     ];
 
@@ -61,6 +62,7 @@ class WebhookNotificationSettings extends Model
             'server_unreachable_webhook_notifications' => 'boolean',
             'server_patch_webhook_notifications' => 'boolean',
             'traefik_outdated_webhook_notifications' => 'boolean',
+            'security_alert_webhook_notifications' => 'boolean',
             'image_vulnerabilities_webhook_notifications' => 'boolean',
         ];
     }

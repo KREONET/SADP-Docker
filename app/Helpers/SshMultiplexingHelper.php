@@ -2,16 +2,18 @@
 
 namespace App\Helpers;
 
+use App\Exceptions\SshHostKeyChangedException;
 use App\Jobs\ServerConnectionCheckJob;
 use App\Models\PrivateKey;
 use App\Models\Server;
 use App\Models\ServerSetting;
+use App\Services\Ssh\KnownHosts;
+use App\Services\Ssh\SshAlgorithms;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
@@ -87,6 +89,8 @@ class SshMultiplexingHelper
 
                 return self::establishNewMultiplexedConnection($server);
             });
+        } catch (SshHostKeyChangedException $e) {
+            throw $e;
         } catch (LockTimeoutException) {
             Log::warning('SSH multiplexing lock timeout, falling back to non-multiplexed connection', [
                 'server' => $server->name ?? $server->ip,
@@ -139,8 +143,13 @@ class SshMultiplexingHelper
         $establishProcess = Process::run($establishCommand);
         self::noticeHostKeyMismatch($server, $establishProcess);
         if ($establishProcess->exitCode() !== 0) {
+            KnownHosts::failIfHostKeyChanged($server, $establishProcess->errorOutput(), $establishProcess->exitCode());
+
             return false;
         }
+
+        // Record the host key that the first connection accepted (trust on first use).
+        KnownHosts::sync($server);
 
         return true;
     }
@@ -210,6 +219,8 @@ class SshMultiplexingHelper
                 if (self::ensureMultiplexedConnection($server)) {
                     $scpCommand .= self::multiplexingOptions($server);
                 }
+            } catch (SshHostKeyChangedException $e) {
+                throw $e;
             } catch (\Throwable $e) {
                 Log::warning('SSH multiplexing failed for SCP, falling back to non-multiplexed connection', [
                     'server' => $server->name ?? $server->ip,
@@ -251,6 +262,8 @@ class SshMultiplexingHelper
                 if (self::ensureMultiplexedConnection($server)) {
                     $scpCommand .= self::multiplexingOptions($server);
                 }
+            } catch (SshHostKeyChangedException $e) {
+                throw $e;
             } catch (\Throwable $e) {
                 Log::warning('SSH multiplexing failed for SCP download, falling back to non-multiplexed connection', [
                     'server' => $server->name ?? $server->ip,
@@ -277,7 +290,7 @@ class SshMultiplexingHelper
     {
         $sshCommand = self::sshCommandPrefix($server, $disableMultiplexing, $commandTimeout);
 
-        $delimiter = base64_encode(Hash::make($command));
+        $delimiter = 'EOF_'.Str::random(32);
         $command = str_replace($delimiter, '', $command);
         $remoteShellCommand = self::remoteShellCommand();
 
@@ -333,6 +346,8 @@ class SshMultiplexingHelper
                 if (self::ensureMultiplexedConnection($server)) {
                     $sshCommand .= self::multiplexingOptions($server);
                 }
+            } catch (SshHostKeyChangedException $e) {
+                throw $e;
             } catch (\Throwable $e) {
                 Log::warning('SSH multiplexing failed, falling back to non-multiplexed connection', [
                     'server' => $server->name ?? $server->ip,
@@ -541,10 +556,15 @@ class SshMultiplexingHelper
         self::giveToSshDirectoryOwner($keyLocation, $keyLocation.'.lock');
     }
 
+    /**
+     * Options shared by every ssh/scp command to a managed server: identity, host key
+     * verification (trust on first use), FIPS approved algorithms and timeouts.
+     */
     private static function getCommonSshOptions(Server $server, string $sshKeyLocation, int $connectionTimeout, int $serverInterval, bool $isScp = false): string
     {
         $options = '-i '.escapeshellarg($sshKeyLocation).' '
-            .self::hostKeyOptions($server)
+            .KnownHosts::sshOptions($server)
+            .SshAlgorithms::commandLineOptions()
             .'-o PasswordAuthentication=no '
             ."-o ConnectTimeout=$connectionTimeout "
             ."-o ServerAliveInterval=$serverInterval "

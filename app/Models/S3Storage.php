@@ -439,10 +439,12 @@ class S3Storage extends BaseModel
     {
         return $this->belongsTo(PrivateKey::class);
     }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     /**
      * The private key of an SFTP storage, only when it belongs to the team of the storage.
      */
@@ -459,6 +461,7 @@ class S3Storage extends BaseModel
 
         return $privateKey;
     }
+
     public function scheduledBackups()
     {
         return $this->hasMany(ScheduledDatabaseBackup::class, 's3_storage_id');

@@ -13,6 +13,8 @@ use App\Http\Middleware\CanUpdateResource;
 use App\Http\Middleware\CheckForcePasswordReset;
 use App\Http\Middleware\DecideWhatToDoWithUser;
 use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\EnforcePasswordExpiry;
+use App\Http\Middleware\EnforceSessionTimeout;
 use App\Http\Middleware\EnsureMcpEnabled;
 use App\Http\Middleware\EnsureTeamMcpEnabled;
 use App\Http\Middleware\EnsureTeamWideAccess;
@@ -20,10 +22,12 @@ use App\Http\Middleware\EnsureTokenBelongsToCurrentTeamMember;
 use App\Http\Middleware\KeepConcurrentTeamSwitch;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
-use App\Http\Middleware\SecurityHeaders;
-use App\Http\Middleware\SetInterfaceLocale;
 use App\Http\Middleware\RequirePassword;
 use App\Http\Middleware\RequireTeamTwoFactor;
+use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\RestrictAdminIps;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetInterfaceLocale;
 use App\Http\Middleware\ThrottleFailedApiRequests;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
@@ -86,7 +90,11 @@ class Kernel extends HttpKernel
             SetInterfaceLocale::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            EnforceSessionTimeout::class,
+            RestrictAdminIps::class,
             CheckForcePasswordReset::class,
+            EnforcePasswordExpiry::class,
+            RequireTwoFactor::class,
             DecideWhatToDoWithUser::class,
             RequireTeamTwoFactor::class,
 

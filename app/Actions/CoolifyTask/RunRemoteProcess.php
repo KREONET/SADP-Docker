@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\ServiceApplication;
 use App\Models\ServiceDatabase;
 use App\Services\Security\SensitiveDataRedactor;
+use App\Services\Ssh\KnownHosts;
 use App\Support\DatabaseImport\DatabaseImportCleanup;
 use App\Support\RemoteProcessCommand;
 use App\Support\ResourceStartActivity;
@@ -52,6 +53,8 @@ class RunRemoteProcess
     protected $throttle_interval_ms = 200;
 
     protected int $counter = 1;
+
+    protected ?Server $server = null;
 
     /**
      * Output of each stream that is not redacted yet, because its line or private key block is not complete.
@@ -190,6 +193,10 @@ class RunRemoteProcess
             }
         }
         if ($processResult->exitCode() != 0 && ! $this->ignore_errors) {
+            if ($this->server) {
+                KnownHosts::failIfHostKeyChanged($this->server, $processResult->errorOutput(), $processResult->exitCode());
+            }
+
             throw new \RuntimeException($this->redact($processResult->errorOutput()), $processResult->exitCode());
         }
 
@@ -225,9 +232,9 @@ class RunRemoteProcess
     {
         $server_uuid = $this->activity->getExtraProperty('server_uuid');
         $command = RemoteProcessCommand::read($this->activity) ?? throw new \RuntimeException('The command of this task was already removed.');
-        $server = Server::whereUuid($server_uuid)->firstOrFail();
+        $this->server = Server::whereUuid($server_uuid)->firstOrFail();
 
-        return [SshMultiplexingHelper::generateSshBatchCommand($server), SshMultiplexingHelper::sshBatchInput($command)];
+        return [SshMultiplexingHelper::generateSshBatchCommand($this->server), SshMultiplexingHelper::sshBatchInput($command)];
     }
 
     protected function handleOutput(string $type, string $output)

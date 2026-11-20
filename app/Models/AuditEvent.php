@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\Logging\SensitiveDataMasker;
+use App\Services\Logging\ThrottledSecurityAlert;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,14 +13,72 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use JsonSerializable;
+use LogicException;
 use stdClass;
 use Throwable;
 
+/**
+ * An append-only audit record. Rows form a hash chain: every row stores the hash of the row before
+ * it (by id) and a SHA-256 over that hash plus its own immutable fields, so `php artisan audit:verify`
+ * can detect rows that were changed or removed afterwards. Updating or deleting a row through the
+ * model throws; only the retention prune (`pruneExpired()`) removes rows, oldest first.
+ *
+ * [한국어] 감사 로그 한 건입니다. 각 행은 앞 행의 해시를 이어받는 해시 체인을 이루므로 나중에 고치거나 지우면
+ * `audit:verify` 명령이 찾아냅니다. 모델로 수정·삭제하면 예외가 나며, 보관 기간이 지난 행만 `pruneExpired()` 로 지웁니다.
+ */
 class AuditEvent extends Model
 {
     use HasFactory;
 
     public const UPDATED_AT = null;
+
+    public const RESULT_SUCCESS = 'success';
+
+    public const RESULT_FAILURE = 'failure';
+
+    public const RESULT_DENIED = 'denied';
+
+    public const RESULTS = [self::RESULT_SUCCESS, self::RESULT_FAILURE, self::RESULT_DENIED];
+
+    /**
+     * Fields covered by the row hash, in canonical order. Loki bookkeeping columns stay mutable.
+     */
+    public const HASHED_COLUMNS = [
+        'team_id',
+        'event',
+        'source',
+        'action',
+        'level',
+        'result',
+        'actor_type',
+        'actor_id',
+        'actor_name',
+        'actor_email',
+        'actor_token_id',
+        'actor_token_name',
+        'resource_type',
+        'resource_uuid',
+        'resource_name',
+        'description',
+        'metadata',
+        'ip_address',
+        'user_agent',
+        'created_at',
+    ];
+
+    /**
+     * Columns that may change after the row was written (Loki shipping state only).
+     */
+    public const MUTABLE_COLUMNS = ['loki_shipped_at', 'loki_attempts'];
+
+    /**
+     * Arbitrary constant for the Postgres advisory lock that serializes chain appends.
+     */
+    private const CHAIN_LOCK_KEY = 7_310_402_617;
+
+    private const PRUNE_BATCH_SIZE = 1000;
+
+    private const WRITE_FAILURE_ALERT = 'audit_write_failed';
 
     /**
      * Raw commands and configurations can contain credentials without sensitive field names.
@@ -41,8 +101,6 @@ class AuditEvent extends Model
         'configuration_snapshot', 'configuration_diff', 'content', 'file_storage_content',
     ];
 
-    private const PRUNE_BATCH_SIZE = 1000;
-
     protected $fillable = [
         'team_id',
         'event',
@@ -63,6 +121,7 @@ class AuditEvent extends Model
         'changes',
         'ip_address',
         'user_agent',
+        'result',
         'created_at',
     ];
 
@@ -72,7 +131,128 @@ class AuditEvent extends Model
             'metadata' => 'array',
             'changes' => 'encrypted:array',
             'created_at' => 'datetime',
+            'loki_shipped_at' => 'datetime',
+            'loki_attempts' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (AuditEvent $event): void {
+            $event->created_at ??= $event->freshTimestamp();
+            $event->previous_hash = static::query()->orderByDesc('id')->value('hash');
+            $event->hash = $event->computeHash();
+        });
+
+        static::updating(function (AuditEvent $event): void {
+            if (array_diff(array_keys($event->getDirty()), self::MUTABLE_COLUMNS) !== []) {
+                throw new LogicException('Audit events are append-only and cannot be changed.');
+            }
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Audit events are append-only; only the retention prune removes them.');
+        });
+    }
+
+    /**
+     * New rows are appended under a lock so concurrent writers cannot link to the same previous row.
+     */
+    public function save(array $options = []): bool
+    {
+        if ($this->exists) {
+            return parent::save($options);
+        }
+
+        return $this->getConnection()->transaction(function () use ($options): bool {
+            self::lockChain();
+
+            return parent::save($options);
+        });
+    }
+
+    /**
+     * Mass updates through the model's query builder may only touch the Loki bookkeeping columns.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     */
+    public function newEloquentBuilder($query): Builder
+    {
+        return new class($query) extends Builder
+        {
+            public function update(array $values)
+            {
+                if (array_diff(array_keys($values), AuditEvent::MUTABLE_COLUMNS) !== []) {
+                    throw new LogicException('Audit events are append-only and cannot be changed.');
+                }
+
+                return parent::update($values);
+            }
+        };
+    }
+
+    /**
+     * The SHA-256 the row should carry for its stored previous hash and fields.
+     */
+    public function computeHash(): string
+    {
+        return hash('sha256', ($this->previous_hash ?? '').self::canonicalJson($this->canonicalFields()));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function canonicalFields(): array
+    {
+        $fields = [];
+        foreach (self::HASHED_COLUMNS as $column) {
+            $value = $this->getAttribute($column);
+            $fields[$column] = match (true) {
+                $value === null => null,
+                $column === 'created_at' => $this->asDateTime($value)->format('Y-m-d H:i:s'),
+                $column === 'metadata' => is_array($value) ? $value : (string) $value,
+                default => (string) $value,
+            };
+        }
+
+        if ($this->changes !== null) {
+            $fields['changes'] = $this->changes;
+        }
+
+        return $fields;
+    }
+
+    public static function canonicalJson(mixed $value): string
+    {
+        return json_encode(self::sortKeys($value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR);
+    }
+
+    private static function sortKeys(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $value = array_map(fn (mixed $item): mixed => self::sortKeys($item), $value);
+        if (! array_is_list($value)) {
+            ksort($value, SORT_STRING);
+        }
+
+        return $value;
+    }
+
+    private static function lockChain(): void
+    {
+        $connection = (new static)->getConnection();
+
+        if ($connection->getDriverName() === 'pgsql') {
+            $connection->select('select pg_advisory_xact_lock(?)', [self::CHAIN_LOCK_KEY]);
+
+            return;
+        }
+
+        // SQLite serializes writers itself; on MySQL the row lock on the newest row orders appends.
+        static::query()->orderByDesc('id')->lockForUpdate()->first(['id']);
     }
 
     public function scopeVisibleToTeam(Builder $query, int $teamId, bool $includeInstanceEvents = false): Builder
@@ -142,21 +322,59 @@ class AuditEvent extends Model
                     self::query()->create($attributes);
                 } catch (Throwable $exception) {
                     try {
-                        Log::warning('Audit event persistence failed', [
-                            'event' => $attributes['event'],
-                            'exception' => $exception::class,
-                        ]);
+                        self::reportWriteFailure('Audit event persistence failed', $attributes['event'], $exception);
                     } catch (Throwable) {
                         // Audit failures must not interrupt the action.
                     }
                 }
             });
         } catch (Throwable $exception) {
-            Log::warning('Audit event preparation failed', [
+            self::reportWriteFailure('Audit event preparation failed', $event, $exception);
+        }
+    }
+
+    /**
+     * A lost audit record is a security problem, so it is logged as an error and administrators are
+     * alerted (at most once per alert window).
+     */
+    private static function reportWriteFailure(string $message, string $event, Throwable $exception): void
+    {
+        try {
+            Log::error($message, [
                 'event' => $event,
                 'exception' => $exception::class,
             ]);
+        } catch (Throwable) {
+            // The alert below is still attempted.
         }
+
+        ThrottledSecurityAlert::send(self::WRITE_FAILURE_ALERT, 'Audit events could not be stored', [
+            'event' => $event,
+            'exception' => $exception::class,
+        ]);
+    }
+
+    /**
+     * The outcome stored in `result`: the context value when valid, otherwise derived from the
+     * event name (failed/denied/blocked/locked) and the level.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public static function resultFor(string $event, array $context = [], string $level = 'info'): string
+    {
+        $explicit = data_get($context, 'result');
+        if (is_string($explicit) && in_array(strtolower($explicit), self::RESULTS, true)) {
+            return strtolower($explicit);
+        }
+
+        $words = preg_split('/[^a-z]+/', strtolower($event), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return match (true) {
+            array_intersect($words, ['denied', 'blocked', 'locked', 'forbidden', 'rejected', 'unauthorized']) !== [] => self::RESULT_DENIED,
+            array_intersect($words, ['failed', 'failure', 'error']) !== [] => self::RESULT_FAILURE,
+            in_array(self::normalizeLevel($level), ['warning', 'error'], true) => self::RESULT_FAILURE,
+            default => self::RESULT_SUCCESS,
+        };
     }
 
     /**
@@ -196,6 +414,7 @@ class AuditEvent extends Model
             'source' => $source,
             'action' => $action,
             'level' => self::normalizeLevel($level),
+            'result' => self::resultFor($event, $context, $level),
             'actor_type' => $actorType,
             'actor_id' => data_get($context, 'actor_id', $user?->id),
             'actor_name' => data_get($context, 'actor_name', $user?->name),
@@ -242,69 +461,51 @@ class AuditEvent extends Model
     }
 
     /**
-     * Removes the personal data of a deleted user: from the events that the user did,
-     * and from the events about the user (team member, impersonation, deletion).
+     * Days audit events are kept: the instance setting, never less than the policy minimum.
      */
-    public static function anonymizeUser(User $user): void
+    public static function retentionDays(): int
     {
-        $replacement = '[deleted user]';
-        $personalValues = array_filter([Str::lower((string) $user->email), Str::lower((string) $user->name)]);
+        $minimum = (int) config('security.audit.min_retention_days', 365);
 
-        self::query()
-            ->where(fn (Builder $query) => $query
-                ->where(fn (Builder $query) => $query->where('actor_type', 'user')->where('actor_id', $user->id))
-                ->orWhereJsonContains('metadata->member_id', $user->id)
-                ->orWhereJsonContains('metadata->target_user_id', $user->id)
-                ->orWhereJsonContains('metadata->deleted_user_id', $user->id))
-            ->chunkById(self::PRUNE_BATCH_SIZE, function ($events) use ($personalValues, $replacement, $user): void {
-                foreach ($events as $event) {
-                    if ($event->actor_type === 'user' && (int) $event->actor_id === (int) $user->id) {
-                        $event->actor_name = $replacement;
-                        $event->actor_email = null;
-                        $event->ip_address = null;
-                        $event->user_agent = null;
-                    }
-
-                    if ($event->resource_name !== null && in_array(Str::lower($event->resource_name), $personalValues, true)) {
-                        $event->description = $replacement.substr($event->description, strlen($event->resource_name));
-                        $event->resource_name = $replacement;
-                    }
-
-                    $event->metadata = self::replacePersonalValues($event->metadata, $personalValues, $replacement);
-                    $event->save();
-                }
-            });
-    }
-
-    /**
-     * @param  array<int, string>  $personalValues
-     */
-    private static function replacePersonalValues(mixed $value, array $personalValues, string $replacement): mixed
-    {
-        if (is_array($value)) {
-            return array_map(fn (mixed $item): mixed => self::replacePersonalValues($item, $personalValues, $replacement), $value);
+        try {
+            $configured = (int) instanceSettings()->audit_log_retention_days;
+        } catch (Throwable) {
+            $configured = 0;
         }
 
-        return is_string($value) && in_array(Str::lower($value), $personalValues, true) ? $replacement : $value;
+        if ($configured <= 0) {
+            $configured = (int) config('security.audit.retention_days', 365);
+        }
+
+        return max($minimum, $configured);
     }
 
     /**
-     * Deletes in batches, so a large table is not locked by one long DELETE.
+     * The only allowed removal of audit events: rows past the retention period, oldest first, through
+     * the query builder (model delete events throw). The oldest remaining row becomes the chain anchor.
      */
     public static function pruneExpired(): int
     {
-        $olderThan = now()->subDays(90);
-        $total = 0;
+        $cutoff = now()->subDays(self::retentionDays());
+        $deleted = 0;
 
         do {
-            $deleted = self::query()
-                ->where('created_at', '<', $olderThan)
+            $ids = self::query()
+                ->where('created_at', '<', $cutoff)
+                ->orderBy('id')
                 ->limit(self::PRUNE_BATCH_SIZE)
-                ->delete();
-            $total += $deleted;
-        } while ($deleted > 0);
+                ->pluck('id');
 
-        return $total;
+            $batch = $ids->isEmpty() ? 0 : self::query()->toBase()->whereIn('id', $ids->all())->delete();
+            $deleted += $batch;
+        } while ($batch > 0);
+
+        return $deleted;
+    }
+
+    public static function expiredCount(): int
+    {
+        return self::query()->where('created_at', '<', now()->subDays(self::retentionDays()))->count();
     }
 
     /**
@@ -333,6 +534,10 @@ class AuditEvent extends Model
             return '[REDACTED]';
         }
 
+        if ($key !== null && is_string($value) && self::isAttemptedIdentityKey($key)) {
+            return SensitiveDataMasker::maskEmail($value);
+        }
+
         if ($value instanceof Arrayable) {
             $value = $value->toArray();
         } elseif ($value instanceof JsonSerializable) {
@@ -354,6 +559,14 @@ class AuditEvent extends Model
                 $itemKey => self::redact($item, (string) $itemKey),
             ])
             ->all();
+    }
+
+    /**
+     * Identifiers typed into a failed login may belong to someone else, so only a hint is kept.
+     */
+    private static function isAttemptedIdentityKey(string $key): bool
+    {
+        return (bool) preg_match('/^attempted_(email|login|username)$/i', $key);
     }
 
     /**

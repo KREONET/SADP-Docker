@@ -6,6 +6,7 @@ import { initializeTerminalComponent } from './terminal.js';
 import './traffic-globe.js';
 import './traffic-table.js';
 import { registerLivewireRequestFailureHandler } from './livewire-request-failure.js';
+import './session-activity.js';
 import { registerLivewireUpdateDedupe } from './livewire-update-dedupe.js';
 import { parseSubmitAction } from './modal-confirmation.js';
 import { dismissSecurityCallout, securityCallout } from './security-callout.js';

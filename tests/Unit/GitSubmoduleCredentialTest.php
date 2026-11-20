@@ -21,7 +21,7 @@ describe('Git submodule credential propagation', function () {
     });
 
     test('setGitImportSettings uses provided gitSshCommand for submodule update', function () {
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -49,7 +49,7 @@ describe('Git submodule credential propagation', function () {
 
     test('setGitImportSettings uses provided gitSshCommand for fetch and checkout', function () {
         $this->application->git_commit_sha = 'abc123def456';
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',
@@ -65,7 +65,7 @@ describe('Git submodule credential propagation', function () {
     test('setGitImportSettings uses provided gitSshCommand for shallow fetch', function () {
         $this->application->git_commit_sha = 'abc123def456';
         $this->application->settings->is_git_shallow_clone_enabled = true;
-        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_rsa';
+        $sshCommand = 'ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR '.gitSshHostKeyOptions().' -i /root/.ssh/id_rsa';
 
         $result = $this->application->setGitImportSettings(
             deployment_uuid: 'test-uuid',

@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Once;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -22,6 +23,7 @@ beforeEach(function () {
     $this->rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']);
     $this->platformAdmin = User::factory()->create(['name' => 'Platform Admin']);
     $this->rootTeam->members()->attach($this->platformAdmin->id, ['role' => 'admin']);
+    TwoFactor::confirm($this->platformAdmin);
 
     $this->team = Team::factory()->create(['name' => 'Tenant']);
     $this->teamOwner = User::factory()->create(['name' => 'Tenant Owner']);

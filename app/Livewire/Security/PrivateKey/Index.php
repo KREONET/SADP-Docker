@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Security\PrivateKey;
 
+use App\Enums\SshKeyType;
 use App\Models\PrivateKey;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -47,7 +48,7 @@ class Index extends Component
         try {
             $this->authorize('create', PrivateKey::class);
 
-            if (! in_array($type, ['ed25519', 'rsa'], true)) {
+            if (SshKeyType::tryFrom($type) === null) {
                 $this->dispatch('error', __('Invalid private key type.'));
 
                 return;

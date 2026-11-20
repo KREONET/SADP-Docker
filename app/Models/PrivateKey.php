@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SshKeyType;
 use App\Helpers\SshMultiplexingHelper;
 use App\Traits\Auditable;
 use App\Traits\HasSafeStringAttribute;
@@ -204,7 +205,7 @@ class PrivateKey extends BaseModel
     /**
      * @param  int|null  $rsaKeyLength  The RSA key length in bits; null keeps the default of generateSSHKey().
      */
-    public static function generateNewKeyPair($type = 'ed25519', ?int $rsaKeyLength = null)
+    public static function generateNewKeyPair($type = SshKeyType::ECDSA->value, ?int $rsaKeyLength = null)
     {
         try {
             $instance = new self;
@@ -218,7 +219,7 @@ class PrivateKey extends BaseModel
                     'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
                 ];
             } else {
-                $keyPair = generateSSHKey($type === 'rsa' ? 'rsa' : 'ed25519');
+                $keyPair = generateSSHKey($type);
             }
 
             return [
@@ -322,13 +323,21 @@ class PrivateKey extends BaseModel
         }
     }
 
+    /**
+     * Remove the key file (and its lock file) when the key is deleted.
+     *
+     * The file is unlinked, not overwritten: on journaling and copy-on-write
+     * filesystems an overwrite does not reliably destroy the old blocks.
+     */
     public static function deleteFromStorage(self $privateKey)
     {
         $filename = "ssh_key@{$privateKey->uuid}";
         $disk = Storage::disk('ssh-keys');
 
-        if ($disk->exists($filename)) {
-            $disk->delete($filename);
+        foreach ([$filename, "{$filename}.lock"] as $file) {
+            if ($disk->exists($file)) {
+                $disk->delete($file);
+            }
         }
     }
 
@@ -342,6 +351,12 @@ class PrivateKey extends BaseModel
             if (! $success) {
                 throw new \Exception('Failed to create SSH keys storage directory');
             }
+        }
+
+        // Only the Coolify user may list or open the key files.
+        $directory = rtrim($disk->path($directoryPath), '/');
+        if (is_dir($directory) && (fileperms($directory) & 0777) !== 0700 && ! @chmod($directory, 0700)) {
+            Log::warning('Failed to set SSH keys directory permissions to 0700', ['path' => $directory]);
         }
 
         // Check if directory is writable by attempting a test file

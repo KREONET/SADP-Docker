@@ -183,3 +183,14 @@ test('allows similar but not reserved filenames', function () {
 
     expect($failures)->toBeEmpty();
 });
+
+test('blocks reserved filename coolify-tls.yaml that Coolify regenerates on every proxy start', function (string $filename) {
+    $rule = new ValidProxyConfigFilename;
+    $failed = false;
+
+    $rule->validate('fileName', $filename, function () use (&$failed) {
+        $failed = true;
+    });
+
+    expect($failed)->toBeTrue();
+})->with(['coolify-tls.yaml', 'coolify-tls']);

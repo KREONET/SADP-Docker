@@ -197,6 +197,9 @@
                         <form wire:submit="requestEmailChange" class="application-settings-section-body space-y-4">
                             <x-forms.input id="new_email" :label="__('New email address')" required type="email"
                                 x-ref="newEmailInput" />
+                            <x-forms.input id="email_change_password" :label="__('Current password')" required
+                                type="password" autocomplete="current-password"
+                                :helper="__('Confirm your identity before the address is changed.')" />
                             <div class="flex justify-end">
                                 <x-forms.button type="submit" isHighlighted>{{ __('Send code') }}</x-forms.button>
                             </div>
@@ -226,10 +229,19 @@
             </section>
         </form>
 
-        <section class="application-settings-section">
+        <section id="two-factor" class="application-settings-section scroll-mt-6">
             @if (session('status') === 'initial-password-set')
                 <x-callout type="success" :title="__('Password set')">
                     {{ __('Your password is set. Select Configure 2FA again to continue the setup.') }}
+                </x-callout>
+            @endif
+            @if (session('two_factor_required'))
+                <x-callout type="warning" :title="__('Two-factor authentication required')">
+                    {{ session('two_factor_required') }}
+                </x-callout>
+            @elseif ($twoFactorDeadline = \App\Http\Middleware\RequireTwoFactor::gracePeriodEndsAt(request()->user()))
+                <x-callout type="warning" :title="__('Two-factor authentication required')">
+                    {{ __('Set up two-factor authentication before :deadline. After that, other pages stay locked until you do.', ['deadline' => $twoFactorDeadline->format('Y-m-d H:i')]) }}
                 </x-callout>
             @endif
             <div class="application-settings-section-header">
@@ -310,6 +322,8 @@
                 @endif
             </div>
         </section>
+
+        <livewire:profile.sessions />
 
         <livewire:profile.passkeys />
         @if (auth()->id() !== 0)

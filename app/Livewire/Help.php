@@ -19,6 +19,14 @@ class Help extends Component
     #[Validate(['required', 'min:3', 'max:600'])]
     public string $subject;
 
+    /**
+     * Whether feedback may be forwarded to the upstream Coolify team (Cloud API or feedback mailbox).
+     */
+    public function feedbackForwardingEnabled(): bool
+    {
+        return (bool) instanceSettings()->is_feedback_forwarding_enabled;
+    }
+
     public function submit()
     {
         try {
@@ -26,6 +34,12 @@ class Help extends Component
             $this->rateLimit(3, 30);
 
             $settings = instanceSettings();
+            if (! $settings->is_feedback_forwarding_enabled) {
+                $this->dispatch('error', __('Feedback forwarding is disabled.'), __('Ask your administrator to enable it in the instance settings.'));
+
+                return;
+            }
+
             $mail = new MailMessage;
             $mail->view(
                 'emails.help',
@@ -63,6 +77,8 @@ class Help extends Component
 
     public function render()
     {
-        return view('livewire.help')->layout('layouts.app');
+        return view('livewire.help', [
+            'feedbackForwardingEnabled' => $this->feedbackForwardingEnabled(),
+        ])->layout('layouts.app');
     }
 }

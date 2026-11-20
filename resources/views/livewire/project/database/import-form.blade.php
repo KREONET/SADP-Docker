@@ -189,8 +189,14 @@
                     class="mt-4">
                     <form class="flex flex-col gap-3 sm:flex-row sm:items-end">
                         <div class="min-w-0 flex-1">
+                            @php
+                                $serverPathHelper = __('Only files inside these directories can be imported: :directories. Encrypted backups (.enc) that Coolify created are decrypted automatically.', [
+                                    'directories' => implode(', ', \App\Support\DatabaseImport\ServerImportPath::allowedDirectories()),
+                                ]);
+                            @endphp
                             <x-forms.input :label="__('File path on the server')"
-                                placeholder="/home/user/backup.sql.gz" wire:model="customLocation"
+                                :helper="$serverPathHelper"
+                                placeholder="/data/coolify/backups/backup.sql.gz" wire:model="customLocation"
                                 x-model="$wire.customLocation" canGate="update"
                                 :canResource="$this->resource" />
                         </div>

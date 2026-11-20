@@ -29,6 +29,7 @@ use App\Models\StandalonePostgresql;
 use App\Models\StandaloneRedis;
 use App\Models\StandaloneSqlite;
 use App\Models\SwarmDocker;
+use App\Support\PersistentVolumeName;
 use App\Support\ResourceStartActivity;
 use App\Support\ValidationPatterns;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -1064,6 +1065,7 @@ class DatabasesController extends Controller
                         'database_backup_retention_max_storage_s3' => ['type' => 'number', 'description' => 'Max storage (GB) for S3 backups'],
                         'timeout' => ['type' => 'integer', 'description' => 'Backup job timeout in seconds (min: 60, max: 36000)', 'default' => 3600],
                         'missing_backup_notification_days' => ['type' => 'integer', 'description' => 'Alert after this many days without an execution; 0 disables alerts', 'minimum' => 0, 'maximum' => 365, 'default' => 0],
+                        'encrypt_backup' => ['type' => 'boolean', 'description' => 'Encrypt new backup files on the server (openssl AES-256-CBC, PBKDF2-SHA256, 600000 iterations). Coolify decrypts them automatically when they are restored through Coolify; downloaded files stay encrypted. Not available for the Coolify instance database.', 'default' => false],
                     ],
                 ),
             )
@@ -1104,7 +1106,7 @@ class DatabasesController extends Controller
     )]
     public function create_backup(Request $request)
     {
-        $backupConfigFields = ['save_s3', 'enabled', 'dump_all', 'frequency', 'databases_to_backup', 'database_backup_retention_amount_locally', 'database_backup_retention_days_locally', 'database_backup_retention_max_storage_locally', 'database_backup_retention_amount_s3', 'database_backup_retention_days_s3', 'database_backup_retention_max_storage_s3', 's3_storage_uuid', 's3_storage_uuids', 'timeout', 'missing_backup_notification_days', 'disable_local_backup'];
+        $backupConfigFields = ['save_s3', 'enabled', 'dump_all', 'frequency', 'databases_to_backup', 'database_backup_retention_amount_locally', 'database_backup_retention_days_locally', 'database_backup_retention_max_storage_locally', 'database_backup_retention_amount_s3', 'database_backup_retention_days_s3', 'database_backup_retention_max_storage_s3', 's3_storage_uuid', 's3_storage_uuids', 'timeout', 'missing_backup_notification_days', 'disable_local_backup', 'encrypt_backup'];
 
         $teamId = getTeamIdFromToken();
         if (is_null($teamId)) {
@@ -1136,6 +1138,7 @@ class DatabasesController extends Controller
             'database_backup_retention_max_storage_s3' => 'numeric|min:0',
             'timeout' => 'integer|min:60|max:36000',
             'missing_backup_notification_days' => 'integer|min:0|max:365',
+            'encrypt_backup' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -1242,6 +1245,13 @@ class DatabasesController extends Controller
         $backupData['database_type'] = $database->getMorphClass();
         $backupData['team_id'] = $teamId;
 
+        if (! empty($backupData['encrypt_backup']) && ! (new ScheduledDatabaseBackup(['database_type' => $backupData['database_type'], 'database_id' => $backupData['database_id']]))->supportsEncryption()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => ['encrypt_backup' => ['Backups of the Coolify instance database cannot be encrypted.']],
+            ], 422);
+        }
+
         // Set defaults
         if (! isset($backupData['enabled'])) {
             $backupData['enabled'] = true;
@@ -1268,6 +1278,7 @@ class DatabasesController extends Controller
             'backup_uuid' => $backupConfig->uuid,
             'frequency' => $backupConfig->frequency,
             'save_s3' => (bool) $backupConfig->save_s3,
+            'encrypt_backup' => (bool) $backupConfig->encrypt_backup,
             'backup_now' => (bool) $request->backup_now,
         ]);
 
@@ -1331,6 +1342,7 @@ class DatabasesController extends Controller
                         'database_backup_retention_max_storage_s3' => ['type' => 'number', 'description' => 'Max storage of the backup in S3'],
                         'timeout' => ['type' => 'integer', 'description' => 'Backup job timeout in seconds (min: 60, max: 36000)', 'default' => 3600],
                         'missing_backup_notification_days' => ['type' => 'integer', 'description' => 'Alert after this many days without an execution; 0 disables alerts', 'minimum' => 0, 'maximum' => 365],
+                        'encrypt_backup' => ['type' => 'boolean', 'description' => 'Encrypt new backup files on the server (openssl AES-256-CBC, PBKDF2-SHA256, 600000 iterations). Existing backup files are not changed. Not available for the Coolify instance database.'],
                     ],
                 ),
             )
@@ -1364,7 +1376,7 @@ class DatabasesController extends Controller
     )]
     public function update_backup(Request $request)
     {
-        $backupConfigFields = ['save_s3', 'enabled', 'dump_all', 'frequency', 'databases_to_backup', 'database_backup_retention_amount_locally', 'database_backup_retention_days_locally', 'database_backup_retention_max_storage_locally', 'database_backup_retention_amount_s3', 'database_backup_retention_days_s3', 'database_backup_retention_max_storage_s3', 's3_storage_uuid', 's3_storage_uuids', 'timeout', 'missing_backup_notification_days', 'disable_local_backup'];
+        $backupConfigFields = ['save_s3', 'enabled', 'dump_all', 'frequency', 'databases_to_backup', 'database_backup_retention_amount_locally', 'database_backup_retention_days_locally', 'database_backup_retention_max_storage_locally', 'database_backup_retention_amount_s3', 'database_backup_retention_days_s3', 'database_backup_retention_max_storage_s3', 's3_storage_uuid', 's3_storage_uuids', 'timeout', 'missing_backup_notification_days', 'disable_local_backup', 'encrypt_backup'];
 
         $teamId = getTeamIdFromToken();
         if (is_null($teamId)) {
@@ -1394,6 +1406,7 @@ class DatabasesController extends Controller
             'database_backup_retention_max_storage_s3' => 'numeric|min:0',
             'timeout' => 'integer|min:60|max:36000',
             'missing_backup_notification_days' => 'integer|min:0|max:365',
+            'encrypt_backup' => 'boolean',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -1493,6 +1506,13 @@ class DatabasesController extends Controller
                     'errors' => ['databases_to_backup' => [$e->getMessage()]],
                 ], 422);
             }
+        }
+
+        if (! empty($backupData['encrypt_backup']) && ! $backupConfig->supportsEncryption()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => ['encrypt_backup' => ['Backups of the Coolify instance database cannot be encrypted.']],
+            ], 422);
         }
 
         $storageIds = $s3Storages?->pluck('id');
@@ -5328,6 +5348,7 @@ class DatabasesController extends Controller
                 str_starts_with($originalName, 'keydb-data-') => 'keydb-data-'.$newDatabase->uuid,
                 str_starts_with($originalName, 'dragonfly-data-') => 'dragonfly-data-'.$newDatabase->uuid,
                 str_starts_with($originalName, 'sqlite-data-') => 'sqlite-data-'.$newDatabase->uuid,
+                PersistentVolumeName::isGenerated($originalName) => PersistentVolumeName::regenerate($originalName, $newDatabase->environment?->project),
                 str_starts_with($volume->name, $database->uuid) => str($volume->name)->replace($database->uuid, $newDatabase->uuid)->toString(),
                 default => $newDatabase->uuid.'-'.$volume->name,
             };

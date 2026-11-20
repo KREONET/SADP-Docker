@@ -319,7 +319,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/deployments/{uuid}', [DeployController::class, 'deployment_by_uuid'])->middleware(['api.ability:read']);
     });
     Route::get('/admin', AdminIndex::class)->name('admin.index');
-    // Administrators and sub-administrators operate these pages; sources, security settings and logs are administrator-only.
+    // Administrators and sub-administrators operate these pages; sources and security settings are administrator-only.
     Route::prefix('platform')->middleware('can:operatePlatform')->group(function () {
         Route::get('/', PlatformDashboard::class)->name('platform.dashboard');
         Route::get('/applications', PlatformApplications::class)->name('platform.applications');
@@ -329,8 +329,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('platform')->middleware('can:accessPlatformAdmin')->group(function () {
         Route::get('/sources', PlatformSources::class)->name('platform.sources');
         Route::get('/security', PlatformSecurity::class)->name('platform.security');
-        Route::get('/logs', PlatformLogs::class)->name('platform.logs');
     });
+    // Auditors read the logs without any other platform admin access; changes inside are gated separately.
+    Route::get('/platform/logs', PlatformLogs::class)->middleware('can:viewAuditLogs')->name('platform.logs');
     Route::get('/onboarding', BoardingIndex::class)->name('onboarding');
 
     Route::middleware('access.team-wide')->group(function () {

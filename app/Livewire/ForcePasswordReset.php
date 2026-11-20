@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Rules\NotRecentlyUsedPassword;
 use DanHarrin\LivewireRateLimiting\WithRateLimiting;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -17,20 +18,26 @@ class ForcePasswordReset extends Component
 
     public string $password_confirmation;
 
+    /**
+     * True when the user is here because the password reached its maximum age.
+     */
+    public bool $passwordExpired = false;
+
     public function rules(): array
     {
         return [
             'email' => ['required', 'email'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'password' => ['required', Password::defaults(), 'confirmed', new NotRecentlyUsedPassword(auth()->user())],
         ];
     }
 
     public function mount()
     {
-        if (auth()->user()->force_password_reset === false) {
+        if (! $this->mustChangePassword()) {
             return redirect()->route('dashboard');
         }
         $this->email = auth()->user()->email;
+        $this->passwordExpired = auth()->user()->force_password_reset !== true;
     }
 
     public function render()
@@ -40,7 +47,7 @@ class ForcePasswordReset extends Component
 
     public function submit()
     {
-        if (auth()->user()->force_password_reset === false) {
+        if (! $this->mustChangePassword()) {
             return redirect()->route('dashboard');
         }
 
@@ -59,12 +66,22 @@ class ForcePasswordReset extends Component
                 'team_id' => $teamId,
                 'resource' => 'user',
                 'user_name' => $user->name,
-                'reason' => 'forced_reset',
+                'reason' => $this->passwordExpired ? 'expired' : 'forced',
             ]);
 
             return redirect()->route('dashboard');
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
+    }
+
+    /**
+     * An administrator demanded a new password, or the current one has expired.
+     */
+    private function mustChangePassword(): bool
+    {
+        $user = auth()->user();
+
+        return $user->force_password_reset === true || $user->passwordHasExpired();
     }
 }

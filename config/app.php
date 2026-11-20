@@ -6,6 +6,7 @@ use App\Providers\EventServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\HorizonServiceProvider;
 use App\Providers\RouteServiceProvider;
+use App\Providers\SecurityServiceProvider;
 use Illuminate\Auth\AuthServiceProvider;
 use Illuminate\Auth\Passwords\PasswordResetServiceProvider;
 use Illuminate\Broadcasting\BroadcastServiceProvider;
@@ -195,6 +196,12 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
+    'previous_keys' => [
+        ...array_filter(
+            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
+        ),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver
@@ -269,6 +276,7 @@ return [
         HorizonServiceProvider::class,
         RouteServiceProvider::class,
         ConfigurationServiceProvider::class,
+        SecurityServiceProvider::class,
     ],
 
     /*

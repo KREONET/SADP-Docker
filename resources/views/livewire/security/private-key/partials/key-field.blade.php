@@ -1,3 +1,4 @@
+@php $reauthMethod = reauthenticationMethod(); @endphp
 <div class="lg:col-span-2">
     <x-forms.input readonly id="fingerprint" label="Fingerprint" />
 </div>
@@ -7,30 +8,38 @@
     password: '',
     revealed: '',
     revealing: false,
-    skipPassword: @js(shouldSkipPasswordConfirmation()),
+    revealRequest: 0,
+    requiresCredential: @js(in_array($reauthMethod, ['password', 'totp'], true)),
+    skipCredential: @js(hasRecentSensitiveConfirmation() || shouldSkipPasswordConfirmation()),
     reveal() {
-        if (this.replacing) return;
-        if (!this.skipPassword && !this.password) {
+        if (this.replacing || this.revealing) return;
+        if (this.requiresCredential && !this.skipCredential && !this.password) {
             this.askPassword = true;
             return;
         }
         const sentPassword = this.password;
         this.revealing = true;
-        $wire.revealPrivateKey(this.password).then((key) => {
+        const request = ++this.revealRequest;
+        $wire.revealPrivateKey(sentPassword).then((key) => {
+            if (request !== this.revealRequest) return;
             this.revealing = false;
             this.password = '';
             if (key && !this.replacing) {
                 this.revealed = key;
                 this.askPassword = false;
-            } else if (!key && !sentPassword) {
-                this.skipPassword = false;
+            } else if (!key && !sentPassword && this.requiresCredential) {
+                this.skipCredential = false;
                 this.askPassword = true;
             }
         }).catch(() => {
+            if (request !== this.revealRequest) return;
             this.revealing = false;
+            this.password = '';
         });
     },
     hide() {
+        this.revealRequest++;
+        this.revealing = false;
         this.revealed = '';
         this.askPassword = false;
         this.password = '';
@@ -46,11 +55,11 @@
                     class="text-[11px] font-medium text-coollabs hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50 dark:text-brand-light"
                     x-on:click="revealed || askPassword ? hide() : reveal()"
                     x-bind:disabled="replacing"
-                    x-text="revealed || askPassword ? 'Hide key' : 'Reveal key'"></button>
+                    x-text="revealed || askPassword ? @js(__('Hide key')) : @js(__('Show private key'))"></button>
                 <button type="button"
                     class="text-[11px] font-medium text-coollabs hover:underline dark:text-brand-light"
                     x-on:click="replacing = !replacing; if (replacing) { hide() } else { $wire.set('newPrivateKey', '', false) }"
-                    x-text="replacing ? 'Cancel replace' : 'Replace key'"></button>
+                    x-text="replacing ? @js(__('Cancel')) : @js(__('Replace key'))"></button>
             </div>
         @endcan
     </div>
@@ -60,9 +69,15 @@
     @can('update', $private_key)
         <div x-cloak x-show="askPassword && !revealed" class="flex items-end gap-2">
             <div class="flex-1">
-                <label class="text-[13px] font-medium">{{ __('Enter your password to reveal the private key') }}</label>
-                <input type="password" class="w-full input" x-model="password" autocomplete="current-password"
-                    x-on:keydown.enter.prevent="reveal()" placeholder="{{ __('Enter your password') }}">
+                <label class="text-[13px] font-medium">{{ $reauthMethod === 'totp' ? __('Two-factor code') : __('Enter your password to reveal the private key') }}</label>
+                @if ($reauthMethod === 'totp')
+                    <input type="text" class="w-full input" x-model="password" autocomplete="one-time-code"
+                        inputmode="numeric" maxlength="10" x-on:keydown.enter.prevent="reveal()"
+                        placeholder="{{ __('Enter the 6-digit code') }}" aria-label="{{ __('Two-factor code') }}">
+                @else
+                    <input type="password" class="w-full input" x-model="password" autocomplete="current-password"
+                        x-on:keydown.enter.prevent="reveal()" placeholder="{{ __('Enter your password') }}">
+                @endif
             </div>
             <x-forms.button type="button" x-on:click="reveal()" x-bind:disabled="!password || revealing">
                 Reveal

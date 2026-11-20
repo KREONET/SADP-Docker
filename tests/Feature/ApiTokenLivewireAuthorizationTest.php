@@ -44,7 +44,7 @@ test('token search index follows created and revoked tokens', function () {
         ->set('form.description', 'deploy-token')
         ->set('form.expiresInDays', 30)
         ->set('form.permissions', ['read'])
-        ->call('addNewToken');
+        ->call('addNewToken', 'password');
 
     $token = $owner->tokens()->sole();
     expect($component->get('tokenSearchIndex'))->toBe([
@@ -67,7 +67,7 @@ test('member cannot create root token through tampered permissions payload', fun
         ->set('form.description', 'pwned-root-token')
         ->set('form.expiresInDays', 30)
         ->set('form.permissions', ['root'])
-        ->call('addNewToken');
+        ->call('addNewToken', 'password');
 
     expect($member->tokens()->count())->toBe(0);
 });
@@ -83,7 +83,7 @@ test('member can still create read token', function () {
         ->set('form.description', 'read-token')
         ->set('form.expiresInDays', 30)
         ->set('form.permissions', ['read'])
-        ->call('addNewToken')
+        ->call('addNewToken', 'password')
         ->assertHasNoErrors();
 
     $token = $member->tokens()->latest()->first();
@@ -139,7 +139,7 @@ test('owner can create root token', function () {
         ->set('form.description', 'root-token')
         ->set('form.expiresInDays', 30)
         ->set('form.permissions', ['root'])
-        ->call('addNewToken')
+        ->call('addNewToken', 'password')
         ->assertHasNoErrors();
 
     $token = $owner->tokens()->latest()->first();
@@ -191,7 +191,7 @@ test('owner can create token with read, write, and deploy permissions', function
         ->set('form.description', 'deploy-write-token')
         ->set('form.expiresInDays', 30)
         ->set('form.permissions', ['read', 'write', 'deploy'])
-        ->call('addNewToken')
+        ->call('addNewToken', 'password')
         ->assertHasNoErrors();
 
     $token = $owner->tokens()->latest()->first();

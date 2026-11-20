@@ -3,15 +3,20 @@
 namespace Database\Seeders;
 
 use App\Models\GithubApp;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class GithubAppSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
+        $this->refuseToRunInProduction();
+
         GithubApp::create([
             'id' => 0,
             'uuid' => 'github-public',

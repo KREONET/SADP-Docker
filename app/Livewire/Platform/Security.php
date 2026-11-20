@@ -7,11 +7,12 @@ use App\Livewire\Platform\Concerns\AuthorizesPlatformAdmin;
 use App\Models\OauthSetting;
 use App\Models\VulnerabilityScan;
 use App\Services\Security\TrivyScanner;
+use App\Support\InstanceSettingsAudit;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
- * Trivy vulnerability scanning, SSO-only login, and the scan history.
+ * Trivy vulnerability scanning, SSO-only login and the scan history. User accounts are on {@see Users}.
  */
 class Security extends Component
 {
@@ -77,7 +78,13 @@ class Security extends Component
         $this->dispatch('success', __('Vulnerability scanning settings saved.'));
     }
 
-    public function saveLogin(): void
+    /**
+     * Save the login policy. Changing SSO-only login is saved only after the password
+     * confirmation modal calls this method again with the administrator's password.
+     *
+     * @param  mixed  $password  Null when called from the form; a string when called from the confirmation modal.
+     */
+    public function saveLogin(mixed $password = null): bool|string|null
     {
         $this->authorizePlatformAdmin();
         $this->validate(['isSsoOnlyLoginEnabled' => ['boolean']]);
@@ -86,12 +93,43 @@ class Security extends Component
             $this->isSsoOnlyLoginEnabled = false;
             $this->dispatch('error', __('Enable an OIDC/OAuth provider in Settings → Authentication before requiring SSO.'));
 
-            return;
+            return null;
         }
 
-        instanceSettings()->update(['is_sso_only_login_enabled' => $this->isSsoOnlyLoginEnabled]);
+        $settings = instanceSettings();
+        $settings->is_sso_only_login_enabled = $this->isSsoOnlyLoginEnabled;
+
+        if (InstanceSettingsAudit::pendingChanges($settings) === []) {
+            $settings->refresh();
+            $this->dispatch('success', __('Login policy saved.'));
+
+            return true;
+        }
+
+        if ($password === null) {
+            // Nothing is saved until the administrator confirms with their password.
+            $settings->refresh();
+            $this->dispatch('confirm-login-policy');
+
+            return null;
+        }
+
+        if (! verifyPasswordConfirmation($password, $this)) {
+            $settings->refresh();
+            auditLog(InstanceSettingsAudit::EVENT, [
+                'fields' => ['is_sso_only_login_enabled'],
+                'result' => 'denied',
+                'reason' => 'password_confirmation_failed',
+            ], 'warning');
+
+            return __('The provided password is incorrect.');
+        }
+
+        InstanceSettingsAudit::save($settings);
         auditLog('platform.security.sso_only_updated', ['enabled' => $this->isSsoOnlyLoginEnabled]);
         $this->dispatch('success', __('Login policy saved.'));
+
+        return true;
     }
 
     public function toggleScan(string $uuid): void

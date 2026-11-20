@@ -10,8 +10,8 @@ use App\Jobs\CheckMissingVolumeBackupsJob;
 use App\Jobs\CleanupInstanceStuffsJob;
 use App\Jobs\CleanupOrphanedPreviewContainersJob;
 use App\Jobs\CleanupStaleMultiplexedConnections;
-use App\Jobs\ContainerLogCollectionManagerJob;
 use App\Jobs\CleanupUnusedSshKeys;
+use App\Jobs\ContainerLogCollectionManagerJob;
 use App\Jobs\PullChangelog;
 use App\Jobs\PullTemplatesFromCDN;
 use App\Jobs\ReconcileGithubRunnersJob;
@@ -22,6 +22,7 @@ use App\Jobs\ServerManagerJob;
 use App\Jobs\ShipLogsToLokiJob;
 use App\Models\InstanceSettings;
 use App\Models\LogEntry;
+use App\Services\ChangelogService;
 use App\Services\ScheduledJobDeliveryService;
 use Cron\CronExpression;
 use Illuminate\Console\Scheduling\Schedule;
@@ -76,6 +77,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(60)
             ->runInBackground();
         $this->scheduleInstance->command('sanctum:prune-expired --hours=1')->hourly()->onOneServer();
+        $this->scheduleInstance->command('users:deactivate-inactive')
+            ->dailyAt('02:45')
+            ->onOneServer()
+            ->withoutOverlapping(60);
+        $this->scheduleInstance->command('audit:verify')->dailyAt('05:00')->onOneServer();
+
         $this->scheduleInstance->command('cleanup:database-import-uploads')->hourly()->onOneServer();
         $this->scheduleInstance->command('dns:release-orphaned-records')
             ->hourly()
@@ -108,8 +115,11 @@ class Kernel extends ConsoleKernel
             $this->scheduleInstance->command('horizon:snapshot')->everyFiveMinutes();
             $this->scheduleInstance->command('cleanup:unreachable-servers')->daily()->onOneServer();
 
-            $this->scheduleInstance->job($this->withCdnDelay(new PullTemplatesFromCDN, $this->updateCheckFrequency))->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
-            $this->scheduleInstance->job($this->withCdnDelay(new PullChangelog, $this->updateCheckFrequency))->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
+            $this->scheduleInstance->job($this->withCdnDelay(new PullTemplatesFromCDN, $this->updateCheckFrequency))
+                ->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer();
+            $this->scheduleInstance->job($this->withCdnDelay(new PullChangelog, $this->updateCheckFrequency))
+                ->cron($this->updateCheckFrequency)->timezone($this->instanceTimezone)->onOneServer()
+                ->when(fn () => app(ChangelogService::class)->isEnabled());
 
             $this->scheduleInstance->job(new CleanupInstanceStuffsJob)->everyTwoMinutes()->onOneServer();
             $this->scheduleUpdates();

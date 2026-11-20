@@ -13,7 +13,9 @@ use Illuminate\Support\Collection;
  * Labels stay low-cardinality (source, level, instance, app); everything else goes into the JSON line,
  * which Grafana reads with `| json`.
  *
- * [한국어] DB 의 로그 행을 Loki 가 받는 형식(스트림)으로 바꿉니다.
+ * Free text (messages, context and metadata) passes through SensitiveDataMasker before it leaves the instance.
+ *
+ * [한국어] DB 의 로그 행을 Loki 가 받는 형식(스트림)으로 바꿉니다. 메시지·컨텍스트의 이메일·비밀값은 보내기 전에 가립니다.
  * 라벨(source, level, instance, app)은 종류가 적게 유지해야 Loki 가 느려지지 않습니다. 그 밖의 내용은 JSON 한 줄에 넣습니다.
  */
 class LokiStreamBuilder
@@ -30,9 +32,10 @@ class LokiStreamBuilder
             'labels' => ['source' => 'audit', 'level' => $event->level ?: 'info', 'instance' => $instance],
             'timestamp' => $event->created_at,
             'line' => [
-                'msg' => $event->description,
+                'msg' => SensitiveDataMasker::mask((string) $event->description),
                 'event' => $event->event,
                 'action' => $event->action,
+                'result' => $event->result,
                 'audit_source' => $event->source,
                 'actor_type' => $event->actor_type,
                 'actor_id' => $event->actor_id,
@@ -45,7 +48,7 @@ class LokiStreamBuilder
                 'resource_name' => $event->resource_name,
                 'ip' => $event->ip_address,
                 'user_agent' => $event->user_agent,
-                'metadata' => $event->metadata,
+                'metadata' => SensitiveDataMasker::maskValue($event->metadata),
             ],
         ]);
     }
@@ -65,8 +68,8 @@ class LokiStreamBuilder
             ], fn (?string $value): bool => filled($value)),
             'timestamp' => $entry->logged_at,
             'line' => array_filter([
-                'msg' => $entry->message,
-                'context' => $entry->context ?: null,
+                'msg' => SensitiveDataMasker::mask((string) $entry->message),
+                'context' => $entry->context ? SensitiveDataMasker::maskValue($entry->context) : null,
                 'team_id' => $entry->team_id,
                 'server_id' => $entry->server_id,
                 'resource_type' => $entry->resource_type,

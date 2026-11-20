@@ -96,6 +96,7 @@ RUN --mount=type=cache,target=/root/.npm \
         /terminal/node_modules/node-pty/prebuilds/win32-*
 COPY docker/coolify-terminal/terminal-server.js /terminal/terminal-server.js
 COPY docker/coolify-terminal/terminal-utils.js /terminal/terminal-utils.js
+COPY docker/coolify-terminal/terminal-origin.js /terminal/terminal-origin.js
 
 # =================================================================
 # Final Stage: Production image

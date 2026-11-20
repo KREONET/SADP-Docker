@@ -8,15 +8,17 @@ use App\Actions\Stripe\ResumeSubscription;
 use App\Actions\Stripe\UpdateSubscriptionQuantity;
 use App\Actions\User\DeleteUserAccount;
 use App\Models\Team;
+use App\Traits\ConfirmsSensitiveAccess;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Stripe\StripeClient;
 
 class Actions extends Component
 {
+    use ConfirmsSensitiveAccess;
+
     #[Locked]
     public ?int $teamId = null;
 
@@ -124,8 +126,8 @@ class Actions extends Component
     {
         $team = $this->authorizedTeam();
 
-        if (! shouldSkipPasswordConfirmation() && ! Hash::check($password, auth()->user()->password)) {
-            return 'Invalid password.';
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return $this->sensitiveConfirmationFailureMessage();
         }
 
         $result = app(RefundSubscription::class)->execute($team);
@@ -147,8 +149,8 @@ class Actions extends Component
     {
         $team = $this->authorizedTeam();
 
-        if (! shouldSkipPasswordConfirmation() && ! Hash::check($password, auth()->user()->password)) {
-            return 'Invalid password.';
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return $this->sensitiveConfirmationFailureMessage();
         }
 
         $deleteAccount = in_array('deleteAccount', $selectedActions, true);
@@ -177,8 +179,8 @@ class Actions extends Component
     {
         $team = $this->authorizedTeam();
 
-        if (! shouldSkipPasswordConfirmation() && ! Hash::check($password, auth()->user()->password)) {
-            return 'Invalid password.';
+        if (! verifyPasswordConfirmation($password, $this)) {
+            return $this->sensitiveConfirmationFailureMessage();
         }
 
         $result = (new CancelSubscriptionAtPeriodEnd)->execute($team);

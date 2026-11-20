@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ServerRole;
 use App\Enums\TrafficIpMode;
 use App\Helpers\SshMultiplexingHelper;
+use App\Services\Ssh\KnownHosts;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -587,6 +588,9 @@ class ServerSetting extends Model
      */
     public function forgetSshHostKey(string $reason): void
     {
+        if (filled($this->ssh_host_keys) && $this->server) {
+            KnownHosts::forget($this->server);
+        }
         if (blank($this->ssh_host_key) && blank($this->ssh_host_key_pending)) {
             return;
         }

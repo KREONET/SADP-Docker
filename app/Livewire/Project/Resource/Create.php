@@ -3,6 +3,7 @@
 namespace App\Livewire\Project\Resource;
 
 use App\Models\Service;
+use App\Support\ContainerPrivilegePolicy;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Locked;
 use Livewire\Component;

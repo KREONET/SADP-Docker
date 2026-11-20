@@ -3,15 +3,17 @@
 namespace App\Livewire\SharedVariables\Team;
 
 use App\Livewire\Concerns\RemembersCanvasView;
+use App\Livewire\SharedVariables\Concerns\GatesDeveloperViewValues;
 use App\Models\SharedEnvironmentVariable;
 use App\Models\Team;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Index extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, GatesDeveloperViewValues;
     use RemembersCanvasView;
 
     public Team $team;
@@ -71,18 +73,15 @@ class Index extends Component
 
     public function getDevView()
     {
-        $this->variables = $this->formatEnvironmentVariables($this->team->environment_variables->sortBy('key'));
-    }
-
-    private function formatEnvironmentVariables($variables)
-    {
-        $canViewValues = auth()->user()?->isAdminOfTeam($this->team->id) ?? false;
-
-        return $variables->map(fn ($item) => formatEnvVariableForDevView($item, $canViewValues))->join("\n");
+        $this->variables = $this->formatSharedVariablesForDeveloperView($this->team->environment_variables->sortBy('key'));
     }
 
     public function submit()
     {
+        if ($this->variables === null) {
+            return;
+        }
+
         // Parse before the save, so that an invalid "# coolify:" line changes nothing and keeps the edited text.
         try {
             $this->authorize('update', $this->team);
@@ -145,9 +144,11 @@ class Index extends Component
             $value = is_array($data) ? ($data['value'] ?? '') : $data;
 
             $found = $this->team->environment_variables()->where('key', $key)->first();
+            // A placeholder stands for a value that was never revealed: keep the stored one.
+            $keepsStoredValue = $this->isHiddenValuePlaceholder($value);
 
             if ($found) {
-                if (! $found->is_shown_once && ! $found->is_multiline && formatEnvValueForDevView($found->value) !== null) {
+                if (! $keepsStoredValue && ! $found->is_shown_once && ! $found->is_multiline && formatEnvValueForDevView($found->value) !== null) {
                     if ($found->value !== $value) {
                         $found->value = $value;
                     }
@@ -157,7 +158,7 @@ class Index extends Component
                         $count++;
                     }
                 }
-            } else {
+            } elseif (! $keepsStoredValue) {
                 $this->team->environment_variables()->create([
                     'key' => $key,
                     'value' => $value,
@@ -178,6 +179,16 @@ class Index extends Component
     {
         $this->team->refresh();
         $this->getDevView();
+    }
+
+    protected function sharedVariableOwner(): Model
+    {
+        return $this->team;
+    }
+
+    protected function sharedVariableType(): string
+    {
+        return 'team';
     }
 
     public function render()

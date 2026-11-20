@@ -8,6 +8,7 @@ use App\Livewire\Platform\Security;
 use App\Livewire\Platform\Sources;
 use App\Livewire\Platform\Users;
 use App\Models\Application;
+use App\Models\AuditEvent;
 use App\Models\Environment;
 use App\Models\InstanceSettings;
 use App\Models\Project;
@@ -18,22 +19,26 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Once;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Server::flushIdentityMap();
     $this->withoutVite();
+    $this->withoutDefer();
     InstanceSettings::forceCreate(['id' => 0]);
+    Once::flush();
     Cache::flush();
 
     $this->rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']);
-    $this->platformAdmin = User::factory()->create();
+    $this->platformAdmin = TwoFactor::confirm(User::factory()->create());
     $this->rootTeam->members()->attach($this->platformAdmin->id, ['role' => 'admin']);
 
     $this->tenantTeam = Team::factory()->create(['name' => 'Tenant Team', 'show_boarding' => false]);
-    $this->subAdmin = User::factory()->create();
+    $this->subAdmin = TwoFactor::confirm(User::factory()->create());
     $this->subAdmin->forceFill(['is_sub_admin' => true])->save();
     $this->tenantTeam->members()->attach($this->subAdmin->id, ['role' => 'member']);
 
@@ -67,7 +72,7 @@ test('sub-administrators cannot open settings, security or logs', function (stri
     actAsPlatformRoleTestUser($this->subAdmin, $this->tenantTeam);
 
     $this->get($path)->assertForbidden();
-})->with(['/platform/sources', '/platform/security', '/platform/logs', '/settings']);
+})->with(['/platform/sources', '/platform/security', '/platform/logs', '/settings', '/settings/advanced']);
 
 test('sub-administrators pass the operation components and are refused the admin-only ones', function () {
     actAsPlatformRoleTestUser($this->subAdmin, $this->tenantTeam);
@@ -98,7 +103,8 @@ test('administrators grant and revoke the administrator role', function () {
     $tenant = $this->tenant->fresh();
     expect($tenant->platformRole())->toBe(PlatformRole::ADMIN)
         ->and($tenant->teams()->where('teams.id', 0)->first()->pivot->role)->toBe('admin')
-        ->and($tenant->teams()->where('teams.id', $this->tenantTeam->id)->first()->pivot->role)->toBe('owner');
+        ->and($tenant->teams()->where('teams.id', $this->tenantTeam->id)->first()->pivot->role)->toBe('owner')
+        ->and(AuditEvent::query()->where('event', 'platform.admin.granted')->where('result', 'success')->exists())->toBeTrue();
 
     Livewire::test(Users::class)
         ->call('makePlatformUser', $this->tenant->id, 'password')
@@ -106,7 +112,8 @@ test('administrators grant and revoke the administrator role', function () {
 
     $tenant = $this->tenant->fresh();
     expect($tenant->platformRole())->toBe(PlatformRole::USER)
-        ->and($tenant->teams()->where('teams.id', 0)->first()->pivot->role)->toBe('member');
+        ->and($tenant->teams()->where('teams.id', 0)->first()->pivot->role)->toBe('member')
+        ->and(AuditEvent::query()->where('event', 'platform.admin.revoked')->where('result', 'success')->exists())->toBeTrue();
 });
 
 test('administrators grant the sub-administrator role and demote administrators to it', function () {
@@ -121,7 +128,8 @@ test('administrators grant the sub-administrator role and demote administrators 
     $otherAdmin = $otherAdmin->fresh();
     expect($this->tenant->fresh()->platformRole())->toBe(PlatformRole::SUB_ADMIN)
         ->and($otherAdmin->platformRole())->toBe(PlatformRole::SUB_ADMIN)
-        ->and($otherAdmin->teams()->where('teams.id', 0)->first()->pivot->role)->toBe('member');
+        ->and($otherAdmin->teams()->where('teams.id', 0)->first()->pivot->role)->toBe('member')
+        ->and(AuditEvent::query()->where('event', 'platform.role.changed')->where('result', 'success')->count())->toBe(2);
 
     Livewire::test(Users::class)->call('makePlatformAdmin', $otherAdmin->id, 'password')->assertReturned(true);
     expect((bool) $otherAdmin->fresh()->is_sub_admin)->toBeFalse()
@@ -149,7 +157,24 @@ test('sub-administrators cannot change platform roles', function (string $method
 
     Livewire::test(Users::class)->call($method, $this->tenant->id, 'password')->assertForbidden();
     expect($this->tenant->fresh()->platformRole())->toBe(PlatformRole::USER);
-})->with(['makePlatformAdmin', 'makePlatformSubAdmin']);
+})->with(['makePlatformAdmin', 'makePlatformSubAdmin', 'grantAuditor']);
+
+test('sub-administrators manage regular user accounts only', function () {
+    $otherSubAdmin = User::factory()->create(['is_sub_admin' => true]);
+    foreach ([$this->tenant, $otherSubAdmin, $this->platformAdmin] as $user) {
+        $user->forceFill(['failed_login_attempts' => 5, 'locked_until' => now()->addMinutes(30)])->saveQuietly();
+    }
+    actAsPlatformRoleTestUser($this->subAdmin, $this->tenantTeam);
+
+    Livewire::test(Users::class)
+        ->call('unlockUser', $this->tenant->id)->assertDispatched('success')
+        ->call('unlockUser', $otherSubAdmin->id)->assertDispatched('error')
+        ->call('unlockUser', $this->platformAdmin->id)->assertDispatched('error');
+
+    expect($this->tenant->fresh()->isLockedOut())->toBeFalse()
+        ->and($otherSubAdmin->fresh()->isLockedOut())->toBeTrue()
+        ->and($this->platformAdmin->fresh()->isLockedOut())->toBeTrue();
+});
 
 test('sub-administrators cannot change root team roles but can change other team roles', function () {
     $rootMember = User::factory()->create();
@@ -169,10 +194,10 @@ test('the users page filters administrators and sub-administrators', function ()
     actAsPlatformRoleTestUser($this->platformAdmin, $this->rootTeam);
 
     Livewire::test(Users::class)
-        ->set('roleFilter', 'sub_admin')
+        ->set('accountFilter', 'sub_admin')
         ->assertSee($this->subAdmin->email)
         ->assertDontSee($this->tenant->email)
-        ->set('roleFilter', 'admin')
+        ->set('accountFilter', 'admin')
         ->assertSee($this->platformAdmin->email)
         ->assertDontSee($this->subAdmin->email);
 });

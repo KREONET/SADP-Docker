@@ -8,11 +8,15 @@ use Illuminate\Contracts\Validation\ValidationRule;
 class ValidProxyConfigFilename implements ValidationRule
 {
     /**
-     * Reserved filenames that cannot be used.
+     * Reserved filenames that cannot be used. Coolify writes these itself (coolify-tls.yaml is
+     * regenerated on every proxy start), so a custom file with the same name would be overwritten.
+     * "coolify-tls" is listed too because Traefik file names get ".yaml" appended when they have no extension.
      */
     private const RESERVED_FILENAMES = [
         'coolify.yaml',
         'coolify.yml',
+        'coolify-tls',
+        'coolify-tls.yaml',
         'Caddyfile',
     ];
 

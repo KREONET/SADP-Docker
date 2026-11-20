@@ -74,6 +74,7 @@ class Member extends Component
                 throw new \Exception(__('You are not authorized to perform this action.'));
             }
             $teamId = currentTeam()->id;
+            $previousRole = $this->getMemberRole();
             DB::transaction(function () use ($teamId): void {
                 $this->member->teams()->detach($teamId);
                 RevokeUserTeamTokens::forUserTeam($this->member, $teamId);
@@ -83,7 +84,9 @@ class Member extends Component
                 'team_id' => $teamId,
                 'member_id' => $this->member->id,
                 'member_name' => $this->member->name,
+                'previous_role' => $previousRole,
             ]);
+            $this->auditPlatformAdminChange($teamId, $previousRole, null);
             // Clear cache for the removed user - both old and new key formats
             Cache::forget("team:{$this->member->id}");
             Cache::forget("user:{$this->member->id}:team:{$teamId}");
@@ -116,7 +119,59 @@ class Member extends Component
             'team_id' => $teamId,
             'member_id' => $this->member->id,
             'member_name' => $this->member->name,
+            'previous_role' => $previousRole->value,
             'role' => $role->value,
         ]);
+
+        $this->auditPlatformAdminChange($teamId, $previousRole->value, $role->value);
+    }
+
+    /**
+     * Admins and owners of the root team are platform administrators. Record and
+     * alert when a role change or removal grants or revokes that access.
+     */
+    private function auditPlatformAdminChange(int $teamId, ?string $previousRole, ?string $newRole): void
+    {
+        if ($teamId !== 0) {
+            return;
+        }
+
+        $wasPlatformAdmin = $this->isPlatformAdminRole($previousRole);
+        $isPlatformAdmin = $this->isPlatformAdminRole($newRole);
+
+        if ($wasPlatformAdmin === $isPlatformAdmin) {
+            return;
+        }
+
+        $context = [
+            'team_id' => $teamId,
+            'resource' => 'user',
+            'member_id' => $this->member->id,
+            'member_name' => $this->member->name,
+            'member_email' => $this->member->email,
+            'previous_role' => $previousRole,
+            'role' => $newRole,
+            'result' => 'success',
+        ];
+
+        auditLog($isPlatformAdmin ? 'platform.admin.granted' : 'platform.admin.revoked', $context, 'warning');
+
+        notifySecurityAlert(
+            'platform_admin_changed',
+            $isPlatformAdmin ? 'Platform administrator access granted' : 'Platform administrator access revoked',
+            [
+                'action' => $isPlatformAdmin ? 'granted' : 'revoked',
+                'member_name' => $this->member->name,
+                'member_email' => $this->member->email,
+                'previous_role' => $previousRole ?? 'none',
+                'role' => $newRole ?? 'removed',
+                'changed_by_email' => auth()->user()?->email,
+            ],
+        );
+    }
+
+    private function isPlatformAdminRole(?string $role): bool
+    {
+        return in_array($role, [Role::ADMIN->value, Role::OWNER->value], true);
     }
 }

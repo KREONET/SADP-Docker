@@ -30,6 +30,10 @@
         </form>
 
         <x-notification.event-grid :settings="$settings" channel="pushover" />
+
+        @if ((int) $team->id === 0)
+            <x-notification.security-alert-events :settings="$settings" channel="pushover" />
+        @endif
     </div>
     </x-notification.settings-layout>
 </div>

@@ -38,6 +38,8 @@ class TerminalAccess extends Component
 
             // Verify password
             if (! verifyPasswordConfirmation($password, $this)) {
+                $this->auditToggle(! $this->server->settings->is_terminal_enabled, 'failure', 'password_confirmation_failed');
+
                 return __('The provided password is incorrect.');
             }
 
@@ -48,18 +50,29 @@ class TerminalAccess extends Component
             // Update the local property
             $this->isTerminalEnabled = $this->server->settings->is_terminal_enabled;
 
-            $status = $this->isTerminalEnabled ? 'enabled' : 'disabled';
-            auditLog("ui.server.terminal_access.{$status}", [
-                'team_id' => $this->server->team_id,
-                'server_uuid' => $this->server->uuid,
-                'server_name' => $this->server->name,
-            ]);
+            $this->auditToggle($this->isTerminalEnabled, 'success');
+
             $this->dispatch('success', $this->isTerminalEnabled ? __('Terminal access has been enabled.') : __('Terminal access has been disabled.'));
 
             return true;
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
+    }
+
+    /**
+     * Audit an attempt to enable or disable terminal access on this server.
+     */
+    private function auditToggle(bool $enable, string $result, ?string $reason = null): void
+    {
+        auditLog($enable ? 'ui.server.terminal_enabled' : 'ui.server.terminal_disabled', array_filter([
+            'team_id' => $this->server->team_id,
+            'resource' => 'server',
+            'server_uuid' => $this->server->uuid,
+            'server_name' => $this->server->name,
+            'result' => $result,
+            'reason' => $reason,
+        ], fn (mixed $value): bool => $value !== null), $enable || $result !== 'success' ? 'warning' : 'info');
     }
 
     private function syncData(bool $toModel = false): void

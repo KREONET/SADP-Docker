@@ -10,6 +10,7 @@ use App\Services\Security\SensitiveDataRedactor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,7 @@ use OpenApi\Attributes as OA;
         'parent_deployment_uuid' => ['type' => 'string', 'nullable' => true],
         'rollback' => ['type' => 'boolean'],
         'commit_message' => ['type' => 'string'],
+        'triggered_by_user_id' => ['type' => 'integer', 'nullable' => true],
     ],
 )]
 class ApplicationDeploymentQueue extends Model
@@ -172,6 +174,7 @@ class ApplicationDeploymentQueue extends Model
         'horizon_job_id',
         'horizon_job_worker',
         'finished_at',
+        'triggered_by_user_id',
         'scan_gate_result',
         'scan_gate_bypassed_by',
         'deploy_started_at',
@@ -193,6 +196,7 @@ class ApplicationDeploymentQueue extends Model
 
     protected $casts = [
         'pull_request_id' => 'integer',
+        'triggered_by_user_id' => 'integer',
         'finished_at' => 'datetime',
         'scan_gate_result' => 'array',
         'deploy_started_at' => 'datetime',
@@ -230,6 +234,14 @@ class ApplicationDeploymentQueue extends Model
     public function application()
     {
         return $this->belongsTo(Application::class);
+    }
+
+    /**
+     * The user who started the deployment. Webhook deployments have none.
+     */
+    public function triggeredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'triggered_by_user_id');
     }
 
     /**

@@ -79,6 +79,8 @@ class Telegram extends Component
     public bool $traefikOutdatedTelegramNotifications = true;
 
     #[Validate(['boolean'])]
+    public bool $securityAlertTelegramNotifications = true;
+
     public bool $imageVulnerabilitiesTelegramNotifications = false;
 
     #[Validate(['nullable', 'string'])]
@@ -126,6 +128,9 @@ class Telegram extends Component
     #[Validate(['nullable', 'string'])]
     public ?string $telegramNotificationsTraefikOutdatedThreadId = null;
 
+    #[Validate(['nullable', 'string'])]
+    public ?string $telegramNotificationsSecurityAlertThreadId = null;
+
     #[Validate(['nullable', 'string', 'max:255'])]
     public ?string $telegramNotificationsImageVulnerabilitiesThreadId = null;
 
@@ -164,6 +169,7 @@ class Telegram extends Component
             $this->settings->server_unreachable_telegram_notifications = $this->serverUnreachableTelegramNotifications;
             $this->settings->server_patch_telegram_notifications = $this->serverPatchTelegramNotifications;
             $this->settings->traefik_outdated_telegram_notifications = $this->traefikOutdatedTelegramNotifications;
+            $this->settings->security_alert_telegram_notifications = $this->securityAlertTelegramNotifications;
             $this->settings->image_vulnerabilities_telegram_notifications = $this->imageVulnerabilitiesTelegramNotifications;
 
             $this->settings->telegram_notifications_deployment_success_thread_id = $this->telegramNotificationsDeploymentSuccessThreadId;
@@ -181,6 +187,7 @@ class Telegram extends Component
             $this->settings->telegram_notifications_server_unreachable_thread_id = $this->telegramNotificationsServerUnreachableThreadId;
             $this->settings->telegram_notifications_server_patch_thread_id = $this->telegramNotificationsServerPatchThreadId;
             $this->settings->telegram_notifications_traefik_outdated_thread_id = $this->telegramNotificationsTraefikOutdatedThreadId;
+            $this->settings->telegram_notifications_security_alert_thread_id = $this->telegramNotificationsSecurityAlertThreadId;
             $this->settings->telegram_notifications_image_vulnerabilities_thread_id = $this->telegramNotificationsImageVulnerabilitiesThreadId;
 
             $changedFields = array_keys($this->settings->getDirty());
@@ -206,6 +213,7 @@ class Telegram extends Component
                 $this->telegramNotificationsServerUnreachableThreadId = $this->settings->telegram_notifications_server_unreachable_thread_id;
                 $this->telegramNotificationsServerPatchThreadId = $this->settings->telegram_notifications_server_patch_thread_id;
                 $this->telegramNotificationsTraefikOutdatedThreadId = $this->settings->telegram_notifications_traefik_outdated_thread_id;
+                $this->telegramNotificationsSecurityAlertThreadId = $this->settings->telegram_notifications_security_alert_thread_id;
                 $this->telegramNotificationsImageVulnerabilitiesThreadId = $this->settings->telegram_notifications_image_vulnerabilities_thread_id;
             } else {
                 $this->telegramToken = null;
@@ -227,6 +235,7 @@ class Telegram extends Component
             $this->serverUnreachableTelegramNotifications = $this->settings->server_unreachable_telegram_notifications;
             $this->serverPatchTelegramNotifications = $this->settings->server_patch_telegram_notifications;
             $this->traefikOutdatedTelegramNotifications = $this->settings->traefik_outdated_telegram_notifications;
+            $this->securityAlertTelegramNotifications = $this->settings->security_alert_telegram_notifications;
             $this->imageVulnerabilitiesTelegramNotifications = $this->settings->image_vulnerabilities_telegram_notifications;
 
         }

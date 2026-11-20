@@ -5,7 +5,8 @@
 <div class="grid gap-4 lg:grid-cols-2">
     <x-forms.input required id="{{ $form }}.description" label="{{ __('Description') }}"
         placeholder="{{ __('CI deployment token') }}" />
-    <x-forms.listbox id="{{ $form }}.expiresInDays" label="{{ __('Expires in') }}" :options="$expiryOptions"
+    <x-forms.listbox id="{{ $form }}.expiresInDays" :label="__('Expires in')" :options="$expiryOptions"
+        :helper="$this->maxLifetimeDays() > 0 ? __('Tokens expire after at most :days days.', ['days' => $this->maxLifetimeDays()]) : null"
         :x-effect="$form === 'editForm' ? 'options[0].label = editingToken?.keepLabel ?? options[0].label' : null" />
 </div>
 

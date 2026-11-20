@@ -15,6 +15,7 @@ use Throwable;
  *
  * [한국어] 서버에 SSH 로 접속해 실행 중인 앱·서비스 컨테이너의 새 로그를 가져옵니다.
  * 얼마나 읽었는지(마지막 시각)를 기억해 같은 줄을 두 번 저장하지 않습니다. 파싱은 ContainerLogParser 가 맡습니다.
+ * 저장 전에 SensitiveDataMasker 로 이메일·비밀번호·토큰·개인키를 가립니다.
  */
 class ContainerLogCollector
 {
@@ -137,10 +138,11 @@ class ContainerLogCollector
         }
 
         $now = now();
-        $rows = array_map(fn (array $line): array => [
+        $messages = SensitiveDataMasker::maskLines(array_column($lines, 'message'));
+        $rows = array_map(fn (array $line, string $message): array => [
             'source' => LogEntry::SOURCE_CONTAINER,
             'level' => $line['level'],
-            'message' => $line['message'],
+            'message' => LogEntry::truncateMessage($message),
             'context' => null,
             'team_id' => $server->team_id,
             'server_id' => $server->id,
@@ -150,7 +152,7 @@ class ContainerLogCollector
             'container_name' => $container['name'],
             'logged_at' => $line['logged_at']->format('Y-m-d H:i:s.u'),
             'created_at' => $now,
-        ], $lines);
+        ], $lines, $messages);
 
         foreach (array_chunk($rows, self::INSERT_CHUNK_SIZE) as $chunk) {
             LogEntry::query()->insert($chunk);

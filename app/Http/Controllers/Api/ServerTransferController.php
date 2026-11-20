@@ -286,6 +286,7 @@ class ServerTransferController extends Controller
             content: new OA\JsonContent(
                 properties: [
                     new OA\Property(property: 'bundle', type: 'object', description: 'Transfer bundle'),
+                    new OA\Property(property: 'passphrase', type: 'string', nullable: true, description: 'Passphrase for an encrypted bundle'),
                     new OA\Property(property: 'dry_run', type: 'boolean', default: false),
                     new OA\Property(property: 'preserve_uuids', type: 'boolean', default: true),
                     new OA\Property(property: 'adopt_mode', type: 'boolean', default: true, description: 'Import without forcing redeploy; keep statuses for adoption'),
@@ -316,11 +317,12 @@ class ServerTransferController extends Controller
 
         $validator = customApiValidator($request->all(), [
             'bundle' => 'required|array',
+            'passphrase' => 'string|nullable',
             'dry_run' => 'boolean|nullable',
             'preserve_uuids' => 'boolean|nullable',
             'adopt_mode' => 'boolean|nullable',
         ]);
-        $allowedFields = ['bundle', 'dry_run', 'preserve_uuids', 'adopt_mode'];
+        $allowedFields = ['bundle', 'passphrase', 'dry_run', 'preserve_uuids', 'adopt_mode'];
         $extraFields = array_diff(array_keys($request->all()), $allowedFields);
         if ($validator->fails() || $extraFields !== []) {
             $errors = $validator->errors();
@@ -335,8 +337,17 @@ class ServerTransferController extends Controller
         }
 
         try {
+            $bundle = $request->input('bundle', []);
+            if (data_get($bundle, 'encrypted') === true) {
+                if (! $request->filled('passphrase')) {
+                    return response()->json(['message' => 'A passphrase is required for this bundle.'], 422);
+                }
+
+                $bundle = ServerTransferBundle::decryptWithPassphrase($bundle, $request->string('passphrase')->toString());
+            }
+
             $result = $this->importer->import(
-                bundle: $request->input('bundle', []),
+                bundle: $bundle,
                 teamId: $teamId,
                 dryRun: $request->boolean('dry_run', false),
                 preserveUuids: $request->boolean('preserve_uuids', true),

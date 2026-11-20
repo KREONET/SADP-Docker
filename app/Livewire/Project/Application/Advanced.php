@@ -6,6 +6,7 @@ use App\Enums\ProxyTypes;
 use App\Models\Application;
 use App\Models\ApplicationSetting;
 use App\Models\ServerSetting;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ValidationPatterns;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Validator;
@@ -124,6 +125,7 @@ class Advanced extends Component
     {
         if ($toModel) {
             $this->validate();
+            $this->guardForceHttpsChange();
             $this->validateChangedContainerNamePrefix();
             $this->application->settings->is_force_https_enabled = $this->isForceHttpsEnabled;
             $this->application->settings->is_git_submodules_enabled = $this->isGitSubmodulesEnabled;
@@ -225,6 +227,24 @@ class Advanced extends Component
                 'customContainerNamePrefix' => 'This container name prefix is already in use by another application on this Coolify instance.',
             ]);
         }
+    }
+
+    /**
+     * Only a platform administrator may turn the HTTP to HTTPS redirect off; for everyone else the
+     * stored value is kept. This form has no visible control for it, so the change is dropped silently.
+     */
+    private function guardForceHttpsChange(): void
+    {
+        $current = $this->application->isForceHttpsEnabled();
+        if (ForceHttpsPolicy::allowsChange($current, $this->isForceHttpsEnabled, auth()->user())) {
+            return;
+        }
+
+        $this->isForceHttpsEnabled = $current;
+        auditLog('application.force_https.disable', [
+            'application_uuid' => $this->application->uuid,
+            'result' => 'denied',
+        ], 'warning');
     }
 
     private function resetDefaultLabels()

@@ -9,6 +9,7 @@ use App\Models\Server;
 use App\Models\SharedEnvironmentVariable;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
@@ -231,15 +232,20 @@ test('server shared variable values are only visible to admins', function () {
         'team_id' => $this->team->id,
     ]);
 
+    // Revealing values in the developer view requires a recent re-authentication.
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
+
     Livewire::test(App\Livewire\SharedVariables\Server\Show::class, ['server_uuid' => $server->uuid])
+        ->assertSet('variables', null)
+        ->call('switch')
         ->assertSet('variables', 'SERVER_TOKEN=stored-server-variable-value');
 
     $this->user->teams()->updateExistingPivot($this->team->id, ['role' => 'member']);
     $this->actingAs($this->user->fresh());
 
     $component = Livewire::test(App\Livewire\SharedVariables\Server\Show::class, ['server_uuid' => $server->uuid])
-        ->assertSet('variables', 'SERVER_TOKEN=(Hidden, only admins can view)')
         ->call('switch')
+        ->assertSet('variables', 'SERVER_TOKEN=(Hidden, only admins can view)')
         ->call('refreshEnvs')
         ->assertSet('variables', 'SERVER_TOKEN=(Hidden, only admins can view)');
 
@@ -294,7 +300,7 @@ test('shared variable values stay hidden from a member of the owning team after 
     $this->user->refresh();
 
     $livewire = Livewire::test($component, $params)
-        ->assertSet('variables', 'ZZ_SECRET=(Hidden, only admins can view)');
+        ->assertSet('variables', null);
 
     $ownTeam = sharedVarsSwitchToOwnedTeam($this->user);
     expect(currentTeam()->id)->toBe($ownTeam->id);

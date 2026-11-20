@@ -25,6 +25,7 @@ use App\Notifications\Server\Unreachable;
 use App\Services\DigitalOceanService;
 use App\Services\HetznerService;
 use App\Services\HostingerService;
+use App\Services\Ssh\KnownHosts;
 use App\Services\VultrService;
 use App\Support\ValidationPatterns;
 use App\Traits\Auditable;
@@ -272,6 +273,15 @@ class Server extends BaseModel
         });
 
         static::forceDeleting(function ($server) {
+            // Remove the trusted SSH host key and the per-server known_hosts file with the server.
+            try {
+                KnownHosts::forget($server);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to remove the SSH known_hosts entry of a deleted server', [
+                    'server_uuid' => $server->uuid,
+                    'error' => $e->getMessage(),
+                ]);
+            }
             $server->destinations()->each(function ($destination) {
                 $destination->delete();
             });
@@ -1297,10 +1307,14 @@ class Server extends BaseModel
                     $certificateResolver = $this->traefikCertificateResolver();
                     $tls = $certificateResolver ? ['certresolver' => $certificateResolver] : [];
                     $traefik_dynamic_conf['http']['routers']['coolify-http']['middlewares'] = $this->dashboardHttpMiddlewares($settings);
+                    $traefik_dynamic_conf['http']['middlewares'][traefikHstsMiddlewareName()] = [
+                        'headers' => traefikHstsMiddlewareOptions(),
+                    ];
 
                     $traefik_dynamic_conf['http']['routers']['coolify-https'] = [
                         'middlewares' => [
-                            0 => 'gzip',
+                            0 => traefikHstsMiddlewareName(),
+                            1 => 'gzip',
                         ],
                         'entryPoints' => [
                             0 => 'https',
@@ -1310,14 +1324,21 @@ class Server extends BaseModel
                         'tls' => $tls,
                     ];
                     $traefik_dynamic_conf['http']['routers']['coolify-reverb-wss'] = [
+                        'middlewares' => [
+                            0 => traefikHstsMiddlewareName(),
+                        ],
                         'entryPoints' => [
                             0 => 'https',
                         ],
                         'service' => 'coolify-reverb',
                         'rule' => "Host(`{$host}`) && PathPrefix(`/app/`)",
+                        'middlewares' => [traefikHstsMiddlewareName()],
                         'tls' => $tls,
                     ];
                     $traefik_dynamic_conf['http']['routers']['coolify-terminal-wss'] = [
+                        'middlewares' => [
+                            0 => traefikHstsMiddlewareName(),
+                        ],
                         'entryPoints' => [
                             0 => 'https',
                         ],
@@ -1351,10 +1372,11 @@ class Server extends BaseModel
                 // The dashboard is always served directly. Only domains set to the Cloudflare Tunnel switch to HTTP.
                 $schema = $url->getScheme();
                 $siteAddress = $this->dashboardCaddySiteAddress($settings, $schema, $host);
+                $hardening = $this->dashboardCaddyHttpsHardening($siteAddress, $schema);
                 $caddy_file = "
 $siteAddress {
     encode zstd gzip
-    handle /app/* {
+{$hardening}    handle /app/* {
         reverse_proxy coolify:6001 {
             stream_close_delay ".CADDY_STREAM_CLOSE_DELAY.'
         }
@@ -1406,6 +1428,22 @@ $siteAddress {
         }
 
         return "{$schema}://{$host}";
+    }
+
+    /**
+     * HSTS header and TLS policy lines for the dashboard Caddy site block (empty for an HTTP-only dashboard).
+     */
+    public function dashboardCaddyHttpsHardening(string $siteAddress, string $schema): string
+    {
+        if ($schema !== 'https') {
+            return '';
+        }
+
+        $alsoServesHttp = str_contains($siteAddress, 'http://');
+
+        return collect(caddyHttpsHardeningDirectives($alsoServesHttp))
+            ->map(fn (string $line) => "    {$line}\n")
+            ->implode('');
     }
 
     public function proxyPath()

@@ -12,6 +12,7 @@ use App\Models\Server;
 use App\Services\Dns\ServerDnsAddresses;
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
+use App\Support\ForceHttpsPolicy;
 use App\Support\ValidationPatterns;
 use App\Traits\AuditsApplicationSettings;
 use App\Traits\ListensToTeamChannel;
@@ -38,11 +39,18 @@ class Domains extends Component
 
     public bool $isForceHttpsEnabled = true;
 
+    /** Whether the current user may turn the HTTP to HTTPS redirect off (platform administrators only). */
+    #[Locked]
+    public bool $canDisableForceHttps = false;
+
     /** Domains arrive through the server's Cloudflare Tunnel instead of the public IP. */
     public bool $isCloudflareTunnelEnabled = false;
+
     public bool $isPermanentRedirectEnabled = false;
+
     /** The proxy that receives this application's traffic runs a Cloudflare Tunnel. */
     public bool $cloudflareTunnelAvailable = false;
+
     /**
      * Per compose-service www/non-www redirect direction.
      * Keys are wire-safe (dots encoded) — use serviceRedirectWireKey().
@@ -264,6 +272,18 @@ class Domains extends Component
         $this->authorize('update', $this->application);
         $this->validateOnly('isForceHttpsEnabled');
 
+        $current = $this->application->isForceHttpsEnabled();
+        if (! ForceHttpsPolicy::allowsChange($current, $this->isForceHttpsEnabled, auth()->user())) {
+            $this->isForceHttpsEnabled = $current;
+            auditLog('application.force_https.disable', [
+                'application_uuid' => $this->application->uuid,
+                'result' => 'denied',
+            ], 'warning');
+            $this->dispatch('error', __('Only a platform administrator can disable the HTTP to HTTPS redirect.'));
+
+            return;
+        }
+
         $this->application->settings->is_force_https_enabled = $this->isForceHttpsEnabled;
         $this->saveApplicationSettingsWithAudit($this->application);
         $this->resetDefaultLabels();
@@ -314,6 +334,7 @@ class Domains extends Component
             $this->redirect = $this->application->redirect ?? 'both';
         }
         $this->isForceHttpsEnabled = $this->application->isForceHttpsEnabled();
+        $this->canDisableForceHttps = ForceHttpsPolicy::canDisable(auth()->user());
         $this->isCloudflareTunnelEnabled = (bool) $this->application->settings->is_cloudflare_tunnel_enabled;
         $this->cloudflareTunnelAvailable = (bool) $this->application->destination?->server?->servesTrafficThroughCloudflareTunnel();
         $this->isPermanentRedirectEnabled = $this->application->isPermanentRedirectEnabled();

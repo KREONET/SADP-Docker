@@ -6,16 +6,18 @@ use App\Models\Application;
 use App\Models\EnvironmentVariable;
 use App\Support\ValidationPatterns;
 use App\Traits\AuditsApplicationSettings;
+use App\Traits\ConfirmsSensitiveAccess;
 use App\Traits\EnvironmentVariableProtection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class All extends Component
 {
-    use AuditsApplicationSettings, AuthorizesRequests, EnvironmentVariableProtection;
+    use AuditsApplicationSettings, AuthorizesRequests, ConfirmsSensitiveAccess, EnvironmentVariableProtection;
 
     public $resource;
 
@@ -26,6 +28,19 @@ class All extends Component
     public ?string $variables = null;
 
     public ?string $variablesPreview = null;
+
+    /**
+     * True when the developer view holds placeholders instead of secret values because the
+     * user has not re-authenticated recently. The view then shows a confirmation form.
+     */
+    #[Locked]
+    public bool $sensitiveConfirmationRequired = false;
+
+    /**
+     * Whether the developer view text currently contains decrypted secret values.
+     */
+    #[Locked]
+    public bool $devValuesRevealed = false;
 
     public string $view = 'normal';
 
@@ -976,21 +991,94 @@ class All extends Component
         ];
     }
 
+    /**
+     * Builds the bulk (developer view) text.
+     *
+     * Secret values are only included after a recent re-authentication. Without one the
+     * text holds placeholders and the view shows a confirmation form; saving keeps the
+     * stored value for every placeholder.
+     */
     public function getDevView()
     {
-        $this->variables = $this->formatEnvironmentVariables($this->getEnvironmentVariables(false, false));
+        $variables = $this->getEnvironmentVariables(false, false);
+        $previewVariables = $this->showPreview ? $this->getEnvironmentVariables(true, false) : collect();
+
+        $revealableCount = $this->revealableDevViewVariables($variables)->count()
+            + $this->revealableDevViewVariables($previewVariables)->count();
+        $mayRevealValues = $this->canViewEnvironmentValues();
+        $revealValues = $mayRevealValues && $revealableCount > 0 && $this->hasValidSensitiveConfirmation();
+
+        $this->sensitiveConfirmationRequired = $mayRevealValues && $revealableCount > 0 && ! $revealValues;
+
+        $this->variables = $this->formatEnvironmentVariables($variables, $revealValues);
         if ($this->showPreview) {
-            $this->variablesPreview = $this->formatEnvironmentVariables($this->getEnvironmentVariables(true, false));
+            $this->variablesPreview = $this->formatEnvironmentVariables($previewVariables, $revealValues);
         }
+
+        if ($revealValues && ! $this->devValuesRevealed) {
+            $this->auditBulkReveal('success', $revealableCount);
+        }
+        $this->devValuesRevealed = $revealValues;
     }
 
-    private function formatEnvironmentVariables($variables)
+    /**
+     * Re-authenticate (password, TOTP code, or recent sign-in) and reveal the developer view values.
+     *
+     * @return bool|string True on success, otherwise the error message for the confirmation form.
+     */
+    public function confirmSensitiveAccess(mixed $password = ''): bool|string
+    {
+        $this->authorize('manageEnvironment', $this->resource);
+
+        if (! verifyPasswordConfirmation($password, $this)) {
+            $this->auditBulkReveal('denied');
+
+            return $this->sensitiveConfirmationFailureMessage();
+        }
+
+        $this->resetErrorBag('password');
+        $this->ensureEnvironmentVariablesLoaded();
+        if ($this->view === 'dev') {
+            $this->getDevView();
+        }
+
+        return true;
+    }
+
+    /**
+     * Variables whose decrypted value the developer view would contain.
+     */
+    private function revealableDevViewVariables(Collection $variables): Collection
+    {
+        return $variables->reject(
+            fn ($item): bool => $this->isProtectedEnvironmentVariable($item->key) || $item->is_shown_once || $item->is_multiline
+        );
+    }
+
+    /**
+     * Records a bulk reveal of secret values. Never includes keys or values.
+     *
+     * @param  'success'|'denied'  $result
+     */
+    private function auditBulkReveal(string $result, ?int $variableCount = null): void
+    {
+        auditLog('secret.environment_variable.bulk_revealed', array_filter([
+            'resource_type' => class_basename($this->resource),
+            'resource_uuid' => data_get($this->resource, 'uuid'),
+            'variable_count' => $variableCount,
+            'result' => $result,
+        ], fn ($value): bool => $value !== null), $result === 'success' ? 'info' : 'warning');
+    }
+
+    private function formatEnvironmentVariables($variables, bool $revealValues = false)
     {
         $canViewValues = $this->canViewEnvironmentValues();
 
         return $variables
             ->reject(fn ($item): bool => $this->isProtectedEnvironmentVariable($item->key))
-            ->map(fn ($item) => $this->composeDefaultHint($item).formatEnvVariableForDevView($item, $canViewValues))
+            ->map(fn ($item) => ! $revealValues && $canViewValues
+                ? "{$item->key}=".self::HIDDEN_SECRET_PLACEHOLDER
+                : ($revealValues ? $this->composeDefaultHint($item) : '').formatEnvVariableForDevView($item, $canViewValues))
             ->join("\n");
     }
 
@@ -1018,7 +1106,15 @@ class All extends Component
         if ($this->view === 'dev') {
             $this->ensureEnvironmentVariablesLoaded();
             $this->getDevView();
+
+            return;
         }
+
+        // Do not keep decrypted values in the component state once the developer view is closed.
+        $this->variables = null;
+        $this->variablesPreview = null;
+        $this->devValuesRevealed = false;
+        $this->sensitiveConfirmationRequired = false;
     }
 
     public function submit($data = null)
@@ -1245,13 +1341,15 @@ class All extends Component
             // A key can have copies from earlier duplicate saves. Each copy gets the saved value,
             // so that a deployment uses this value whichever copy it reads last.
             $copies = $this->resource->$method()->where('key', $key)->get();
+            // A placeholder stands for a value that was never revealed: keep the stored one.
+            $keepsStoredValue = $this->isHiddenValuePlaceholder($value);
 
             foreach ($copies as $found) {
                 if (! $found->is_shown_once && ! $found->is_multiline && formatEnvValueForDevView($found->value) !== null) {
                     $changed = false;
 
                     // Update value if it changed
-                    if ($found->value !== $value) {
+                    if (! $keepsStoredValue && $found->value !== $value) {
                         $found->value = $value;
                         $changed = true;
                     }
@@ -1273,7 +1371,7 @@ class All extends Component
                 }
             }
 
-            if ($copies->isEmpty()) {
+            if ($copies->isEmpty() && ! $keepsStoredValue) {
                 $environment = new EnvironmentVariable;
                 $environment->key = $key;
                 $environment->value = $value;

@@ -29,6 +29,10 @@
         </form>
 
         <x-notification.event-grid :settings="$settings" channel="webhook" />
+
+        @if ((int) $team->id === 0)
+            <x-notification.security-alert-events :settings="$settings" channel="webhook" />
+        @endif
     </div>
     </x-notification.settings-layout>
 </div>

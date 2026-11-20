@@ -932,6 +932,9 @@ function fqdnLabelsForCaddy(string $network, string $uuid, Collection $domains, 
         } else {
             $labels->push("caddy_{$loop}.header=-Server");
         }
+        if ($schema === 'https') {
+            $labels = $labels->merge(caddyHttpsHardeningLabels($loop, ! $is_force_https_enabled));
+        }
         $labels->push("caddy_{$loop}.try_files={path} /index.html /index.php");
 
         if ($access_mode === 'internal') {
@@ -1044,6 +1047,19 @@ function dockerComposeServicePorts(?string $compose, ?string $serviceName): arra
 }
 
 /**
+ * Middleware chain of a Traefik HTTPS router: the exposure restrictions stay first, followed by
+ * the HSTS headers middleware and the remaining middlewares.
+ */
+function traefikHttpsRouterMiddlewares(Collection $middlewares, int $accessMiddlewareCount): string
+{
+    $chain = $middlewares->values()->all();
+    array_splice($chain, $accessMiddlewareCount, 0, [traefikHstsMiddlewareName()]);
+
+    return implode(',', $chain);
+}
+
+
+/**
  * Traefik matches an IPv6 host without brackets: Host(`[2a01:4f8::1]`) never matches a request,
  * Host(`2a01:4f8::1`) does. Labels that were saved with brackets get them removed here.
  */
@@ -1124,8 +1140,10 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
             return null;
         })->flatten()
             ->filter()
+            ->reject(fn ($middleware_name) => $middleware_name === traefikHstsMiddlewareName())
             ->unique();
     }
+    $hsts_labels_added = false;
     foreach ($domains as $loop => $domain) {
         try {
             if ($generate_unique_uuid) {
@@ -1179,6 +1197,10 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                 "traefik.http.middlewares.{$to_www_name}.redirectregex.permanent={$redirect_permanent}",
             ];
             if ($schema === 'https') {
+                if (! $hsts_labels_added) {
+                    $labels = $labels->merge(traefikHstsMiddlewareLabels());
+                    $hsts_labels_added = true;
+                }
                 // Set labels for https
                 $labels->push("traefik.http.routers.{$https_label}.rule=Host(`{$traefikHost}`) && PathPrefix(`{$path}`)");
                 $labels->push("traefik.http.routers.{$https_label}.entryPoints=https");
@@ -1216,9 +1238,8 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                     $middlewares_from_labels->each(function ($middleware_name) use ($middlewares) {
                         $middlewares->push($middleware_name);
                     });
-                    if ($middlewares->isNotEmpty()) {
-                        $labels->push("traefik.http.routers.{$https_label}.middlewares={$middlewares->join(',')}");
-                    }
+                    // HSTS only on the HTTPS router; the HTTP router may reuse $middlewares below.
+                    $labels->push("traefik.http.routers.{$https_label}.middlewares=".traefikHttpsRouterMiddlewares($middlewares, $access_middlewares->count()));
                 } else {
                     $middlewares = collect($access_middlewares);
                     if ($is_gzip_enabled) {
@@ -1244,9 +1265,8 @@ function fqdnLabelsForTraefik(string $uuid, Collection $domains, bool $is_force_
                     $middlewares_from_labels->each(function ($middleware_name) use ($middlewares) {
                         $middlewares->push($middleware_name);
                     });
-                    if ($middlewares->isNotEmpty()) {
-                        $labels->push("traefik.http.routers.{$https_label}.middlewares={$middlewares->join(',')}");
-                    }
+                    // HSTS only on the HTTPS router; the HTTP router may reuse $middlewares below.
+                    $labels->push("traefik.http.routers.{$https_label}.middlewares=".traefikHttpsRouterMiddlewares($middlewares, $access_middlewares->count()));
                 }
                 $labels->push("traefik.http.routers.{$https_label}.tls=true");
                 if (filled($certificate_resolver)) {

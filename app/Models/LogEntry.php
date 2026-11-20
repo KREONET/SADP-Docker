@@ -9,7 +9,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * A collected Coolify system log line or application container log line.
- * Rows are kept for InstanceSettings::logRetentionDays() and only shown to instance admins.
+ * Rows are kept for LogEntry::retentionDays() (never less than `security.audit.system_log_min_retention_days`)
+ * and only shown to instance admins.
  *
  * [한국어] 수집된 로그 한 줄(Coolify 시스템 로그 또는 컨테이너 로그)을 저장하는 모델입니다.
  * `source` 가 system 이면 앱 자체의 경고·오류, container 이면 배포된 앱 컨테이너의 출력입니다.
@@ -28,6 +29,8 @@ class LogEntry extends Model
     public const LEVELS = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
 
     public const MAX_MESSAGE_LENGTH = 8192;
+
+    public const MAX_RETENTION_DAYS = 365;
 
     protected $fillable = [
         'source',
@@ -51,6 +54,7 @@ class LogEntry extends Model
             'context' => 'array',
             'logged_at' => 'datetime',
             'loki_shipped_at' => 'datetime',
+            'loki_attempts' => 'integer',
             'created_at' => 'datetime',
         ];
     }
@@ -86,10 +90,40 @@ class LogEntry extends Model
         return $query->latest('logged_at')->latest('id');
     }
 
+    public static function minimumRetentionDays(): int
+    {
+        return max(1, (int) config('security.audit.system_log_min_retention_days', 180));
+    }
+
+    public static function maximumRetentionDays(): int
+    {
+        return max(self::MAX_RETENTION_DAYS, self::minimumRetentionDays());
+    }
+
+    /**
+     * Clamps a retention period to the allowed range; an empty value means the minimum.
+     */
+    public static function clampRetentionDays(?int $days): int
+    {
+        $days = $days ?: self::minimumRetentionDays();
+
+        return max(self::minimumRetentionDays(), min(self::maximumRetentionDays(), $days));
+    }
+
+    public static function retentionDays(?InstanceSettings $settings = null): int
+    {
+        $settings ??= instanceSettings();
+
+        return self::clampRetentionDays((int) $settings->log_retention_days);
+    }
+
+    /**
+     * Deletes rows older than the given days, never fewer than the minimum retention period.
+     */
     public static function pruneOlderThan(int $days): int
     {
         return self::query()
-            ->where('created_at', '<', Carbon::now()->subDays($days))
+            ->where('created_at', '<', Carbon::now()->subDays(max($days, self::minimumRetentionDays())))
             ->delete();
     }
 }

@@ -375,7 +375,7 @@ describe('token form', function () {
             ->set('form.permissions', ['deploy'])
             ->set('form.scopeMode', 'selected')
             ->set('form.selectedScopes', ["project:{$this->shop->uuid}"])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertHasNoErrors()
             ->assertNotDispatched('error');
 
@@ -395,7 +395,7 @@ describe('token form', function () {
             ->set('form.permissions', ['read'])
             ->set('form.scopeMode', 'selected')
             ->set('form.selectedScopes', ["project:{$otherProject->uuid}"])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
 
         expect(PersonalAccessToken::query()->count())->toBe(0);
@@ -412,16 +412,16 @@ describe('token form', function () {
         $form->set('form.description', 'too wide')
             ->set('form.permissions', ['write'])
             ->set('form.scopeMode', 'team')
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
         $form->set('form.description', 'blog')
             ->set('form.scopeMode', 'selected')
             ->set('form.selectedScopes', ["project:{$this->blog->uuid}"])
-            ->call('addNewToken')
+            ->call('addNewToken', 'password')
             ->assertDispatched('error');
         $form->set('form.description', 'shop')
             ->set('form.selectedScopes', ["project:{$this->shop->uuid}"])
-            ->call('addNewToken');
+            ->call('addNewToken', 'password');
 
         expect($member->tokens()->pluck('name')->all())->toBe(['shop']);
     });

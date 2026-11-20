@@ -58,6 +58,9 @@ yarn-error.log*
 Thumbs.db
 /.claude/settings.local.json
 
+./Security_change.md
+./SECURITY_ADVISORY.md
+
 # Service parser template snapshots: generated locally by scripts/parser-snapshot-diff, not committed
 /tests/Fixtures/parser/expected/templates/
 

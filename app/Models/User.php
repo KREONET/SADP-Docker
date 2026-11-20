@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Actions\User\RevokeUserTeamTokens;
-use App\Enums\PlatformRole;
 use App\Enums\AccessLevel;
+use App\Enums\PlatformRole;
 use App\Jobs\UpdateStripeCustomerEmailJob;
 use App\Notifications\Channels\SendsEmail;
 use App\Notifications\TransactionalEmails\EmailChangeVerification;
@@ -25,9 +25,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Contracts\PasskeyUser;
-use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\NewAccessToken;
@@ -84,6 +84,11 @@ class User extends Authenticatable implements PasskeyUser, SendsEmail
         'show_boarding' => 'boolean',
         'email_change_code_expires_at' => 'datetime',
         'deactivated_at' => 'datetime',
+        'failed_login_attempts' => 'integer',
+        'locked_until' => 'datetime',
+        'last_login_at' => 'datetime',
+        'password_changed_at' => 'datetime',
+        'is_auditor' => 'boolean',
         'is_sub_admin' => 'boolean',
         'local_password_set_at' => 'datetime',
     ];
@@ -194,7 +199,6 @@ class User extends Authenticatable implements PasskeyUser, SendsEmail
             });
         });
 
-        static::deleted(fn (User $user) => AuditEvent::anonymizeUser($user));
     }
 
     /**
@@ -442,6 +446,59 @@ class User extends Authenticatable implements PasskeyUser, SendsEmail
     public function canOperatePlatform(): bool
     {
         return $this->platformRole()->canOperatePlatform();
+    }
+
+    /**
+     * Whether repeated failed logins have locked the account.
+     */
+    public function isLockedOut(): bool
+    {
+        return $this->locked_until !== null && $this->locked_until->isFuture();
+    }
+
+    /**
+     * Count a failed login and lock the account once the configured limit is reached.
+     */
+    public function recordFailedLogin(): void
+    {
+        $attempts = (int) $this->failed_login_attempts + 1;
+        $attributes = ['failed_login_attempts' => $attempts];
+
+        if ($attempts >= (int) config('security.lockout.max_attempts')) {
+            $attributes['locked_until'] = now()->addMinutes((int) config('security.lockout.minutes'));
+        }
+
+        $this->forceFill($attributes)->saveQuietly();
+    }
+
+    public function unlockAccount(): void
+    {
+        $this->forceFill(['failed_login_attempts' => 0, 'locked_until' => null])->saveQuietly();
+    }
+
+    public function recordSuccessfulLogin(): void
+    {
+        $this->forceFill([
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+            'last_login_at' => now(),
+        ])->saveQuietly();
+    }
+
+    /**
+     * Whether the local password is older than the configured maximum age.
+     */
+    public function passwordHasExpired(): bool
+    {
+        $maxAgeDays = (int) config('security.password.expires_after_days');
+
+        if ($maxAgeDays <= 0) {
+            return false;
+        }
+
+        $changedAt = $this->password_changed_at ?? $this->created_at;
+
+        return $changedAt !== null && $changedAt->lt(now()->subDays($maxAgeDays));
     }
 
     public function currentTeam(): ?Team

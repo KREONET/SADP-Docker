@@ -2,12 +2,17 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     public function run(): void
     {
+        $this->refuseToRunInProduction();
+
         $this->call([
             InstanceSettingsSeeder::class,
             UserSeeder::class,
@@ -26,7 +31,6 @@ class DatabaseSeeder extends Seeder
             S3StorageSeeder::class,
             StandalonePostgresqlSeeder::class,
             OauthSettingSeeder::class,
-            DisableTwoStepConfirmationSeeder::class,
             SentinelSeeder::class,
             CaSslCertSeeder::class,
             PersonalAccessTokenSeeder::class,

@@ -8,11 +8,11 @@ use App\Models\GithubApp;
 use App\Models\GitlabApp;
 use App\Models\PrivateKey;
 use App\Models\Server;
+use App\Support\Reauthentication;
 use App\Support\ValidationPatterns;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Component;
 
 class Show extends Component
@@ -57,7 +57,7 @@ class Show extends Component
             ValidationPatterns::combinedMessages(),
             [
                 'name.required' => __('The Name field is required.'),
-                'newPrivateKey.string' => 'The Private Key must be a valid string.',
+                'newPrivateKey.string' => __('The Private Key must be a valid string.'),
             ]
         );
     }
@@ -156,48 +156,52 @@ class Show extends Component
         }
     }
 
-    /** Reveal attempts per user and minute, so a session cannot guess the password without limit. */
-    private const REVEAL_ATTEMPTS_PER_MINUTE = 5;
-
     /**
-     * Return the stored private key once, after a password confirmation.
-     * The value goes back to the browser only as the action result, not as component state.
+     * Return the stored key as an action result after confirmation, never in the component's state.
      */
-    public function revealPrivateKey(mixed $password): ?string
+    public function revealPrivateKey(mixed $credential = ''): ?string
     {
         try {
             $this->authorize('update', $this->private_key);
-
-            $rateLimitKey = 'private-key-reveal:'.auth()->id();
-            if (RateLimiter::tooManyAttempts($rateLimitKey, self::REVEAL_ATTEMPTS_PER_MINUTE)) {
-                $this->dispatch('error', 'Too many attempts. Try again in '.RateLimiter::availableIn($rateLimitKey).' seconds.');
-
-                return null;
-            }
-            RateLimiter::hit($rateLimitKey);
-
-            $auditContext = [
-                'team_id' => $this->private_key->team_id,
-                'private_key_uuid' => $this->private_key->uuid,
-                'private_key_name' => $this->private_key->name,
-            ];
-
-            if (! verifyPasswordConfirmation($password, $this)) {
-                auditLog('ui.private_key.reveal_failed', $auditContext, 'warning');
-                $this->dispatch('error', 'The provided password is incorrect.');
-
-                return null;
-            }
-
-            $this->resetErrorBag('password');
-            auditLog('ui.private_key.revealed', $auditContext);
-
-            return $this->private_key->private_key;
-        } catch (\Throwable $e) {
-            handleError($e, $this);
+        } catch (AuthorizationException) {
+            $this->auditReveal('denied');
 
             return null;
         }
+
+        if (! hasRecentSensitiveConfirmation()) {
+            if (blank($credential) && ! Reauthentication::needsNoInput()) {
+                return null;
+            }
+
+            if (! verifyPasswordConfirmation($credential, $this)) {
+                $this->auditReveal('denied');
+                $this->dispatch('error', $this->getErrorBag()->first('password') ?: Reauthentication::failureMessage(Reauthentication::method()));
+
+                return null;
+            }
+        }
+
+        $this->private_key->refresh();
+        $this->resetErrorBag('password');
+        $this->auditReveal('success');
+
+        return $this->private_key->private_key;
+    }
+
+    /** @param  'success'|'denied'  $result */
+    private function auditReveal(string $result): void
+    {
+        $context = [
+            'private_key_uuid' => $this->private_key->uuid,
+            'private_key_id' => $this->private_key->id,
+            'team_id' => $this->private_key->team_id,
+            'private_key_name' => $this->private_key->name,
+            'result' => $result,
+        ];
+        $level = $result === 'success' ? 'info' : 'warning';
+        auditLog('secret.private_key.revealed', $context, $level);
+        auditLog($result === 'success' ? 'ui.private_key.revealed' : 'ui.private_key.reveal_failed', $context, $level);
     }
 
     /** Rows shown in the "Used by" list. The counts always cover everything. */

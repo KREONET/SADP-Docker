@@ -283,7 +283,7 @@
                         :options="[
                             ['value' => true, 'label' => __('Enabled')],
                             ['value' => false, 'label' => __('Disabled')],
-                        ]" :disabled="! auth()->user()->can('update', $application)" />
+                        ]" :disabled="! auth()->user()->can('update', $application) || (!$canDisableForceHttps && $isForceHttpsEnabled)" />
                 @endif
                 <x-forms.listbox canGate="update" :canResource="$application" id="isPermanentRedirectEnabled"
                     label="Redirect type" onChange="updatePermanentRedirect"

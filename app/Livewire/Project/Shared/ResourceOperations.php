@@ -20,6 +20,7 @@ use App\Models\StandalonePostgresql;
 use App\Models\StandaloneRedis;
 use App\Models\StandaloneSqlite;
 use App\Models\SwarmDocker;
+use App\Support\PersistentVolumeName;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -175,6 +176,8 @@ class ResourceOperations extends Component
                         $newName = 'dragonfly-data-'.$new_resource->uuid;
                     } elseif (str_starts_with($originalName, 'sqlite-data-')) {
                         $newName = 'sqlite-data-'.$new_resource->uuid;
+                    } elseif (PersistentVolumeName::isGenerated($originalName)) {
+                        $newName = PersistentVolumeName::regenerate($originalName, $new_resource->environment?->project);
                     } else {
                         if (str_starts_with($volume->name, $this->resource->uuid)) {
                             $newName = str($volume->name)->replace($this->resource->uuid, $new_resource->uuid);

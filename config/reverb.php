@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\ReverbSettings;
+
 return [
 
     /*
@@ -73,10 +75,12 @@ return [
 
         'apps' => [
             [
+                // The key and app id are public (every page renders the key); the browser falls back to "coolify" too.
                 'key' => env('PUSHER_APP_KEY', 'coolify'),
-                'secret' => env('PUSHER_APP_SECRET', 'coolify'),
+                'secret' => ReverbSettings::secret(env('PUSHER_APP_SECRET'), env('APP_ENV'), env('APP_KEY')),
                 'app_id' => env('PUSHER_APP_ID', 'coolify'),
-                'allowed_origins' => ['*'],
+                // REVERB_ALLOWED_ORIGINS (comma list) overrides the hosts derived from APP_URL.
+                'allowed_origins' => ReverbSettings::allowedOrigins(env('REVERB_ALLOWED_ORIGINS'), env('APP_URL'), env('APP_ENV')),
                 'ping_interval' => 60,
                 'activity_timeout' => 30,
                 'max_connections' => null,

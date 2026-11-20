@@ -2,131 +2,72 @@
 
 namespace App\Livewire\Server\Security;
 
-use App\Helpers\SshMultiplexingHelper;
-use App\Jobs\ServerConnectionCheckJob;
 use App\Models\Server;
 use App\Models\ServerSetting;
+use App\Services\Ssh\KnownHosts;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
-use Livewire\Features\SupportEvents\Event;
 
+/**
+ * Shows the trusted SSH host key of a server and lets administrators reset the
+ * trust, so the next connection learns the (verified) new key.
+ *
+ * Embed with `<livewire:server.security.host-key :server="$server" />`.
+ */
 class HostKey extends Component
 {
     use AuthorizesRequests;
 
     public Server $server;
 
-    public array $parameters = [];
+    /** @var list<string> */
+    public array $fingerprints = [];
 
-    /** The dropdown value: "warn" or "enforce". */
-    public string $checkMode = 'warn';
+    public ?string $trustedAt = null;
 
-    public function mount(string $server_uuid)
+    public function mount(Server $server): void
+    {
+        $this->server = $this->resolveServer($server->id);
+        $this->authorize('update', $this->server);
+        $this->syncData();
+    }
+
+    public function resetTrust(mixed $password = null): mixed
     {
         try {
-            $this->server = Server::ownedByCurrentTeam()->whereUuid($server_uuid)->firstOrFail();
-            $this->authorize('update', $this->server);
-            $this->parameters = get_route_parameters();
-        } catch (\Throwable) {
-            return redirect()->route('server.index');
-        }
-    }
+            $server = $this->resolveServer($this->server->id);
 
-    /**
-     * @param  string  $pendingKeyHash  SHA-256 of the pending key that the page showed, so that a key that changed later is not trusted.
-     */
-    public function trustPendingKey(string $pendingKeyHash, ?string $password): bool|string|Event
-    {
-        return $this->changeHostKey($password, 'trusted', function (ServerSetting $settings) use ($pendingKeyHash) {
-            if (blank($settings->ssh_host_key_pending)) {
-                throw new \RuntimeException('There is no new host key to trust.');
-            }
-            if (! hash_equals(hash('sha256', $settings->ssh_host_key_pending), $pendingKeyHash)) {
-                throw new \RuntimeException('The server sent another new host key. Reload the page and compare the key again.');
-            }
-            $settings->forceFill([
-                'ssh_host_key' => $settings->ssh_host_key_pending,
-                'ssh_host_key_source' => 'manual',
-                'ssh_host_key_trusted_at' => now(),
-                'ssh_host_key_pending' => null,
-            ]);
-        });
-    }
+            try {
+                $this->authorize('update', $server);
+            } catch (AuthorizationException $e) {
+                auditLog('server.ssh_host_key.reset', [
+                    'server_uuid' => $server->uuid,
+                    'result' => 'denied',
+                ], 'warning');
 
-    public function resetHostKey(?string $password): bool|string|Event
-    {
-        return $this->changeHostKey($password, 'reset', fn (ServerSetting $settings) => $settings->forceFill([
-            'ssh_host_key' => null,
-            'ssh_host_key_source' => null,
-            'ssh_host_key_trusted_at' => null,
-            'ssh_host_key_pending' => null,
-        ]));
-    }
-
-    /**
-     * @param  bool  $disabled  The state that the button showed, so that a page open in another tab cannot turn the check back on.
-     */
-    public function setHostKeyCheckDisabled(bool $disabled, ?string $password): bool|string|Event
-    {
-        return $this->changeHostKey($password, $disabled ? 'check_disabled' : 'check_enabled', fn (ServerSetting $settings) => $settings->forceFill([
-            'is_ssh_host_key_check_disabled' => $disabled,
-            'is_ssh_host_key_check_enforced' => $disabled ? false : $settings->is_ssh_host_key_check_enforced,
-        ]));
-    }
-
-    /**
-     * Refuses a changed host key on this server ("enforce"), also when the instance only warns, or follows the instance
-     * again ("warn"). Saved at once from the dropdown, without a password: warn still reports a changed key.
-     * Refused while the check is disabled, so that a page open in another tab cannot turn the check back on without a password.
-     */
-    public function setHostKeyCheckMode(string $mode): bool|string|Event
-    {
-        if (! in_array($mode, ['warn', 'enforce'], true)) {
-            return false;
-        }
-        $enforced = $mode === 'enforce';
-
-        return $this->changeHostKey(null, $enforced ? 'check_enforced' : 'check_not_enforced', function (ServerSetting $settings) use ($enforced) {
-            if ($settings->is_ssh_host_key_check_disabled) {
-                throw new \RuntimeException('The host key check is disabled for this server. Reload the page and enable the check first.');
-            }
-            $settings->forceFill(['is_ssh_host_key_check_enforced' => $enforced]);
-        }, confirmPassword: false);
-    }
-
-    /**
-     * @param  callable(ServerSetting): mixed  $change
-     */
-    private function changeHostKey(?string $password, string $action, callable $change, bool $confirmPassword = true): bool|string|Event
-    {
-        try {
-            $this->authorize('update', $this->server);
-            if (! $this->server->refresh()->canBeValidated()) {
-                throw new \RuntimeException('This server was transferred to another Coolify instance.');
-            }
-            if ($confirmPassword && ! verifyPasswordConfirmation($password, $this)) {
-                return 'The provided password is incorrect.';
+                throw $e;
             }
 
-            $settings = $this->server->settings->refresh();
-            $previousFingerprints = ServerSetting::sshHostKeyFingerprints($settings->ssh_host_key);
-            $change($settings);
-            $settings->save();
+            if (! verifyPasswordConfirmation($password, $this)) {
+                return __('The provided password is incorrect.');
+            }
 
-            auditLog("ui.server.ssh_host_key.{$action}", [
-                'team_id' => $this->server->team_id,
-                'server_uuid' => $this->server->uuid,
-                'server_name' => $this->server->name,
-                'previous_fingerprints' => $previousFingerprints,
-                'fingerprints' => ServerSetting::sshHostKeyFingerprints($settings->ssh_host_key),
-            ]);
+            $previous = KnownHosts::trustedFingerprints($server);
+            KnownHosts::forget($server);
 
-            SshMultiplexingHelper::removeMuxFileAfterHostKeyChange($this->server);
-            // The check can take up to a minute on a slow server, so it runs in the queue and the page polls for the result.
-            ServerConnectionCheckJob::dispatch($this->server);
-            $this->dispatch('hostKeySettingsChanged')->to(Index::class);
-            $this->dispatch('success', 'The host key settings were saved. Coolify now checks the connection again.');
+            auditLog('server.ssh_host_key.reset', [
+                'server_uuid' => $server->uuid,
+                'server_name' => $server->name,
+                'server_ip' => $server->ip,
+                'previous_fingerprint' => implode(', ', $previous) ?: null,
+                'result' => 'success',
+            ], 'warning');
+
+            $this->server = $server;
+            $this->syncData();
+            $this->dispatch('success', __('SSH host key trust was reset. The next connection will trust the key the server presents.'));
 
             return true;
         } catch (\Throwable $e) {
@@ -136,14 +77,21 @@ class HostKey extends Component
 
     public function render(): View
     {
-        $settings = $this->server->settings;
-        $this->checkMode = $settings->is_ssh_host_key_check_enforced ? 'enforce' : 'warn';
+        return view('livewire.server.security.host-key');
+    }
 
-        return view('livewire.server.security.host-key', [
-            'mode' => SshMultiplexingHelper::hostKeyCheckingMode($this->server),
-            'instanceMode' => config('constants.ssh.host_key_checking'),
-            'fingerprints' => ServerSetting::sshHostKeyFingerprints($settings->ssh_host_key),
-            'pendingFingerprints' => ServerSetting::sshHostKeyFingerprints($settings->ssh_host_key_pending),
-        ]);
+    private function resolveServer(int $serverId): Server
+    {
+        return Server::ownedByCurrentTeam()->whereKey($serverId)->firstOrFail();
+    }
+
+    private function syncData(): void
+    {
+        $settings = ServerSetting::query()
+            ->where('server_id', $this->server->id)
+            ->first(['ssh_host_key_fingerprint', 'ssh_host_key_trusted_at']);
+
+        $this->fingerprints = KnownHosts::trustedFingerprints($this->server);
+        $this->trustedAt = $settings?->ssh_host_key_trusted_at?->toDateTimeString();
     }
 }

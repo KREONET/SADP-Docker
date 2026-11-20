@@ -14,6 +14,7 @@ use App\Services\DeploymentConfiguration\ApplicationConfigurationSnapshot;
 use App\Services\DeploymentConfiguration\ConfigurationDiff;
 use App\Services\DeploymentConfiguration\ConfigurationDiffer;
 use App\Services\Platform\SourcePolicy;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\DomainPortOverrides;
 use App\Support\DomainUrlParts;
 use App\Support\SharedServerDomainPolicy;
@@ -2831,9 +2832,14 @@ class Application extends BaseModel
      * Reads the Compose file from the repository and saves it only after validateDockerComposeForInjection()
      * accepts it, because the parser and the deployment build shell commands from parts of it.
      *
+     * A signed-in user who is not a platform administrator may not load a changed file with host-access
+     * settings. A deployment ($isDeployment) runs without a signed-in user: it may not add host-access
+     * settings that the stored Compose file does not already have, unless $deploymentInitiator is a
+     * platform administrator (see ContainerPrivilegePolicy::deploymentComposeViolation()).
+     *
      * @throws DeploymentException If the Compose file is not safe to use (the message is HTML-escaped)
      */
-    public function loadComposeFile($isInit = false, ?string $restoreBaseDirectory = null, ?string $restoreDockerComposeLocation = null)
+    public function loadComposeFile($isInit = false, ?string $restoreBaseDirectory = null, ?string $restoreDockerComposeLocation = null, bool $isDeployment = false, ?User $deploymentInitiator = null)
     {
         // Use provided restore values or capture current values as fallback
         $initialDockerComposeLocation = $restoreDockerComposeLocation ?? $this->docker_compose_location;
@@ -2894,6 +2900,22 @@ class Application extends BaseModel
                 throw new DeploymentException(e("The Docker Compose file at {$workdir}{$composeFile} (branch: {$this->git_branch}) is not safe to use, so Coolify did not load it. {$e->getMessage()}"));
             }
 
+            if ($isDeployment) {
+                $this->ensureDeploymentComposeHostAccessAllowed($composeFileContent, $deploymentInitiator, $initialDockerComposeLocation, $initialBaseDirectory);
+            } else {
+                $user = auth()->user();
+                $hostAccessViolation = $user instanceof User
+                    ? ContainerPrivilegePolicy::composeViolation($this->docker_compose_raw, $composeFileContent, $user, ContainerPrivilegePolicy::allowedHostDirectories($this))
+                    : null;
+                if ($hostAccessViolation !== null) {
+                    $this->docker_compose_location = $initialDockerComposeLocation;
+                    $this->base_directory = $initialBaseDirectory;
+                    $this->save();
+
+                    throw new DeploymentException(e($hostAccessViolation));
+                }
+            }
+
             $this->docker_compose_raw = $composeFileContent;
             $this->save();
             $parsedServices = $this->parse();
@@ -2913,6 +2935,39 @@ class Application extends BaseModel
 
             throw new RuntimeException("Docker Compose file at $workdir$composeFile (branch: {$this->git_branch}) is empty.<br><br>Check that the file in the repository has content and that your changes are committed and pushed.");
         }
+    }
+
+    /**
+     * Stops a deployment whose repository Compose file adds host access that the stored Compose file does
+     * not have, unless a platform administrator started it. The stored file is not changed.
+     *
+     * @throws DeploymentException With the offending settings (the message is HTML-escaped)
+     */
+    private function ensureDeploymentComposeHostAccessAllowed(string $composeFileContent, ?User $deploymentInitiator, ?string $initialDockerComposeLocation, ?string $initialBaseDirectory): void
+    {
+        $allowedHostDirectories = ContainerPrivilegePolicy::allowedHostDirectories($this);
+        $context = [
+            'team_id' => $this->team()?->id,
+            'application_uuid' => $this->uuid,
+            'application_name' => $this->name,
+            'triggered_by_user_id' => $deploymentInitiator?->id,
+        ];
+        $violation = ContainerPrivilegePolicy::deploymentComposeViolation($this->docker_compose_raw, $composeFileContent, $deploymentInitiator, $allowedHostDirectories, $context);
+        if ($violation === null) {
+            return;
+        }
+
+        $this->docker_compose_location = $initialDockerComposeLocation;
+        $this->base_directory = $initialBaseDirectory;
+        $this->save();
+
+        notifySecurityAlert('container_host_access_blocked', 'Deployment blocked: repository Compose file adds host access', $context + [
+            'findings' => array_slice(ContainerPrivilegePolicy::newComposeFindings($this->docker_compose_raw, $composeFileContent, $allowedHostDirectories), 0, 20),
+        ]);
+
+        throw new DeploymentException(e(__('The Docker Compose file in the repository adds settings that give containers access to the host, and the deployment was not started by a platform administrator, so Coolify did not load it. :violation', [
+            'violation' => $violation,
+        ])));
     }
 
     private function reconcileDockerComposeDomains(mixed $parsedServices): void

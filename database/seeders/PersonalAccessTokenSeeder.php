@@ -5,22 +5,20 @@ namespace Database\Seeders;
 use App\Models\PersonalAccessToken;
 use App\Models\Team;
 use App\Models\User;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class PersonalAccessTokenSeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // Only run in development environment
-        if (app()->environment('production')) {
-            $this->command->warn('Skipping PersonalAccessTokenSeeder in production environment');
-
-            return;
-        }
+        $this->refuseToRunInProduction();
 
         // Get the first user (usually the admin user created during setup)
         $user = User::find(0);

@@ -18,6 +18,12 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OauthLoginService
 {
+    /**
+     * Session key that marks a session as signed in through OAuth/OIDC. Such sessions
+     * do not use the local password, so password expiry does not apply to them.
+     */
+    public const SSO_SESSION_KEY = 'auth.via_sso';
+
     public function login(string $provider, object $oauthUser, OauthSetting $oauthSetting): User
     {
         $email = strtolower(trim((string) ($oauthUser->email ?? '')));
@@ -34,6 +40,10 @@ class OauthLoginService
 
             throw new HttpException(403, 'This account has been deactivated.');
         }
+
+        $team = $user->currentTeam() ?? $user->teams()->first() ?? $user->recreate_personal_team();
+        session(['currentTeam' => $team]);
+        session()->put(self::SSO_SESSION_KEY, $provider);
 
         // Choose the team like the password login: restore the last active team,
         // or the sole team. A multi-team user without a valid stored choice gets

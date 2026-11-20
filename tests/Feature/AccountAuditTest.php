@@ -72,10 +72,10 @@ test('records two factor lifecycle events without storing the secret or recovery
     app(DisableTwoFactorAuthentication::class)($this->user);
 
     foreach ([
-        'auth.user.two_factor_enabled',
-        'auth.user.two_factor_confirmed',
-        'auth.user.recovery_codes_regenerated',
-        'auth.user.two_factor_disabled',
+        'auth.two_factor.enabled',
+        'auth.two_factor.confirmed',
+        'auth.two_factor.recovery_codes_generated',
+        'auth.two_factor.disabled',
     ] as $eventName) {
         $event = accountAuditRow($eventName);
         $serialized = accountAuditSerialized($event);
@@ -92,7 +92,7 @@ test('records two factor lifecycle events without storing the secret or recovery
 
 test('records a forced password change without the password', function () {
     $this->user->forceFill(['force_password_reset' => true])->save();
-    $newPassword = 'forced-new-password-value';
+    $newPassword = 'Forced-New-Password-5!';
 
     Livewire::test(ForcePasswordReset::class)
         ->set('password', $newPassword)
@@ -104,7 +104,7 @@ test('records a forced password change without the password', function () {
 
     expect($event->team_id)->toBe($this->team->id)
         ->and($event->actor_id)->toBe($this->user->id)
-        ->and(data_get($event->metadata, 'reason'))->toBe('forced_reset')
+        ->and(data_get($event->metadata, 'reason'))->toBe('forced')
         ->and(accountAuditSerialized($event))->not->toContain($newPassword);
 });
 
@@ -199,7 +199,7 @@ test('records a user deleted by an instance admin', function () {
         ->and(accountAuditSerialized($event))->not->toContain('deleted-user@example.com');
 });
 
-test('deleting a user removes their personal data from earlier audit events', function () {
+test('deleting a user keeps earlier retained audit events unchanged', function () {
     $rootTeam = Team::factory()->create(['id' => 0]);
     $rootTeam->members()->attach($this->user->id, ['role' => 'admin']);
     $deletedUser = User::factory()->create(['name' => 'Jane Doe', 'email' => 'jane@example.com']);
@@ -228,21 +228,16 @@ test('deleting a user removes their personal data from earlier audit events', fu
         'metadata' => ['member_id' => $deletedUser->id + 1000, 'member_name' => 'Jane Doe'],
     ]);
 
+    $earlierEvents = [$ownEvent, $aboutEvent, $unrelatedEvent];
+    $originalRecords = array_map(fn (AuditEvent $event) => $event->refresh()->getRawOriginal(), $earlierEvents);
+
     Livewire::test(AdminView::class)
         ->call('delete', $deletedUser->id, 'password')
         ->assertReturned(true);
 
-    $ownEvent->refresh();
-    $aboutEvent->refresh();
-
-    expect(accountAuditSerialized($ownEvent))->not->toContain('Jane Doe')
-        ->not->toContain('jane@example.com')
-        ->not->toContain('203.0.113.7')
-        ->not->toContain('Jane Browser')
-        ->and($ownEvent->description)->toBe('[deleted user] Login')
-        ->and($aboutEvent->metadata)->toBe(['member_id' => $deletedUser->id, 'member_name' => '[deleted user]', 'member_email' => '[deleted user]'])
-        ->and($aboutEvent->actor_email)->toBe($this->user->email)
-        ->and($unrelatedEvent->refresh()->metadata['member_name'])->toBe('Jane Doe');
+    expect(User::find($deletedUser->id))->toBeNull();
+    expect(array_map(fn (AuditEvent $event) => $event->refresh()->getRawOriginal(), $earlierEvents))
+        ->toBe($originalRecords);
 });
 
 test('does not record a user deletion when the password is wrong', function () {

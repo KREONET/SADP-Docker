@@ -6,6 +6,7 @@ use App\Models\Environment;
 use App\Models\EnvironmentVariable;
 use App\Models\Project;
 use App\Models\Service;
+use App\Support\ContainerPrivilegePolicy;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Locked;
@@ -48,6 +49,7 @@ class DockerCompose extends Component
 
             // Validate for command injection BEFORE saving to database
             validateDockerComposeForInjection($this->dockerComposeRaw);
+            ContainerPrivilegePolicy::ensureComposeAllowed(null, $this->dockerComposeRaw, auth()->user(), attribute: 'dockerComposeRaw');
 
             $project = Project::ownedByCurrentTeam()->where('uuid', $this->parameters['project_uuid'])->firstOrFail();
             $environment = $project->environments()->where('uuid', $this->parameters['environment_uuid'])->firstOrFail();

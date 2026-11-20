@@ -19,6 +19,15 @@ class OauthSetting extends Model
 
     use HasFactory;
 
+    /**
+     * New providers do not create accounts for unknown users until an administrator allows it.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'allow_registration' => false,
+    ];
+
     protected $fillable = ['provider', 'client_id', 'client_secret', 'redirect_uri', 'tenant', 'base_url', 'enabled', 'custom_label', 'scopes', 'allow_registration', 'auto_join_root_team', 'require_email_verified', 'use_pkce', 'clock_skew_seconds'];
 
     protected function casts(): array

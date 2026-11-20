@@ -63,7 +63,7 @@ it('syncs docker_compose_raw to component property after loading compose file', 
             return Application::class;
         }
 
-        public function loadComposeFile($isInit = false, ?string $restoreBaseDirectory = null, ?string $restoreDockerComposeLocation = null)
+        public function loadComposeFile($isInit = false, ?string $restoreBaseDirectory = null, ?string $restoreDockerComposeLocation = null, bool $isDeployment = false, ?User $deploymentInitiator = null)
         {
             self::query()->whereKey($this->getKey())->update(['docker_compose_raw' => self::$loadedCompose]);
 

@@ -410,7 +410,6 @@ class Team extends Model implements SendsDiscord, SendsEmail, SendsPushover, Sen
         return $this->servers()->notTransferredAway();
     }
 
-
     public function privateKeys()
     {
         return $this->hasMany(PrivateKey::class);

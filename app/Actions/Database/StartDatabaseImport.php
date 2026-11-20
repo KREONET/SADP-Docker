@@ -5,16 +5,19 @@ namespace App\Actions\Database;
 use App\Helpers\SshMultiplexingHelper;
 use App\Helpers\SshRetryHandler;
 use App\Models\S3Storage;
+use App\Models\ScheduledDatabaseBackupExecution;
 use App\Models\Server;
 use App\Models\ServiceDatabase;
 use App\Models\StandaloneSqlite;
 use App\Models\SwarmDocker;
 use App\Services\RcloneTransfer;
+use App\Support\BackupEncryption;
 use App\Support\DatabaseBackupFileValidator;
 use App\Support\DatabaseImport\DatabaseImportCleanup;
 use App\Support\DatabaseImport\DatabaseImportCommandBuilder;
 use App\Support\DatabaseImport\DatabaseImportException;
 use App\Support\DatabaseImport\DatabaseImportSource;
+use App\Support\DatabaseImport\ServerImportPath;
 use App\Support\DatabaseOperationReservation;
 use App\Support\ResourceStartActivity;
 use App\Support\ValidationPatterns;
@@ -169,15 +172,31 @@ class StartDatabaseImport
             $cleanup['serverTmpPath'] = $serverPath;
         } elseif ($source->type === 'server') {
             $this->assertServerPath($source->path);
-            if (! self::allowsSourcePath($resource, $source->path)) {
+            $path = ServerImportPath::resolve((string) $source->path, $server)
+                ?? throw new DatabaseImportException('The backup file was not found on the server.');
+            $this->assertServerPath($path);
+            if (! self::allowsSourcePath($resource, $path)) {
                 throw new DatabaseImportException(self::OWN_BACKUPS_ONLY_MESSAGE, 403);
             }
-            $size = (int) trim((string) instant_remote_process(['stat -c %s -- '.escapeshellarg($source->path)], $server));
+            $encryptedBackup = $this->encryptedBackup($path, $teamId);
+            $size = (int) trim((string) instant_remote_process(['stat -c %s -- '.escapeshellarg($path)], $server));
             if ($size < 1 || $size > self::MAX_BYTES) {
                 throw new DatabaseImportException('The backup file is empty or exceeds the 10 GiB limit.');
             }
-            $magic = (string) instant_remote_process(['head -c 6 -- '.escapeshellarg($source->path).' | od -An -tx1'], $server);
-            $commandList = [...$commandList, ...$this->copyIntoContainer($source->path, $magic, $server, $operation, $container, $containerPath, $cleanup)];
+            if ($encryptedBackup) {
+                // The decrypted dump goes through the helper image, which writes it into the
+                // database container as the container user, whatever the server file mode is.
+                $plainPath = "/tmp/database-import-{$operation}";
+                $cleanup['serverTmpPath'] = $plainPath;
+                $commandList = [
+                    ...BackupEncryption::decryptCommands($path, $plainPath, (string) $encryptedBackup->encryption_passphrase),
+                    ...$this->copyIntoContainer($plainPath, '', $server, $operation, $container, $containerPath, $cleanup, useHelper: true),
+                    'rm -f '.escapeshellarg($plainPath),
+                ];
+            } else {
+                $magic = (string) instant_remote_process(['head -c 6 -- '.escapeshellarg($path).' | od -An -tx1'], $server);
+                $commandList = [...$commandList, ...$this->copyIntoContainer($path, $magic, $server, $operation, $container, $containerPath, $cleanup)];
+            }
         } else {
             $storage = S3Storage::ownedByCurrentTeamAPI($teamId)
                 ->where(fn ($query) => $query->whereUuid($source->s3StorageUuid)->orWhere('id', ctype_digit((string) $source->s3StorageUuid) ? (int) $source->s3StorageUuid : -1))
@@ -190,6 +209,7 @@ class StartDatabaseImport
             if (! self::allowsSourcePath($resource, $key)) {
                 throw new DatabaseImportException(self::OWN_BACKUPS_ONLY_MESSAGE, 403);
             }
+            $encryptedBackup = $this->encryptedBackup($key, $teamId);
             $disk = $storage->filesystem();
             if (! $disk->exists($key) || $disk->size($key) > self::MAX_BYTES) {
                 throw new DatabaseImportException('The S3 backup was not found or exceeds the 10 GiB limit.');
@@ -211,6 +231,7 @@ class StartDatabaseImport
             }
             $commandList = [
                 $downloadCommand,
+                ...($encryptedBackup ? $this->decryptInHelper($helper, $operation, (string) $encryptedBackup->encryption_passphrase, $cleanup) : []),
                 ...$this->streamFromHelper($helper, $container, $containerPath),
                 'docker rm -f '.escapeshellarg($helper).' 2>/dev/null || true',
             ];
@@ -276,13 +297,54 @@ class StartDatabaseImport
         if (! $path || ! str_starts_with($path, '/') || preg_match('/\.\.|[$()`|;&><\r\n\0\'"\\\\]/', $path)) {
             throw new DatabaseImportException('The server path is invalid.');
         }
+        if (! ServerImportPath::isWithinAllowedDirectory($path)) {
+            throw new DatabaseImportException(ServerImportPath::notAllowedMessage());
+        }
     }
 
     private function assertS3Path(string $path): void
     {
-        if ($path === '' || preg_match('/\.\.|[$()`|;&><\r\n\0\'"\\\\]/', $path) || ! DatabaseBackupFileValidator::hasAllowedExtension(basename($path))) {
+        if ($path === '' || preg_match('/\.\.|[$()`|;&><\r\n\0\'"\\\\]/', $path) || ! DatabaseBackupFileValidator::hasAllowedExtension(BackupEncryption::plainFilename(basename($path)))) {
             throw new DatabaseImportException('The S3 path is invalid.');
         }
+    }
+
+    /**
+     * The backup execution that holds the passphrase of an encrypted (`.enc`) backup file.
+     * Only encrypted backups that this instance created for the team can be decrypted.
+     */
+    private function encryptedBackup(string $path, int $teamId): ?ScheduledDatabaseBackupExecution
+    {
+        if (! BackupEncryption::isEncryptedFilename($path)) {
+            return null;
+        }
+
+        return ScheduledDatabaseBackupExecution::encryptedBackupForTeam($path, $teamId)
+            ?? throw new DatabaseImportException('This encrypted backup was not created by this Coolify instance for your team, so it cannot be decrypted.');
+    }
+
+    /**
+     * Decrypts /tmp/restore of the S3 helper on the server (the helper image has no openssl)
+     * and puts the decrypted dump back into the helper. The temporary files are cleaned up
+     * after a failure as well.
+     *
+     * @param  array<string, mixed>  $cleanup
+     * @return list<string>
+     */
+    private function decryptInHelper(string $helper, string $operation, string $passphrase, array &$cleanup): array
+    {
+        $encryptedPath = "/tmp/database-import-{$operation}".BackupEncryption::EXTENSION;
+        $plainPath = "/tmp/database-import-{$operation}";
+        $cleanup['serverTmpPath'] = $plainPath;
+        $cleanup['credentialTmpPath'] = $encryptedPath;
+
+        return [
+            'docker cp '.escapeshellarg("{$helper}:/tmp/restore").' '.escapeshellarg($encryptedPath),
+            ...BackupEncryption::decryptCommands($encryptedPath, $plainPath, $passphrase),
+            'rm -f '.escapeshellarg($encryptedPath),
+            'docker cp '.escapeshellarg($plainPath).' '.escapeshellarg("{$helper}:/tmp/restore"),
+            'rm -f '.escapeshellarg($plainPath),
+        ];
     }
 
     /**
@@ -292,10 +354,10 @@ class StartDatabaseImport
      * @param  array<string, mixed>  $cleanup
      * @return list<string>
      */
-    private function copyIntoContainer(string $path, string $magic, Server $server, string $operation, string $container, string $containerPath, array &$cleanup): array
+    private function copyIntoContainer(string $path, string $magic, Server $server, string $operation, string $container, string $containerPath, array &$cleanup, bool $useHelper = false): array
     {
         $magic = strtolower((string) preg_replace('/[^0-9a-f]/i', '', $magic));
-        if (! preg_match('/^(425a68|fd377a585a00|504b0304)/', $magic)) {
+        if (! $useHelper && ! preg_match('/^(425a68|fd377a585a00|504b0304)/', $magic)) {
             return ['docker cp '.escapeshellarg($path).' '.escapeshellarg("{$container}:{$containerPath}")];
         }
 

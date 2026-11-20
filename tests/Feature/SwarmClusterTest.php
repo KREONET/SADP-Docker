@@ -21,6 +21,7 @@ use App\Services\Swarm\SwarmClusterManager;
 use App\Services\Swarm\SwarmRemote;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -106,6 +107,7 @@ beforeEach(function () {
     $this->user = User::factory()->create();
     $this->team->members()->attach($this->user, ['role' => 'owner']);
     makePlatformAdmin($this->user);
+    TwoFactor::confirm($this->user);
     $this->server = makeSwarmReadyServer($this->team, ['ip' => '10.0.0.1']);
 
     $this->actingAs($this->user);

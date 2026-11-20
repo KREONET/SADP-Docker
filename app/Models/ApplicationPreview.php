@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\ControllerIngress\ControllerIngress;
 use App\Support\DomainPortOverrides;
+use App\Support\PersistentVolumeName;
 use App\Support\SharedServerDomainPolicy;
 use App\Support\ValidationPatterns;
 use App\Traits\HasRestartLimit;
@@ -109,7 +110,8 @@ class ApplicationPreview extends BaseModel
 
     /**
      * Names of the Docker Compose volumes that Coolify generated for this preview. The parser names
-     * them "{uuid}_{volume}-pr-{id}" ("{uuid}-{volume}-pr-{id}" before parser version 3). Volumes
+     * them "{uuid}_{volume}-pr-{id}" ("{uuid}-{volume}-pr-{id}" before parser version 3), or for new
+     * resources "{nickname}-{random}-{project}_{volume}-pr-{id}" (see PersistentVolumeName). Volumes
      * named in the Compose file (external, shared, or of the main application) are not included.
      *
      * @param  Collection<array-key, mixed>  $volumes  top-level volumes of the parsed preview Compose file
@@ -129,8 +131,10 @@ class ApplicationPreview extends BaseModel
                 if (data_get($volume, 'name', $key) !== $key) {
                     return null;
                 }
+                $hasGeneratedPrefix = str_starts_with($key, $prefix)
+                    || PersistentVolumeName::isGenerated($suffix === '' ? $key : substr($key, 0, -strlen($suffix)));
                 if (strlen($key) <= strlen($prefix.$suffix)
-                    || ! str_starts_with($key, $prefix)
+                    || ! $hasGeneratedPrefix
                     || ! str_ends_with($key, $suffix)
                     || ! preg_match(ValidationPatterns::VOLUME_NAME_PATTERN, $key)) {
                     return null;

@@ -9,11 +9,13 @@ use App\Models\Environment;
 use App\Models\Project;
 use App\Services\Access\AccessResolver;
 use App\Services\Access\Grant;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -40,13 +42,19 @@ class ApiTokens extends Component
     #[Locked]
     public array $tokenSearchIndex = [];
 
-    public array $expirationOptions = [
+    private const DEFAULT_EXPIRATION_DAYS = 30;
+
+    private const EXPIRATION_PRESETS = [
         7 => '7 days',
         30 => '30 days',
         60 => '60 days',
         90 => '90 days',
         365 => '1 year',
     ];
+
+    /** @var array<int, string> */
+    #[Locked]
+    public array $expirationOptions = [];
 
     #[Locked]
     public bool $canUseRootPermissions = false;
@@ -157,8 +165,82 @@ class ApiTokens extends Component
         $this->canUseSensitivePermissions = auth()->user()->can('useSensitivePermissions', PersonalAccessToken::class);
         $this->canUseDeletePermissions = auth()->user()->can('useDeletePermissions', PersonalAccessToken::class);
         $this->canUseTeamScope = app(AccessResolver::class)->coversWholeTeam(auth()->user(), currentTeam()->id);
-        $this->form->scopeMode = $this->canUseTeamScope ? 'team' : 'selected';
+        $this->expirationOptions = static::expirationOptions();
+        $this->resetCreateForm();
         $this->getTokens();
+    }
+
+    /**
+     * Maximum token lifetime from `security.api_tokens.max_lifetime_days`; 0 means no maximum.
+     * Tokens never get an unlimited lifetime either way.
+     */
+    public static function maxLifetimeDays(): int
+    {
+        return max(0, (int) config('security.api_tokens.max_lifetime_days'));
+    }
+
+    /**
+     * Token lifetimes (in days) a user may choose under the current policy.
+     *
+     * @return list<int>
+     */
+    public static function allowedExpirationDays(): array
+    {
+        return array_keys(static::expirationOptions());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function expirationOptions(): array
+    {
+        $max = static::maxLifetimeDays();
+        $options = [];
+
+        foreach (self::EXPIRATION_PRESETS as $days => $label) {
+            if ($max === 0 || $days <= $max) {
+                $options[$days] = __($label);
+            }
+        }
+
+        if ($max > 0 && ! array_key_exists($max, $options)) {
+            $options[$max] = __(':days days', ['days' => $max]);
+        }
+
+        ksort($options);
+
+        return $options;
+    }
+
+    /**
+     * Whether an issued token outlives the current maximum lifetime (including tokens that never expire).
+     */
+    public function exceedsLifetimePolicy(PersonalAccessToken $token): bool
+    {
+        if ($token->expires_at !== null && $token->expires_at->isPast()) {
+            return false;
+        }
+
+        if ($token->expires_at === null) {
+            return true;
+        }
+
+        $max = static::maxLifetimeDays();
+        if ($max === 0) {
+            return false;
+        }
+
+        return $token->expires_at->gt(($token->created_at ?? now())->copy()->addDays($max)->addMinute());
+    }
+
+    private function resetCreateForm(): void
+    {
+        $this->form->reset();
+        $this->form->scopeMode = $this->canUseTeamScope ? 'team' : 'selected';
+        $allowedDays = static::allowedExpirationDays();
+        $this->form->expiresInDays = in_array(self::DEFAULT_EXPIRATION_DAYS, $allowedDays, true)
+            ? self::DEFAULT_EXPIRATION_DAYS
+            : max($allowedDays);
     }
 
     private function getTokens()
@@ -179,14 +261,26 @@ class ApiTokens extends Component
         ])->values()->all();
     }
 
-    public function addNewToken()
+    public function addNewToken(mixed $credential = ''): bool|string
     {
         try {
             $this->authorize('create', PersonalAccessToken::class);
 
             $teamId = currentTeam()->id;
             ['permissions' => $permissions, 'scopes' => $storedScopes, 'expiresInDays' => $expiresInDays] = $this->validateTokenForm($this->form, $teamId);
-            $expiresAt = filled($expiresInDays) ? now()->addDays((int) $expiresInDays) : null;
+            if (! verifyPasswordConfirmation($credential, $this)) {
+                auditLog('ui.api_token.created', [
+                    'team_id' => $teamId,
+                    'api_token_name' => $this->form->description,
+                    'result' => 'denied',
+                    'reason' => 'password_confirmation_failed',
+                ], 'warning');
+
+                return $this->getErrorBag()->first('password') ?: Reauthentication::failureMessage(Reauthentication::method());
+            }
+            $this->resetErrorBag('password');
+
+            $expiresAt = now()->addDays((int) $expiresInDays);
             // One transaction, so a token never exists team-wide when saving its scopes fails.
             $token = DB::transaction(function () use ($permissions, $expiresAt, $teamId, $storedScopes) {
                 $token = auth()->user()->createToken($this->form->description, $permissions, $expiresAt, $teamId);
@@ -199,15 +293,24 @@ class ApiTokens extends Component
                 'api_token_name' => $this->form->description,
                 'abilities' => $permissions,
                 'scopes' => $storedScopes,
-                'expires_at' => $expiresAt?->toIso8601String(),
+                'expires_at' => $expiresAt->toIso8601String(),
+                'result' => 'success',
             ]);
             $this->getTokens();
-            $this->form->reset();
-            $this->form->scopeMode = $this->canUseTeamScope ? 'team' : 'selected';
+            $this->resetCreateForm();
             // Do NOT strip the numeric prefix (e.g. "69|...") — Sanctum uses it to index and look up tokens.
             $this->dispatch('api-token-issued', token: $token->plainTextToken);
+
+            return true;
+        } catch (ValidationException $e) {
+            $this->setErrorBag($e->validator->errors());
+            handleError($e, $this);
+
+            return $e->validator->errors()->first();
         } catch (\Exception $e) {
-            return handleError($e, $this);
+            handleError($e, $this);
+
+            return __('The API token was not created.');
         }
     }
 
@@ -230,8 +333,15 @@ class ApiTokens extends Component
                 'scopes' => $storedScopes,
             ]);
             if ($expiresInDays !== ApiTokenForm::KEEP_EXPIRY) {
+                $expiresAt = now()->addDays((int) $expiresInDays);
+                $max = static::maxLifetimeDays();
+                if ($max > 0 && $expiresAt->gt(($token->created_at ?? now())->copy()->addDays($max)->addMinute())) {
+                    throw ValidationException::withMessages([
+                        'editForm.expiresInDays' => __('Tokens expire after at most :days days.', ['days' => $max]),
+                    ]);
+                }
                 $token->forceFill([
-                    'expires_at' => filled($expiresInDays) ? now()->addDays((int) $expiresInDays) : null,
+                    'expires_at' => $expiresAt,
                     // A new expiry date needs a new expiration warning.
                     'api_token_expiration_warning_sent_at' => null,
                 ]);
@@ -257,18 +367,18 @@ class ApiTokens extends Component
      * Validate the form and check that the user may give the token this access.
      * Never trust the $this->canUse* booleans: check the current user's access in the team again.
      *
-     * @return array{permissions: list<string>, scopes: list<array{scope: string, uuid: string}>|null, expiresInDays: int|string|null}
+     * @return array{permissions: list<string>, scopes: list<array{scope: string, uuid: string}>|null, expiresInDays: int|string}
      */
     private function validateTokenForm(ApiTokenForm $form, int $teamId, bool $editing = false): array
     {
-        $expiryChoices = array_keys($this->expirationOptions);
+        $expiryChoices = static::allowedExpirationDays();
         if ($editing) {
             $expiryChoices[] = ApiTokenForm::KEEP_EXPIRY;
         }
 
         $validated = $form->validate([
             'description' => 'required|min:3|max:255',
-            'expiresInDays' => ['nullable', Rule::in($expiryChoices)],
+            'expiresInDays' => ['required', Rule::in($expiryChoices)],
             'permissions' => 'required|array|min:1',
             'permissions.*' => ['required', 'string', Rule::in(['read', 'read:sensitive', 'write', 'write:sensitive', 'deploy', 'delete', 'root'])],
             'scopeMode' => ['required', Rule::in(['team', 'selected'])],
@@ -295,7 +405,7 @@ class ApiTokens extends Component
         return [
             'permissions' => $permissions,
             'scopes' => $scopes === null ? null : array_map(fn (Grant $scope) => ['scope' => $scope->scope->value, 'uuid' => $scope->uuid], $scopes),
-            'expiresInDays' => $validated['expiresInDays'] ?? null,
+            'expiresInDays' => $validated['expiresInDays'],
         ];
     }
 
@@ -357,20 +467,40 @@ class ApiTokens extends Component
         }
     }
 
-    public function roll(int $id)
+    public function roll(int $id, mixed $credential = ''): bool|string
     {
         try {
             $token = $this->findOwnToken($id);
             $this->authorize('update', $token);
+            if ($this->exceedsLifetimePolicy($token)) {
+                return __('Tokens exceed the lifetime policy');
+            }
+
+            if (! verifyPasswordConfirmation($credential, $this)) {
+                auditLog('ui.api_token.rolled', [
+                    'team_id' => $token->team_id,
+                    'api_token_name' => $token->name,
+                    'result' => 'denied',
+                ], 'warning');
+
+                return $this->getErrorBag()->first('password') ?: Reauthentication::failureMessage(Reauthentication::method());
+            }
+            $this->resetErrorBag('password');
+
             $plainTextToken = $token->roll();
             auditLog('ui.api_token.rolled', [
                 'team_id' => $token->team_id,
                 'api_token_name' => $token->name,
+                'result' => 'success',
             ]);
             $this->getTokens();
             $this->dispatch('api-token-issued', token: $plainTextToken);
+
+            return true;
         } catch (\Exception $e) {
-            return handleError($e, $this);
+            handleError($e, $this);
+
+            return __('The API token was not created.');
         }
     }
 

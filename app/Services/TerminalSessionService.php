@@ -9,6 +9,7 @@ use App\Support\ValidationPatterns;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Throwable;
 
 class TerminalSessionService
 {
@@ -38,6 +39,8 @@ class TerminalSessionService
             'user_agent' => $userAgent,
         ], now()->addSeconds(self::TOKEN_TTL_SECONDS));
 
+        auditLog('terminal.session.issued', $this->auditRedemptionContext($user, $server, $container) + ['result' => 'success']);
+
         return $token;
     }
 
@@ -48,6 +51,41 @@ class TerminalSessionService
      * @return array{command: string, session_id: string}
      */
     public function redeem(User $user, string $token): array
+    {
+        $payload = null;
+        $server = null;
+
+        try {
+            $command = $this->redeemPayload($user, $token, $payload, $server);
+        } catch (Throwable $exception) {
+            $ownPayload = is_array($payload) && data_get($payload, 'user_id') === $user->id ? $payload : [];
+
+            auditLog('terminal.session.redeemed', $this->auditRedemptionContext(
+                $user,
+                $server,
+                is_string($ownPayload['container'] ?? null) ? $ownPayload['container'] : null,
+                is_string($ownPayload['server_uuid'] ?? null) ? $ownPayload['server_uuid'] : null,
+            ) + [
+                'result' => 'denied',
+                'reason' => $exception instanceof AccessDeniedHttpException ? $exception->getMessage() : class_basename($exception),
+            ], 'warning');
+
+            throw $exception;
+        }
+
+        auditLog('terminal.session.redeemed', $this->auditRedemptionContext($user, $server, $payload['container']) + [
+            'command' => maskAuditCommand($this->remoteCommand($server, $payload['container'])),
+            'result' => 'success',
+        ]);
+
+        return $command;
+    }
+
+    /**
+     * @param  mixed  $payload  Set to the cached token payload.
+     * @param  Server|null  $server  Set to the resolved target server.
+     */
+    private function redeemPayload(User $user, string $token, mixed &$payload, ?Server &$server): array
     {
         $payload = Cache::lock($this->cacheKey($token).':lock', 5)
             ->get(fn () => Cache::pull($this->cacheKey($token)));
@@ -229,6 +267,39 @@ class TerminalSessionService
         }
 
         return "{$sudo}docker exec -it {$escapedContainer} sh -c ".escapeshellarg($this->shellCommand());
+    }
+
+    /**
+     * The command run on the server: a login shell, or a shell inside the container.
+     */
+    private function remoteCommand(Server $server, ?string $container): string
+    {
+        $command = $this->shellCommand();
+
+        if ($container === null) {
+            return $command;
+        }
+
+        $dockerCommand = 'docker exec -it '.escapeshellarg($container).' sh -c '.escapeshellarg($command);
+
+        return $server->isNonRoot() ? "sudo {$dockerCommand}" : $dockerCommand;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function auditRedemptionContext(User $user, ?Server $server, ?string $container, ?string $serverUuid = null): array
+    {
+        return [
+            'team_id' => $server?->team_id ?? $user->currentTeam()?->id,
+            'resource' => 'server',
+            'server_uuid' => $server?->uuid ?? $serverUuid,
+            'server_name' => $server?->name,
+            'container' => $container,
+            'actor_id' => $user->id,
+            'actor_name' => $user->name,
+            'actor_email' => $user->email,
+        ];
     }
 
     private function shellCommand(): string

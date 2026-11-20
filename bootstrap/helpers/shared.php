@@ -2,6 +2,7 @@
 
 use App\Enums\ApplicationDeploymentStatus;
 use App\Enums\ProxyTypes;
+use App\Enums\SshKeyType;
 use App\Jobs\DatabaseBackupJob;
 use App\Jobs\ScheduledTaskJob;
 use App\Jobs\ServerFilesFromServerJob;
@@ -40,6 +41,8 @@ use App\Models\StandaloneSqlite;
 use App\Models\SwarmDocker;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\ErrorExposure;
+use App\Support\Reauthentication;
 use App\Services\Dns\CloudflareDnsProvider;
 use App\Services\Dns\DnsRecord;
 use App\Services\Dns\DnsResolver;
@@ -56,7 +59,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\RateLimiter;
@@ -706,11 +708,8 @@ function handleError(?Throwable $error = null, ?Component $livewire = null, ?str
         abort(404);
     }
 
-    if ($error instanceof Throwable) {
-        $message = $error->getMessage();
-    } else {
-        $message = null;
-    }
+    // In production, internal errors are replaced by a generic message with a logged reference id.
+    $message = ErrorExposure::make()->userMessage($error);
     if ($customErrorMessage) {
         $message = $customErrorMessage.' '.$message;
     }
@@ -756,26 +755,25 @@ function generate_random_name(?string $cuid = null): string
     return Str::kebab("{$generator->getName()}-$cuid");
 }
 /**
- * RSA keys get 4096 bits: GitHub rejects new RSA SSH keys smaller than 3072 bits, and phpseclib makes 2048-bit keys by default.
+ * Generate an SSH key pair. Defaults to ECDSA P-256; RSA keys are 3072-bit.
+ *
+ * @param  string  $type  One of the App\Enums\SshKeyType values (ecdsa, rsa, ed25519).
+ * @return array{private: string, public: string}
  */
-function generateSSHKey(string $type = 'ed25519')
+function generateSSHKey(string $type = 'ecdsa'): array
 {
-    if ($type === 'rsa') {
-        $key = RSA::createKey(4096);
+    $keyType = SshKeyType::tryFrom($type) ?? throw new Exception('Invalid key type');
 
-        return [
-            'private' => $key->toString('PKCS1'),
-            'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
-        ];
-    } elseif ($type === 'ed25519') {
-        $key = EC::createKey('Ed25519');
+    $key = match ($keyType) {
+        SshKeyType::RSA => RSA::createKey(SshKeyType::RSA_BITS),
+        SshKeyType::ECDSA => EC::createKey(SshKeyType::ECDSA_CURVE),
+        SshKeyType::ED25519 => EC::createKey('Ed25519'),
+    };
 
-        return [
-            'private' => $key->toString('OpenSSH'),
-            'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
-        ];
-    }
-    throw new Exception('Invalid key type');
+    return [
+        'private' => $keyType === SshKeyType::RSA ? $key->toString('PKCS1') : $key->toString('OpenSSH'),
+        'public' => $key->getPublicKey()->toString('OpenSSH', ['comment' => 'coolify-generated-ssh-key']),
+    ];
 }
 function formatPrivateKey(string $privateKey)
 {
@@ -1668,6 +1666,23 @@ function generateFqdn(Server $server, string $random, bool $forceHttps = false, 
 
     return "$scheme://{$random}.$host$path";
 }
+/**
+ * The domain that a public database is reached at: "{uuid}.{wildcard domain}", or "{uuid}.{ip}.sslip.io" when the
+ * server has no wildcard domain. Both resolve to the server, which publishes the public port. A server added by
+ * hostname is reached at that hostname.
+ */
+function publicDatabaseHost(Server $server, string $uuid): ?string
+{
+    $hasWildcard = filled(data_get($server, 'settings.wildcard_domain'));
+    if (! $hasWildcard && filled($server->ip) && $server->ip !== 'host.docker.internal' && filter_var($server->ip, FILTER_VALIDATE_IP) === false) {
+        return strtolower($server->ip);
+    }
+
+    $host = parse_url(generateUrl(server: $server, random: $uuid), PHP_URL_HOST);
+
+    return is_string($host) && $host !== '' ? $host : null;
+}
+
 function sslip(Server $server)
 {
     if (isDev() && $server->id === 0) {
@@ -5558,69 +5573,58 @@ function formatContainerStatus(string $status): string
 }
 
 /**
- * Check if the password step of a destructive action should be skipped.
- * Returns true if:
- * - Two-step confirmation is globally disabled
- * - User has a linked OAuth identity (they only use the dialog's typed confirmation)
- * - User has no password (no way to confirm)
- * - User confirmed their password recently (`auth.password_confirmed_at`
- *   within `auth.password_timeout`)
+ * Check if the confirmation modal can skip asking for a password or code.
  *
- * Used by modal-confirmation.blade.php to determine if password step should be shown,
- * and by verifyPasswordConfirmation() to enforce the same rule on the server.
+ * Only users without a usable local password and without confirmed two-factor
+ * authentication (SSO users) skip the input step. They are not exempt from
+ * re-authentication: verifyPasswordConfirmation() still requires that they
+ * signed in recently.
  *
- * @return bool True if password confirmation should be skipped
+ * Used by modal-confirmation.blade.php to determine if the password step should be shown.
  */
 function shouldSkipPasswordConfirmation(): bool
 {
-    // Skip if two-step confirmation is globally disabled
-    if (data_get(InstanceSettings::get(), 'disable_two_step_confirmation')) {
-        return true;
-    }
-
-    if (! Auth::user()?->requiresPasswordConfirmation()) {
-        return true;
-    }
-
-    return hasRecentPasswordConfirmation();
+    return Reauthentication::needsNoInput();
 }
 
 /**
- * Whether the session holds a password confirmation within `auth.password_timeout`.
+ * How the current user re-authenticates: 'password', 'totp', 'recent_login' or 'none'.
  */
+function reauthenticationMethod(): string
+{
+    return Reauthentication::method();
+}
+
+/**
+ * Whether the current user re-authenticated within the sensitive-action window
+ * (`sensitive_confirmed_at` in the session).
+ */
+function hasRecentSensitiveConfirmation(): bool
+{
+    return Reauthentication::hasRecentConfirmation();
+}
+
 function hasRecentPasswordConfirmation(): bool
 {
-    $confirmedAt = session('auth.password_confirmed_at');
-    if (! is_numeric($confirmedAt)) {
-        return false;
-    }
-
-    return (time() - (int) $confirmedAt) < (int) config('auth.password_timeout', 10800);
+    return hasRecentSensitiveConfirmation();
 }
 
 /**
- * Verify password for two-step confirmation.
- * Skips verification in the cases listed in shouldSkipPasswordConfirmation().
+ * Verify the user's identity before a sensitive action.
  *
- * @param  mixed  $password  The password to verify (may be array if skipped by frontend)
+ * - Users with a local password must enter it.
+ * - SSO users with confirmed two-factor authentication must enter a current TOTP code.
+ * - Other SSO users must have signed in within the re-authentication window.
+ *
+ * A successful confirmation is remembered in the session (`sensitive_confirmed_at`).
+ *
+ * @param  mixed  $password  The password or TOTP code to verify
  * @param  Component|null  $component  Optional Livewire component to add errors to
- * @return bool True if verification passed (or skipped), false if password is incorrect
+ * @return bool True if verification passed, false otherwise
  */
 function verifyPasswordConfirmation(mixed $password, ?Component $component = null): bool
 {
-    // Skip if password confirmation should be skipped
-    if (shouldSkipPasswordConfirmation()) {
-        return true;
-    }
-
-    // Verify the password
-    if (! is_string($password) || ! Hash::check($password, Auth::user()->password)) {
-        $component?->addError('password', 'The provided password is incorrect.');
-
-        return false;
-    }
-
-    return true;
+    return Reauthentication::verify($password, $component);
 }
 
 /**

@@ -170,6 +170,7 @@
                         ['label' => __('Tags'), 'icon' => 'tags', 'href' => route('tags.show'), 'active' => request()->is('tags*', 'canvas/tags'), 'visible' => $teamWide],
                         // Instance settings live in the platform administration area of this distribution.
                         ['label' => __('Platform Admin'), 'icon' => 'grid', 'href' => route('platform.dashboard'), 'active' => request()->is('platform*'), 'visible' => auth()->user()?->canOperatePlatform()],
+                        ['label' => __('Audit logs'), 'icon' => 'file-content', 'href' => route('platform.logs'), 'active' => request()->routeIs('platform.logs'), 'visible' => auth()->user()?->is_auditor && !auth()->user()?->canOperatePlatform()],
                     ],
                 ])->map(fn (array $items) => collect($items)
                     ->filter(fn (array $item): bool => (bool) ($item['visible'] ?? true))

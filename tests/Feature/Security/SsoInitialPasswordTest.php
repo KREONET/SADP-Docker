@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnforceSessionTimeout;
 use App\Models\InstanceSettings;
 use App\Models\OauthIdentity;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,10 +31,13 @@ beforeEach(function () {
     $this->team->members()->attach($this->ssoUser->id, ['role' => 'owner']);
 });
 
-function actAsRecentlySignedIn(User $user): void
+function actAsRecentlySignedIn(User $user, int $minutesAgo = 0): void
 {
     test()->actingAs($user);
-    session(['currentTeam' => test()->team]);
+    session([
+        'currentTeam' => test()->team,
+        EnforceSessionTimeout::AUTHENTICATED_AT_KEY => now()->subMinutes($minutesAgo)->getTimestamp(),
+    ]);
 }
 
 test('sso users are offered to set a password on the confirmation page', function () {
@@ -69,6 +74,21 @@ test('an sso user sets a password and can then enable two-factor authentication'
         ->assertRedirect('/profile')
         ->assertSessionHas('status', 'two-factor-authentication-enabled');
     expect($this->ssoUser->fresh()->two_factor_secret)->not->toBeNull();
+});
+
+test('setting the first password needs a recent sign-in', function () {
+    actAsRecentlySignedIn($this->ssoUser, Reauthentication::windowMinutes() + 1);
+    $previousHash = $this->ssoUser->password;
+
+    $this->from(route('password.confirm'))
+        ->post(route('password.initial.store'), [
+            'password' => SSO_INITIAL_PASSWORD,
+            'password_confirmation' => SSO_INITIAL_PASSWORD,
+        ])
+        ->assertRedirect(route('password.confirm'))
+        ->assertSessionHasErrorsIn('initialPassword', 'password');
+
+    expect($this->ssoUser->fresh()->password)->toBe($previousHash);
 });
 
 test('the new password must be confirmed', function () {

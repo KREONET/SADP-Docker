@@ -72,6 +72,11 @@
                         To set flags, put <code class="font-mono"># coolify: literal buildtime=false runtime=false</code>
                         directly above a variable line. Without this line, the flags of a variable do not change.
                     </x-callout>
+                    @if ($sensitiveConfirmationRequired)
+                        <x-sensitive-confirmation action="confirmSensitiveAccess" wire:key="env-dev-view-confirm"
+                            :message="__('Values are hidden until you confirm your identity. Hidden values are kept unchanged when you save. You will not be asked again for :minutes minutes.', ['minutes' => \App\Support\Reauthentication::windowMinutes()])"
+                            :buttonText="__('Show values')" />
+                    @endif
                     <x-forms.textarea rows="10" class="whitespace-pre-wrap font-sans" id="variables"
                         wire:model="variables" :label="__('Production')"></x-forms.textarea>
                     @if ($showPreview)

@@ -9,6 +9,7 @@ use App\Models\InstanceSettings;
 use App\Models\Project;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -247,6 +248,8 @@ it('does not decrypt environment variable values until edit is opened', function
         ->and($show->get('value'))->toBeNull()
         ->and($show->get('editorOpen'))->toBeFalse();
 
+    // Revealing the value requires a recent re-authentication.
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
     $show->set('editorOpen', true)->call('loadValues');
 
     expect($show->get('valuesLoaded'))->toBeTrue()

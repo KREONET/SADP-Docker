@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\User\DeleteUserAccount;
+use App\Http\Middleware\EnforceSessionTimeout;
 use App\Jobs\DeleteResourceJob;
 use App\Livewire\Profile\Index as ProfileIndex;
 use App\Models\Application;
@@ -83,7 +84,7 @@ it('keeps the account when the password is wrong', function () {
     expect(User::find($user->id))->not->toBeNull();
 });
 
-it('lets sso users withdraw without a password', function () {
+it('lets recently signed-in sso users withdraw without a password', function () {
     [$user, $team] = userWithPersonalResources();
     OauthIdentity::create([
         'user_id' => $user->id,
@@ -93,7 +94,7 @@ it('lets sso users withdraw without a password', function () {
         'email' => $user->email,
     ]);
     $this->actingAs($user);
-    session(['currentTeam' => $team]);
+    session(['currentTeam' => $team, EnforceSessionTimeout::AUTHENTICATED_AT_KEY => now()->getTimestamp()]);
 
     Livewire::test(ProfileIndex::class)
         ->call('deleteAccount', '')

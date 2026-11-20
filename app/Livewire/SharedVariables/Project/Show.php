@@ -3,15 +3,17 @@
 namespace App\Livewire\SharedVariables\Project;
 
 use App\Livewire\Concerns\RemembersCanvasView;
+use App\Livewire\SharedVariables\Concerns\GatesDeveloperViewValues;
 use App\Models\Project;
 use App\Models\SharedEnvironmentVariable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Show extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, GatesDeveloperViewValues;
     use RemembersCanvasView;
 
     public Project $project;
@@ -77,18 +79,15 @@ class Show extends Component
 
     public function getDevView()
     {
-        $this->variables = $this->formatEnvironmentVariables($this->project->environment_variables->sortBy('key'));
-    }
-
-    private function formatEnvironmentVariables($variables)
-    {
-        $canViewValues = auth()->user()?->isAdminOfTeam($this->project->team_id) ?? false;
-
-        return $variables->map(fn ($item) => formatEnvVariableForDevView($item, $canViewValues))->join("\n");
+        $this->variables = $this->formatSharedVariablesForDeveloperView($this->project->environment_variables->sortBy('key'));
     }
 
     public function submit()
     {
+        if ($this->variables === null) {
+            return;
+        }
+
         // Parse before the save, so that an invalid "# coolify:" line changes nothing and keeps the edited text.
         try {
             $this->authorize('update', $this->project);
@@ -145,9 +144,11 @@ class Show extends Component
             $value = is_array($data) ? ($data['value'] ?? '') : $data;
 
             $found = $this->project->environment_variables()->where('key', $key)->first();
+            // A placeholder stands for a value that was never revealed: keep the stored one.
+            $keepsStoredValue = $this->isHiddenValuePlaceholder($value);
 
             if ($found) {
-                if (! $found->is_shown_once && ! $found->is_multiline && formatEnvValueForDevView($found->value) !== null) {
+                if (! $keepsStoredValue && ! $found->is_shown_once && ! $found->is_multiline && formatEnvValueForDevView($found->value) !== null) {
                     if ($found->value !== $value) {
                         $found->value = $value;
                     }
@@ -157,7 +158,7 @@ class Show extends Component
                         $count++;
                     }
                 }
-            } else {
+            } elseif (! $keepsStoredValue) {
                 $this->project->environment_variables()->create([
                     'key' => $key,
                     'value' => $value,
@@ -178,6 +179,16 @@ class Show extends Component
     {
         $this->project->refresh();
         $this->getDevView();
+    }
+
+    protected function sharedVariableOwner(): Model
+    {
+        return $this->project;
+    }
+
+    protected function sharedVariableType(): string
+    {
+        return 'project';
     }
 
     public function render()

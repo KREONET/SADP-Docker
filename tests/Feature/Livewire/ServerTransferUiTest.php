@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -44,6 +45,7 @@ beforeEach(function () {
     $this->userPassword = 'password'; // ggignore
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
     makePlatformAdmin($this->user);
+    TwoFactor::confirm($this->user);
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);
 

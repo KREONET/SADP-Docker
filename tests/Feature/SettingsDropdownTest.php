@@ -16,6 +16,11 @@ it('renders the changelog modal above the desktop sidebar toggle', function () {
 
     app()->instance(ChangelogService::class, new class extends ChangelogService
     {
+        public function isEnabled(): bool
+        {
+            return true;
+        }
+
         public function getEntriesForUser(User $user): Collection
         {
             return collect([
@@ -60,6 +65,11 @@ it('opens the changelog modal when there are no entries', function () {
 
     app()->instance(ChangelogService::class, new class extends ChangelogService
     {
+        public function isEnabled(): bool
+        {
+            return true;
+        }
+
         public function getEntriesForUser(User $user): Collection
         {
             return collect();

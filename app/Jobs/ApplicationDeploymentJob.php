@@ -22,16 +22,17 @@ use App\Models\GitlabApp;
 use App\Models\Server;
 use App\Models\StandaloneDocker;
 use App\Models\SwarmDocker;
+use App\Models\User;
 use App\Models\VulnerabilityScan;
 use App\Notifications\Application\DeploymentFailed;
 use App\Notifications\Application\DeploymentSuccess;
 use App\Services\ControllerIngress\ControllerIngress;
+use App\Services\DeploymentConfiguration\ApplicationConfigurationSnapshot;
+use App\Services\ImageScan\DeploymentImageScan;
 use App\Services\Platform\SourcePolicy;
 use App\Services\Security\TrivyScanner;
 use App\Services\Swarm\SwarmClusterManager;
 use App\Services\Swarm\SwarmCommands;
-use App\Services\DeploymentConfiguration\ApplicationConfigurationSnapshot;
-use App\Services\ImageScan\DeploymentImageScan;
 use App\Support\RemoteSecretReferences;
 use App\Support\RemoteSecretValueFormatter;
 use App\Support\ValidationPatterns;
@@ -1988,13 +1989,25 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
     }
 
     /**
+     * The user who started this deployment, or null for webhook deployments and users that no longer exist.
+     */
+    private function deploymentInitiator(): ?User
+    {
+        $userId = $this->application_deployment_queue->triggered_by_user_id;
+
+        return $userId === null ? null : User::query()->find($userId);
+    }
+
+    /**
      * Reads the Compose file from the repository again (also for pull request previews). If the file is not
-     * safe to use, the deployment stops here with a visible log line, before a command uses the file.
+     * safe to use, or adds host access that the stored Compose file does not have and the deployment was not
+     * started by a platform administrator, the deployment stops here with a visible log line, before a
+     * command uses the file.
      */
     private function loadComposeFileForDeployment(): void
     {
         try {
-            $this->application->loadComposeFile(isInit: false);
+            $this->application->loadComposeFile(isInit: false, isDeployment: true, deploymentInitiator: $this->deploymentInitiator());
         } catch (DeploymentException $e) {
             // Deployment logs escape HTML themselves, so undo the escaping that error toasts need.
             $message = 'Deployment stopped: '.lcfirst(html_entity_decode($e->getMessage(), ENT_QUOTES | ENT_HTML5));
@@ -3494,7 +3507,16 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
         $helperImage = "{$helperImage}:".getHelperVersion();
         // Get user home directory
         $this->serverUserHomeDir = instant_remote_process(['echo $HOME'], $this->server);
-        instant_remote_process(["mkdir -p {$this->serverUserHomeDir}/.docker/buildx"], $this->server);
+        // Git keeps its known_hosts file in the Coolify data directory of the build server, so host keys
+        // learned on the first clone are verified (and survive) across deployments.
+        $gitKnownHostsDirectory = preg_match('/UserKnownHostsFile=(\/[A-Za-z0-9._\/-]+)/', gitSshHostKeyOptions(), $knownHostsMatch) === 1
+            ? dirname($knownHostsMatch[1])
+            : '/data/coolify/ssh/git';
+        instant_remote_process([
+            "mkdir -p {$this->serverUserHomeDir}/.docker/buildx",
+            "mkdir -p {$gitKnownHostsDirectory}",
+        ], $this->server);
+        $gitKnownHostsVolume = "-v {$gitKnownHostsDirectory}:{$gitKnownHostsDirectory}";
         $this->dockerConfigFileExists = instant_remote_process(["test -f {$this->serverUserHomeDir}/.docker/config.json && echo 'OK' || echo 'NOK'"], $this->server);
 
         // Build secrets put user variables such as HOME or DOCKER_CONFIG into the helper environment.
@@ -3510,16 +3532,16 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
             if ($this->dockerConfigFileExists === 'NOK') {
                 throw new DeploymentException("Docker config file (~/.docker/config.json) of the SSH user ({$this->server->user}) not found on the build server ({$this->server->name}). Log in to your registry under Server → Docker Registries on the build server. On a non-root server, a login made with \"sudo docker login\" is saved for root and is not used for builds.");
             }
-            $runCommand = "docker run -d --name {$this->deployment_uuid} {$env_flags} --rm -v {$this->serverUserHomeDir}/.docker/config.json:/root/.docker/config.json:ro {$buildxMetadataVolume}{$hostCaBundleVolume} -v /var/run/docker.sock:/var/run/docker.sock {$helperImage}";
+            $runCommand = "docker run -d --name {$this->deployment_uuid} {$env_flags} --rm -v {$this->serverUserHomeDir}/.docker/config.json:/root/.docker/config.json:ro {$buildxMetadataVolume}{$hostCaBundleVolume} {$gitKnownHostsVolume} -v /var/run/docker.sock:/var/run/docker.sock {$helperImage}";
         } else {
             // docker compose runs in this helper and reads seccomp profile files from the custom Docker options
             $seccompMounts = $this->pull_request_id === 0 ? seccompProfileMountFlags($this->application->custom_docker_run_options) : '';
             if ($this->dockerConfigFileExists === 'OK') {
                 $safeNetwork = escapeshellarg($this->destination->network);
-                $runCommand = "docker run -d --network {$safeNetwork} --name {$this->deployment_uuid} {$env_flags} --rm -v {$this->serverUserHomeDir}/.docker/config.json:/root/.docker/config.json:ro {$buildxMetadataVolume}{$hostCaBundleVolume} -v /var/run/docker.sock:/var/run/docker.sock {$seccompMounts} {$helperImage}";
+                $runCommand = "docker run -d --network {$safeNetwork} --name {$this->deployment_uuid} {$env_flags} --rm -v {$this->serverUserHomeDir}/.docker/config.json:/root/.docker/config.json:ro {$buildxMetadataVolume}{$hostCaBundleVolume} {$gitKnownHostsVolume} -v /var/run/docker.sock:/var/run/docker.sock {$seccompMounts} {$helperImage}";
             } else {
                 $safeNetwork = escapeshellarg($this->destination->network);
-                $runCommand = "docker run -d --network {$safeNetwork} --name {$this->deployment_uuid} {$env_flags} --rm {$buildxMetadataVolume}{$hostCaBundleVolume} -v /var/run/docker.sock:/var/run/docker.sock {$seccompMounts} {$helperImage}";
+                $runCommand = "docker run -d --network {$safeNetwork} --name {$this->deployment_uuid} {$env_flags} --rm {$buildxMetadataVolume}{$hostCaBundleVolume} {$gitKnownHostsVolume} -v /var/run/docker.sock:/var/run/docker.sock {$seccompMounts} {$helperImage}";
             }
         }
         if ($firstTry) {
@@ -3618,6 +3640,7 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
                     rollback: $this->rollback,
                     docker_registry_image_tag: $this->application_deployment_queue->docker_registry_image_tag,
                     parent_deployment_uuid: $this->deployment_uuid,
+                    triggered_by_user_id: $this->application_deployment_queue->triggered_by_user_id,
                     is_mcp: (bool) $this->application_deployment_queue->is_mcp,
                 );
             } catch (Throwable $e) {

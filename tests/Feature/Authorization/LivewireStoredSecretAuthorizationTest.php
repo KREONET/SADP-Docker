@@ -45,7 +45,7 @@ it('does not serialize a private key for a member who cannot update it', functio
         ->assertReturned(null);
 });
 
-it('does not serialize a private key for an owner until it is revealed', function () {
+it('returns the stored key to its owner as an action result only', function () {
     $privateKeyValue = PrivateKey::generateNewKeyPair('ed25519')['private_key'];
     $privateKey = PrivateKey::factory()->create([
         'team_id' => $this->team->id,
@@ -60,7 +60,9 @@ it('does not serialize a private key for an owner until it is revealed', functio
         ->assertSet('newPrivateKey', '', strict: true)
         ->assertDontSee($privateKeyValue)
         ->call('revealPrivateKey', 'password')
-        ->assertReturned($privateKeyValue);
+        ->assertReturned($privateKeyValue)
+        ->assertSet('newPrivateKey', '', strict: true)
+        ->assertDontSee($privateKeyValue);
 });
 
 it('does not serialize GitHub App secrets for a member who cannot update it', function () {
@@ -160,7 +162,7 @@ it('lets an owner save S3 settings with the saved secret without sending it to t
     if (! defined('CURLOPT_RESOLVE')) {
         define('CURLOPT_RESOLVE', 10203);
     }
-    $storage = createS3StorageWithSecrets($this->team);
+    $storage = createS3StorageWithSecrets($this->team, $this->owner);
     $storage->update(['endpoint' => 'https://1.1.1.1']);
     $disk = Mockery::mock(FilesystemAdapter::class);
     $disk->allows('files')->andReturn([]);

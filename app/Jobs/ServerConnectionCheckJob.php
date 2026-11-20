@@ -6,6 +6,7 @@ use App\Events\ServerReachabilityChanged;
 use App\Helpers\SshMultiplexingHelper;
 use App\Models\Server;
 use App\Services\ServerTransfer\ServerTransferClaimer;
+use App\Services\Ssh\KnownHosts;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -261,6 +262,8 @@ class ServerConnectionCheckJob implements ShouldBeEncrypted, ShouldQueue
             $this->sshErrorOutput = $process->errorOutput();
             $this->hostKeyChanged = SshMultiplexingHelper::isHostKeyMismatch($this->sshErrorOutput);
             if ($process->exitCode() !== 0) {
+                // Report a changed host key clearly; the exception is turned into the connection error below.
+                KnownHosts::failIfHostKeyChanged($this->server, $process->errorOutput(), $process->exitCode());
                 $this->connectionError = 'ssh exit '.$process->exitCode().': '.Str::limit(trim($process->errorOutput()), 300);
             } else {
                 $this->ownerMarker = trim($process->output());

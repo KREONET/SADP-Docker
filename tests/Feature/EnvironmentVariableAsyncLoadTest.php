@@ -8,6 +8,7 @@ use App\Models\InstanceSettings;
 use App\Models\Project;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Reauthentication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -80,6 +81,8 @@ it('loads environment variables when loadEnvironmentVariables is called', functi
 });
 
 it('builds developer view text only after switching to developer view', function () {
+    // Revealing values in the developer view requires a recent re-authentication.
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
     $application = Application::factory()->create([
         'environment_id' => $this->environment->id,
     ]);
@@ -163,6 +166,8 @@ YAML,
 });
 
 it('hides generated compose variables from developer view', function () {
+    // Revealing values in the developer view requires a recent re-authentication.
+    session([Reauthentication::CONFIRMED_AT_KEY => now()->getTimestamp()]);
     $application = Application::factory()->create([
         'environment_id' => $this->environment->id,
         'build_pack' => 'dockercompose',

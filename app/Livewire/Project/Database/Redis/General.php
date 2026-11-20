@@ -7,6 +7,7 @@ use App\Actions\Database\StopDatabaseProxy;
 use App\Livewire\Project\Shared\EnvironmentVariable\All;
 use App\Models\Server;
 use App\Models\StandaloneRedis;
+use App\Support\ContainerPrivilegePolicy;
 use App\Support\ValidationPatterns;
 use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -142,6 +143,12 @@ class General extends Component
             $this->database->public_port = $this->publicPort ?: null;
             $this->database->public_port_timeout = $this->publicPortTimeout ?: null;
             $this->database->is_log_drain_enabled = $this->isLogDrainEnabled;
+            ContainerPrivilegePolicy::ensureRunOptionsAllowed(
+                $this->database->custom_docker_run_options,
+                $this->customDockerRunOptions,
+                auth()->user(),
+                'customDockerRunOptions',
+            );
             $this->database->custom_docker_run_options = $this->customDockerRunOptions;
             $this->database->save();
             $this->dispatch('name-changed', uuid: $this->database->uuid, name: $this->database->name);

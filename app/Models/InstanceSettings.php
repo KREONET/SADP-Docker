@@ -14,6 +14,11 @@ class InstanceSettings extends Model
 
     protected $attributes = [
         'is_dashboard_force_https_enabled' => true,
+        'do_not_track' => true,
+        'is_error_reporting_enabled' => false,
+        'is_changelog_enabled' => false,
+        'is_feedback_forwarding_enabled' => false,
+        'audit_log_retention_days' => 365,
         'is_cloudflare_tunnel_allowed' => true,
     ];
 
@@ -105,6 +110,11 @@ class InstanceSettings extends Model
         'loki_last_pushed_at',
         'loki_last_error',
         'default_locale',
+        'is_error_reporting_enabled',
+        'is_changelog_enabled',
+        'is_feedback_forwarding_enabled',
+        'admin_allowed_ips',
+        'audit_log_retention_days',
         'is_passkey_enabled',
     ];
 
@@ -162,6 +172,11 @@ class InstanceSettings extends Model
         'is_dashboard_force_https_enabled' => 'boolean',
         'is_cloudflare_tunnel_allowed' => 'boolean',
         'is_sso_only_login_enabled' => 'boolean',
+        'do_not_track' => 'boolean',
+        'is_error_reporting_enabled' => 'boolean',
+        'is_changelog_enabled' => 'boolean',
+        'is_feedback_forwarding_enabled' => 'boolean',
+        'audit_log_retention_days' => 'integer',
         'is_source_allowlist_enabled' => 'boolean',
         'forgejo_bot_token' => 'encrypted',
         'forgejo_webhook_secret' => 'encrypted',
@@ -210,13 +225,16 @@ class InstanceSettings extends Model
     }
 
     /**
-     * The master switch gates every log source, so turning it off stops all collection and shipping at once.
+     * Audit events are a security record and are always collected, whatever the master and audit switches say.
      */
     public function isAuditLogCollectionActive(): bool
     {
-        return (bool) $this->is_log_collection_enabled && (bool) $this->is_audit_log_collection_enabled;
+        return true;
     }
 
+    /**
+     * The master switch gates the system and container log sources and Loki shipping.
+     */
     public function isSystemLogCollectionActive(): bool
     {
         return (bool) $this->is_log_collection_enabled && (bool) $this->is_system_log_collection_enabled;
@@ -236,7 +254,7 @@ class InstanceSettings extends Model
 
     public function logRetentionDays(): int
     {
-        return max(1, min(365, (int) ($this->log_retention_days ?: 7)));
+        return LogEntry::retentionDays($this);
     }
 
     /**
@@ -271,7 +289,13 @@ class InstanceSettings extends Model
 
     public function isPasswordRegistrationAllowed(): bool
     {
-        if (! $this->is_registration_enabled || $this->isSsoOnlyLoginActive()) {
+        if ($this->isSsoOnlyLoginActive()) {
+            return false;
+        }
+
+        // A fresh installation must be able to create its first (root) user even though
+        // open registration is off by default.
+        if (! $this->is_registration_enabled && User::query()->exists()) {
             return false;
         }
 

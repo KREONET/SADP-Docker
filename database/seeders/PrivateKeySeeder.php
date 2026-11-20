@@ -4,11 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\PrivateKey;
 use App\Support\DevelopmentSshKey;
+use Database\Seeders\Concerns\RefusesProductionSeeding;
 use Illuminate\Database\Seeder;
 use phpseclib3\Crypt\RSA;
 
 class PrivateKeySeeder extends Seeder
 {
+    use RefusesProductionSeeding;
+
     /**
      * Run the database seeds.
      *
@@ -17,6 +20,8 @@ class PrivateKeySeeder extends Seeder
      */
     public function run(): void
     {
+        $this->refuseToRunInProduction();
+
         PrivateKey::create([
             'uuid' => 'ssh',
             'team_id' => 0,

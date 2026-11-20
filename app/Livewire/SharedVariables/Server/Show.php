@@ -3,15 +3,17 @@
 namespace App\Livewire\SharedVariables\Server;
 
 use App\Livewire\Concerns\RemembersCanvasView;
+use App\Livewire\SharedVariables\Concerns\GatesDeveloperViewValues;
 use App\Models\Server;
 use App\Models\SharedEnvironmentVariable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Show extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, GatesDeveloperViewValues;
     use RemembersCanvasView;
 
     public Server $server;
@@ -77,18 +79,15 @@ class Show extends Component
 
     public function getDevView()
     {
-        $this->variables = $this->formatEnvironmentVariables($this->server->environment_variables->whereNotIn('key', ['COOLIFY_SERVER_UUID', 'COOLIFY_SERVER_NAME'])->sortBy('key'));
-    }
-
-    private function formatEnvironmentVariables($variables)
-    {
-        $canViewValues = auth()->user()?->isAdminOfTeam($this->server->team_id) ?? false;
-
-        return $variables->map(fn ($item) => formatEnvVariableForDevView($item, $canViewValues))->join("\n");
+        $this->variables = $this->formatSharedVariablesForDeveloperView($this->server->environment_variables->whereNotIn('key', ['COOLIFY_SERVER_UUID', 'COOLIFY_SERVER_NAME'])->sortBy('key'));
     }
 
     public function submit()
     {
+        if ($this->variables === null) {
+            return;
+        }
+
         // Parse before the save, so that an invalid "# coolify:" line changes nothing and keeps the edited text.
         try {
             $this->authorize('update', $this->server);
@@ -156,6 +155,11 @@ class Show extends Component
                 continue;
             }
             $found = $this->server->environment_variables()->where('key', $key)->first();
+            // A placeholder stands for a value that was never revealed: keep the stored one.
+            $keepsStoredValue = $this->isHiddenValuePlaceholder($value);
+            if ($keepsStoredValue && $found) {
+                $value = $found->value;
+            }
 
             if ($found) {
                 if (! $found->is_shown_once && ! $found->is_multiline && formatEnvValueForDevView($found->value) !== null) {
@@ -169,7 +173,7 @@ class Show extends Component
                         $count++;
                     }
                 }
-            } else {
+            } elseif (! $keepsStoredValue) {
                 $this->server->environment_variables()->create([
                     'key' => $key,
                     'value' => $value,
@@ -191,6 +195,16 @@ class Show extends Component
     {
         $this->server->refresh();
         $this->getDevView();
+    }
+
+    protected function sharedVariableOwner(): Model
+    {
+        return $this->server;
+    }
+
+    protected function sharedVariableType(): string
+    {
+        return 'server';
     }
 
     public function render()

@@ -12,6 +12,7 @@ use App\Models\StandaloneDocker;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\TwoFactor;
 
 uses(RefreshDatabase::class);
 
@@ -34,6 +35,7 @@ beforeEach(function () {
     $this->team->members()->attach($this->user->id, ['role' => 'owner']);
     // The global search modals render the Git source forms, and their checkbox, for platform admins only.
     (Team::find(0) ?? Team::factory()->create(['id' => 0, 'name' => 'Root Team']))->members()->attach($this->user->id, ['role' => 'admin']);
+    TwoFactor::confirm($this->user);
 
     $this->actingAs($this->user);
     session(['currentTeam' => $this->team]);

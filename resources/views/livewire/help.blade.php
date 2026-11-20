@@ -11,6 +11,13 @@
         </div>
     </div>
 
+    @if (! $feedbackForwardingEnabled)
+        <div class="rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-600 dark:border-white/[0.06] dark:text-fg-dim"
+            role="status">
+            <p class="font-medium text-black dark:text-fg">{{ __('Feedback forwarding is disabled.') }}</p>
+            <p class="mt-0.5 text-xs leading-5">{{ __('This instance does not send feedback to the Coolify team. Ask your administrator to enable it in the instance settings.') }}</p>
+        </div>
+    @else
     <form wire:submit="submit" class="flex flex-col gap-4">
         <x-forms.input minlength="3" required id="subject" :label="__('Subject')"
             :placeholder="__('A short summary of your feedback')" autofocus />
@@ -26,4 +33,5 @@
             </x-forms.button>
         </div>
     </form>
+    @endif
 </div>

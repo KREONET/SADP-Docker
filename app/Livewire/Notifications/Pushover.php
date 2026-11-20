@@ -78,6 +78,8 @@ class Pushover extends Component
     public bool $traefikOutdatedPushoverNotifications = true;
 
     #[Validate(['boolean'])]
+    public bool $securityAlertPushoverNotifications = true;
+
     public bool $imageVulnerabilitiesPushoverNotifications = false;
 
     public function mount()
@@ -115,6 +117,7 @@ class Pushover extends Component
             $this->settings->server_unreachable_pushover_notifications = $this->serverUnreachablePushoverNotifications;
             $this->settings->server_patch_pushover_notifications = $this->serverPatchPushoverNotifications;
             $this->settings->traefik_outdated_pushover_notifications = $this->traefikOutdatedPushoverNotifications;
+            $this->settings->security_alert_pushover_notifications = $this->securityAlertPushoverNotifications;
             $this->settings->image_vulnerabilities_pushover_notifications = $this->imageVulnerabilitiesPushoverNotifications;
 
             $changedFields = array_keys($this->settings->getDirty());
@@ -146,6 +149,7 @@ class Pushover extends Component
             $this->serverUnreachablePushoverNotifications = $this->settings->server_unreachable_pushover_notifications;
             $this->serverPatchPushoverNotifications = $this->settings->server_patch_pushover_notifications;
             $this->traefikOutdatedPushoverNotifications = $this->settings->traefik_outdated_pushover_notifications;
+            $this->securityAlertPushoverNotifications = $this->settings->security_alert_pushover_notifications;
             $this->imageVulnerabilitiesPushoverNotifications = $this->settings->image_vulnerabilities_pushover_notifications;
         }
     }

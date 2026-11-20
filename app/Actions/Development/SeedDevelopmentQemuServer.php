@@ -6,6 +6,7 @@ use App\Enums\ProxyStatus;
 use App\Enums\ProxyTypes;
 use App\Models\PrivateKey;
 use App\Models\Server;
+use App\Services\Ssh\KnownHosts;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
@@ -62,7 +63,23 @@ class SeedDevelopmentQemuServer
         $server->deleted_at = null;
         $server->save();
 
+        $this->forgetHostKey($server);
+
         return $server->fresh();
+    }
+
+    /**
+     * Development VMs are rebuilt with `dev:qemu --fresh` or `limactl delete`, which gives them a new
+     * SSH host key that Coolify is not told about. Forget the trusted key whenever a VM is (re)seeded
+     * so the next connection learns the new key instead of being refused as a changed host key.
+     */
+    private function forgetHostKey(Server $server): void
+    {
+        if (KnownHosts::trustedFingerprints($server) === [] && ! is_file(KnownHosts::path($server))) {
+            return;
+        }
+
+        KnownHosts::forget($server);
     }
 
     private function ensureDevelopmentEnvironment(): void

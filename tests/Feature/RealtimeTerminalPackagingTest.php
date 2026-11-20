@@ -3,7 +3,8 @@
 it('copies the terminal utilities into the Coolify container images', function (string $dockerfile) {
     $dockerfile = file_get_contents(base_path($dockerfile));
 
-    expect($dockerfile)->toContain('COPY docker/coolify-terminal/terminal-utils.js /terminal/terminal-utils.js');
+    expect($dockerfile)->toContain('COPY docker/coolify-terminal/terminal-utils.js /terminal/terminal-utils.js')
+        ->toContain('COPY docker/coolify-terminal/terminal-origin.js /terminal/terminal-origin.js');
 })->with([
     'production image' => 'docker/production/Dockerfile',
     'development image' => 'docker/development/Dockerfile',
@@ -12,7 +13,8 @@ it('copies the terminal utilities into the Coolify container images', function (
 it('mounts the realtime terminal utilities in local development compose files', function (string $composeFile) {
     $composeContents = file_get_contents(base_path($composeFile));
 
-    expect($composeContents)->toContain('./docker/coolify-terminal/terminal-utils.js:/terminal/terminal-utils.js');
+    expect($composeContents)->toContain('./docker/coolify-terminal/terminal-utils.js:/terminal/terminal-utils.js')
+        ->toContain('./docker/coolify-terminal/terminal-origin.js:/terminal/terminal-origin.js');
 })->with([
     'default dev compose' => 'docker-compose.dev.yml',
     'maxio dev compose' => 'docker-compose-maxio.dev.yml',
