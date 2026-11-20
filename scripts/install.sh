@@ -1212,7 +1212,7 @@ else
 fi
 step_done
 
-step_start "Starting PADED" "v${LATEST_VERSION}"
+step_start "Starting SADP-Docker" "v${LATEST_VERSION}"
 echo " - Waiting for Coolify to be ready..."
 
 # Wait for upgrade.sh background process to complete
@@ -1280,7 +1280,7 @@ while [ $HEALTH_WAITED -lt $HEALTH_WAIT ]; do
     HEALTH=$(docker inspect --format='{{.State.Health.Status}}' coolify 2>/dev/null || echo "unknown")
     if [ "$HEALTH" = "healthy" ]; then
         log "Coolify container is healthy"
-        echo " - PADED is ready!"
+        echo " - SADP-Docker is ready!"
         break
     fi
     sleep 2
@@ -1379,7 +1379,7 @@ DEFAULT_PRIVATE_IP=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
 PRIVATE_IPS=$(hostname -I 2>/dev/null || ip -o addr show scope global | awk '{print $4}' | cut -d/ -f1)
 set -e
 
-printf '\n  %s%sPADED is ready!%s  %sInstalled in %s%s\n\n' "$C_BOLD" "$C_PURPLE" "$C_RESET" "$C_DIM" "$(ui_duration $(($(ui_now) - UI_INSTALL_STARTED)))" "$C_RESET" >&3
+printf '\n  %s%sSADP-Docker is ready!%s  %sInstalled in %s%s\n\n' "$C_BOLD" "$C_PURPLE" "$C_RESET" "$C_DIM" "$(ui_duration $(($(ui_now) - UI_INSTALL_STARTED)))" "$C_RESET" >&3
 if [ -n "$COOLIFY_BIND_ADDRESS" ] && [ "$COOLIFY_BIND_ADDRESS" != "0.0.0.0" ]; then
     printf '  Panel port 8000 is bound to %s%s%s only.\n' "$C_BOLD" "$COOLIFY_BIND_ADDRESS" "$C_RESET" >&3
     printf '  Open the panel through its proxy domain (or an SSH tunnel to %s:8000).\n' "$COOLIFY_BIND_ADDRESS" >&3

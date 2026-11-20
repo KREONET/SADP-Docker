@@ -3,7 +3,7 @@
 namespace App\Services\Swarm;
 
 /**
- * Shell commands PADED runs over SSH to build and run a Docker Swarm cluster.
+ * Shell commands SADP-Docker runs over SSH to build and run a Docker Swarm cluster.
  *
  * Every command is written so that `parseCommandsByLineForSudo()` keeps it working for
  * servers that connect with a non-root SSH user.
@@ -129,7 +129,7 @@ class SwarmCommands
                 .' --publish published='.self::REGISTRY_PORT.',target=5000'
                 ." --mount type=bind,source={$dataDirectory},target=/var/lib/registry"
                 ." --mount type=bind,source={$authDirectory},target=/auth,readonly"
-                .' --env REGISTRY_AUTH=htpasswd --env REGISTRY_AUTH_HTPASSWD_REALM=PADED --env REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd'
+                .' --env REGISTRY_AUTH=htpasswd --env REGISTRY_AUTH_HTPASSWD_REALM=SADP-Docker --env REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd'
                 .' '.self::REGISTRY_IMAGE.' >/dev/null',
             'for attempt in $(seq 1 30); do',
             "    if {$login} >/dev/null 2>&1; then",

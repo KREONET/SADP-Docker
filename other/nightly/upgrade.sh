@@ -244,7 +244,7 @@ log "Environment variables check complete"
 echo "     Done."
 
 # Make sure coolify network exists
-# It is created when Starting PADED with docker compose
+# It is created when Starting SADP-Docker with docker compose
 log "Checking Docker network 'coolify'..."
 if ! docker network inspect coolify >/dev/null 2>&1; then
     log "Network 'coolify' does not exist, creating..."

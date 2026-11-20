@@ -2743,7 +2743,7 @@ class ApplicationDeploymentJob implements ShouldBeEncrypted, ShouldQueue
      * server builds its own image, so the servers can run different code.
      */
     /**
-     * Worker nodes of a PADED Swarm cluster pull images from the registry on the manager. An
+     * Worker nodes of a SADP-Docker Swarm cluster pull images from the registry on the manager. An
      * application without its own registry image pushes there for this deployment only; the
      * name is never saved, so moving the application off the cluster leaves no trace of it.
      */

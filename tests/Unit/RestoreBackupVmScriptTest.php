@@ -52,11 +52,11 @@ it('forgets a stale key so ssh accepts the new key of the same address', functio
     rmdir($directory);
 })->skip(fn (): bool => trim((string) shell_exec('command -v ssh-keygen')) === '', 'ssh-keygen is not installed');
 
-it('prints the PADED start messages on one line', function () {
+it('prints the SADP-Docker start messages on one line', function () {
     $script = file_get_contents(restoreBackupVmScript());
 
     expect($script)
-        ->toContain('log "Restoring the backup and Starting PADED (migrations run on start)"')
-        ->toContain('echo "Starting PADED $LATEST_IMAGE..."')
-        ->not->toMatch("/PADED\n/");
+        ->toContain('log "Restoring the backup and Starting SADP-Docker (migrations run on start)"')
+        ->toContain('echo "Starting SADP-Docker $LATEST_IMAGE..."')
+        ->not->toMatch("/SADP-Docker\n/");
 });

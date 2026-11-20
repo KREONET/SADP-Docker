@@ -297,7 +297,7 @@ class ControllerIngress
 
     /**
      * The routed container's labels for its relay: the controller network replaces the worker's
-     * network, and PADED's own labels stay on the worker so the relay is never taken for the resource.
+     * network, and SADP-Docker's own labels stay on the worker so the relay is never taken for the resource.
      *
      * @param  array<string, string>  $labels
      * @return array<int, string>

@@ -4824,7 +4824,7 @@ function brand_name(): string
         $name = '';
     }
 
-    return $name !== '' ? $name : 'PADED';
+    return $name !== '' ? $name : 'SADP-Docker';
 }
 
 /**

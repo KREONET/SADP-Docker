@@ -816,7 +816,7 @@ class Server extends BaseModel
 
     /**
      * A worker on the internal network that runs no proxy of its own: the controller's proxy (the
-     * server that runs PADED) receives its traffic and forwards it to the worker's internal IP.
+     * server that runs SADP-Docker) receives its traffic and forwards it to the worker's internal IP.
      */
     public function isRoutedThroughController(): bool
     {

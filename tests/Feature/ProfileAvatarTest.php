@@ -226,3 +226,17 @@ it('does not serve the profile picture of a user who shares no team', function (
         ->get(route('team.member.avatar', ['user_id' => $stranger->id]))
         ->assertNotFound();
 });
+
+it('keeps the avatar upload script inside its Alpine attribute instead of showing it as page text', function () {
+    $this->actingAs(User::factory()->create(['name' => 'Test User']));
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.Livewire::test(Index::class)->html());
+    $xpath = new DOMXPath($document);
+
+    $avatarComponents = $xpath->query("//*[contains(@x-data, 'async prepareAvatar')]");
+
+    expect($avatarComponents)->toHaveCount(1)
+        ->and($avatarComponents->item(0)->getAttribute('x-data'))->toContain("this.\$wire.upload('avatar'")
+        ->and($xpath->query("//text()[contains(., 'canvas.toBlob')]"))->toHaveCount(0);
+});

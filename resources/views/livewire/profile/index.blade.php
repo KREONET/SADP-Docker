@@ -28,13 +28,6 @@
                             if (!file) return;
                             this.processing = true;
                             this.uploadError = null;
-                    <div class="sm:col-span-2 sm:max-w-sm">
-                        <x-forms.listbox id="locale" :label="__('Language')" onChange="updateLocale"
-                            :options="[
-                                ['value' => 'default', 'label' => __('Instance default (:language)', ['language' => \App\Support\InterfaceLocale::available()[\App\Support\InterfaceLocale::instanceDefault()]])],
-                                ...collect(\App\Support\InterfaceLocale::available())->map(fn ($name, $code) => ['value' => $code, 'label' => $name])->values()->all(),
-                            ]" />
-                    </div>
                             try {
                                 const dataUrl = await new Promise((resolve, reject) => {
                                     const reader = new FileReader();
@@ -139,6 +132,13 @@
                             :disabled="$uses_sso" x-bind:disabled="emailModalOpen || {{ \Illuminate\Support\Js::from($uses_sso) }}">
                             {{ __('Change') }}
                         </x-forms.button>
+                    </div>
+                    <div class="sm:col-span-2 sm:max-w-sm">
+                        <x-forms.listbox id="locale" :label="__('Language')" onChange="updateLocale"
+                            :options="[
+                                ['value' => 'default', 'label' => __('Instance default (:language)', ['language' => \App\Support\InterfaceLocale::available()[\App\Support\InterfaceLocale::instanceDefault()]])],
+                                ...collect(\App\Support\InterfaceLocale::available())->map(fn ($name, $code) => ['value' => $code, 'label' => $name])->values()->all(),
+                            ]" />
                     </div>
                 </div>
              </section>

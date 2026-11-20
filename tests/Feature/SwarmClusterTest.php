@@ -169,9 +169,9 @@ describe('creating a cluster', function () {
             ->toThrow(RuntimeException::class, $message);
         expect($remote->calls)->toBe([]);
     })->with([
-        'server running PADED' => [fn (Team $team) => tap(Server::factory()->create(['id' => 0, 'team_id' => $team->id]), function (Server $server) {
+        'server running SADP-Docker' => [fn (Team $team) => tap(Server::factory()->create(['id' => 0, 'team_id' => $team->id]), function (Server $server) {
             $server->settings()->update(['is_reachable' => true, 'is_usable' => true]);
-        })->fresh(), 'The server that runs PADED cannot join'],
+        })->fresh(), 'The server that runs SADP-Docker cannot join'],
         'unvalidated server' => [fn (Team $team, Server $server) => tap($server, fn () => $server->settings()->update(['is_usable' => false]))->fresh(), 'Validate the server first'],
         'caddy proxy' => [fn (Team $team) => makeSwarmReadyServer($team, [], 'CADDY'), 'only support the Traefik proxy'],
         'server with resources' => [function (Team $team, Server $server) {
