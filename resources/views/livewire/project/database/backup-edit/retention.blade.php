@@ -2,7 +2,7 @@
     :description="__('The first reached limit removes the oldest backup. Use 0 for unlimited retention.')">
     <div class="space-y-6">
         <div>
-            <h4 class="mb-2 text-xs! font-medium! text-neutral-500! dark:text-fg-dim!">Local backups</h4>
+            <h4 class="mb-2 text-xs! font-medium! text-neutral-500! dark:text-fg-dim!">{{ __('Local backups') }}</h4>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <x-forms.input :label="__('Backups to keep')" id="databaseBackupRetentionAmountLocally"
                     type="number" min="0" :helper="__('Maximum number of recent local backups.')" required />
@@ -15,7 +15,7 @@
         </div>
 
         <div>
-            <h4 class="mb-2 text-xs! font-medium! text-neutral-500! dark:text-fg-dim!">S3 backups</h4>
+            <h4 class="mb-2 text-xs! font-medium! text-neutral-500! dark:text-fg-dim!">{{ __('S3 backups') }}</h4>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <x-forms.input :label="__('Backups to keep')" id="databaseBackupRetentionAmountS3"
                     type="number" min="0" :helper="__('Maximum number of recent S3 backups.')" required />

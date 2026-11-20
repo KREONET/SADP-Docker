@@ -15,15 +15,15 @@
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div><p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Target') }}</p><p class="mt-1 text-sm font-medium">{{ $selectedExecution['target'] }}</p></div>
                     <div><p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Status') }}</p><p class="mt-1 text-sm font-medium">{{ __(str($selectedExecution['status'])->headline()->toString()) }}</p></div>
-                    <div><p class="text-xs text-neutral-500 dark:text-fg-dim">Started</p><p class="mt-1 text-sm font-medium" title="{{ $selectedExecution['started_at']->diffForHumans() }}">{{ formatDateInServerTimezone($selectedExecution['started_at'], $server) }}</p></div>
+                    <div><p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Started') }}</p><p class="mt-1 text-sm font-medium" title="{{ $selectedExecution['started_at']->diffForHumans() }}">{{ formatDateInServerTimezone($selectedExecution['started_at'], $server) }}</p></div>
                     <div><p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Size') }}</p><p class="mt-1 text-sm font-medium">{{ $selectedExecution['size'] ? formatBytes($selectedExecution['size']) : '-' }}</p></div>
                 </div>
                 @if ($selectedExecution['filename'])
                     <div>
-                        <p class="text-xs text-neutral-500 dark:text-fg-dim">Backup path</p>
+                        <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Backup path') }}</p>
                         <div class="mt-1 flex items-center gap-2 rounded-md bg-neutral-100 p-3 dark:bg-black/20">
                             <code class="min-w-0 flex-1 overflow-x-auto text-xs">{{ $selectedExecution['filename'] }}</code>
-                            <x-copy-button :value="$selectedExecution['filename']" label="Copy backup path" />
+                            <x-copy-button :value="$selectedExecution['filename']" :label="__('Copy backup path')" />
                         </div>
                     </div>
                 @endif
@@ -46,15 +46,15 @@
                 :description="__('Execution history appears here after a backup schedule runs.')" icon-name="browser-terminal" />
         @else
             <div class="data-table relative w-full overflow-x-auto">
-                <x-table.loading target="previousPage,nextPage,setPage,perPage,sortExecutions" text="Loading executions..." />
+                <x-table.loading target="previousPage,nextPage,setPage,perPage,sortExecutions" :text="__('Loading executions...')" />
                 <div class="flex min-w-[64rem] flex-col">
                 <div class="data-table-header service-backup-table-grid">
-                    <x-table.sort-header label="Target" asc="target_asc" desc="target_desc" action="sortExecutions" :current="$sortBy" />
-                    <x-table.sort-header label="Type" asc="type_asc" desc="type_desc" action="sortExecutions" :current="$sortBy" />
-                    <x-table.sort-header label="Schedule" asc="schedule_asc" desc="schedule_desc" action="sortExecutions" :current="$sortBy" />
-                    <x-table.sort-header label="Status" asc="status_asc" desc="status_desc" action="sortExecutions" :current="$sortBy" />
-                    <x-table.sort-header label="Started" asc="started_asc" desc="started_desc" first="desc" action="sortExecutions" :current="$sortBy" />
-                    <x-table.sort-header label="Size" asc="size_asc" desc="size_desc" first="desc" action="sortExecutions" :current="$sortBy" />
+                    <x-table.sort-header :label="__('Target')" asc="target_asc" desc="target_desc" action="sortExecutions" :current="$sortBy" />
+                    <x-table.sort-header :label="__('Type')" asc="type_asc" desc="type_desc" action="sortExecutions" :current="$sortBy" />
+                    <x-table.sort-header :label="__('Schedule')" asc="schedule_asc" desc="schedule_desc" action="sortExecutions" :current="$sortBy" />
+                    <x-table.sort-header :label="__('Status')" asc="status_asc" desc="status_desc" action="sortExecutions" :current="$sortBy" />
+                    <x-table.sort-header :label="__('Started')" asc="started_asc" desc="started_desc" first="desc" action="sortExecutions" :current="$sortBy" />
+                    <x-table.sort-header :label="__('Size')" asc="size_asc" desc="size_desc" first="desc" action="sortExecutions" :current="$sortBy" />
                     <span class="text-right">{{ __('Actions') }}</span>
                 </div>
                 @foreach ($executions as $execution)
@@ -87,7 +87,7 @@
                         <span class="flex justify-end">
                             @if ($execution['download_url'] && $s3Downloads)
                                 <button type="button" wire:click.stop="downloadExecution('{{ $execution['uuid'] }}')"
-                                    class="icon-button shrink-0" title="Download backup" aria-label="Download backup">
+                                    class="icon-button shrink-0" title="{{ __('Download backup') }}" aria-label="{{ __('Download backup') }}">
                                     <x-reicon name="upload" class="size-3.5 rotate-180" />
                                 </button>
                             @elseif ($execution['download_url'])

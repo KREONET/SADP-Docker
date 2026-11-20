@@ -120,9 +120,7 @@
                                             <form class="flex w-full flex-col gap-4"
                                                 wire:submit='submitPersistentVolume'>
                                                 <p class="text-[13px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                                    Mount a Docker volume inside the container. Coolify adds the
-                                                    prefix <code class="break-all">{{ $resource->uuid }}-</code> to the
-                                                    name, so that the volume name is unique on the server.
+                                                    {{ __('Mount a Docker volume inside the container. Coolify adds the prefix') }} <code class="break-all">{{ $resource->uuid }}-</code> {{ __('to the name, so that the volume name is unique on the server.') }}
                                                 </p>
                                                 <div class="flex flex-col gap-4">
                                                     <x-forms.input canGate="update" :canResource="$resource" placeholder="pv-name"
@@ -211,9 +209,9 @@
                                                         :helper="__('File location inside the container')" />
                                                     <x-forms.input canGate="update" :canResource="$resource"
                                                         placeholder="/srv/config/app.conf" id="file_storage_source"
-                                                        label="Source Path"
+                                                        :label="__('Source Path')"
                                                         x-on:input="sourcePath = $event.target.value"
-                                                        helper="Optional. File location on the host: an absolute path anywhere on the host, or a path relative to the resource directory. Empty: Coolify keeps the file in the resource directory. Coolify never deletes a file outside the resource directory." />
+                                                        :helper="__('Optional. File location on the host: an absolute path anywhere on the host, or a path relative to the resource directory. Empty: Coolify keeps the file in the resource directory. Coolify never deletes a file outside the resource directory.')" />
                                                     <x-forms.textarea canGate="update" :canResource="$resource" :label="__('Content')"
                                                         id="file_storage_content"></x-forms.textarea>
                                                     <div class="flex justify-end pt-2">
@@ -337,7 +335,7 @@
                                                     <x-forms.input canGate="update" :canResource="$resource"
                                                         placeholder="{{ application_configuration_dir() }}/{{ $resource->uuid }}/etc/nginx"
                                                         id="file_storage_directory_source" :label="__('Source Directory')"
-                                                        required helper="Directory on the host: an absolute path anywhere on the host, or a path relative to the resource directory. Coolify creates it when it is missing, and never deletes a directory outside the resource directory." />
+                                                        required :helper="__('Directory on the host: an absolute path anywhere on the host, or a path relative to the resource directory. Coolify creates it when it is missing, and never deletes a directory outside the resource directory.')" />
                                                     <x-forms.input canGate="update" :canResource="$resource"
                                                         placeholder="/etc/nginx" id="file_storage_directory_destination"
                                                         :label="__('Destination Directory')" required

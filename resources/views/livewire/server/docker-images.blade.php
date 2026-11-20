@@ -38,7 +38,7 @@
 
                 @if (!$loaded)
                     <div role="status">
-                        <span class="sr-only">Reading images from the Docker daemon</span>
+                        <span class="sr-only">{{ __('Reading images from the Docker daemon') }}</span>
                         <x-skeleton.table flush :rows="6" />
                     </div>
                 @elseif ($visibleImages->isEmpty())
@@ -50,17 +50,17 @@
                 @else
                     <div class="data-table transition-opacity" wire:loading.class="opacity-50 pointer-events-none" wire:target="setSort">
                         <div class="data-table-header server-images-table-grid">
-                            <x-table.sort-header label="Repository" asc="repository_asc" desc="repository_desc"
+                            <x-table.sort-header :label="__('Repository')" asc="repository_asc" desc="repository_desc"
                                 action="setSort" :current="$sort" />
-                            <x-table.sort-header label="Tag" asc="tag_asc" desc="tag_desc" action="setSort"
+                            <x-table.sort-header :label="__('Tag')" asc="tag_asc" desc="tag_desc" action="setSort"
                                 :current="$sort" />
-                            <x-table.sort-header label="Image ID" asc="id_asc" desc="id_desc" action="setSort"
+                            <x-table.sort-header :label="__('Image ID')" asc="id_asc" desc="id_desc" action="setSort"
                                 :current="$sort" />
-                            <x-table.sort-header label="Created" asc="created_asc" desc="created_desc" first="desc"
+                            <x-table.sort-header :label="__('Created')" asc="created_asc" desc="created_desc" first="desc"
                                 action="setSort" :current="$sort" />
-                            <x-table.sort-header label="Size" asc="size_asc" desc="size_desc" first="desc"
+                            <x-table.sort-header :label="__('Size')" asc="size_asc" desc="size_desc" first="desc"
                                 action="setSort" :current="$sort" />
-                            <x-table.sort-header label="Used by" asc="used_asc" desc="used_desc" action="setSort"
+                            <x-table.sort-header :label="__('Used by')" asc="used_asc" desc="used_desc" action="setSort"
                                 :current="$sort" />
                             <span class="text-right">{{ __('Actions') }}</span>
                         </div>
@@ -97,7 +97,7 @@
                                 <div class="flex justify-end">
                                     @if ($image['containers'] === [])
                                         @can('update', $server)
-                                            <x-modal-confirmation title="Delete Docker Image?"
+                                            <x-modal-confirmation :title="__('Delete Docker Image?')"
                                                 submitAction="delete({{ $image['reference'] }})" :actions="[
                                                     __('Delete :reference from this server.', ['reference' => $image['reference']]),
                                                     __('It has to be pulled or built again before it can be used.'),
@@ -109,7 +109,7 @@
                                                 <x-slot:trigger>
                                                     <button type="button"
                                                         class="icon-button shrink-0 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                                                        title="Delete image" aria-label="Delete {{ $image['reference'] }}">
+                                                        title="{{ __('Delete image') }}" aria-label="Delete {{ $image['reference'] }}">
                                                         <x-reicon name="trash" class="size-3.5" />
                                                     </button>
                                                 </x-slot:trigger>

@@ -3,7 +3,7 @@
     <div class="min-w-0">
         <div class="mb-1.5 flex h-4 w-full items-center gap-1.5">
             <label for="serverParts-host" class="mb-0! flex items-center gap-1.5 leading-4">
-                Host <x-highlighted text="*" />
+                {{ __('Host') }} <x-highlighted text="*" />
             </label>
         </div>
         <input id="serverParts-host" type="text" class="input" wire:model="serverParts.host"
@@ -15,7 +15,7 @@
     </div>
     <div class="min-w-0">
         <div class="mb-1.5 flex h-4 w-full items-center gap-1.5">
-            <label for="serverParts-port" class="mb-0! flex items-center gap-1.5 leading-4">Port</label>
+            <label for="serverParts-port" class="mb-0! flex items-center gap-1.5 leading-4">{{ __('Port') }}</label>
         </div>
         <input id="serverParts-port" type="number" class="input" wire:model="serverParts.port"
             placeholder="{{ $defaultPort }}" min="1" max="65535" inputmode="numeric"
@@ -23,13 +23,12 @@
     </div>
     <div class="min-w-0 sm:col-span-2">
         <div class="mb-1.5 flex h-4 w-full items-center gap-1.5">
-            <label for="serverParts-path" class="mb-0! flex items-center gap-1.5 leading-4">Directory</label>
+            <label for="serverParts-path" class="mb-0! flex items-center gap-1.5 leading-4">{{ __('Directory') }}</label>
         </div>
         <input id="serverParts-path" type="text" class="input" wire:model="serverParts.path"
             placeholder="backups/coolify" autocomplete="off" @disabled($disabled ?? false) />
         <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">
-            Absolute path from the root of the server, for example home/user/backups. Leave it empty to use the login
-            directory.
+            {{ __('Absolute path from the root of the server, for example home/user/backups. Leave it empty to use the login directory.') }}
         </p>
     </div>
 </div>

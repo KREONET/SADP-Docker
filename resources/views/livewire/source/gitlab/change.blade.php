@@ -37,7 +37,7 @@
             <x-unsaved-bar action="submit" />
 
             <x-application.settings-section :title="__('General')"
-                description="Name, visibility, and webhook of this source.">
+                :description="__('Name, visibility, and webhook of this source.')">
                 <div class="grid gap-4 lg:grid-cols-2">
                     <x-forms.input canGate="update" :canResource="$gitlab_app" id="name" :label="__('Name')" />
 
@@ -58,8 +58,8 @@
                         @endif
                     @endif
                 </div>
-                <x-application.settings-subsection title="Webhook"
-                    helper="Configure this webhook URL in your GitLab project settings (Settings → Webhooks). On self-managed GitLab, an admin can instead add the same URL and token once as a system hook (Admin Area → System hooks) with Push events and Merge request events enabled.">
+                <x-application.settings-subsection :title="__('Webhook')"
+                    :helper="__('Configure this webhook URL in your GitLab project settings (Settings → Webhooks). On self-managed GitLab, an admin can instead add the same URL and token once as a system hook (Admin Area → System hooks) with Push events and Merge request events enabled.')">
                     <div class="grid gap-4 lg:grid-cols-2">
                         <div class="lg:col-span-2">
                             <x-forms.input readonly :label="__('Webhook URL')"
@@ -72,10 +72,10 @@
                 </x-application.settings-subsection>
             </x-application.settings-section>
 
-            <x-application.settings-section id="connection-section" title="Connection"
-                helper="OAuth credentials and the endpoints Coolify uses to reach this source.">
-                <x-application.settings-subsection first title="OAuth credentials"
-                    helper="Application credentials from your GitLab OAuth application.">
+            <x-application.settings-section id="connection-section" :title="__('Connection')"
+                :helper="__('OAuth credentials and the endpoints Coolify uses to reach this source.')">
+                <x-application.settings-subsection first :title="__('OAuth credentials')"
+                    :helper="__('Application credentials from your GitLab OAuth application.')">
                     <div class="grid gap-4 lg:grid-cols-2">
                         <x-forms.input canGate="update" :canResource="$gitlab_app" id="clientId"
                             :label="__('Application ID')" />
@@ -86,8 +86,8 @@
                             :helper="__('Comma-separated group names to filter visible repositories.')" />
                     </div>
                 </x-application.settings-subsection>
-                <x-application.settings-subsection title="Self-hosted / advanced"
-                    helper="Override endpoints and SSH settings for self-hosted GitLab.">
+                <x-application.settings-subsection :title="__('Self-hosted / advanced')"
+                    :helper="__('Override endpoints and SSH settings for self-hosted GitLab.')">
                     <div class="grid gap-4 lg:grid-cols-2">
                         <x-forms.input canGate="update" :canResource="$gitlab_app" id="htmlUrl"
                             :label="__('GitLab URL')" />

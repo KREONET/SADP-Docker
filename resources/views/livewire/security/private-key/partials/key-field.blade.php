@@ -1,5 +1,5 @@
 <div class="lg:col-span-2">
-    <x-forms.input readonly id="fingerprint" label="Fingerprint" />
+    <x-forms.input readonly id="fingerprint" :label="__('Fingerprint')" />
 </div>
 <div class="lg:col-span-2" x-data="{
     replacing: false,
@@ -55,7 +55,7 @@
         @endcan
     </div>
     <p class="text-xs text-neutral-500 dark:text-fg-dim" x-show="!replacing && !revealed && !askPassword">
-        The private key is stored encrypted and is not shown. Use the public key and the fingerprint to identify it.
+        {{ __('The private key is stored encrypted and is not shown. Use the public key and the fingerprint to identify it.') }}
     </p>
     @can('update', $private_key)
         <div x-cloak x-show="askPassword && !revealed" class="flex items-end gap-2">
@@ -65,7 +65,7 @@
                     x-on:keydown.enter.prevent="reveal()" placeholder="{{ __('Enter your password') }}">
             </div>
             <x-forms.button type="button" x-on:click="reveal()" x-bind:disabled="!password || revealing">
-                Reveal
+                {{ __('Reveal') }}
             </x-forms.button>
         </div>
         <div x-cloak x-show="revealed">
@@ -73,7 +73,7 @@
         </div>
         <div x-cloak x-show="replacing" class="mt-2">
             <x-forms.textarea rows="10" id="newPrivateKey" monospace
-                placeholder="Paste the new private key. Leave empty to keep the stored key." />
+                :placeholder="__('Paste the new private key. Leave empty to keep the stored key.')" />
         </div>
     @endcan
 </div>

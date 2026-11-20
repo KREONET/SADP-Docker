@@ -62,9 +62,9 @@ class CloudProviderTokens extends Component
             } elseif ($token->provider === 'hostinger') {
                 $isValid = $this->validateHostingerToken($token->token);
                 if ($isValid) {
-                    $this->dispatch('success', 'Hostinger token is valid.');
+                    $this->dispatch('success', __('Hostinger token is valid.'));
                 } else {
-                    $this->dispatch('error', 'Hostinger token validation failed. Please check the token.');
+                    $this->dispatch('error', __('Hostinger token validation failed. Please check the token.'));
                 }
             } else {
                 $this->dispatch('error', __('Unknown provider.'));

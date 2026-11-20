@@ -8,5 +8,5 @@
             <x-skeleton class="h-8 w-16 rounded-lg" />
         </div>
     </div>
-    <x-skeleton.list :rows="2" label="Loading registries" />
+    <x-skeleton.list :rows="2" :label="__('Loading registries')" />
 </div>

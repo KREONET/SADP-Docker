@@ -16,11 +16,11 @@
         <div class="mb-4 rounded-lg p-4 ring-1 ring-neutral-200 dark:ring-white/[0.08]" data-testid="transfer-finish">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-neutral-950 dark:text-fg">Finish the transfer</h3>
+                    <h3 class="text-sm font-semibold text-neutral-950 dark:text-fg">{{ __('Finish the transfer') }}</h3>
                     <p class="mt-1 text-xs text-neutral-500 dark:text-fg-dim">
                         {{ $doneCount }} of {{ $totalCount }} done.
                         @if ($openCount > 0)
-                            Coolify checks the open steps every 30 seconds.
+                            {{ __('Coolify checks the open steps every 30 seconds.') }}
                         @endif
                     </p>
                 </div>
@@ -30,14 +30,14 @@
                             {{ $lastCheckedAt ? 'Checked '.\Illuminate\Support\Carbon::parse($lastCheckedAt)->format('H:i') : 'Checking…' }}
                         </span>
                         @can('update', $server)
-                            <button type="button" class="icon-button" title="Check now" wire:click="checkAllNow"
+                            <button type="button" class="icon-button" title="{{ __('Check now') }}" wire:click="checkAllNow"
                                 wire:loading.attr="disabled" wire:target="checkAllNow">
                                 <x-reicon name="refresh" class="size-4" />
                             </button>
                         @endcan
                     @else
                         <x-forms.button isHighlighted wire:click="finishTransfer" canGate="update" :canResource="$server">
-                            Finish the transfer
+                            {{ __('Finish the transfer') }}
                         </x-forms.button>
                     @endif
                 </div>
@@ -79,7 +79,7 @@
                                         <div class="flex shrink-0 items-center gap-1">
                                             @if ($hasMenu)
                                             <div class="relative" @click.outside="menu = false" @keydown.escape.window="menu = false">
-                                                <button type="button" class="icon-button" title="More actions" aria-haspopup="menu"
+                                                <button type="button" class="icon-button" title="{{ __('More actions') }}" aria-haspopup="menu"
                                                     :aria-expanded="menu" @click="menu = !menu">
                                                     <x-reicon name="dots-horizontal" class="size-4" />
                                                 </button>
@@ -87,11 +87,11 @@
                                                     class="listbox-panel top-full! right-0! left-auto! z-[90]! mt-1! w-40! min-w-40!">
                                                     @unless ($manualOnly)
                                                         <button type="button" class="listbox-option justify-start!" role="menuitem"
-                                                            wire:click="checkStep({{ \Illuminate\Support\Js::from($step['key']) }})" @click="menu = false">Check now</button>
+                                                            wire:click="checkStep({{ \Illuminate\Support\Js::from($step['key']) }})" @click="menu = false">{{ __('Check now') }}</button>
                                                     @endunless
                                                     @if (! $manualOnly || $link)
                                                         <button type="button" class="listbox-option justify-start!" role="menuitem"
-                                                            wire:click="markStepDone({{ \Illuminate\Support\Js::from($step['key']) }})" @click="menu = false">Mark as done</button>
+                                                            wire:click="markStepDone({{ \Illuminate\Support\Js::from($step['key']) }})" @click="menu = false">{{ __('Mark as done') }}</button>
                                                     @endif
                                                     @if ($fixLabel && $link)
                                                         <a href="{{ $link }}" {!! $linkAttributes !!} class="listbox-option justify-start!"
@@ -105,7 +105,7 @@
                                             @elseif ($link)
                                                 <a href="{{ $link }}" {!! $linkAttributes !!} class="button">{{ $linkLabel }}</a>
                                             @elseif ($manualOnly)
-                                                <x-forms.button wire:click="markStepDone({{ \Illuminate\Support\Js::from($step['key']) }})">Mark as done</x-forms.button>
+                                                <x-forms.button wire:click="markStepDone({{ \Illuminate\Support\Js::from($step['key']) }})">{{ __('Mark as done') }}</x-forms.button>
                                             @endif
                                         </div>
                                     @endcan
@@ -155,12 +155,12 @@
             @if ($openCount > 0)
                 @can('update', $server)
                     <div class="mt-4 flex justify-end">
-                        <x-modal-confirmation title="Finish with open steps?" submitAction="finishTransfer"
-                            :confirmWithText="false" :confirmWithPassword="false" step2ButtonText="Finish the transfer"
+                        <x-modal-confirmation :title="__('Finish with open steps?')" submitAction="finishTransfer"
+                            :confirmWithText="false" :confirmWithPassword="false" :step2ButtonText="__('Finish the transfer')"
                             :warningMessage="'<strong>'.$openCount.' steps are not OK or done.</strong> Coolify does not check them again. Webhooks, DNS records, or runners can still point to the other instance.'"
                             :actions="collect($openGroups)->flatMap(fn ($group) => $group['items'])->map(fn ($step) => 'Skipped: '.$step['label'])->all()">
                             <x-slot:trigger>
-                                <button type="button" class="text-xs text-neutral-500 underline dark:text-fg-dim">Finish with open steps…</button>
+                                <button type="button" class="text-xs text-neutral-500 underline dark:text-fg-dim">{{ __('Finish with open steps…') }}</button>
                             </x-slot:trigger>
                         </x-modal-confirmation>
                     </div>

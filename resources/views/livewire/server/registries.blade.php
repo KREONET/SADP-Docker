@@ -13,8 +13,8 @@
             <livewire:server.docker-registries.server-registries :server="$server"
                 :key="'server-registries-'.$server->uuid" />
             <p class="text-[12px] text-neutral-500 dark:text-fg-dim">
-                Registry logins are read from the Docker config that deployments use. Use <b>Log in</b>, or run
-                <code>docker login &lt;registry&gt;</code> on the server.
+                {{ __('Registry logins are read from the Docker config that deployments use. Use') }} <b>{{ __('Log in') }}</b>{{ __(', or run') }}
+                <code>docker login &lt;registry&gt;</code> {{ __('on the server.') }}
             </p>
         </div>
     </div>

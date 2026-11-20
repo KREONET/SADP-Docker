@@ -122,7 +122,7 @@
                     </p>
                 </div>
                 <span class="button button-highlighted shrink-0 max-sm:hidden">
-                    Try it
+                    {{ __('Try it') }}
                     <x-reicon name="arrow-right" class="size-3.5" />
                 </span>
             </a>
@@ -953,8 +953,7 @@
         <div x-data="{ selecting: false }">
             <div class="mb-4">
                 <h2 class="text-[15px]! font-semibold!">{{ __('Select a Redis or Valkey image') }}</h2>
-                <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">Both work with the same clients, commands,
-                    and configuration.</p>
+                <p class="mt-1 text-[12px] text-neutral-500 dark:text-fg-dim">{{ __('Both work with the same clients, commands, and configuration.') }}</p>
             </div>
             <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <div class="group relative flex min-h-24 items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 dark:border-white/[0.08] dark:bg-white/[0.05] dark:hover:border-white/[0.14]"

@@ -2,14 +2,14 @@
     <x-unsaved-bar action="submit" />
 
     <x-application.settings-section :title="__('Service details')"
-        description="Manage the identity, Compose configuration, and network of this service.">
+        :description="__('Manage the identity, Compose configuration, and network of this service.')">
         <x-slot:actions>
             <div class="flex items-center gap-2">
                 @if (isDev())
                     <x-status-badge :label="__('Parser :version', ['version' => $service->compose_parsing_version])" type="neutral" />
                 @endif
                 @can('update', $service)
-                    <x-modal-input :buttonTitle="__('Edit Compose file')" title="Docker Compose" :closeOutside="false"
+                    <x-modal-input :buttonTitle="__('Edit Compose file')" :title="__('Docker Compose')" :closeOutside="false"
                         :isLarge="true">
                         <x-slot:footer>
                             <div x-data="{ preview: false, validating: false, saving: false }"
@@ -49,7 +49,7 @@
                 :placeholder="__('My WordPress site')" />
             <x-forms.input canGate="update" :canResource="$service" id="description" :label="__('Description')" />
         </div>
-        <x-application.settings-subsection id="service-network-section" title="Network" helper="Control whether this Compose stack joins Coolify's predefined network.">
+        <x-application.settings-subsection id="service-network-section" :title="__('Network')" :helper="__('Control whether this Compose stack joins Coolify\'s predefined network.')">
             <x-forms.listbox canGate="update" :canResource="$service" id="connectToDockerNetwork" :label="__('Network attachment')" live onChange="instantSave"
                 :disabled="! auth()->user()->can('update', $service)" :options="[
                     ['value' => false, 'label' => __('Use the stack network only')],

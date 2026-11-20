@@ -98,7 +98,7 @@ class TransferFinish extends Component
             'skipped_steps' => $skipped,
         ]);
 
-        $this->dispatch('success', 'The transfer is finished.');
+        $this->dispatch('success', __('The transfer is finished.'));
     }
 
     public function render()

@@ -11,9 +11,9 @@
         @elseif ($isReadOnly)
             <x-callout type="info" :title="__('Read-only mount')">
                 @if ($fileStorage->is_directory)
-                    This directory is mounted as read-only. You can convert it to a file, but you cannot delete it from the UI.
+                    {{ __('This directory is mounted as read-only. You can convert it to a file, but you cannot delete it from the UI.') }}
                 @else
-                    This file is mounted as read-only. You cannot edit or delete it from the UI.
+                    {{ __('This file is mounted as read-only. You cannot edit or delete it from the UI.') }}
                 @endif
             </x-callout>
         @endif
@@ -50,7 +50,7 @@
                     @if ($fileStorage->is_host_file)
                         @if (!$isReadOnly)
                             <x-modal-confirmation :ignoreWire="false" :title="__('Confirm Host File Mount Removal?')"
-                                buttonTitle="Delete" isErrorButton submitAction="delete" :checkboxes="$deletionCheckboxes"
+                                :buttonTitle="__('Delete')" isErrorButton submitAction="delete" :checkboxes="$deletionCheckboxes"
                                 :actions="$deletionActions"
                                 confirmationText="{{ $fs_path }}"
                                 :confirmationLabel="__('Please confirm the execution of the actions by entering the Filepath below')"
@@ -92,7 +92,7 @@
                         @endif
                         <x-forms.button type="button" wire:click="loadStorageOnServer">{{ __('Load from server') }}</x-forms.button>
                         @if (!$isReadOnly)
-                            <x-modal-confirmation :ignoreWire="false" title="Confirm File Deletion?" buttonTitle="Delete"
+                            <x-modal-confirmation :ignoreWire="false" :title="__('Confirm File Deletion?')" :buttonTitle="__('Delete')"
                                 isErrorButton submitAction="delete" :checkboxes="$deletionCheckboxes" :actions="$deletionActions"
                                 confirmationText="{{ $fs_path }}"
                                 :confirmationLabel="__('Please confirm the execution of the actions by entering the Filepath below')"

@@ -326,7 +326,7 @@ class ResourceOperations extends Component
 
             $new_destination = $this->findResourceTeamDestination($destination_uuid);
             if (! $new_destination) {
-                return $this->dispatch('error', 'Destination not found.');
+                return $this->dispatch('error', __('Destination not found.'));
             }
 
             $result = MigrateResourceToDestination::run(

@@ -17,7 +17,7 @@
                         <div class="application-settings-section-body flex flex-col gap-3">
                             <p class="text-sm text-neutral-600 dark:text-fg-dim">{{ __('Coolify matched each hostname to a zone available through your connected DNS credentials.') }}</p>
                             @if (collect($dnsProviderProposals)->contains(fn (array $proposal): bool => blank($proposal['target'])))
-                                <x-callout type="warning" title="No public IP">{{ \App\Support\DnsRecordHints::NO_PUBLIC_ADDRESS_MESSAGE }}</x-callout>
+                                <x-callout type="warning" :title="__('No public IP')">{{ \App\Support\DnsRecordHints::NO_PUBLIC_ADDRESS_MESSAGE }}</x-callout>
                             @endif
                             @foreach ($dnsProviderProposals as $proposal)
                                 @php($key = $proposal['hostname'].'|'.$proposal['zone_id'])
@@ -37,7 +37,7 @@
                                     @elseif ($proposal['managed'])
                                         <x-status-badge :status="__('Managed by Coolify')" type="success" />
                                     @elseif (blank($proposal['target']))
-                                        <span class="text-xs text-neutral-500 dark:text-fg-dim">Add manually</span>
+                                        <span class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Add manually') }}</span>
                                     @else
                                         <x-forms.button type="button"
                                             wire:click="createManagedDnsRecord({{ \Illuminate\Support\Js::from($proposal['hostname']) }}, {{ $proposal['zone_id'] }})"

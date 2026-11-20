@@ -120,11 +120,11 @@
                     'data-table-header team-members-table-grid',
                     'team-members-table-grid-2fa' => auth()->user()?->can('manageMembers', currentTeam()),
                 ])>
-                    <x-table.sort-header label="Name" asc="name-asc" desc="name-desc" then="page = 1" />
-                    <x-table.sort-header label="Email" asc="email-asc" desc="email-desc" then="page = 1" />
-                    <x-table.sort-header label="Role" asc="role-asc" desc="role-desc" first="desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Name')" asc="name-asc" desc="name-desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Email')" asc="email-asc" desc="email-desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Role')" asc="role-asc" desc="role-desc" first="desc" then="page = 1" />
                     @can('manageMembers', currentTeam())
-                        <x-table.sort-header label="2FA" asc="twofa-asc" desc="twofa-desc" then="page = 1" />
+                        <x-table.sort-header :label="__('2FA')" asc="twofa-asc" desc="twofa-desc" then="page = 1" />
                     @endcan
                     <span class="text-right">{{ __('Actions') }}</span>
                 </div>

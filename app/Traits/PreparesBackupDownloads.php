@@ -42,7 +42,7 @@ trait PreparesBackupDownloads
 
         if (count($this->pendingDownloads) >= self::MAX_PENDING_S3_DOWNLOADS
             || ! RateLimiter::attempt('file-browser-s3-download:'.auth()->id(), 10, fn () => true, 3600)) {
-            $this->dispatch('error', 'Too many downloads are in progress. Wait for them to finish, then try again.');
+            $this->dispatch('error', __('Too many downloads are in progress. Wait for them to finish, then try again.'));
 
             return;
         }

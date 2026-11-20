@@ -22,11 +22,11 @@
         @unless (isset($tag))
             <div class="flex shrink-0 items-center gap-2">
                 @can('create', App\Models\Tag::class)
-                    <x-modal-input title="New tag">
+                    <x-modal-input :title="__('New tag')">
                         <x-slot:content>
                             <button type="button" class="button button-highlighted whitespace-nowrap">
                                 <x-reicon name="plus" class="size-3.5" />
-                                New tag
+                                {{ __('New tag') }}
                             </button>
                         </x-slot:content>
                         @include('livewire.tags.partials.new-tag-form')
@@ -38,7 +38,7 @@
 
     @if ($tags->isEmpty())
         <x-empty :title="__('No tags yet')"
-            description="Create a tag, then connect it to resources to group related deployments."
+            :description="__('Create a tag, then connect it to resources to group related deployments.')"
             icon-name="tags" />
     @elseif (! isset($tag))
         <div x-data="tagsIndex()" class="w-full">
@@ -128,11 +128,11 @@
                 class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
                 <div
                     class="tags-table-grid border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-fg-faint">
-                    <x-table.sort-header label="Tag" asc="name-asc" desc="name-desc" then="page = 1" />
-                    <x-table.sort-header label="Resources" asc="resources-asc" desc="resources-desc" first="desc" then="page = 1" />
-                    <x-table.sort-header label="Applications" asc="applications-asc" desc="applications-desc" first="desc"
+                    <x-table.sort-header :label="__('Tag')" asc="name-asc" desc="name-desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Resources')" asc="resources-asc" desc="resources-desc" first="desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Applications')" asc="applications-asc" desc="applications-desc" first="desc"
                         then="page = 1" />
-                    <x-table.sort-header label="Services" asc="services-asc" desc="services-desc" first="desc" then="page = 1"
+                    <x-table.sort-header :label="__('Services')" asc="services-asc" desc="services-desc" first="desc" then="page = 1"
                         class="tag-services" />
                 </div>
 
@@ -290,12 +290,12 @@
                 :description="__('Use this webhook to deploy every resource with this tag.')">
                 <x-slot:actions>
                     {{-- Two ways to connect: a list in a modal, or the canvas (wide screens only). --}}
-                    <x-modal-input title="Connect to resources" subtitle="Add this tag to resources, or remove it."
+                    <x-modal-input :title="__('Connect to resources')" :subtitle="__('Add this tag to resources, or remove it.')"
                         wireOpen="connectResourcesOpen" :wireIgnore="false" :contentClicks="false">
                         <x-slot:content>
                             <button type="button" class="button whitespace-nowrap" wire:click="openConnectResources">
                                 <x-reicon name="link" class="size-3.5" />
-                                Connect to resources
+                                {{ __('Connect to resources') }}
                             </button>
                         </x-slot:content>
                         @forelse ($connectableResources as $context => $resources)
@@ -318,18 +318,18 @@
                             </div>
                         @empty
                             <div wire:loading.remove wire:target="openConnectResources">
-                                <x-empty title="No resources yet" description="Create a resource in a project first." icon-name="tags" size="sm" />
+                                <x-empty :title="__('No resources yet')" :description="__('Create a resource in a project first.')" icon-name="tags" size="sm" />
                             </div>
                         @endforelse
                     </x-modal-input>
                     <a href="{{ app(App\Services\TagCanvas::class)->connectLink($tag) }}"
                         class="button hidden whitespace-nowrap md:inline-flex"
-                        title="Add this tag to resources on the canvas, and see which resources have it">
+                        title="{{ __('Add this tag to resources on the canvas, and see which resources have it') }}">
                         <x-reicon name="deploy-canvas" class="size-3.5" />
-                        Connect in canvas
+                        {{ __('Connect in canvas') }}
                     </a>
                     @can('delete', $tag)
-                        <x-modal-confirmation title="Delete this tag?" isErrorButton buttonTitle="Delete"
+                        <x-modal-confirmation :title="__('Delete this tag?')" isErrorButton :buttonTitle="__('Delete')"
                             submitAction="deleteTag" :actions="[
                                 'The tag will be removed from every resource.',
                                 'The deploy webhook of this tag will stop working.',
@@ -337,7 +337,7 @@
                             confirmationText="{{ $tag->name }}"
                             :confirmationLabel="__('Please confirm the execution of the actions by entering the Tag Name below')"
                             :shortConfirmationLabel="__('Tag Name')" :confirmWithPassword="false"
-                            step2ButtonText="Delete tag" />
+                            :step2ButtonText="__('Delete tag')" />
                     @endcan
                     <x-modal-confirmation :title="__('Redeploy all resources with this tag?')"
                         :buttonTitle="__('Redeploy all')" submitAction="redeployAll" :actions="[
@@ -357,7 +357,7 @@
                 :description="trans_choice(':count resource use this tag.|:count resources use this tag.', $resourceCount)">
                 @if ($resourceCount === 0)
                     <x-empty :title="__('No resources use this tag')"
-                        description="Connect this tag to resources to see them here."
+                        :description="__('Connect this tag to resources to see them here.')"
                         icon-name="tags" size="sm" />
                 @else
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -431,11 +431,11 @@
                     @else
                         <div
                             class="grid min-w-[620px] grid-cols-[minmax(0,1fr)_minmax(10rem,.55fr)_7rem] border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-fg-faint">
-                            <x-table.sort-header label="Resource" asc="resource-asc" desc="resource-desc"
+                            <x-table.sort-header :label="__('Resource')" asc="resource-asc" desc="resource-desc"
                                 action="setDeploymentSort" :current="$deploymentSort" />
-                            <x-table.sort-header label="Server" asc="server-asc" desc="server-desc"
+                            <x-table.sort-header :label="__('Server')" asc="server-asc" desc="server-desc"
                                 action="setDeploymentSort" :current="$deploymentSort" />
-                            <x-table.sort-header label="Status" asc="status-asc" desc="status-desc"
+                            <x-table.sort-header :label="__('Status')" asc="status-asc" desc="status-desc"
                                 action="setDeploymentSort" :current="$deploymentSort" />
                         </div>
 

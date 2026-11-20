@@ -125,7 +125,7 @@ class Delete extends Component
     private function removeSshKey(): bool
     {
         if ($this->server->definedResources()->isNotEmpty()) {
-            $this->dispatch('error', 'Delete the resources of the server first, then delete the server and remove the SSH key.');
+            $this->dispatch('error', __('Delete the resources of the server first, then delete the server and remove the SSH key.'));
 
             return false;
         }

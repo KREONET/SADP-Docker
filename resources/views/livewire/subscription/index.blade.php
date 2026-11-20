@@ -9,7 +9,7 @@
     @if (auth()->user()->isAdminFromSession())
         @if ($loading)
             <div wire:init="getStripeStatus">
-                <x-skeleton.settings-sections :count="2" label="Loading your subscription status" />
+                <x-skeleton.settings-sections :count="2" :label="__('Loading your subscription status')" />
             </div>
         @else
             @if ($isUnpaid)

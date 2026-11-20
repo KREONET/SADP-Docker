@@ -132,7 +132,7 @@ class Show extends Component
                 ->firstOrFail();
 
             if (! $deployment->isImageScanBlocked()) {
-                $this->dispatch('error', 'This deployment was not blocked.');
+                $this->dispatch('error', __('This deployment was not blocked.'));
 
                 return;
             }
@@ -142,7 +142,7 @@ class Show extends Component
                 ->where('pull_request_id', $deployment->pull_request_id)
                 ->max('id');
             if ((int) $latestDeploymentId !== (int) $deployment->id) {
-                $this->dispatch('error', 'A newer deployment exists.');
+                $this->dispatch('error', __('A newer deployment exists.'));
 
                 return;
             }
@@ -171,12 +171,12 @@ class Show extends Component
                 scan_gate_pinned_image: $this->application->build_pack === 'dockerimage' && is_string($pinnedImage) ? $pinnedImage : null,
             );
             if ($result['status'] !== 'queued') {
-                $this->dispatch('error', 'Deploy did not start.', $result['message']);
+                $this->dispatch('error', __('Deploy did not start.'), $result['message']);
 
                 return;
             }
 
-            $this->dispatch('success', 'Deploy started.');
+            $this->dispatch('success', __('Deploy started.'));
 
             return redirectRoute($this, 'project.application.deployment.show', [
                 'project_uuid' => $this->application->environment->project->uuid,

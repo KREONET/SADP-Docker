@@ -149,8 +149,8 @@
                 </div>
             </div>
 
-            <x-application.settings-section title="Schedules"
-                helper="Persistent volume and directory backup schedules for this application."
+            <x-application.settings-section :title="__('Schedules')"
+                :helper="__('Persistent volume and directory backup schedules for this application.')"
                 :flush="$backups->isNotEmpty()">
                 <div x-cloak x-show="backups.length > 0 && filteredBackups.length === 0">
                     <x-empty size="sm" :title="__('No backups found')"
@@ -160,13 +160,13 @@
                 @if ($backups->isNotEmpty())
                     <div class="data-table flex w-full flex-col overflow-x-auto" x-show="filteredBackups.length > 0">
                         <div class="data-table-header backup-table-grid">
-                            <x-table.sort-header label="Target" asc="target_asc" desc="target_desc" />
-                            <x-table.sort-header label="Type" asc="type_asc" desc="type_desc" />
-                            <x-table.sort-header label="Schedule" asc="schedule_asc" desc="schedule_desc" />
-                            <x-table.sort-header label="Status" asc="status_asc" desc="status_desc" />
+                            <x-table.sort-header :label="__('Target')" asc="target_asc" desc="target_desc" />
+                            <x-table.sort-header :label="__('Type')" asc="type_asc" desc="type_desc" />
+                            <x-table.sort-header :label="__('Schedule')" asc="schedule_asc" desc="schedule_desc" />
+                            <x-table.sort-header :label="__('Status')" asc="status_asc" desc="status_desc" />
                             <x-table.sort-header label="S3" asc="s3_asc" desc="s3_desc" />
-                            <x-table.sort-header label="Last run" asc="lastrun_asc" desc="lastrun_desc" first="desc" />
-                            <x-table.sort-header label="Executions" asc="executions_asc" desc="executions_desc" first="desc"
+                            <x-table.sort-header :label="__('Last run')" asc="lastrun_asc" desc="lastrun_desc" first="desc" />
+                            <x-table.sort-header :label="__('Executions')" asc="executions_asc" desc="executions_desc" first="desc"
                                 class="justify-self-end" />
                         </div>
 

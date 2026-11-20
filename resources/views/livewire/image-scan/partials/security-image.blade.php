@@ -57,8 +57,8 @@
     @if ($row['override'] !== null)
         {{-- A security update of a Compose app: Coolify replaces the image of the compose file from Git. --}}
         <p class="max-w-3xl text-[12px] leading-5 text-neutral-500 dark:text-fg-faint">
-            Coolify deploys <code class="font-mono">{{ $row['override']['to'] }}</code> instead of
-            <code class="font-mono">{{ $row['override']['from'] }}</code> from your compose file.
+            {{ __('Coolify deploys') }} <code class="font-mono">{{ $row['override']['to'] }}</code> {{ __('instead of') }}
+            <code class="font-mono">{{ $row['override']['from'] }}</code> {{ __('from your compose file.') }}
             @if ($canUpdate)
                 <button type="button" class="{{ $link }}"
                     wire:click="removeImageOverride({{ \Illuminate\Support\Js::from($row['override']['service']) }})"

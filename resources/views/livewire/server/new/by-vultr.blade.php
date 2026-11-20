@@ -8,7 +8,7 @@
             <p class="text-[11px] text-neutral-500 dark:text-fg-faint">
                 {{ __('New to Vultr?') }}
                 <a href="https://coolify.io/vultr" target="_blank"
-                    class="font-medium text-coollabs hover:underline dark:text-brand-light">Create an account</a>
+                    class="font-medium text-coollabs hover:underline dark:text-brand-light">{{ __('Create an account') }}</a>
                 {{ __('through Coolify\'s affiliate link.') }}
             </p>
         </div>
@@ -17,7 +17,7 @@
             @if ($loading_data)
                 <x-application.settings-section :title="__('Loading Vultr')"
                     :description="__('Fetching regions, plans, operating systems, and account resources.')">
-                    <x-skeleton.form :fields="6" label="Loading Vultr data" />
+                    <x-skeleton.form :fields="6" :label="__('Loading Vultr data')" />
                 </x-application.settings-section>
             @elseif ($provider_data_error)
                 <x-application.settings-section :title="__('Unable to load Vultr')"
@@ -129,8 +129,8 @@
                         @endif
 
                         <div class="flex flex-col gap-4">
-                            <x-forms.listbox label="Extra SSH keys" id="selectedVultrSshKeyIds"
-                                helper="Existing keys from the Vultr account." multiple searchable
+                            <x-forms.listbox :label="__('Extra SSH keys')" id="selectedVultrSshKeyIds"
+                                :helper="__('Existing keys from the Vultr account.')" multiple searchable
                                 :disabled="count($vultrSshKeys) === 0" searchPlaceholder="Search SSH keys…"
                                 :placeholder="count($vultrSshKeys) ? 'Select SSH keys' : 'No account keys found'"
                                 :options="collect($vultrSshKeys)->map(fn ($sshKey) => ['value' => $sshKey['id'], 'label' => $sshKey['name']])->values()->all()" />

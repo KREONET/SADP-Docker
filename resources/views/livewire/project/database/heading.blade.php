@@ -51,7 +51,7 @@
     <livewire:project.shared.configuration-checker :resource="$database" />
 
     <x-process-dialog @startdatabase.window="processDialogOpen = true" closeWithX>
-        <x-slot:title>Database Startup Logs</x-slot:title>
+        <x-slot:title>{{ __('Database Startup Logs') }}</x-slot:title>
         <x-slot:content>
             <div wire:ignore class="flex h-full min-h-0 min-w-0 max-w-full flex-col">
                 <livewire:activity-monitor fullHeight />
@@ -90,7 +90,7 @@
                                     @click="document.getElementById('database-restart-trigger')?.click()">
                                     <x-loading-on-button x-show="busy" x-cloak />
                                     <x-reicon name="restart" class="size-3.5" x-show="!busy" />
-                                    <span x-text="busy ? __('Restarting…') : __('Restart')">Restart</span>
+                                    <span x-text="busy ? __('Restarting…') : __('Restart')">{{ __('Restart') }}</span>
                                 </x-slot:main>
                                 <button type="button" class="listbox-option justify-start! gap-2.5!"
                                     @click="open = false; document.getElementById('database-stop-trigger')?.click()" role="menuitem">
@@ -101,7 +101,7 @@
                                 <x-slot:main x-bind:disabled="busy" @click="busy = true; $wire.dispatch('startEvent')">
                                     <x-loading-on-button x-show="busy" x-cloak />
                                     <x-reicon name="play-circle" class="size-3.5" x-show="!busy" />
-                                    <span x-text="busy ? __('Starting…') : __('Start')">Start</span>
+                                    <span x-text="busy ? __('Starting…') : __('Start')">{{ __('Start') }}</span>
                                 </x-slot:main>
                             @endif
                         </x-split-action>

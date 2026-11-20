@@ -178,7 +178,7 @@
                             </div>
                             <div class="service-domain-actions flex items-center justify-end gap-1">
                                 @can('update', $preview->application)
-                                    <x-table.row-actions label="Domain actions">
+                                    <x-table.row-actions :label="__('Domain actions')">
                                         <x-table.row-action wire:click="checkDomainDns({{ $index }})"
                                             wire:loading.attr="disabled"
                                             wire:target="checkDomainDns({{ $index }}),checkAllDns">
@@ -187,7 +187,7 @@
                                         <x-table.row-action
                                             x-on:click="openEditDomain({{ \Illuminate\Support\Js::from($index) }}, {{ \Illuminate\Support\Js::from($row['url']) }}, {{ \Illuminate\Support\Js::from($editingParts) }}, {{ \Illuminate\Support\Js::from($row['service']) }})"
                                             aria-label="Edit {{ getFqdnWithoutPort($row['url']) }}">
-                                            Edit
+                                            {{ __('Edit') }}
                                         </x-table.row-action>
                                         <x-slot:danger>
                                             <x-modal-confirmation buttonFullWidth :title="__('Remove domain?')"
@@ -200,7 +200,7 @@
                                                 :confirmWithPassword="false" :confirmWithText="false"
                                                 :step2ButtonText="__('Remove domain')">
                                                 <x-slot:trigger>
-                                                    <x-table.row-action>Delete</x-table.row-action>
+                                                    <x-table.row-action>{{ __('Delete') }}</x-table.row-action>
                                                 </x-slot:trigger>
                                             </x-modal-confirmation>
                                         </x-slot:danger>

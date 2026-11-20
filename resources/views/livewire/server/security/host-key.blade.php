@@ -1,6 +1,6 @@
 <div class="application-settings-form flex w-full flex-col gap-6">
     @if (count($pendingFingerprints) > 0)
-        <x-callout type="danger" title="The SSH host key of this server changed">
+        <x-callout type="danger" :title="__('The SSH host key of this server changed')">
             @foreach ($pendingFingerprints as $fingerprint)
                 <code class="block break-all">{{ $fingerprint }}</code>
             @endforeach
@@ -9,7 +9,7 @@
         </x-callout>
     @endif
 
-    <x-application.settings-section id="server-host-key-section" title="SSH host key"
+    <x-application.settings-section id="server-host-key-section" :title="__('SSH host key')"
         helper="Coolify trusts the first host key of the server. Later, a different key is reported (warn mode, the default) or refused (enforce mode). The setting below sets enforce mode for this server only.<br><br>An instance admin sets the mode for all servers with <code>SSH_HOST_KEY_CHECKING=enforce</code> (or <code>warn</code>, <code>off</code>) in <code>/data/coolify/source/.env</code>, then restarts Coolify.">
         <x-slot:badges>
             @if (count($pendingFingerprints) > 0)
@@ -27,22 +27,22 @@
                 <div class="flex flex-wrap items-center gap-2"
                     wire:key="host-key-actions-{{ $server->settings->ssh_host_key_pending ? hash('sha256', $server->settings->ssh_host_key_pending) : 'none' }}-{{ $server->settings->is_ssh_host_key_check_disabled ? 'off' : 'on' }}">
                     @if (count($pendingFingerprints) > 0)
-                        <x-modal-confirmation title="Trust the new host key?" temporaryDisableTwoStepConfirmation
-                            buttonTitle="Trust new key"
+                        <x-modal-confirmation :title="__('Trust the new host key?')" temporaryDisableTwoStepConfirmation
+                            :buttonTitle="__('Trust new key')"
                             submitAction="trustPendingKey('{{ hash('sha256', $server->settings->ssh_host_key_pending) }}')"
                             :actions="[
                                 'Coolify trusts the new host key and stops trusting the old key.',
                                 'Only do this after you compared the new key with the key on the server.',
                             ]" confirmationText="{{ $server->name }}"
-                            shortConfirmationLabel="Server Name" step3ButtonText="Trust New Key"
+                            :shortConfirmationLabel="__('Server Name')" :step3ButtonText="__('Trust New Key')"
                             isHighlightedButton />
                     @endif
-                    <x-modal-confirmation title="Reset the host key?" temporaryDisableTwoStepConfirmation
-                        buttonTitle="Reset" submitAction="resetHostKey" :actions="[
+                    <x-modal-confirmation :title="__('Reset the host key?')" temporaryDisableTwoStepConfirmation
+                        :buttonTitle="__('Reset')" submitAction="resetHostKey" :actions="[
                             'Coolify removes the trusted key and the new key.',
                             'Coolify trusts the key that the server sends on the next connection.',
-                        ]" confirmationText="{{ $server->name }}" shortConfirmationLabel="Server Name"
-                        step3ButtonText="Reset Host Key" isErrorButton />
+                        ]" confirmationText="{{ $server->name }}" :shortConfirmationLabel="__('Server Name')"
+                        :step3ButtonText="__('Reset Host Key')" isErrorButton />
                     <x-modal-confirmation
                         title="{{ $server->settings->is_ssh_host_key_check_disabled ? 'Enable the host key check?' : 'Disable the host key check?' }}"
                         temporaryDisableTwoStepConfirmation
@@ -54,7 +54,7 @@
                                 'Coolify does not check the host key of this server.',
                                 'Use this only for a server that changes its host key often, for example a load balancer address or a server that you rebuild often.',
                             ]" confirmationText="{{ $server->name }}"
-                        shortConfirmationLabel="Server Name" step3ButtonText="Confirm"
+                        :shortConfirmationLabel="__('Server Name')" :step3ButtonText="__('Confirm')"
                         :isErrorButton="!$server->settings->is_ssh_host_key_check_disabled" />
                 </div>
             @endcan
@@ -62,7 +62,7 @@
 
         <div class="flex flex-col gap-3 text-sm">
             @if ($mode === 'off')
-                <x-callout type="warning" title="The host key check is off">
+                <x-callout type="warning" :title="__('The host key check is off')">
                     {{ $server->settings->is_ssh_host_key_check_disabled ? 'Disabled for this server.' : 'Disabled for this instance (SSH_HOST_KEY_CHECKING=off).' }}
                 </x-callout>
             @endif
@@ -76,7 +76,7 @@
                     @forelse ($fingerprints as $fingerprint)
                         <code class="block break-all text-xs">{{ $fingerprint }}</code>
                     @empty
-                        <p class="font-medium text-neutral-950 dark:text-fg">No key yet</p>
+                        <p class="font-medium text-neutral-950 dark:text-fg">{{ __('No key yet') }}</p>
                     @endforelse
                     <p class="mt-1 text-xs text-neutral-500 dark:text-fg-dim">
                         @if (count($fingerprints) > 0)
@@ -92,7 +92,7 @@
                             @endif
                             &middot;
                         @else
-                            Saved on the next connection &middot;
+                            {{ __('Saved on the next connection ·') }}
                         @endif
                         Mode: {{ $mode }}{{ $mode === 'enforce' && $instanceMode !== 'enforce' ? ' (set for this server)' : '' }}
                     </p>
@@ -102,9 +102,9 @@
             {{-- The choice only changes something when the instance warns; an instance "enforce" or "off" decides alone. --}}
             @if ($instanceMode !== 'enforce' && $instanceMode !== 'off' && ! $server->settings->is_ssh_host_key_check_disabled)
                 <div class="max-w-sm">
-                    <x-forms.listbox id="checkMode" label="When the host key changes" onChange="setHostKeyCheckMode"
+                    <x-forms.listbox id="checkMode" :label="__('When the host key changes')" onChange="setHostKeyCheckMode"
                         :onChangeArgs="[]" canGate="update" :canResource="$server"
-                        helper="Warn: Coolify connects and reports the new key. Enforce: Coolify refuses to connect until you trust or reset the new key, so deployments, backups, and checks on this server stop. A reinstall of the server also changes the key."
+                        :helper="__('Warn: Coolify connects and reports the new key. Enforce: Coolify refuses to connect until you trust or reset the new key, so deployments, backups, and checks on this server stop. A reinstall of the server also changes the key.')"
                         :options="[
                             ['value' => 'warn', 'label' => 'Warn and connect'],
                             ['value' => 'enforce', 'label' => 'Refuse to connect (enforce)'],

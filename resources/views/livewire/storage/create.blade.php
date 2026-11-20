@@ -1,10 +1,10 @@
 @can('create', App\Models\S3Storage::class)
     <div class="w-full">
-        <div class="mb-4">For more details, please visit the <a class="underline dark:text-brand-light"
+        <div class="mb-4">{{ __('For more details, please visit the') }} <a class="underline dark:text-brand-light"
                 href="https://coolify.io/docs/knowledge-base/s3/introduction" target="_blank">{{ __('Coolify Docs') }}</a>.</div>
         <form class="flex flex-col gap-2" wire:submit='submit'>
             <div class="w-64">
-                <x-forms.listbox required live id="type" label="Type" :options="App\Enums\BackupStorageType::options()" />
+                <x-forms.listbox required live id="type" :label="__('Type')" :options="App\Enums\BackupStorageType::options()" />
             </div>
             <div class="flex gap-2">
                 <x-forms.input required :label="__('Name')" id="name" />
@@ -26,10 +26,10 @@
                     <x-forms.input required type="password" :label="__('Secret Key')" id="secret" />
                 </div>
                 <div class="w-64">
-                    <x-forms.checkbox id="usePathStyleEndpoint" label="Use path-style URLs"
-                        helper="Turn this off for providers that only accept virtual-hosted-style URLs (bucket.endpoint). Coolify turns it off for Alibaba Cloud OSS, Tencent Cloud COS, and Volcengine TOS, and when the provider rejects path-style URLs." />
-                    <x-forms.checkbox id="skipTlsVerification" label="Skip TLS certificate verification"
-                        helper="Turn this on only for an endpoint with a self-signed or private CA certificate. Coolify and the backup helper then accept any certificate, so an attacker on the network path can read or change your backups. Browsers that download files from this storage must still trust the certificate." />
+                    <x-forms.checkbox id="usePathStyleEndpoint" :label="__('Use path-style URLs')"
+                        :helper="__('Turn this off for providers that only accept virtual-hosted-style URLs (bucket.endpoint). Coolify turns it off for Alibaba Cloud OSS, Tencent Cloud COS, and Volcengine TOS, and when the provider rejects path-style URLs.')" />
+                    <x-forms.checkbox id="skipTlsVerification" :label="__('Skip TLS certificate verification')"
+                        :helper="__('Turn this on only for an endpoint with a self-signed or private CA certificate. Coolify and the backup helper then accept any certificate, so an attacker on the network path can read or change your backups. Browsers that download files from this storage must still trust the certificate.')" />
                 </div>
             @else
                 @if ($type === 'webdav')
@@ -41,17 +41,15 @@
                     @include('livewire.storage.server-endpoint-fields', ['defaultPort' => $type === 'sftp' ? 22 : 21])
                 @endif
                 @if ($type === 'sftp')
-                    <x-forms.input required label="Username" id="key" autocomplete="off" />
+                    <x-forms.input required :label="__('Username')" id="key" autocomplete="off" />
                     @include('livewire.storage.sftp-login-fields')
                 @else
                     <div class="flex gap-2">
-                        <x-forms.input required label="Username" id="key" autocomplete="off" />
-                        <x-forms.input required type="password" label="Password" id="secret" />
+                        <x-forms.input required :label="__('Username')" id="key" autocomplete="off" />
+                        <x-forms.input required type="password" :label="__('Password')" id="secret" />
                     </div>
                 @endif
-                <p class="text-xs text-neutral-500 dark:text-fg-dim">Backups keep their full path on the server
-                    (for example data/coolify/backups/...) below this directory. Coolify connects from its own
-                    container to check, restore, download, and delete backups, and from each server to upload them.
+                <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('Backups keep their full path on the server (for example data/coolify/backups/...) below this directory. Coolify connects from its own container to check, restore, download, and delete backups, and from each server to upload them.') }}
                 </p>
             @endif
 
@@ -62,7 +60,6 @@
     </div>
 @else
     <x-callout type="danger" :title="__('Insufficient Permissions')">
-        You don't have permission to create new storage configurations. Please contact your team administrator for
-        access.
+        {{ __('You don\'t have permission to create new storage configurations. Please contact your team administrator for access.') }}
     </x-callout>
 @endcan

@@ -126,7 +126,7 @@ class HostKey extends Component
             // The check can take up to a minute on a slow server, so it runs in the queue and the page polls for the result.
             ServerConnectionCheckJob::dispatch($this->server);
             $this->dispatch('hostKeySettingsChanged')->to(Index::class);
-            $this->dispatch('success', 'The host key settings were saved. Coolify now checks the connection again.');
+            $this->dispatch('success', __('The host key settings were saved. Coolify now checks the connection again.'));
 
             return true;
         } catch (\Throwable $e) {

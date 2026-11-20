@@ -18,7 +18,7 @@
                     placeholder="https://app.infisical.com"
                     :helper="__('Use the URL of your self-hosted Infisical instance, or the Infisical cloud URL.')" />
                 <x-forms.input type="number" min="1" max="300" id="metadata.timeout" label="{{ __('Request timeout (optional)') }}"
-                    placeholder="10" helper="Seconds to wait for each request. Increase it if your instance responds slowly." />
+                    placeholder="10" :helper="__('Seconds to wait for each request. Increase it if your instance responds slowly.')" />
             </div>
         @else
             <div class="grid gap-4 lg:grid-cols-2">
@@ -37,7 +37,7 @@
                 <x-forms.input id="metadata.namespace" :label="__('Namespace (optional)')"
                     placeholder="admin/team-a" :helper="__('Only for Vault Enterprise / HCP Vault.')" />
                 <x-forms.input type="number" min="1" max="300" id="metadata.timeout" label="{{ __('Request timeout (optional)') }}"
-                    placeholder="10" helper="Seconds to wait for each request. Increase it if your instance responds slowly." />
+                    placeholder="10" :helper="__('Seconds to wait for each request. Increase it if your instance responds slowly.')" />
             </div>
         @endif
 
@@ -104,7 +104,7 @@
                 <div class="font-medium text-black dark:text-fg">{{ __('Recommended Doppler token') }}</div>
                 <p>{{ __('Use a read-only') }} <span class="font-medium">{{ __('Service Token') }}</span> {{ __('(dp.st.*). It is pinned to one project and config. Create it in Doppler under Project > Config > Access.') }}</p>
                 <a href="https://dashboard.doppler.com?ref=coolify.io" target="_blank" rel="noopener noreferrer" class="button mt-2">
-                    Open Doppler dashboard
+                    {{ __('Open Doppler dashboard') }}
                     <x-external-link />
                 </a>
             </div>
@@ -113,7 +113,7 @@
                 <div class="font-medium text-black dark:text-fg">{{ __('Infisical machine identity') }}</div>
                 <p>{{ __('Create a machine identity with Universal Auth and read access to your project. Paste the client ID above and the client secret in the secret field.') }}</p>
                 <a href="https://app.infisical.com?ref=coolify.io" target="_blank" rel="noopener noreferrer" class="button mt-2">
-                    Open Infisical Cloud
+                    {{ __('Open Infisical Cloud') }}
                     <x-external-link />
                 </a>
             </div>
@@ -122,7 +122,7 @@
                 <div class="font-medium text-black dark:text-fg">{{ __('Vault token') }}</div>
                 <p>{{ __('Use a token with read access to your KV v2 secrets. Prefer a periodic or long-lived token — deployments fail when the token expires.') }}</p>
                 <a href="https://portal.cloud.hashicorp.com?ref=coolify.io" target="_blank" rel="noopener noreferrer" class="button mt-2">
-                    Open HCP Vault
+                    {{ __('Open HCP Vault') }}
                     <x-external-link />
                 </a>
             </div>

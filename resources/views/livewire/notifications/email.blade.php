@@ -72,8 +72,8 @@
 
         @if (!$useInstanceEmailSettings)
             <div class="application-settings-form">
-                <x-application.settings-section title="Email provider"
-                    description="Only one provider sends email. Select a provider to see its settings.">
+                <x-application.settings-section :title="__('Email provider')"
+                    :description="__('Only one provider sends email. Select a provider to see its settings.')">
                     <x-slot:badges>
                         <div class="w-40">
                             <x-forms.listbox canGate="update" :canResource="$settings" id="emailProvider"
@@ -88,16 +88,16 @@
                     <div class="grid gap-4 lg:grid-cols-3">
                         @if ($emailProvider === 'none')
                             <p class="text-sm text-neutral-500 lg:col-span-3 dark:text-neutral-400">
-                                The team does not get email notifications. Select a provider next to the title to set it up.
+                                {{ __('The team does not get email notifications. Select a provider next to the title to set it up.') }}
                             </p>
                         @endif
 
                         @if ($emailProvider !== $this->activeEmailProvider)
                             <div class="lg:col-span-3">
-                                <x-callout type="warning" title="Not active yet">
+                                <x-callout type="warning" :title="__('Not active yet')">
                                     Enter the {{ email_provider_labels()[$emailProvider] }} settings and save.
                                     @if ($this->activeEmailProvider === 'none')
-                                        Until then, the team does not get email notifications.
+                                        {{ __('Until then, the team does not get email notifications.') }}
                                     @else
                                         Until then, Coolify sends email with
                                         {{ email_provider_labels()[$this->activeEmailProvider] }}.
@@ -112,16 +112,16 @@
                             <div>
                                 @can('update', $settings)
                                     <x-forms.input canGate="update" :canResource="$settings" required type="password"
-                                        id="resendApiKey" placeholder="API key" label="Resend API key"
+                                        id="resendApiKey" :placeholder="__('API key')" :label="__('Resend API key')"
                                         autocomplete="new-password" />
                                 @else
-                                    <x-forms.input disabled label="Resend API key" value="Hidden (only admins can view)" />
+                                    <x-forms.input disabled :label="__('Resend API key')" value="Hidden (only admins can view)" />
                                 @endcan
                             </div>
                             <x-forms.input canGate="update" :canResource="$settings" required id="resendFromName"
-                                helper="Name shown in email from Resend." label="From name" />
+                                :helper="__('Name shown in email from Resend.')" :label="__('From name')" />
                             <x-forms.input canGate="update" :canResource="$settings" required id="resendFromAddress"
-                                helper="Address used in email from Resend. It must be on a domain verified in Resend."
+                                :helper="__('Address used in email from Resend. It must be on a domain verified in Resend.')"
                                 :label="__('From address')" />
                         @endif
                     </div>
@@ -167,8 +167,8 @@
                 <div class="mt-4">
                     <x-forms.checkbox canGate="update" :canResource="$settings" instantSave="instantSaveDeploymentCommitDetails"
                         id="deploymentCommitDetailsEmailNotifications"
-                        label="Include commit details in deployment emails"
-                        helper="Adds the commit SHA, branch, and commit message to deployment success and failure emails." />
+                        :label="__('Include commit details in deployment emails')"
+                        :helper="__('Adds the commit SHA, branch, and commit message to deployment success and failure emails.')" />
                 </div>
             </x-application.settings-section>
         </div>

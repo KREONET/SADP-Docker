@@ -9,7 +9,7 @@
         };
     @endphp
     @if ($resource && !data_get($resource, 'destination.server')?->isFunctional())
-        <x-callout type="warning" title="Server is not reachable" class="mb-4">
+        <x-callout type="warning" :title="__('Server is not reachable')" class="mb-4">
             Coolify cannot stop or remove Docker resources on this server. Deleting removes this {{ $resourceLabel }}
             from Coolify only. Its containers, volumes, networks, and configuration files remain on the server and can
             start again when the server is back.
@@ -18,18 +18,17 @@
     <x-application.settings-section id="danger-zone-section" :title="__('Danger zone')"
         :helper="__('Destructive resource actions cannot be undone.')">
         @if (in_array($resource?->type(), ['standalone-redis', 'standalone-keydb', 'standalone-dragonfly']))
-            <x-danger-zone title="Flush all data" class="mb-4">
+            <x-danger-zone :title="__('Flush all data')" class="mb-4">
                 <p>
-                    Permanently remove every key from
-                    <strong class="font-semibold text-black dark:text-fg">{{ $resourceName }}</strong>.
-                    The database keeps running.
+                    {{ __('Permanently remove every key from') }}
+                    <strong class="font-semibold text-black dark:text-fg">{{ $resourceName }}</strong>{{ __('. The database keeps running.') }}
                 </p>
                 <x-slot:action>
-                    <x-modal-confirmation title="Flush all data?" buttonTitle="Flush all data" isErrorButton
+                    <x-modal-confirmation :title="__('Flush all data?')" :buttonTitle="__('Flush all data')" isErrorButton
                         submitAction="flush" :actions="['Permanently remove every key from every logical database.']"
                         confirmationText="{{ $resourceName }}"
-                        confirmationLabel="Enter the database name to confirm flushing all data"
-                        shortConfirmationLabel="Database name" :disabled="auth()->user()->cannot('manage', $resource)"
+                        :confirmationLabel="__('Enter the database name to confirm flushing all data')"
+                        :shortConfirmationLabel="__('Database name')" :disabled="auth()->user()->cannot('manage', $resource)"
                         disabledTooltip="You do not have permission to flush this database." />
                 </x-slot:action>
             </x-danger-zone>

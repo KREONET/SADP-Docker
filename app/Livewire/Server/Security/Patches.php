@@ -208,7 +208,7 @@ class Patches extends Component
                 $this->auditPatchAction('patch_settings_updated', ['changed_fields' => $changedFields]);
             }
             $this->syncSettings();
-            $this->dispatch('success', 'Patch settings saved.');
+            $this->dispatch('success', __('Patch settings saved.'));
         } catch (\Throwable $e) {
             $this->server->settings->refresh();
             $this->syncSettings();

@@ -89,7 +89,7 @@
                             </div>
                             <div class="ml-auto flex items-center gap-2">
                                 @can('update', $serviceApplication)
-                                    <x-modal-confirmation title="Convert to Database"
+                                    <x-modal-confirmation :title="__('Convert to Database')"
                                         :buttonTitle="__('Convert to Database')" submitAction="convertToDatabase"
                                         :actions="[__('The selected resource will be converted to a service database.')]"
                                         confirmationText="{{ Str::headline($serviceApplication->name) }}"
@@ -257,7 +257,7 @@
                         </div>
                         <div class="ml-auto flex items-center gap-2">
                             @can('update', $serviceDatabase)
-                                <x-modal-confirmation title="Convert to Application"
+                                <x-modal-confirmation :title="__('Convert to Application')"
                                     :buttonTitle="__('Convert to Application')" submitAction="convertToApplication"
                                     :actions="[__('The selected resource will be converted to an application.')]"
                                     confirmationText="{{ Str::headline($serviceDatabase->name) }}"

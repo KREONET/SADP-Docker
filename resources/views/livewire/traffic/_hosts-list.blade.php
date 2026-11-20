@@ -44,7 +44,7 @@
                         <span class="min-w-0 flex-1 truncate text-[12px] text-neutral-500 dark:text-fg-dim">{{ __('Unknown host') }}</span>
                     @endif
                     <div class="hidden h-1 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-100 sm:block dark:bg-white/[0.06]"
-                        title="Request volume relative to the busiest row in this list">
+                        title="{{ __('Request volume relative to the busiest row in this list') }}">
                         <div class="h-full rounded-full bg-[var(--chart-status-3xx)]" style="width: {{ $width }}%;"></div>
                     </div>
                     <span class="w-16 shrink-0 text-right text-[12px] font-medium tabular-nums text-black dark:text-fg"

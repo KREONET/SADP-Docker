@@ -22,8 +22,8 @@
             @endif
         </x-slot:actions>
         <div class="grid gap-4 sm:grid-cols-2">
-            <x-forms.listbox id="s3StorageIds" label="S3 storages" multiple live portal
-                helper="Each backup is uploaded to every selected storage." placeholder="Select S3 storages"
+            <x-forms.listbox id="s3StorageIds" :label="__('S3 storages')" multiple live portal
+                :helper="__('Each backup is uploaded to every selected storage.')" :placeholder="__('Select S3 storages')"
                 :options="$availableS3Storages->map(fn ($storage) => [
                     'value' => $storage->id,
                     'label' => $storage->name.($storage->is_usable ? '' : ' (unavailable)'),

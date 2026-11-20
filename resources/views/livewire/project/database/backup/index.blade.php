@@ -12,7 +12,7 @@
                 :description="__('Automate database backups and track the latest execution for each schedule.')">
                 @can('update', $database)
                     <x-slot:actions>
-                        <x-modal-input title="Import backup" buttonTitle="Import backup">
+                        <x-modal-input :title="__('Import backup')" :buttonTitle="__('Import backup')">
                             <livewire:project.database.import :resource="$database"
                                 wire:key="database-import-{{ $database->uuid }}" />
                         </x-modal-input>

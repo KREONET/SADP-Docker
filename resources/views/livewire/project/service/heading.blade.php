@@ -21,7 +21,7 @@
     <livewire:project.shared.configuration-checker :resource="$service" />
 
     <x-process-dialog @startservice.window="processDialogOpen = true" closeWithX>
-        <x-slot:title>Service Startup Logs</x-slot:title>
+        <x-slot:title>{{ __('Service Startup Logs') }}</x-slot:title>
         <x-slot:content>
             <livewire:activity-monitor fullHeight />
         </x-slot:content>
@@ -66,7 +66,7 @@
                                     @click="document.getElementById('service-restart-trigger')?.click()">
                                     <x-loading-on-button x-show="deploying" x-cloak />
                                     <x-reicon name="restart" class="size-3.5" x-show="!deploying" />
-                                    <span x-text="deploying ? __('Restarting…') : __('Restart')">Restart</span>
+                                    <span x-text="deploying ? __('Restarting…') : __('Restart')">{{ __('Restart') }}</span>
                                 </x-slot:main>
                                 @if ($serviceStatus->contains('running'))
                                     <button type="button" class="listbox-option justify-start! gap-2.5!"
@@ -92,7 +92,7 @@
                                 <x-slot:main x-bind:disabled="deploying" @click="deploying = true; $wire.dispatch('startEvent')">
                                     <x-loading-on-button x-show="deploying" x-cloak />
                                     <x-reicon name="play-circle" class="size-3.5" x-show="!deploying" />
-                                    <span x-text="deploying ? 'Deploying…' : 'Deploy'">Deploy</span>
+                                    <span x-text="deploying ? 'Deploying…' : 'Deploy'">{{ __('Deploy') }}</span>
                                 </x-slot:main>
                                 <button type="button" class="listbox-option justify-start! gap-2.5!"
                                     @click="$wire.dispatch('forceDeployEvent'); open = false" role="menuitem">

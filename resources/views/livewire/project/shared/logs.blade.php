@@ -10,7 +10,7 @@
         <livewire:project.database.heading :database="$resource" />
     @elseif ($type === 'service')
         <livewire:project.service.heading :service="$resource" :parameters="$parameters" :query="$query"
-            title="Logs" />
+            :title="__('Logs')" />
     @endif
 
     @php
@@ -87,13 +87,13 @@
                         <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
                             @if (count($logTargets['deployments']) > 1)
                                 <div class="w-full sm:w-60" wire:key="runtime-logs-deployments">
-                                    <x-forms.listbox id="pullRequestId" label="Deployment" live searchable portal
+                                    <x-forms.listbox id="pullRequestId" :label="__('Deployment')" live searchable portal
                                         searchPlaceholder="Search deployments" :options="$logTargets['deployments']" />
                                 </div>
                             @endif
                             @if (count($logTargets['services']) > 1)
                                 <div class="w-full sm:w-60" wire:key="runtime-logs-services">
-                                    <x-forms.listbox id="service" label="Service" live searchable portal
+                                    <x-forms.listbox id="service" :label="__('Service')" live searchable portal
                                         searchPlaceholder="Search services" :options="$logTargets['services']" />
                                 </div>
                             @endif

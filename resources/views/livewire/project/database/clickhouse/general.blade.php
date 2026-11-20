@@ -3,30 +3,25 @@
         <x-unsaved-bar action="submit" />
 
         @if ($anonymousDataVolume)
-            <x-callout type="danger" title="Current data is not in the data volume">
-                <p>Because of a bug in older Coolify versions, a file mount removed the data volume. This database
-                    keeps its current data in the unnamed Docker volume <code>{{ $anonymousDataVolume }}</code>.
-                    Starting or restarting it is blocked, because it would use the data volume and the current data
-                    would seem lost.</p>
-                <p class="mt-2">An admin can click "Keep current data" to use this volume as the data volume. The previous data
-                    volume is not used anymore, but stays on the server. It can contain data from before the file
-                    mount was added.</p>
+            <x-callout type="danger" :title="__('Current data is not in the data volume')">
+                <p>{{ __('Because of a bug in older Coolify versions, a file mount removed the data volume. This database keeps its current data in the unnamed Docker volume') }} <code>{{ $anonymousDataVolume }}</code>{{ __('. Starting or restarting it is blocked, because it would use the data volume and the current data would seem lost.') }}</p>
+                <p class="mt-2">{{ __('An admin can click "Keep current data" to use this volume as the data volume. The previous data volume is not used anymore, but stays on the server. It can contain data from before the file mount was added.') }}</p>
                 @can('update', $database)
                     <div class="mt-3">
-                        <x-modal-confirmation title="Keep current data?" buttonTitle="Keep current data"
+                        <x-modal-confirmation :title="__('Keep current data?')" :buttonTitle="__('Keep current data')"
                             submitAction="keepCurrentDataVolume" :actions="[
                                 'Use the unnamed volume ' . $anonymousDataVolume . ' as the data volume of this database.',
                                 'Starts and restarts are allowed again and keep the current data.',
                                 'The previous data volume stays on the server and is not used anymore.',
                             ]" :confirmWithText="false" :confirmWithPassword="false"
-                            step2ButtonText="Keep current data" />
+                            :step2ButtonText="__('Keep current data')" />
                     </div>
                 @endcan
             </x-callout>
         @endif
 
         <x-application.settings-section id="database-details-section" :title="__('Database details')"
-            description="Manage the identity, container image, and credentials of this ClickHouse database.">
+            :description="__('Manage the identity, container image, and credentials of this ClickHouse database.')">
             <x-slot:actions>
                 <x-modal-input :title="__('Resource details')" :buttonTitle="__('Details')">
                     <livewire:project.shared.resource-details :resource="$database" />
@@ -40,7 +35,7 @@
                         :helper="__('Use a published :image image from Docker Hub.', ['image' => 'clickhouse/clickhouse-server'])" />
                 </div>
             </div>
-            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" helper="Keep these values aligned with the credentials configured inside ClickHouse.">
+            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" :helper="__('Keep these values aligned with the credentials configured inside ClickHouse.')">
                 @if (!$database->started_at)
                     <x-callout type="warning" :title="__('Verify the initial credentials')">
                         {{ __('You can only change these credentials here before the first start. Later changes must be made inside the database.') }}
@@ -48,7 +43,7 @@
                 @endif
                 <div class="{{ !$database->started_at ? 'mt-4 ' : '' }}grid gap-4 lg:grid-cols-2">
                     <x-forms.input label="{{ $database->started_at ? 'Initial username' : 'Username' }}"
-                        id="clickhouseAdminUser" placeholder="If empty: clickhouse"
+                        id="clickhouseAdminUser" :placeholder="__('If empty: clickhouse')"
                         :readonly="(bool) $database->started_at" required canGate="update" :canResource="$database" />
                     @if ($isPasswordHiddenForMember)
                         <x-forms.input :label="__('Password')" disabled :value="__('Hidden (only admins can view)')" />
@@ -62,8 +57,8 @@
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="access-section" title="Access"
-            description="How applications and clients connect to this database, and whether it is reachable from the internet.">
+        <x-application.settings-section id="access-section" :title="__('Access')"
+            :description="__('How applications and clients connect to this database, and whether it is reachable from the internet.')">
             <x-slot:actions>
                 @if ($isPublic)
                     <x-process-dialog closeWithX size="xl">
@@ -76,10 +71,10 @@
                     </x-process-dialog>
                 @endif
             </x-slot:actions>
-            <x-application.settings-subsection id="connection-section" title="Connection" helper="Use these URLs to connect to the database." first>
+            <x-application.settings-subsection id="connection-section" :title="__('Connection')" :helper="__('Use these URLs to connect to the database.')" first>
                 <livewire:project.database.clickhouse.status-info :database="$database" />
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="public-access-section" title="Public access" helper="Expose this database through the managed TCP proxy." class="relative">
+            <x-application.settings-subsection id="public-access-section" :title="__('Public access')" :helper="__('Expose this database through the managed TCP proxy.')" class="relative">
                 <x-table.loading target="instantSave" :text="__('Updating public access...')" />
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div wire:key="public-access-{{ $publicPort ?: 'unset' }}">
@@ -95,16 +90,16 @@
                         :label="__('Proxy timeout')" :helper="__('Timeout in seconds. The default is 3600.')"
                         canGate="update" :canResource="$database" />
                     <x-forms.input placeholder="3000:8123" id="portsMappings" :label="__('Port mappings')"
-                        helper="Comma-separated host-to-container mappings, for example 3000:8123."
+                        :helper="__('Comma-separated host-to-container mappings, for example 3000:8123.')"
                         canGate="update" :canResource="$database" />
                 </div>
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="container-section" title="Container"
-            description="Docker options and log forwarding for the database container.">
+        <x-application.settings-section id="container-section" :title="__('Container')"
+            :description="__('Docker options and log forwarding for the database container.')">
             @if ($isPasswordHiddenForMember)
-                <x-forms.input label="Custom Docker options" disabled value="Hidden (only admins can view)" />
+                <x-forms.input :label="__('Custom Docker options')" disabled value="Hidden (only admins can view)" />
             @else
                 <x-forms.input
                     :helper="__('Add supported docker run options used when the container starts. Unsupported options can interfere with Coolify automation.')"
@@ -112,7 +107,7 @@
                     id="customDockerRunOptions" :label="__('Custom Docker options')" canGate="update"
                     :canResource="$database" />
             @endif
-            <x-application.settings-subsection id="log-delivery-section" title="Log delivery" helper="Forward container logs to the drain configured on the server.">
+            <x-application.settings-subsection id="log-delivery-section" :title="__('Log delivery')" :helper="__('Forward container logs to the drain configured on the server.')">
                 <x-forms.listbox canGate="update" :canResource="$database" id="isLogDrainEnabled" :label="__('Log drain')" live onChange="instantSaveAdvanced"
                     :disabled="! auth()->user()->can('update', $database)" :options="[
                         ['value' => false, 'label' => __('Do not forward logs')],

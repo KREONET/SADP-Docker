@@ -129,7 +129,7 @@ class SettingsBackup extends Component
                     'changed_fields' => $changedFields,
                 ]);
             }
-            $this->dispatch('success', 'Backup updated.');
+            $this->dispatch('success', __('Backup updated.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

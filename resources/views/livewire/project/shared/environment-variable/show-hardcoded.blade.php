@@ -56,16 +56,15 @@
                     @endif
                     <x-callout type="info" :title="$composeType === 'derived' ? 'Derived in Compose' : 'Defined in Compose'">
                         @if ($composeType === 'derived')
-                            This value is derived from
+                            {{ __('This value is derived from') }}
                             @foreach ($references as $reference)
                                 <button type="button" data-compose-reference
                                     class="font-mono underline underline-offset-2"
                                     @click="$dispatch('focus-compose-environment-variable', { key: @js($reference) }); modalOpen = false">
                                     {{ $reference }}</button>{{ $loop->last ? '' : ',' }}
-                            @endforeach.
-                            Edit those variables or update the Compose file.
+                            @endforeach{{ __('. Edit those variables or update the Compose file.') }}
                         @else
-                            This value is defined directly in Docker Compose. Update it in the Compose file.
+                            {{ __('This value is defined directly in Docker Compose. Update it in the Compose file.') }}
                         @endif
                     </x-callout>
                 </div>

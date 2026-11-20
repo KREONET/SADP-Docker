@@ -66,7 +66,7 @@
                                 @endif
                                 @if ($form['ignoresDriverOptions'])
                                     <span class="block text-xs text-amber-800 dark:text-amber-300/90">
-                                        Coolify does not apply the driver options of this volume because it was created before they were supported. To apply them: stop the resource, back up any data you need, delete this entry together with the Docker volume, then redeploy.
+                                        {{ __('Coolify does not apply the driver options of this volume because it was created before they were supported. To apply them: stop the resource, back up any data you need, delete this entry together with the Docker volume, then redeploy.') }}
                                     </span>
                                 @endif
                             </div>
@@ -129,7 +129,7 @@
                                     @if ($canUpdate && ! $form['canDeleteStale'] && ! $form['canDeleteToApplyDriverOptions'])
                                         <x-modal-input :title="__('Configure Volume Backup')" :wireIgnore="false">
                                             <x-slot:content>
-                                                <button type="button" class="icon-button shrink-0" title="Configure volume backup"
+                                                <button type="button" class="icon-button shrink-0" title="{{ __('Configure volume backup') }}"
                                                     aria-label="Configure backup for {{ $form['name'] }}">
                                                     <x-reicon name="database" class="size-3.5" />
                                                 </button>
@@ -145,11 +145,11 @@
                                             @endif
                                         </x-modal-input>
                                     @elseif ($canUpdate || $form['canDeleteStale'] || $form['canDeleteToApplyDriverOptions'])
-                                        <x-table.row-actions label="Storage actions">
+                                        <x-table.row-actions :label="__('Storage actions')">
                                             @if ($canUpdate)
                                                 <x-modal-input :title="__('Configure Volume Backup')" :wireIgnore="false">
                                                     <x-slot:content>
-                                                        <x-table.row-action>Backup</x-table.row-action>
+                                                        <x-table.row-action>{{ __('Backup') }}</x-table.row-action>
                                                     </x-slot:content>
                                                     @if ($resource instanceof \App\Models\Application)
                                                         <livewire:project.application.backup.create :application="$resource"
@@ -165,7 +165,7 @@
                                             @if ($form['canDeleteStale'] || $form['canDeleteToApplyDriverOptions'])
                                                 <x-slot:danger>
                                                     @if ($form['canDeleteStale'])
-                                                        <x-modal-confirmation title="Remove stale volume entry?" buttonFullWidth
+                                                        <x-modal-confirmation :title="__('Remove stale volume entry?')" buttonFullWidth
                                                             submitAction="delete({{ $id }})"
                                                             :checkboxes="[[
                                                                 'id' => 'deleteDockerVolume',
@@ -182,14 +182,14 @@
                                                                 ? e('This volume is still in use by: '.implode(', ', $form['usedByContainers']).'. After you delete this entry, the next deployment starts the resource without the data in this volume. Back up the data first if you need it.')
                                                                 : null" confirmationText="{{ $form['name'] }}"
                                                             :confirmationLabel="__('Please confirm by entering the Storage Name below')"
-                                                            shortConfirmationLabel="Storage Name">
+                                                            :shortConfirmationLabel="__('Storage Name')">
                                                             <x-slot:trigger>
-                                                                <x-table.row-action>Delete stale entry</x-table.row-action>
+                                                                <x-table.row-action>{{ __('Delete stale entry') }}</x-table.row-action>
                                                             </x-slot:trigger>
                                                         </x-modal-confirmation>
                                                     @endif
                                                     @if ($form['canDeleteToApplyDriverOptions'])
-                                                        <x-modal-confirmation title="Delete volume entry to apply driver options?" buttonFullWidth
+                                                        <x-modal-confirmation :title="__('Delete volume entry to apply driver options?')" buttonFullWidth
                                                             submitAction="delete({{ $id }})"
                                                             :checkboxes="[[
                                                                 'id' => 'deleteDockerVolume',
@@ -201,9 +201,9 @@
                                                             ]"
                                                             warningMessage="Stop the resource first: Docker cannot delete a volume that a running container uses. If the volume contains data you need, use Backup before you delete it." confirmationText="{{ $form['name'] }}"
                                                             :confirmationLabel="__('Please confirm by entering the Storage Name below')"
-                                                            shortConfirmationLabel="Storage Name">
+                                                            :shortConfirmationLabel="__('Storage Name')">
                                                             <x-slot:trigger>
-                                                                <x-table.row-action>Delete</x-table.row-action>
+                                                                <x-table.row-action>{{ __('Delete') }}</x-table.row-action>
                                                             </x-slot:trigger>
                                                         </x-modal-confirmation>
                                                     @endif
@@ -289,7 +289,7 @@
 
                             <div
                                 class="volumes-col-actions volumes-cell-actions flex flex-nowrap items-center justify-end gap-1.5">
-                                <button type="submit" class="sr-only" tabindex="-1" aria-hidden="true">Update</button>
+                                <button type="submit" class="sr-only" tabindex="-1" aria-hidden="true">{{ __('Update') }}</button>
                                 @php
                                     $hasBackupAction = auth()->user()?->can('update', $resource)
                                         && (($showBackupAction && ! $form['isShared'])
@@ -297,17 +297,17 @@
                                 @endphp
                                 @if ($form['isShared'] && ! $hasBackupAction)
                                     <button type="button" wire:click="submit({{ $id }})" class="icon-button shrink-0"
-                                        title="Update storage" aria-label="Update {{ $form['name'] }}">
+                                        title="{{ __('Update storage') }}" aria-label="Update {{ $form['name'] }}">
                                         <x-reicon name="check" class="size-3.5" />
                                     </button>
                                 @else
-                                    <x-table.row-actions label="Storage actions">
-                                        <x-table.row-action wire:click="submit({{ $id }})">Update</x-table.row-action>
+                                    <x-table.row-actions :label="__('Storage actions')">
+                                        <x-table.row-action wire:click="submit({{ $id }})">{{ __('Update') }}</x-table.row-action>
                                         @can('update', $resource)
                                             @if ($showBackupAction && ! $form['isShared'])
                                                 <x-modal-input :title="__('Configure Volume Backup')" :wireIgnore="false">
                                                     <x-slot:content>
-                                                        <x-table.row-action>Backup</x-table.row-action>
+                                                        <x-table.row-action>{{ __('Backup') }}</x-table.row-action>
                                                     </x-slot:content>
                                                     @if ($resource instanceof \App\Models\Application)
                                                         <livewire:project.application.backup.create :application="$resource"
@@ -322,7 +322,7 @@
                                             @elseif (method_exists($resource, 'isBackupSolutionAvailable') && $resource->isBackupSolutionAvailable())
                                                 <x-modal-input :title="__('New Scheduled Backup')" :wireIgnore="false">
                                                     <x-slot:content>
-                                                        <x-table.row-action>Backup</x-table.row-action>
+                                                        <x-table.row-action>{{ __('Backup') }}</x-table.row-action>
                                                     </x-slot:content>
                                                     <livewire:project.database.create-scheduled-backup :database="$resource"
                                                         wire:key="configure-database-backup-{{ $id }}" />
@@ -331,15 +331,15 @@
                                         @endcan
                                         @unless ($form['isShared'])
                                             <x-slot:danger>
-                                                <x-modal-confirmation title="Confirm persistent storage deletion?" buttonFullWidth
+                                                <x-modal-confirmation :title="__('Confirm persistent storage deletion?')" buttonFullWidth
                                                     submitAction="delete({{ $id }})" :actions="[
                                                         __('The selected persistent storage/volume will be permanently deleted.'),
                                                         __('If the persistent storage/volume is actvily used by a resource data will be lost.'),
                                                     ]" confirmationText="{{ $form['name'] }}"
                                                     :confirmationLabel="__('Please confirm the execution of the actions by entering the Storage Name below')"
-                                                    shortConfirmationLabel="Storage Name">
+                                                    :shortConfirmationLabel="__('Storage Name')">
                                                     <x-slot:trigger>
-                                                        <x-table.row-action>Delete</x-table.row-action>
+                                                        <x-table.row-action>{{ __('Delete') }}</x-table.row-action>
                                                     </x-slot:trigger>
                                                 </x-modal-confirmation>
                                             </x-slot:danger>
@@ -369,20 +369,20 @@
                         class="application-settings-form application-settings-section relative w-full lg:min-w-[36rem] lg:max-w-2xl"
                         style="box-shadow: 0 0 0 1px var(--coollabs-hairline), var(--shadow-modal)">
                         <header>
-                            <h3>Change the volume name?</h3>
-                            <button type="button" aria-label="Close"
+                            <h3>{{ __('Change the volume name?') }}</h3>
+                            <button type="button" aria-label="{{ __('Close') }}"
                                 @click="modalOpen = false; $wire.cancelRename({{ $pendingRename['storageId'] }})"
                                 class="flex size-7 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg">
                                 <x-reicon name="x" class="size-4" />
                             </button>
                         </header>
                         <div class="application-settings-section-body">
-                            <x-callout type="warning" title="The data does not move to the new volume" class="mb-4">
+                            <x-callout type="warning" :title="__('The data does not move to the new volume')" class="mb-4">
                                 <ul class="mt-2 ml-4 list-disc">
-                                    <li>Changing the name does not rename or move the Docker volume.</li>
-                                    <li>After the next restart or deployment, the resource uses the Docker volume <strong>{{ $pendingRename['to'] }}</strong>. If that volume does not exist, Docker creates it empty.</li>
-                                    <li>Your data stays in <strong>{{ $pendingRename['from'] }}</strong>. Coolify does not copy it, and does not delete it when you delete this resource.</li>
-                                    <li>To keep your data, stop the resource and copy the data into the new volume before you start it again.</li>
+                                    <li>{{ __('Changing the name does not rename or move the Docker volume.') }}</li>
+                                    <li>{{ __('After the next restart or deployment, the resource uses the Docker volume') }} <strong>{{ $pendingRename['to'] }}</strong>{{ __('. If that volume does not exist, Docker creates it empty.') }}</li>
+                                    <li>{{ __('Your data stays in') }} <strong>{{ $pendingRename['from'] }}</strong>{{ __('. Coolify does not copy it, and does not delete it when you delete this resource.') }}</li>
+                                    <li>{{ __('To keep your data, stop the resource and copy the data into the new volume before you start it again.') }}</li>
                                 </ul>
                             </x-callout>
 
@@ -393,7 +393,7 @@
                                 </x-forms.button>
                                 <x-forms.button wire:click="submit({{ $pendingRename['storageId'] }}, true)"
                                     @click="modalOpen = false" isError>
-                                    Change Volume Name
+                                    {{ __('Change Volume Name') }}
                                 </x-forms.button>
                             </div>
                         </div>

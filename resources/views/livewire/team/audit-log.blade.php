@@ -38,13 +38,13 @@
                         <div class="data-table transition-opacity" wire:loading.class="opacity-50 pointer-events-none"
                             wire:target="search,action,source,setSort,setPage,previousPage,nextPage">
                         <div class="grid min-w-[760px] grid-cols-[14rem_minmax(0,1fr)_12rem_9rem] gap-4 border-b border-neutral-200 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:border-white/[0.07] dark:text-fg-faint">
-                            <x-table.sort-header label="Actor" asc="actor-asc" desc="actor-desc" action="setSort"
+                            <x-table.sort-header :label="__('Actor')" asc="actor-asc" desc="actor-desc" action="setSort"
                                 :current="$sort" />
-                            <x-table.sort-header label="Activity" asc="activity-asc" desc="activity-desc"
+                            <x-table.sort-header :label="__('Activity')" asc="activity-asc" desc="activity-desc"
                                 action="setSort" :current="$sort" />
-                            <x-table.sort-header label="Source" asc="source-asc" desc="source-desc" action="setSort"
+                            <x-table.sort-header :label="__('Source')" asc="source-asc" desc="source-desc" action="setSort"
                                 :current="$sort" />
-                            <x-table.sort-header label="Time" asc="time-asc" desc="time-desc" first="desc"
+                            <x-table.sort-header :label="__('Time')" asc="time-asc" desc="time-desc" first="desc"
                                 action="setSort" :current="$sort" class="justify-self-end" />
                         </div>
                         @foreach ($events as $event)
@@ -78,7 +78,7 @@
                                         <button type="button" @click="expanded = ! expanded"
                                             class="mt-1 text-[11px] font-medium text-accent hover:underline"
                                             :aria-expanded="expanded">
-                                            <span x-text="expanded ? 'Hide changes' : 'View changes'">View changes</span>
+                                            <span x-text="expanded ? 'Hide changes' : 'View changes'">{{ __('View changes') }}</span>
                                         </button>
                                     @endif
                                 </div>
@@ -98,9 +98,9 @@
                                 <div x-cloak x-show="expanded" x-collapse
                                     class="border-t border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/[0.07] dark:bg-white/[0.02]">
                                     <div class="grid grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] gap-4 pb-2 text-[10px] font-medium uppercase tracking-wide text-neutral-500 dark:text-fg-faint">
-                                        <span>Field</span>
-                                        <span>Previous value</span>
-                                        <span>New value</span>
+                                        <span>{{ __('Field') }}</span>
+                                        <span>{{ __('Previous value') }}</span>
+                                        <span>{{ __('New value') }}</span>
                                     </div>
                                     @foreach ($event->changes as $field => $change)
                                         <div class="grid grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] gap-4 border-t border-neutral-200 py-2 text-[12px] dark:border-white/[0.07]">

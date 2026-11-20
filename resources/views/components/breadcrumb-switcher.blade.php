@@ -16,7 +16,7 @@
             </a>
             <button type="button"
                 @click="open = !open; if (open) { search = ''; $nextTick(() => $refs.search.focus()) }"
-                title="Switch resource" class="flex h-8 shrink-0 items-center rounded-r-md px-0.5 transition-colors hover:bg-neutral-100 dark:hover:bg-white/[0.05]">
+                title="{{ __('Switch resource') }}" class="flex h-8 shrink-0 items-center rounded-r-md px-0.5 transition-colors hover:bg-neutral-100 dark:hover:bg-white/[0.05]">
                 <svg class="size-4 shrink-0 text-neutral-400 dark:text-fg-faint" viewBox="0 0 24 24" fill="none">
                     <path d="M8 9l4-4 4 4M8 15l4 4 4-4" stroke="currentColor" stroke-width="1.6"
                         stroke-linecap="round" stroke-linejoin="round" />

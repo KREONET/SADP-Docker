@@ -127,7 +127,7 @@
                             <div class="runtime-log-menus">
                             {{-- Display settings and level filters --}}
                             <x-table.dropdown panel-class="runtime-log-menu min-w-48! max-h-none!" role="menu">
-                                <x-slot:trigger><button type="button" title="View Options"
+                                <x-slot:trigger><button type="button" title="{{ __('View Options') }}"
                                     :class="Object.values(logFilters).some(v => !v) ? 'button-highlighted' : ''"
                                     class="button" aria-haspopup="menu" :aria-expanded="open">
                                     <svg class="size-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -135,27 +135,27 @@
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                                     </svg>
-                                    <span>View</span>
+                                    <span>{{ __('View') }}</span>
                                     <x-reicon name="chevron-down" class="size-3 transition-transform" ::class="open ? 'rotate-180' : ''" />
                                 </button></x-slot:trigger>
                                 <div>
-                                    <p class="runtime-log-menu-label">Display</p>
+                                    <p class="runtime-log-menu-label">{{ __('Display') }}</p>
                                     <button type="button" class="listbox-option" role="menuitemcheckbox"
                                         :aria-checked="$wire.showTimeStamps" wire:click="toggleTimestamps">
-                                        <span class="flex-1 text-left">Timestamps</span>
+                                        <span class="flex-1 text-left">{{ __('Timestamps') }}</span>
                                         <span x-show="$wire.showTimeStamps">✓</span>
                                     </button>
                                     <button type="button" class="listbox-option" role="menuitemcheckbox"
                                         :aria-checked="textView" x-on:click="toggleTextView">
-                                        <span class="flex-1 text-left">Text view</span>
+                                        <span class="flex-1 text-left">{{ __('Text view') }}</span>
                                         <span x-show="textView">✓</span>
                                     </button>
                                     <button type="button" class="listbox-option" role="menuitemcheckbox"
                                         :aria-checked="colorLogs" x-on:click="toggleColorLogs">
-                                        <span class="flex-1 text-left">Color by level</span>
+                                        <span class="flex-1 text-left">{{ __('Color by level') }}</span>
                                         <span x-show="colorLogs">✓</span>
                                     </button>
-                                    <p class="runtime-log-menu-label">Log levels</p>
+                                    <p class="runtime-log-menu-label">{{ __('Log levels') }}</p>
                                     <button type="button" class="listbox-option" role="menuitemcheckbox"
                                         :aria-checked="logFilters.error" x-on:click="toggleLogFilter('error')">
                                         <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
@@ -184,18 +184,18 @@
                             </x-table.dropdown>
                             {{-- Copy and download --}}
                             <x-table.dropdown panel-class="runtime-log-menu min-w-52!" role="menu">
-                                <x-slot:trigger><button type="button" title="Copy or Download Logs"
+                                <x-slot:trigger><button type="button" title="{{ __('Copy or Download Logs') }}"
                                     class="button" aria-haspopup="menu" :aria-expanded="open">
                                     <svg class="size-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                     </svg>
-                                    <span>Export</span>
+                                    <span>{{ __('Export') }}</span>
                                     <x-reicon name="chevron-down" class="size-3 transition-transform" ::class="open ? 'rotate-180' : ''" />
                                 </button></x-slot:trigger>
                                 <div x-data="{ downloadingAllLogs: false }">
-                                    <p class="px-2 py-1.5 text-xs text-neutral-500 dark:text-fg-dim">Copied and downloaded logs hide secrets. The live view shows the raw output.</p>
+                                    <p class="px-2 py-1.5 text-xs text-neutral-500 dark:text-fg-dim">{{ __('Copied and downloaded logs hide secrets. The live view shows the raw output.') }}</p>
                                     <button type="button" role="menuitem" class="listbox-option"
                                         x-on:click="
                                             open = false;
@@ -210,11 +210,11 @@
                                                 Livewire.dispatch('error', ['Failed to copy logs to clipboard.']);
                                             });
                                         ">
-                                        <span class="flex-1 text-left">Copy logs</span>
+                                        <span class="flex-1 text-left">{{ __('Copy logs') }}</span>
                                     </button>
                                     <button type="button" role="menuitem" class="listbox-option"
                                         x-on:click="downloadLogs(); open = false">
-                                        <span class="flex-1 text-left">Download logs</span>
+                                        <span class="flex-1 text-left">{{ __('Download logs') }}</span>
                                     </button>
                                     <button type="button" role="menuitem" x-on:click="
                                         downloadingAllLogs = true;
@@ -237,7 +237,7 @@
                                         :disabled="downloadingAllLogs"
                                         :class="{ 'opacity-50 cursor-not-allowed': downloadingAllLogs }"
                                         class="listbox-option">
-                                        <span x-show="!downloadingAllLogs" class="flex-1 text-left">Download all logs</span>
+                                        <span x-show="!downloadingAllLogs" class="flex-1 text-left">{{ __('Download all logs') }}</span>
                                         <span x-show="downloadingAllLogs" class="flex items-center gap-2">
                                             <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

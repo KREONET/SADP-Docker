@@ -25,7 +25,7 @@ trait ManagesServerPackageUpdates
                 throw $e;
             }
             $this->auditPatchAction('reboot_requested', ['result' => 'started']);
-            $this->dispatch('success', 'Reboot started. The server is back in a few minutes, and Coolify then checks it again.');
+            $this->dispatch('success', __('Reboot started. The server is back in a few minutes, and Coolify then checks it again.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

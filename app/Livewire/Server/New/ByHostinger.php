@@ -198,7 +198,7 @@ class ByHostinger extends Component
 
         if (! $token) {
             $this->loading_data = false;
-            $this->dispatch('error', 'Please select a valid Hostinger token.');
+            $this->dispatch('error', __('Please select a valid Hostinger token.'));
 
             return;
         }
@@ -318,7 +318,7 @@ class ByHostinger extends Component
             $this->authorize('create', Server::class);
 
             if (Team::serverLimitReached()) {
-                return $this->dispatch('error', 'You have reached the server limit for your subscription.');
+                return $this->dispatch('error', __('You have reached the server limit for your subscription.'));
             }
 
             $privateKey = PrivateKey::ownedByCurrentTeam()->findOrFail($this->private_key_id);

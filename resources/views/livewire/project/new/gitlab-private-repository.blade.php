@@ -3,7 +3,7 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>GitLab App</h2>
+                    <h2>{{ __('GitLab App') }}</h2>
                     <p>{{ __('Connect a GitLab App before selecting a private repository.') }}</p>
                 </div>
             </div>

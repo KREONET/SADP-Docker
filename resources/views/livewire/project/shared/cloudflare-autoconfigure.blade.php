@@ -6,9 +6,9 @@
 
 <div x-data="{ dnsEntriesOpen: false }" class="relative" @click.outside="dnsEntriesOpen = false">
     <button type="button" class="button" @click="dnsEntriesOpen = !dnsEntriesOpen" aria-haspopup="menu"
-        x-bind:aria-expanded="dnsEntriesOpen" title="DNS checks and records for this server">
+        x-bind:aria-expanded="dnsEntriesOpen" title="{{ __('DNS checks and records for this server') }}">
         <x-reicon name="globe" class="size-3.5" />
-        DNS
+        {{ __('DNS') }}
         <span class="inline-flex transition-transform" :class="dnsEntriesOpen && 'rotate-180'">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" class="size-3.5 shrink-0 opacity-60">
@@ -177,7 +177,7 @@
                             </x-callout>
                         @else
                             @if (collect($dnsProviderProposals)->isNotEmpty() && collect($dnsHints)->contains(fn (array $record): bool => ! \App\Support\DnsRecordHints::isPublicAddress($record['value'])))
-                                <x-callout type="warning" title="No public IP">
+                                <x-callout type="warning" :title="__('No public IP')">
                                     {{ \App\Support\DnsRecordHints::NO_PUBLIC_ADDRESS_MESSAGE }}
                                 </x-callout>
                             @endif
@@ -234,7 +234,7 @@
                                         · {{ __('BIND zone format') }}
                                     </p>
                                     <button type="button" class="button shrink-0"
-                                        title="Copy as BIND-compatible zone file" x-data="copyButton"
+                                        title="{{ __('Copy as BIND-compatible zone file') }}" x-data="copyButton"
                                         @click.prevent="copy(@js($dnsCopyText))">
                                         <span x-text="copied ? @js(__('Copied')) : @js(__('Copy all'))"></span>
                                     </button>

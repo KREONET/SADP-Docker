@@ -223,15 +223,15 @@ class Navbar extends Component
                 }
                 break;
             case 'stopping':
-                // $this->dispatch('info', 'Proxy is stopping.');
+                // $this->dispatch('info', __('Proxy is stopping.'));
                 $this->lastNotifiedStatus = $this->proxyStatus;
                 break;
             case 'starting':
-                // $this->dispatch('info', 'Proxy is starting.');
+                // $this->dispatch('info', __('Proxy is starting.'));
                 $this->lastNotifiedStatus = $this->proxyStatus;
                 break;
             case 'restarting':
-                // $this->dispatch('info', 'Proxy is restarting.');
+                // $this->dispatch('info', __('Proxy is restarting.'));
                 $this->lastNotifiedStatus = $this->proxyStatus;
                 break;
             case 'error':

@@ -165,8 +165,8 @@
     <section class="application-settings-section">
         <div class="application-settings-section-header">
             <div>
-                <h2>UI scale</h2>
-                <p>Choose the size of text and controls. Phones always use 100%.</p>
+                <h2>{{ __('UI scale') }}</h2>
+                <p>{{ __('Choose the size of text and controls. Phones always use 100%.') }}</p>
             </div>
         </div>
         <div class="application-settings-section-body grid gap-3 sm:grid-cols-3">
@@ -239,8 +239,8 @@
     <section class="application-settings-section">
         <div class="application-settings-section-header">
             <div>
-                <h2>Navigation style</h2>
-                <p>Choose how the top bar and sidebars sit on the page.</p>
+                <h2>{{ __('Navigation style') }}</h2>
+                <p>{{ __('Choose how the top bar and sidebars sit on the page.') }}</p>
             </div>
         </div>
         <div class="application-settings-section-body grid gap-3 sm:grid-cols-2">
@@ -291,8 +291,8 @@
     <section class="application-settings-section">
         <div class="application-settings-section-header">
             <div>
-                <h2>Style</h2>
-                <p>Choose how buttons and sidebar items look.</p>
+                <h2>{{ __('Style') }}</h2>
+                <p>{{ __('Choose how buttons and sidebar items look.') }}</p>
             </div>
         </div>
         <div class="application-settings-section-body grid gap-3 sm:grid-cols-2">
@@ -339,8 +339,8 @@
     <section class="application-settings-section">
         <div class="application-settings-section-header">
             <div>
-                <h2>Chart times</h2>
-                <p>Choose which times chart tooltips show.</p>
+                <h2>{{ __('Chart times') }}</h2>
+                <p>{{ __('Choose which times chart tooltips show.') }}</p>
             </div>
         </div>
         <div class="application-settings-section-body grid gap-3 sm:grid-cols-2">
@@ -392,21 +392,21 @@
                     style="box-shadow: 0 0 0 1px var(--coollabs-hairline), var(--shadow-modal)">
                     <header class="shrink-0">
                         <div class="min-w-0 flex-1 py-0.5">
-                            <h3 id="custom-theme-title" class="truncate">Custom theme</h3>
+                            <h3 id="custom-theme-title" class="truncate">{{ __('Custom theme') }}</h3>
                             <p class="mt-0.5 text-xs text-neutral-500 dark:text-fg-dim">
-                                Colors of Coolify in this browser. Text stays readable on every color.
+                                {{ __('Colors of Coolify in this browser. Text stays readable on every color.') }}
                             </p>
                         </div>
                         <button type="button" @click="dialogOpen = false"
                             class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-neutral-500 outline-0 transition-colors hover:bg-neutral-100 hover:text-black focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent dark:text-fg-faint dark:hover:bg-white/[0.06] dark:hover:text-fg">
                             <x-reicon name="x" class="size-4" />
-                            <span class="sr-only">Close</span>
+                            <span class="sr-only">{{ __('Close') }}</span>
                         </button>
                     </header>
                     <template x-if="dialogOpen">
                         <div class="application-settings-section-body grid min-h-0 flex-1 gap-6 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
                             <div>
-                                <div class="mb-2 text-xs font-medium text-neutral-500 dark:text-fg-dim">Presets</div>
+                                <div class="mb-2 text-xs font-medium text-neutral-500 dark:text-fg-dim">{{ __('Presets') }}</div>
                                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                                     <template x-for="preset in presets" :key="preset.name">
                                         <button type="button" @click="setDraft(preset.theme && { ...preset.theme })"
@@ -429,14 +429,14 @@
                                         :style="`background: ${draftColors.sidebar}; color: ${textOn(draftColors.sidebar)}`">
                                         <div class="mb-2 px-2 text-sm font-semibold">Coolify</div>
                                         <div class="flex items-center gap-2 rounded-md px-2 py-1.5 opacity-75">
-                                            <x-reicon name="dashboard" class="size-3.5" /> Dashboard
+                                            <x-reicon name="dashboard" class="size-3.5" /> {{ __('Dashboard') }}
                                         </div>
                                         <div class="flex items-center gap-2 rounded-md px-2 py-1.5 font-medium"
                                             :style="`background: ${draftColors.selected}; color: ${textOn(draftColors.selected)}`">
-                                            <x-reicon name="projects" class="size-3.5" /> Projects
+                                            <x-reicon name="projects" class="size-3.5" /> {{ __('Projects') }}
                                         </div>
                                         <div class="flex items-center gap-2 rounded-md px-2 py-1.5 opacity-75">
-                                            <x-reicon name="servers" class="size-3.5" /> Servers
+                                            <x-reicon name="servers" class="size-3.5" /> {{ __('Servers') }}
                                             <span class="ml-auto rounded-full px-1.5 text-[10px] font-semibold"
                                                 :style="`background: ${accentFill(draftColors.accent)}; color: ${accentTextOn(draftColors.accent)}`">3</span>
                                         </div>
@@ -444,25 +444,25 @@
                                     <div class="flex min-w-0 flex-1 flex-col gap-2 p-3"
                                         :style="`background: ${draftColors.background}; color: ${textOn(draftColors.background)}`">
                                         <div class="flex items-center justify-between gap-2">
-                                            <span class="text-sm font-semibold">Projects</span>
+                                            <span class="text-sm font-semibold">{{ __('Projects') }}</span>
                                             <span class="rounded-md px-2 py-1 text-[11px] font-medium"
-                                                :style="`background: ${accentFill(draftColors.accent)}; color: ${accentTextOn(draftColors.accent)}`">+ New</span>
+                                                :style="`background: ${accentFill(draftColors.accent)}; color: ${accentTextOn(draftColors.accent)}`">{{ __('+ New') }}</span>
                                         </div>
                                         <div class="rounded-md border p-2.5"
                                             :style="`background: color-mix(in oklab, ${textOn(draftColors.background)} 4%, ${draftColors.background}); border-color: color-mix(in oklab, ${textOn(draftColors.background)} 14%, ${draftColors.background})`">
-                                            <div class="font-medium">My first project</div>
+                                            <div class="font-medium">{{ __('My first project') }}</div>
                                             <div class="mt-0.5 opacity-60">production</div>
                                         </div>
                                         <div class="rounded-md border p-2.5"
                                             :style="`background: color-mix(in oklab, ${textOn(draftColors.background)} 4%, ${draftColors.background}); border-color: color-mix(in oklab, ${textOn(draftColors.background)} 14%, ${draftColors.background})`">
-                                            <div class="font-medium">Website</div>
+                                            <div class="font-medium">{{ __('Website') }}</div>
                                             <div class="mt-0.5 opacity-60">staging</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div class="mb-2 text-xs font-medium text-neutral-500 dark:text-fg-dim">Colors</div>
+                                    <div class="mb-2 text-xs font-medium text-neutral-500 dark:text-fg-dim">{{ __('Colors') }}</div>
                                     <div class="flex flex-col gap-2.5">
                                         @foreach ([
                                             'sidebar' => ['Sidebar', 'The navigation on the left'],
@@ -495,7 +495,7 @@
 
                                 <div>
                                     <label for="custom-theme-share-code"
-                                        class="mb-2 block text-xs font-medium text-neutral-500 dark:text-fg-dim">Share code</label>
+                                        class="mb-2 block text-xs font-medium text-neutral-500 dark:text-fg-dim">{{ __('Share code') }}</label>
                                     <div class="flex gap-2">
                                         <input id="custom-theme-share-code" x-ref="shareCode" type="text" autocomplete="off"
                                             spellcheck="false" :value="shareCode"
@@ -504,7 +504,7 @@
                                             :aria-invalid="shareCodeInvalid"
                                             class="input min-w-0 flex-1 font-mono text-sm"
                                             :class="shareCodeInvalid && 'border-error! ring-error!'" />
-                                        <button type="button" @click="copyShareCode()" aria-label="Copy share code"
+                                        <button type="button" @click="copyShareCode()" aria-label="{{ __('Copy share code') }}"
                                             class="button shrink-0 px-2.5">
                                             <x-reicon name="copy" x-show="!shareCodeCopied" class="size-4" />
                                             <x-reicon name="check" x-show="shareCodeCopied" x-cloak class="size-4 text-success" />
@@ -521,8 +521,8 @@
                     </template>
                     <footer
                         class="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-neutral-200 px-4 py-3 dark:border-white/[0.08]">
-                        <x-forms.button @click="dialogOpen = false">Cancel</x-forms.button>
-                        <x-forms.button isHighlighted @click="saveCustomTheme()">Save theme</x-forms.button>
+                        <x-forms.button @click="dialogOpen = false">{{ __('Cancel') }}</x-forms.button>
+                        <x-forms.button isHighlighted @click="saveCustomTheme()">{{ __('Save theme') }}</x-forms.button>
                     </footer>
                 </div>
             </div>

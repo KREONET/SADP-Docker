@@ -48,7 +48,7 @@ class GithubRunnerExecutions extends Component
                 CleanupGithubRunnerJob::dispatch($execution->id);
             }
             unset($this->executions);
-            $this->dispatch('success', 'Runner cancelled.');
+            $this->dispatch('success', __('Runner cancelled.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

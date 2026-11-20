@@ -149,7 +149,7 @@ class Danger extends Component
                 'database_uuid' => $this->resource->uuid,
                 'database_name' => $this->resource->name,
             ]);
-            $this->dispatch('success', 'Database flushed.');
+            $this->dispatch('success', __('Database flushed.'));
 
             return true;
         } catch (\Throwable $e) {

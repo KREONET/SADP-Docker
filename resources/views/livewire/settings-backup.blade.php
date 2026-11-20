@@ -13,12 +13,12 @@
 
                     <x-application.settings-section :title="__('Instance database')">
                         <div class="grid gap-4 lg:grid-cols-2">
-                            <x-forms.input label="Name" readonly :value="$database->name" />
+                            <x-forms.input :label="__('Name')" readonly :value="$database->name" />
                             <x-forms.input :label="__('Description')" id="description" />
                             <div class="lg:col-span-2">
                                 <x-forms.input label="UUID" readonly :value="$database->uuid" />
                             </div>
-                            <x-forms.input label="User" readonly :value="$database->postgres_user" />
+                            <x-forms.input :label="__('User')" readonly :value="$database->postgres_user" />
                         </div>
                     </x-application.settings-section>
                 </form>
@@ -26,15 +26,15 @@
                 <livewire:project.database.backup-edit :backup="$backup" :available-s3-storages="$s3s"
                     :status="data_get($database, 'status')" />
 
-                <x-application.settings-section title="Backup before update"
-                    description="Back up the Coolify database before an update is installed. If the backup fails, the update is not installed.">
+                <x-application.settings-section :title="__('Backup before update')"
+                    :description="__('Back up the Coolify database before an update is installed. If the backup fails, the update is not installed.')">
                     <div class="max-w-md">
-                        <x-forms.listbox id="is_backup_before_update_enabled" label="Database backup"
+                        <x-forms.listbox id="is_backup_before_update_enabled" :label="__('Database backup')"
                             onChange="instantSave" :options="[
                                 ['value' => true, 'label' => __('Enabled')],
                                 ['value' => false, 'label' => __('Disabled')],
                             ]"
-                            helper="Runs this backup once before every manual or automatic update, in addition to the schedule. It does not run when the backup schedule is disabled." />
+                            :helper="__('Runs this backup once before every manual or automatic update, in addition to the schedule. It does not run when the backup schedule is disabled.')" />
                     </div>
                 </x-application.settings-section>
 

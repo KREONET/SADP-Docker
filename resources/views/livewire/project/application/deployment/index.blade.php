@@ -205,13 +205,13 @@
                             <span>{{ __('Source') }}</span>
                             <span>{{ __('Commit') }}</span>
                             @unless ($embedded)
-                                <x-table.sort-header label="Started" asc="oldest" desc="newest" first="desc"
+                                <x-table.sort-header :label="__('Started')" asc="oldest" desc="newest" first="desc"
                                     action="setDeploymentSort" :current="$deploymentSort" />
                             @endunless
                             <span>{{ __('Duration') }}</span>
                             <span>{{ __('Server') }}</span>
                             @if ($embedded)
-                                <span class="text-right">Status</span>
+                                <span class="text-right">{{ __('Status') }}</span>
                             @endif
                         </div>
 
@@ -342,10 +342,10 @@
                                     title="{{ $statusLabel }} · {{ formatDateInServerTimezone(data_get($deployment, 'created_at'), data_get($application, 'destination.server')) }}">
                                     <span>{{ \Carbon\Carbon::parse(data_get($deployment, 'created_at'))->diffForHumans(syntax: \Carbon\CarbonInterface::DIFF_ABSOLUTE, short: true) }}</span>
                                     <x-loading compact x-cloak x-show="selecting === '{{ data_get($deployment, 'deployment_uuid') }}'"
-                                        aria-label="Loading deployment logs..." />
+                                        :aria-label="__('Loading deployment logs...')" />
                                     @if ($deploymentStatus === 'in_progress')
                                         <x-loading compact x-show="selecting !== '{{ data_get($deployment, 'deployment_uuid') }}'"
-                                            aria-label="Deployment in progress" />
+                                            :aria-label="__('Deployment in progress')" />
                                     @else
                                     <span x-show="selecting !== '{{ data_get($deployment, 'deployment_uuid') }}'" @class([
                                         'size-2 shrink-0 rounded-full',
@@ -364,7 +364,7 @@
 
                         @if ($embedded)
                             <div wire:loading.flex wire:target="defaultTake" class="hidden justify-center py-6">
-                                <x-loading aria-label="Loading deployments..." class="[&_.loading-indicator]:size-5" />
+                                <x-loading :aria-label="__('Loading deployments...')" class="[&_.loading-indicator]:size-5" />
                             </div>
                         @endif
                     </div>

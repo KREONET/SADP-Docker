@@ -93,7 +93,7 @@ class Heading extends Component
                 return;
             }
 
-            $this->dispatch('success', 'Docker compose file loaded.');
+            $this->dispatch('success', __('Docker compose file loaded.'));
             $this->dispatch('composeFileLoaded')->to(General::class);
             $this->dispatch('storageCountsChanged')->to(Storage::class);
             $this->dispatch('refreshEnvs')->to(All::class);
@@ -139,7 +139,7 @@ class Heading extends Component
             return;
         }
 
-        $this->dispatch('error', 'Failed to stop the application.', $event['message']);
+        $this->dispatch('error', __('Failed to stop the application.'), $event['message']);
     }
 
     public function manualCheckStatus()

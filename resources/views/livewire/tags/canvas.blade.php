@@ -1,6 +1,6 @@
 <div class="h-full">
     <x-slot:title>
-        Tags > Canvas | Coolify
+        {{ __('Tags > Canvas | Coolify') }}
     </x-slot>
     <div data-environment-canvas data-mode="tags" data-endpoint="/tags/canvas"
         data-team="{{ $teamId }}" data-user="{{ auth()->id() }}"
@@ -16,13 +16,13 @@
                 <button type="button" x-data x-on:click="$dispatch('open-new-tag')"
                     class="button button-highlighted whitespace-nowrap">
                     <x-reicon name="plus" class="size-3.5" />
-                    New tag
+                    {{ __('New tag') }}
                 </button>
             @endcan
         </div>
     </div>
     @can('create', App\Models\Tag::class)
-        <x-modal-input title="New tag" x-on:open-new-tag.window="modalOpen = true">
+        <x-modal-input :title="__('New tag')" x-on:open-new-tag.window="modalOpen = true">
             <x-slot:content></x-slot:content>
             @include('livewire.tags.partials.new-tag-form')
         </x-modal-input>

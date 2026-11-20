@@ -96,7 +96,7 @@
                                         @if (filled(data_get($execution, 'filename')))
                                             <span class="truncate font-mono text-[12px] text-black dark:text-fg"
                                                 title="{{ data_get($execution, 'filename') }}">{{ basename(data_get($execution, 'filename')) }}</span>
-                                            <x-copy-button :value="data_get($execution, 'filename')" label="Copy archive path" />
+                                            <x-copy-button :value="data_get($execution, 'filename')" :label="__('Copy archive path')" />
                                         @else
                                             <span class="text-neutral-500 dark:text-fg-faint">-</span>
                                         @endif

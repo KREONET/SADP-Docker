@@ -244,7 +244,7 @@ class Form extends Component
             $this->storage->save();
             $this->dispatch('storage-status-changed', isUsable: $this->isUsable);
 
-            return $this->dispatch('success', 'Connection is working.', match (true) {
+            return $this->dispatch('success', __('Connection is working.'), match (true) {
                 $switchedToVirtualHostedStyle => 'The provider rejects path-style URLs, so "Use path-style URLs" is now off. Save to keep it.',
                 $testedStorage->isS3() => 'Tested with "ListObjectsV2" action.',
                 default => 'Tested by listing the backup directory.',
@@ -313,7 +313,7 @@ class Form extends Component
         $this->storage->forceFill(['sftp_host_key' => null, 'is_usable' => false])->save();
         $this->isUsable = false;
         $this->dispatch('storage-status-changed', isUsable: false);
-        $this->dispatch('success', 'Host key removed.', 'Validate the connection to save the current host key of the server.');
+        $this->dispatch('success', __('Host key removed.'), 'Validate the connection to save the current host key of the server.');
     }
 
     public function updatedEndpointParts(): void

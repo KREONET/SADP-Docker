@@ -15,7 +15,7 @@
         }
     })">
     <x-slot:title>
-        Security | Coolify
+        {{ __('Security | Coolify') }}
     </x-slot>
 
     <div class="min-w-0">

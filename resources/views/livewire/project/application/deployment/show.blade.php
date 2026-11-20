@@ -287,12 +287,10 @@
         :class="fullscreen ? '' : '2xl:sticky 2xl:top-4'">
             <div id="screen" :class="fullscreen ? 'fullscreen flex flex-col' : 'mt-2 flex flex-1 min-h-0 flex-col overflow-hidden lg:mt-0'">
                 @if ($this->hostKeyChangedSourceUrl)
-                    <x-callout type="danger" title="The SSH host key of the Git host changed" class="mb-2 shrink-0">
-                        The Git host sent an SSH host key that is not the saved or published key. This can be an attack. Ask the
-                        administrator of the Git host if the key changed. Then fetch the current key, compare its
-                        fingerprint with the fingerprint from the administrator, and accept it only if they are the same.
+                    <x-callout type="danger" :title="__('The SSH host key of the Git host changed')" class="mb-2 shrink-0">
+                        {{ __('The Git host sent an SSH host key that is not the saved or published key. This can be an attack. Ask the administrator of the Git host if the key changed. Then fetch the current key, compare its fingerprint with the fingerprint from the administrator, and accept it only if they are the same.') }}
                         <a href="{{ $this->hostKeyChangedSourceUrl }}#ssh-host-keys" {{ wireNavigate() }}
-                            class="font-medium underline underline-offset-2">Open SSH host keys</a>
+                            class="font-medium underline underline-offset-2">{{ __('Open SSH host keys') }}</a>
                     </x-callout>
                 @endif
                 <div @if ($isKeepAliveOn) wire:poll.2000ms="polling" @endif
@@ -395,28 +393,28 @@
                             </div>
                             <div class="runtime-log-menus">
                             <x-table.dropdown panel-class="runtime-log-menu min-w-48! max-h-none!" role="menu">
-                                <x-slot:trigger><button type="button" title="View Options"
+                                <x-slot:trigger><button type="button" title="{{ __('View Options') }}"
                                     class="button" aria-haspopup="menu" :aria-expanded="open">
                                     <svg class="size-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                                     </svg>
-                                    <span>View</span>
+                                    <span>{{ __('View') }}</span>
                                     <x-reicon name="chevron-down" class="size-3 transition-transform" ::class="open ? 'rotate-180' : ''" />
                                 </button></x-slot:trigger>
                                 <div>
-                                    <p class="runtime-log-menu-label">Display</p>
+                                    <p class="runtime-log-menu-label">{{ __('Display') }}</p>
                                     <button type="button" class="listbox-option" role="menuitemcheckbox"
                                         :aria-checked="showTimestamps" x-on:click="showTimestamps = !showTimestamps">
-                                        <span class="flex-1 text-left">Timestamps</span>
+                                        <span class="flex-1 text-left">{{ __('Timestamps') }}</span>
                                         <span x-show="showTimestamps">✓</span>
                                     </button>
                                     @can('update', $application)
                                         <button type="button" class="listbox-option" role="menuitemcheckbox"
                                             aria-checked="{{ $is_debug_enabled ? 'true' : 'false' }}" wire:click="toggleDebug">
-                                            <span class="flex-1 text-left">Debug logs</span>
-                                            <x-loading compact wire:loading.flex wire:target="toggleDebug" class="hidden" aria-label="Loading debug logs..." />
+                                            <span class="flex-1 text-left">{{ __('Debug logs') }}</span>
+                                            <x-loading compact wire:loading.flex wire:target="toggleDebug" class="hidden" :aria-label="__('Loading debug logs...')" />
                                             @if ($is_debug_enabled)
                                                 <span wire:loading.remove wire:target="toggleDebug">✓</span>
                                             @endif
@@ -425,25 +423,25 @@
                                 </div>
                             </x-table.dropdown>
                             <x-table.dropdown panel-class="runtime-log-menu min-w-52!" role="menu">
-                                <x-slot:trigger><button type="button" title="Copy or Download Logs"
+                                <x-slot:trigger><button type="button" title="{{ __('Copy or Download Logs') }}"
                                     class="button" aria-haspopup="menu" :aria-expanded="open">
                                     <svg class="size-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                     </svg>
-                                    <span>Export</span>
+                                    <span>{{ __('Export') }}</span>
                                     <x-reicon name="chevron-down" class="size-3 transition-transform" ::class="open ? 'rotate-180' : ''" />
                                 </button></x-slot:trigger>
                                 <div x-data="{ downloadingAllLogs: false }">
-                                    <p class="px-2 py-1.5 text-xs text-neutral-500 dark:text-fg-dim">Copied and downloaded logs hide secrets.</p>
+                                    <p class="px-2 py-1.5 text-xs text-neutral-500 dark:text-fg-dim">{{ __('Copied and downloaded logs hide secrets.') }}</p>
                                     <button type="button" role="menuitem" class="listbox-option"
                                         x-on:click="copyLogs(); open = false">
-                                        <span class="flex-1 text-left">Copy visible logs</span>
+                                        <span class="flex-1 text-left">{{ __('Copy visible logs') }}</span>
                                     </button>
                                     <button type="button" role="menuitem" class="listbox-option"
                                         x-on:click="downloadLogs(); open = false">
-                                        <span class="flex-1 text-left">Download visible logs</span>
+                                        <span class="flex-1 text-left">{{ __('Download visible logs') }}</span>
                                     </button>
                                     @can('update', $application)
                                         <button type="button" role="menuitem" x-on:click="
@@ -467,7 +465,7 @@
                                             :disabled="downloadingAllLogs"
                                             :class="{ 'opacity-50 cursor-not-allowed': downloadingAllLogs }"
                                             class="listbox-option">
-                                            <span x-show="!downloadingAllLogs" class="flex-1 text-left">Download full log (with debug)</span>
+                                            <span x-show="!downloadingAllLogs" class="flex-1 text-left">{{ __('Download full log (with debug)') }}</span>
                                             <span x-show="downloadingAllLogs" class="flex items-center gap-2">
                                                 <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
