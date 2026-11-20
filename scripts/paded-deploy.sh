@@ -1,7 +1,7 @@
 #!/bin/bash
-## Builds the PADED image from this checkout and runs it in place of the official Coolify image.
+## Builds the SADP-Docker image from this checkout and runs it in place of the official Coolify image.
 ##
-## scripts/install.sh installs the official Coolify image, which has none of the PADED changes.
+## scripts/install.sh installs the official Coolify image, which has none of the SADP-Docker changes.
 ## Run this after install.sh, and again after every `git pull`, to deploy what is in this checkout.
 ##
 ## Environment variables:
@@ -45,19 +45,19 @@ else
     echo "1/3 Skipping build, using ${IMAGE}"
 fi
 
-echo "2/3 Installing the PADED compose files..."
+echo "2/3 Installing the SADP-Docker compose files..."
 DATE=$(date +%Y%m%d-%H%M%S)
 cp "$ENV_FILE" "$ENV_FILE-$DATE"
 cp "$REPO_DIR/docker-compose.yml" "$REPO_DIR/docker-compose.prod.yml" "$SOURCE_DIR/"
-# Restarts keep the PADED image, and auto-update must not replace it with the official one
+# Restarts keep the SADP-Docker image, and auto-update must not replace it with the official one
 set_env_var "LATEST_IMAGE" "$IMAGE_TAG"
 set_env_var "AUTOUPDATE" "false"
 
-echo "3/3 Starting PADED..."
+echo "3/3 Starting SADP-Docker..."
 cd "$SOURCE_DIR"
 docker compose --env-file "$ENV_FILE" -f docker-compose.yml -f docker-compose.prod.yml \
     up -d --remove-orphans --wait --wait-timeout 300
 
 echo ""
-echo "PADED is running ${IMAGE}. Database migrations ran when the container started."
+echo "SADP-Docker is running ${IMAGE}. Database migrations ran when the container started."
 echo "Previous .env saved as ${ENV_FILE}-${DATE}"

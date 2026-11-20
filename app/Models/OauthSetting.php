@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 class OauthSetting extends Model
 {
     /**
-     * Login providers PADED offers. Other providers were removed and their settings deleted.
+     * Login providers SADP-Docker offers. Other providers were removed and their settings deleted.
      *
      * @var list<string>
      */
@@ -66,7 +66,7 @@ class OauthSetting extends Model
     }
 
     /**
-     * PADED signs users in only through OpenID Connect and Authentik.
+     * SADP-Docker signs users in only through OpenID Connect and Authentik.
      */
     public static function isSupported(?string $provider): bool
     {

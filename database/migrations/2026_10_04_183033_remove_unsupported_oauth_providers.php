@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * PADED signs users in only through OpenID Connect and Authentik. Deletes the settings (with their
+ * SADP-Docker signs users in only through OpenID Connect and Authentik. Deletes the settings (with their
  * client secrets) of every other login provider, and the identities linked through them: a stale
  * identity would otherwise block linking the same account to OIDC by email.
  */

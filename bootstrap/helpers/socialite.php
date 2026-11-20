@@ -14,7 +14,7 @@ function oauth_default_redirect_uri(string $provider): string
 }
 
 /**
- * Socialite driver for a login provider. PADED supports only OpenID Connect and Authentik.
+ * Socialite driver for a login provider. SADP-Docker supports only OpenID Connect and Authentik.
  */
 function get_socialite_provider(string $provider)
 {

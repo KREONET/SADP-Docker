@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * PADED Swarm clusters run workloads on the manager node too, so a single-server cluster must
+     * SADP-Docker Swarm clusters run workloads on the manager node too, so a single-server cluster must
      * be able to place applications. Applications that already run on Swarm keep their setting.
      */
     public function up(): void

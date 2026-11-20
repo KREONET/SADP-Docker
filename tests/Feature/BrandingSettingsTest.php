@@ -51,8 +51,8 @@ function brandingUpload(string $name, string $contents): UploadedFile
     return UploadedFile::fake()->createWithContent($name, $contents);
 }
 
-it('uses PADED as the default site name and no custom logo', function () {
-    expect(brand_name())->toBe('PADED')
+it('uses SADP-Docker as the default site name and no custom logo', function () {
+    expect(brand_name())->toBe('SADP-Docker')
         ->and(brand_logo_url())->toBeNull();
 });
 
@@ -80,7 +80,7 @@ it('falls back to the default name when the site name is cleared', function () {
 
     Once::flush();
     expect(InstanceSettings::get()->brand_name)->toBeNull()
-        ->and(brand_name())->toBe('PADED');
+        ->and(brand_name())->toBe('SADP-Docker');
 });
 
 it('rejects site names that are too long or contain markup', function (string $name) {

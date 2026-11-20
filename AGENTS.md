@@ -38,7 +38,7 @@ The main checkout serves its branch at `localhost:8000` (Reverb `6001`, terminal
 
 ## Updates
 
-PADED has no in-app update feature: the Upgrade button, the automatic update job, and the update check settings were removed, because upstream's `upgrade.sh` installs the official Coolify image over PADED. Do not reintroduce them. New versions are published on GitHub Releases (`constants.coolify.github_releases_url`), and servers update with `git pull && sudo bash scripts/paded-deploy.sh`. `CheckForUpdatesJob` stays: it only refreshes `versions.json` for Traefik, Sentinel, and helper image versions.
+SADP-Docker has no in-app update feature: the Upgrade button, the automatic update job, and the update check settings were removed, because upstream's `upgrade.sh` installs the official Coolify image over SADP-Docker. Do not reintroduce them. New versions are published on GitHub Releases (`constants.coolify.github_releases_url`), and servers update with `git pull && sudo bash scripts/paded-deploy.sh`. `CheckForUpdatesJob` stays: it only refreshes `versions.json` for Traefik, Sentinel, and helper image versions.
 
 ## Common Commands
 
