@@ -118,7 +118,7 @@
             :helper="__('Manage database, persistent volume, and directory backup schedules for this service.')">
             @can('update', $service)
                 <x-slot:actions>
-                    <x-modal-input title="Import backup" buttonTitle="Import backup">
+                    <x-modal-input :title="__('Import backup')" :buttonTitle="__('Import backup')">
                         <livewire:project.service.import-backup :service="$service"
                             wire:key="service-import-backup-{{ $service->id }}" />
                     </x-modal-input>
@@ -223,8 +223,8 @@
             </div>
         </div>
 
-        <x-application.settings-section title="Schedules"
-            helper="Database, persistent volume, and directory backup schedules for this service."
+        <x-application.settings-section :title="__('Schedules')"
+            :helper="__('Database, persistent volume, and directory backup schedules for this service.')"
             :flush="$backups->isNotEmpty() || $databaseBackups->isNotEmpty()">
             <x-table.loading target="openSchedule" :text="__('Loading schedule...')" />
 
@@ -237,12 +237,12 @@
                 <div class="data-table w-full overflow-x-auto" x-show="filteredBackups.length > 0">
                     <div class="flex min-w-[64rem] flex-col">
                     <div class="data-table-header backup-table-grid service-backup-table-grid">
-                        <x-table.sort-header label="Target" asc="target_asc" desc="target_desc" />
-                        <x-table.sort-header label="Type" asc="type_asc" desc="type_desc" />
-                        <x-table.sort-header label="Schedule" asc="schedule_asc" desc="schedule_desc" />
-                        <x-table.sort-header label="Status" asc="status_asc" desc="status_desc" />
+                        <x-table.sort-header :label="__('Target')" asc="target_asc" desc="target_desc" />
+                        <x-table.sort-header :label="__('Type')" asc="type_asc" desc="type_desc" />
+                        <x-table.sort-header :label="__('Schedule')" asc="schedule_asc" desc="schedule_desc" />
+                        <x-table.sort-header :label="__('Status')" asc="status_asc" desc="status_desc" />
                         <x-table.sort-header label="S3" asc="s3_asc" desc="s3_desc" />
-                        <x-table.sort-header label="Last run" asc="lastrun_asc" desc="lastrun_desc" first="desc" />
+                        <x-table.sort-header :label="__('Last run')" asc="lastrun_asc" desc="lastrun_desc" first="desc" />
                         <span class="text-right">{{ __('Actions') }}</span>
                     </div>
 
@@ -277,9 +277,9 @@
                             </span>
                             <span class="min-w-0">
                                 <button type="button" class="table-filter-value"
-                                    title="Filter by Database"
+                                    title="{{ __('Filter by Database') }}"
                                     x-on:click.stop="typeFilter = typeFilter === 'database' ? 'all' : 'database'"
-                                    x-on:keydown.enter.stop>Database</button>
+                                    x-on:keydown.enter.stop>{{ __('Database') }}</button>
                             </span>
                             <span>{{ $databaseBackup->frequency }}</span>
                             <span><x-status-badge :status="$statusLabel" :type="$statusType" /></span>
@@ -289,13 +289,13 @@
                             <span>{{ $latestExecution?->finished_at?->diffForHumans() ?? ($status === 'running' ? __('Running now') : __('Never')) }}</span>
                             <span class="flex justify-end" x-on:click.stop x-on:keydown.enter.stop>
                                 @can('update', $service)
-                                    <x-table.row-actions label="Backup schedule actions">
+                                    <x-table.row-actions :label="__('Backup schedule actions')">
                                         <x-table.row-action
                                             :disabled="! str($databaseBackup->database->status)->startsWith('running')"
                                             :title="! str($databaseBackup->database->status)->startsWith('running') ? 'The database must be running to start a backup.' : null"
-                                            wire:click="backupNow('database', '{{ $databaseBackup->uuid }}')">Back up now</x-table.row-action>
+                                            wire:click="backupNow('database', '{{ $databaseBackup->uuid }}')">{{ __('Back up now') }}</x-table.row-action>
                                         <x-table.row-action
-                                            wire:click="openSchedule('{{ $databaseBackup->uuid }}')">Edit</x-table.row-action>
+                                            wire:click="openSchedule('{{ $databaseBackup->uuid }}')">{{ __('Edit') }}</x-table.row-action>
                                     </x-table.row-actions>
                                 @endcan
                             </span>
@@ -347,11 +347,11 @@
                             </span>
                             <span class="flex justify-end" x-on:click.stop x-on:keydown.enter.stop>
                                 @can('update', $service)
-                                    <x-table.row-actions label="Backup schedule actions">
+                                    <x-table.row-actions :label="__('Backup schedule actions')">
                                         <x-table.row-action
-                                            wire:click="backupNow('storage', '{{ $backup->uuid }}')">Back up now</x-table.row-action>
+                                            wire:click="backupNow('storage', '{{ $backup->uuid }}')">{{ __('Back up now') }}</x-table.row-action>
                                         <x-table.row-action
-                                            wire:click="openSchedule('{{ $backup->uuid }}')">Edit</x-table.row-action>
+                                            wire:click="openSchedule('{{ $backup->uuid }}')">{{ __('Edit') }}</x-table.row-action>
                                     </x-table.row-actions>
                                 @endcan
                             </span>

@@ -289,12 +289,12 @@ class Advanced extends Component
                 return;
             }
             if ($this->gpuCount !== $settings->gpu_count && filled($this->gpuCount) && ! preg_match(ApplicationSetting::GPU_COUNT_PATTERN, trim($this->gpuCount))) {
-                $this->dispatch('error', 'GPU count must be a number or "all".');
+                $this->dispatch('error', __('GPU count must be a number or "all".'));
 
                 return;
             }
             if ($this->gpuOptions !== $settings->gpu_options && ApplicationSetting::parseGpuOptions($this->gpuOptions) === null) {
-                $this->dispatch('error', 'GPU options must be key=value pairs (one per line) or a YAML mapping.');
+                $this->dispatch('error', __('GPU options must be key=value pairs (one per line) or a YAML mapping.'));
 
                 return;
             }
@@ -415,7 +415,7 @@ class Advanced extends Component
                 $this->resetDefaultLabels();
             }
 
-            $this->dispatch('success', 'Certificate resolver saved.');
+            $this->dispatch('success', __('Certificate resolver saved.'));
             $this->dispatch('configurationChanged');
         } catch (ValidationException $e) {
             throw $e;
@@ -468,7 +468,7 @@ class Advanced extends Component
             $this->application->settings->save();
             $this->auditSettingsUpdate($changedFields);
 
-            $this->dispatch('success', 'Rolling update drain time updated.');
+            $this->dispatch('success', __('Rolling update drain time updated.'));
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -500,7 +500,7 @@ class Advanced extends Component
             }
             $functionalServers = $servers->filter(fn ($server) => $server->isFunctional());
             if ($functionalServers->isEmpty()) {
-                $this->dispatch('error', 'Validate the server connection before you refresh GPUs.');
+                $this->dispatch('error', __('Validate the server connection before you refresh GPUs.'));
 
                 return;
             }
@@ -512,7 +512,7 @@ class Advanced extends Component
 
                 return;
             }
-            $this->dispatch('success', 'GPUs refreshed.');
+            $this->dispatch('success', __('GPUs refreshed.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }

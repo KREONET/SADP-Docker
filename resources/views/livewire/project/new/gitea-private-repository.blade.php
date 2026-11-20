@@ -12,7 +12,7 @@
                     description="{{ __('Create an app to grant Coolify access to selected repositories.') }}"
                     icon-name="sources">
                     <x-slot:contents>
-                        <x-modal-input buttonTitle="+ Add Gitea / Forgejo App" title="{{ __('New Gitea / Forgejo App') }}" closeOutside="false">
+                        <x-modal-input :buttonTitle="__('+ Add Gitea / Forgejo App')" title="{{ __('New Gitea / Forgejo App') }}" closeOutside="false">
                             <livewire:source.gitea.create />
                         </x-modal-input>
                     </x-slot:contents>
@@ -26,7 +26,7 @@
                     <h2>{{ __('Choose Gitea / Forgejo App') }}</h2>
                     <p>{{ __('Select the Gitea / Forgejo App that can access the repository you want to deploy.') }}</p>
                 </div>
-                <x-modal-input buttonTitle="+ Add Gitea / Forgejo App" title="{{ __('New Gitea / Forgejo App') }}" closeOutside="false">
+                <x-modal-input :buttonTitle="__('+ Add Gitea / Forgejo App')" title="{{ __('New Gitea / Forgejo App') }}" closeOutside="false">
                     <livewire:source.gitea.create />
                 </x-modal-input>
             </div>
@@ -122,11 +122,11 @@
                                     ]" />
                                 <x-forms.input type="number" id="port" label="{{ __('Port') }}"
                                     :readonly="$is_static || $build_pack === 'static'"
-                                    helper="Port the application listens on." />
+                                    :helper="__('Port the application listens on.')" />
                             @endif
                             @if ($is_static)
                                 <x-forms.input id="publish_directory" label="{{ __('Publish directory') }}"
-                                    helper="Directory containing the generated static assets." />
+                                    :helper="__('Directory containing the generated static assets.')" />
                             @endif
                         </div>
 
@@ -136,7 +136,7 @@
                                 defaultFile="/docker-compose.yaml" />
                         @else
                             <x-forms.input id="base_directory" label="{{ __('Base directory') }}" placeholder="/"
-                                helper="Repository directory used as the build root." />
+                                :helper="__('Repository directory used as the build root.')" />
                         @endif
                     </div>
                 </section>

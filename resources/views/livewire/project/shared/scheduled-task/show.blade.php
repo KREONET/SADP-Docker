@@ -1,5 +1,5 @@
 <div x-data="{ activeSection: 'general' }" class="flex min-w-0 flex-col gap-6">
-    <nav aria-label="Scheduled task sections"
+    <nav aria-label="{{ __('Scheduled task sections') }}"
         class="flex min-w-0 flex-wrap gap-1 border-b border-neutral-200 pb-2 dark:border-white/[0.08]">
         @foreach (['general' => 'General', 'executions' => 'Executions', ...(auth()->user()->can('update', $resource) ? ['danger' => 'Danger Zone'] : [])] as $sectionKey => $sectionLabel)
             <button type="button" @click="activeSection = '{{ $sectionKey }}'"
@@ -13,7 +13,7 @@
     </nav>
 
     @if (! $isEnabled && $task->disabled_reason)
-        <x-callout type="danger" title="Disabled because it keeps failing">
+        <x-callout type="danger" :title="__('Disabled because it keeps failing')">
             {{ $task->disabled_reason }} Fix the task, then click Enable.
         </x-callout>
     @endif
@@ -57,25 +57,25 @@
             </div>
             <div class="mt-2 md:w-1/2">
                 <x-forms.checkbox canGate="update" :canResource="$resource" :disabled="!auth()->user()->can('update', $resource)"
-                    id="useShell" label="Run in a shell"
-                    helper="Run the command with <span class='font-mono'>sh -c</span>, so you can use variables, pipes, and redirects. Turn it off for containers without a shell (distroless or scratch images): Coolify then splits the command into arguments and runs it directly." />
+                    id="useShell" :label="__('Run in a shell')"
+                    :helper="__('Run the command with <span class=\'font-mono\'>sh -c</span>, so you can use variables, pipes, and redirects. Turn it off for containers without a shell (distroless or scratch images): Coolify then splits the command into arguments and runs it directly.')" />
             </div>
         </x-application.settings-section>
     </form>
 
-    <x-application.settings-section x-show="activeSection === 'executions'" x-cloak id="task-executions-section" title="Recent executions"
+    <x-application.settings-section x-show="activeSection === 'executions'" x-cloak id="task-executions-section" :title="__('Recent executions')"
         :helper="__('Execution history refreshes automatically while a task is running.')" flush>
         <livewire:project.shared.scheduled-task.executions :taskId="$task->id" />
     </x-application.settings-section>
 
     @can('update', $resource)
         <div x-show="activeSection === 'danger'" x-cloak class="application-settings-form">
-            <x-application.settings-section title="Delete scheduled task"
-                description="Permanently remove this task and its execution history.">
-                <x-danger-zone title="This action cannot be undone.">
-                    <p>The task stops running and cannot be restored.</p>
+            <x-application.settings-section :title="__('Delete scheduled task')"
+                :description="__('Permanently remove this task and its execution history.')">
+                <x-danger-zone :title="__('This action cannot be undone.')">
+                    <p>{{ __('The task stops running and cannot be restored.') }}</p>
                     <x-slot:action>
-                        <x-modal-confirmation title="Delete scheduled task?" isErrorButton buttonTitle="Delete task"
+                        <x-modal-confirmation :title="__('Delete scheduled task?')" isErrorButton :buttonTitle="__('Delete task')"
                             submitAction="delete({{ $task->id }})"
                             :actions="[__('The selected scheduled task will be permanently deleted.')]"
                             confirmationText="{{ $task->name }}"

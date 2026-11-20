@@ -55,7 +55,7 @@
                     @disabled($disabled)
                     class="flex h-7! items-center gap-1 whitespace-nowrap rounded-md border border-neutral-200 pr-1.5 pl-2 text-[11px]! leading-none! tabular-nums text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black disabled:pointer-events-none disabled:opacity-35 dark:border-white/[0.08] dark:text-fg-dim dark:hover:bg-white/[0.06] dark:hover:text-fg">
                     <span x-text="selectedPageSize"></span>
-                    <span class="text-neutral-400 dark:text-fg-faint">/ page</span>
+                    <span class="text-neutral-400 dark:text-fg-faint">{{ __('/ page') }}</span>
                     <x-reicon name="chevron-down" class="size-3.5 shrink-0 text-neutral-400 dark:text-fg-faint" />
                 </button>
             </x-slot:trigger>

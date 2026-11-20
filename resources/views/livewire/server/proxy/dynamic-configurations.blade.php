@@ -27,7 +27,7 @@
 
                 <div x-init="$wire.initLoadDynamicConfigurations" class="contents">
                     <x-skeleton.settings-sections wire:loading.flex wire:target="initLoadDynamicConfigurations"
-                        label="Loading dynamic configurations" />
+                        :label="__('Loading dynamic configurations')" />
 
                     @if ($contents?->isNotEmpty())
                         @foreach ($contents as $fileName => $value)
@@ -58,7 +58,7 @@
                                         rows="8" />
                                 @else
                                     <p class="text-xs text-neutral-500 dark:text-fg-dim">
-                                        You do not have permission to view the contents of this configuration.
+                                        {{ __('You do not have permission to view the contents of this configuration.') }}
                                     </p>
                                 @endcan
                             </x-application.settings-section>

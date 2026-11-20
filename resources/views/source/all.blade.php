@@ -32,7 +32,7 @@
                                 <button type="button" @click="dropdownOpen = false"
                                     class="listbox-option justify-start! gap-2.5!" role="menuitem">
                                     <x-git-icon class="size-3.5 shrink-0 opacity-70" git="App\Models\GithubApp" />
-                                    GitHub App
+                                    {{ __('GitHub App') }}
                                 </button>
                             </x-slot:content>
                             <livewire:source.github.create />
@@ -42,17 +42,17 @@
                                 <button type="button" @click="dropdownOpen = false"
                                     class="listbox-option justify-start! gap-2.5!" role="menuitem">
                                     <x-git-icon class="size-3.5 shrink-0 opacity-70" git="App\Models\GitlabApp" />
-                                    GitLab App
+                                    {{ __('GitLab App') }}
                                 </button>
                             </x-slot:content>
                             <livewire:source.gitlab.create />
                         </x-modal-input>
-                        <x-modal-input title="New Gitea / Forgejo App" :closeOutside="false">
+                        <x-modal-input :title="__('New Gitea / Forgejo App')" :closeOutside="false">
                             <x-slot:content>
                                 <button type="button" @click="dropdownOpen = false"
                                     class="listbox-option justify-start! gap-2.5!" role="menuitem">
                                     <x-git-icon class="size-3.5 shrink-0 opacity-70" git="App\Models\GiteaApp" />
-                                    Gitea / Forgejo App
+                                    {{ __('Gitea / Forgejo App') }}
                                 </button>
                             </x-slot:content>
                             <livewire:source.gitea.create />

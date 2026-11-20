@@ -44,7 +44,7 @@
                     </a>
                 </x-slot:actions>
                 <x-api-disabled-callout class="mb-4"
-                    message="Enable API access before external services can call the deploy webhook." />
+                    :message="__('Enable API access before external services can call the deploy webhook.')" />
                 <x-forms.copy-input :label="__('Deploy webhook URL')" :text="$deploywebhook ?? ''" />
             </x-application.settings-section>
 
@@ -87,7 +87,7 @@
                                                 <x-forms.button type="button"
                                                     wire:click="generateSecret('{{ $provider['key'] }}')"
                                                     aria-label="Generate {{ $provider['name'] }} webhook secret">
-                                                    Generate
+                                                    {{ __('Generate') }}
                                                 </x-forms.button>
                                             </div>
                                         @else
@@ -102,12 +102,12 @@
                 </form>
             @elseif ($gitlabAppWebhook)
                 <x-application.settings-section id="manual-git-webhooks-section" :title="__('Manual Git webhooks')"
-                    helper="GitLab Apps cannot register repository webhooks, so add this webhook to the GitLab project yourself." flush>
+                    :helper="__('GitLab Apps cannot register repository webhooks, so add this webhook to the GitLab project yourself.')" flush>
                     <x-slot:actions>
                         @can('view', $resource->source)
                             <a class="button" href="{{ route('source.gitlab.show', ['gitlab_app_uuid' => $resource->source->uuid]) }}"
                                 {{ wireNavigate() }}>
-                                Source settings
+                                {{ __('Source settings') }}
                             </a>
                         @endcan
                         @if (filled($resource?->gitWebhook))
@@ -123,12 +123,10 @@
                         <div class="mb-4">
                             <h4 class="text-sm font-semibold text-black dark:text-fg">GitLab</h4>
                             <p class="mt-1 text-[13px] leading-5 text-neutral-500 dark:text-fg-dim">
-                                Add this URL in the GitLab project under Settings → Webhooks. Set the Secret token to
-                                the Webhook secret token from the source settings, and enable Push events and Merge
-                                request events.
+                                {{ __('Add this URL in the GitLab project under Settings → Webhooks. Set the Secret token to the Webhook secret token from the source settings, and enable Push events and Merge request events.') }}
                             </p>
                         </div>
-                        <x-forms.copy-input label="Webhook URL" :text="$gitlabAppWebhook" />
+                        <x-forms.copy-input :label="__('Webhook URL')" :text="$gitlabAppWebhook" />
                     </section>
                 </x-application.settings-section>
             @else
@@ -152,7 +150,7 @@
                     </a>
                 </x-slot:actions>
                 <x-api-disabled-callout class="mb-4"
-                    message="Enable API access before external services can call the deploy webhook." />
+                    :message="__('Enable API access before external services can call the deploy webhook.')" />
                 <x-forms.copy-input :label="__('Deploy webhook URL')" :text="$deploywebhook ?? ''" />
             </x-application.settings-section>
         </div>

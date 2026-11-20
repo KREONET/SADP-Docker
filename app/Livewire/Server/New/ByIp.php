@@ -137,7 +137,7 @@ class ByIp extends Component
 
     public function instantSave()
     {
-        // $this->dispatch('success', 'Application settings updated!');
+        // $this->dispatch('success', __('Application settings updated!'));
     }
 
     public function submit()
@@ -147,7 +147,7 @@ class ByIp extends Component
             $this->authorize('create', Server::class);
             $this->ip = Server::normalizeIp($this->ip);
             if (Server::sshEndpointInUse($this->ip, $this->port)) {
-                return $this->dispatch('error', 'A server with this IP/Domain and SSH port already exists.');
+                return $this->dispatch('error', __('A server with this IP/Domain and SSH port already exists.'));
             }
 
             if (is_null($this->private_key_id)) {

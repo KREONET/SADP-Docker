@@ -247,7 +247,7 @@ class ApiTokens extends Component
             $this->editForm->reset();
             $this->getTokens();
             $this->dispatch('api-token-updated');
-            $this->dispatch('success', 'API token updated.');
+            $this->dispatch('success', __('API token updated.'));
         } catch (\Exception $e) {
             return handleError($e, $this);
         }

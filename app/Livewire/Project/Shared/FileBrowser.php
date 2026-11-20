@@ -176,7 +176,7 @@ class FileBrowser extends Component
         try {
             $this->service()->makeDirectory($this->childPath($name));
             $this->loadEntries();
-            $this->dispatch('success', 'Folder created.');
+            $this->dispatch('success', __('Folder created.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -188,7 +188,7 @@ class FileBrowser extends Component
         try {
             $this->service()->createFile($this->childPath($name));
             $this->loadEntries();
-            $this->dispatch('success', 'File created.');
+            $this->dispatch('success', __('File created.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -200,7 +200,7 @@ class FileBrowser extends Component
         try {
             $this->service()->chmod($this->childPath($name), $mode);
             $this->loadEntries();
-            $this->dispatch('success', 'Permissions updated.');
+            $this->dispatch('success', __('Permissions updated.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -212,7 +212,7 @@ class FileBrowser extends Component
         try {
             $this->service()->rename($this->childPath($from), $this->childPath($newName));
             $this->loadEntries();
-            $this->dispatch('success', 'Renamed.');
+            $this->dispatch('success', __('Renamed.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -224,7 +224,7 @@ class FileBrowser extends Component
         try {
             $this->service()->delete($this->childPath($name));
             $this->loadEntries();
-            $this->dispatch('success', 'Deleted.');
+            $this->dispatch('success', __('Deleted.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -265,7 +265,7 @@ class FileBrowser extends Component
             $this->editorOpen = false;
             $this->editorContent = '';
             $this->loadEntries();
-            $this->dispatch('success', 'Saved.');
+            $this->dispatch('success', __('Saved.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -288,7 +288,7 @@ class FileBrowser extends Component
             $this->service()->upload($localTmp, $this->childPath($filename));
             $this->upload = null;
             $this->loadEntries();
-            $this->dispatch('success', 'Uploaded.');
+            $this->dispatch('success', __('Uploaded.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -315,7 +315,7 @@ class FileBrowser extends Component
             if ($s3Storage) {
                 if (count($this->pendingDownloads) >= self::MAX_PENDING_S3_DOWNLOADS
                     || ! RateLimiter::attempt('file-browser-s3-download:'.auth()->id(), 10, fn () => true, 3600)) {
-                    $this->dispatch('error', 'Too many downloads are in progress. Wait for them to finish, then try again.');
+                    $this->dispatch('error', __('Too many downloads are in progress. Wait for them to finish, then try again.'));
 
                     return;
                 }
@@ -511,7 +511,7 @@ class FileBrowser extends Component
         if (! $this->useHelper || ! collect($this->entries)->contains(fn (array $entry) => $entry['name'] === $name && $entry['type'] === 'symlink')) {
             return false;
         }
-        $this->dispatch('error', 'Symlinks cannot be opened in a container without a shell. Open the target path instead.');
+        $this->dispatch('error', __('Symlinks cannot be opened in a container without a shell. Open the target path instead.'));
 
         return true;
     }

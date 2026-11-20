@@ -6,17 +6,17 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>Passkeys</h2>
-                    <p>Sign in with your fingerprint, face, or a security key. A passkey sign-in skips two-factor authentication.</p>
+                    <h2>{{ __('Passkeys') }}</h2>
+                    <p>{{ __('Sign in with your fingerprint, face, or a security key. A passkey sign-in skips two-factor authentication.') }}</p>
                 </div>
                 @if ($available && ! $show_form)
-                    <a class="button" href="{{ route('profile.passkeys.confirm') }}">Add passkey</a>
+                    <a class="button" href="{{ route('profile.passkeys.confirm') }}">{{ __('Add passkey') }}</a>
                 @endif
             </div>
             <div class="application-settings-section-body flex flex-col gap-4">
                 @unless ($available)
-                    <x-callout type="info" title="Passkeys are not available on this address">
-                        Passkeys need HTTPS on the instance domain, or <code>localhost</code>. An IP address does not work.
+                    <x-callout type="info" :title="__('Passkeys are not available on this address')">
+                        {{ __('Passkeys need HTTPS on the instance domain, or') }} <code>localhost</code>{{ __('. An IP address does not work.') }}
                     </x-callout>
                 @endunless
 
@@ -48,9 +48,9 @@
                             },
                         }" x-on:submit.prevent="register()">
                         <div class="flex items-end gap-2">
-                            <x-forms.input x-model="name" label="Passkey name" required maxlength="255" />
-                            <x-forms.button type="submit" isHighlighted x-bind:disabled="loading">Create passkey</x-forms.button>
-                            <x-forms.button type="button" wire:click="$set('show_form', false)">Cancel</x-forms.button>
+                            <x-forms.input x-model="name" :label="__('Passkey name')" required maxlength="255" />
+                            <x-forms.button type="submit" isHighlighted x-bind:disabled="loading">{{ __('Create passkey') }}</x-forms.button>
+                            <x-forms.button type="button" wire:click="$set('show_form', false)">{{ __('Cancel') }}</x-forms.button>
                         </div>
                         <p x-cloak x-show="error" x-text="error" class="text-sm text-error"></p>
                     </form>
@@ -64,8 +64,8 @@
                             <div x-show="!editing" class="text-sm font-semibold text-black dark:text-fg">{{ $passkey->name }}</div>
                             <form x-cloak x-show="editing" class="flex items-end gap-2"
                                 x-on:submit.prevent="$wire.rename({{ $passkey->id }}, name).then(ok => { if (ok) { saved = name; editing = false; } })">
-                                <x-forms.input x-model="name" required maxlength="255" aria-label="Passkey name" />
-                                <x-forms.button type="submit">Save</x-forms.button>
+                                <x-forms.input x-model="name" required maxlength="255" :aria-label="__('Passkey name')" />
+                                <x-forms.button type="submit">{{ __('Save') }}</x-forms.button>
                             </form>
                             <p class="mt-1 text-xs text-neutral-500 dark:text-fg-dim">
                                 {{ $passkey->authenticator ?? 'Passkey' }}
@@ -78,19 +78,19 @@
                                 <span x-text="editing ? 'Cancel' : 'Rename'"></span>
                             </x-forms.button>
                             <div wire:key="passkey-delete-{{ $passkey->id }}-{{ md5($passkey->name) }}">
-                                <x-modal-confirmation title="Delete passkey?" buttonTitle="Delete" isErrorButton
+                                <x-modal-confirmation :title="__('Delete passkey?')" :buttonTitle="__('Delete')" isErrorButton
                                     submitAction="delete({{ $passkey->id }})"
                                     :actions="['You cannot sign in with this passkey after it is deleted.']"
                                     confirmationText="{{ $passkey->name }}"
-                                    confirmationLabel="Enter the passkey name to confirm"
-                                    shortConfirmationLabel="Passkey name" step3ButtonText="Delete passkey" />
+                                    :confirmationLabel="__('Enter the passkey name to confirm')"
+                                    :shortConfirmationLabel="__('Passkey name')" :step3ButtonText="__('Delete passkey')" />
                             </div>
                         </div>
                     </div>
                 @empty
                     @if ($available && ! $show_form)
-                        <x-empty size="sm" title="No passkeys"
-                            description="Add a passkey to sign in without your password."
+                        <x-empty size="sm" :title="__('No passkeys')"
+                            :description="__('Add a passkey to sign in without your password.')"
                             icon-name="keys" />
                     @endif
                 @endforelse

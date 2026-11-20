@@ -36,14 +36,14 @@ class Rotate extends Component
         try {
             $this->authorize('update', $this->privateKey);
             if (! $this->servers()->exists()) {
-                $this->dispatch('error', 'No server uses this key.');
+                $this->dispatch('error', __('No server uses this key.'));
 
                 return;
             }
 
             $state = Cache::get(RotatePrivateKeyJob::cacheKey($this->privateKey), []);
             if (data_get($state, 'status') === 'running' && now()->subHour()->lt(data_get($state, 'started_at'))) {
-                $this->dispatch('error', 'A rotation of this key is already running.');
+                $this->dispatch('error', __('A rotation of this key is already running.'));
 
                 return;
             }
@@ -67,7 +67,7 @@ class Rotate extends Component
                 'new_private_key_uuid' => $newKey->uuid,
             ]);
             $this->wasRunning = true;
-            $this->dispatch('success', 'Key rotation started.');
+            $this->dispatch('success', __('Key rotation started.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }

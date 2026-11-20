@@ -93,10 +93,10 @@
 
                     {{-- Dockerfile: pick a detected file or type a path --}}
                     @if ($build_pack === 'dockerfile')
-                        <x-forms.listbox id="selectedDockerfile" label="Dockerfile" live searchable allowCustom placeholder="/Dockerfile"
-                            emptyText="No Dockerfiles detected. Type a path in the search field."
+                        <x-forms.listbox id="selectedDockerfile" :label="__('Dockerfile')" live searchable allowCustom placeholder="/Dockerfile"
+                            :emptyText="__('No Dockerfiles detected. Type a path in the search field.')"
                             searchPlaceholder="Search or type a path…"
-                            helper="Select a detected Dockerfile, or type a path relative to the base directory."
+                            :helper="__('Select a detected Dockerfile, or type a path relative to the base directory.')"
                             :options="collect($detectedDockerfiles)->map(fn ($file) => ['value' => $file, 'label' => $file])->all()" />
                     @endif
 
@@ -104,7 +104,7 @@
                     @if ($build_pack === 'dockercompose' && count($detectedDockerComposeFiles) > 0)
                         <x-forms.listbox id="selectedDockerComposeFile" label="{{ __('Docker Compose File') }}" live searchable allowCustom
                             searchPlaceholder="Search or type a path…"
-                            helper="Select a detected Docker Compose file, or type a path relative to the base directory."
+                            :helper="__('Select a detected Docker Compose file, or type a path relative to the base directory.')"
                             :options="collect($detectedDockerComposeFiles)->map(fn ($file) => ['value' => $file, 'label' => $file])->all()" />
                     @endif
                 </div>

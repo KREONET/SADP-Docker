@@ -12,10 +12,10 @@
         <div class="w-full min-w-0">
             {{-- Outside the layout switch, so that the localhost server shows it too. --}}
             @if (filled($server->settings->ssh_host_key_pending))
-                <x-callout type="danger" title="The SSH host key of this server changed" class="mb-4">
-                    The server sent a host key that does not match the key that Coolify trusts. Check it on the
+                <x-callout type="danger" :title="__('The SSH host key of this server changed')" class="mb-4">
+                    {{ __('The server sent a host key that does not match the key that Coolify trusts. Check it on the') }}
                     <a href="{{ route('server.security', ['server_uuid' => $server->uuid]).'#server-host-key-section' }}" {{ wireNavigate() }}
-                        class="underline">Security</a> page.
+                        class="underline">{{ __('Security') }}</a> page.
                 </x-callout>
             @endif
             @if ($server->isLocalhost())
@@ -171,13 +171,13 @@
                                     $transferredAt = data_get($server->server_metadata, 'transfer.transferred_at');
                                     $transferredAt = $transferredAt ? \Illuminate\Support\Carbon::parse($transferredAt)->toDayDateTimeString().' UTC' : 'the transfer';
                                 @endphp
-                                <x-modal-confirmation title="Take back a transferred server?"
+                                <x-modal-confirmation :title="__('Take back a transferred server?')"
                                     submitAction="enableManagement" :confirmWithPassword="false"
                                     temporaryDisableTwoStepConfirmation
-                                    step2ButtonText="I understand, enable management"
+                                    :step2ButtonText="__('I understand, enable management')"
                                     :confirmationText="$server->name"
-                                    confirmationLabel="Enter the server name to take the server back."
-                                    shortConfirmationLabel="Server name"
+                                    :confirmationLabel="__('Enter the server name to take the server back.')"
+                                    :shortConfirmationLabel="__('Server name')"
                                     :warningMessage="'<strong>Changes made on '.e($transferTarget).' after '.e($transferredAt).' are lost.</strong> This instance uses its copy of the settings and resources from the time of the transfer. Use this only when '.e($transferTarget).' is lost or cannot transfer the server back. Otherwise use Transfer back, which keeps those changes.'"
                                     :actions="[
                                         'This instance starts to run deployments, webhooks, scheduled tasks, backups, proxy updates, and monitoring for this server again.',
@@ -197,12 +197,10 @@
 
                         @if ($server->isTransferredAway())
                             <x-callout type="danger" :title="__('Transferred to another instance')" class="mb-4">
-                                This server was transferred to
-                                <strong>{{ data_get($server->server_metadata, 'transfer.target_instance_url') ?: 'another Coolify instance' }}</strong>,
-                                which manages it now. Use that instance. To undo the transfer, use
+                                {{ __('This server was transferred to') }}
+                                <strong>{{ data_get($server->server_metadata, 'transfer.target_instance_url') ?: 'another Coolify instance' }}</strong>{{ __(', which manages it now. Use that instance. To undo the transfer, use') }}
                                 <a href="{{ route('server.transfer', ['server_uuid' => $server->uuid]) }}" {{ wireNavigate() }}
-                                    class="underline">Transfer back</a>. Keep this archive until you are sure: it is the copy
-                                that an undo uses.
+                                    class="underline">{{ __('Transfer back') }}</a>{{ __('. Keep this archive until you are sure: it is the copy that an undo uses.') }}
                             </x-callout>
                         @endif
 
@@ -238,7 +236,7 @@
                             <x-forms.input canGate="update" :canResource="$server" id="user" :label="__('SSH user')"
                                 required :disabled="$isValidating || $server->isTransferredAway()" />
                             <x-forms.input canGate="update" :canResource="$server" type="number" id="port"
-                                label="SSH port" required :disabled="$isValidating || $server->isTransferredAway()" />
+                                :label="__('SSH port')" required :disabled="$isValidating || $server->isTransferredAway()" />
                         </div>
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-3">
@@ -246,7 +244,7 @@
                                 id="connectionTimeout" :label="__('Connection timeout')"
                                 :helper="__('Seconds to wait before an SSH connection fails.')" min="1" max="300"
                                 required :disabled="$isValidating" />
-                            <x-forms.listbox searchable id="serverTimezone" label="Server timezone"
+                            <x-forms.listbox searchable id="serverTimezone" :label="__('Server timezone')"
                                 :helper="__('Used for backups, cron jobs, and displayed timestamps.')"
                                 searchPlaceholder="Search timezones" searchEmptyText="No matching timezone"
                                 :options="collect($this->timezones)->map(fn ($timezone) => [
@@ -265,7 +263,7 @@
                             <div class="mt-4 border-t border-neutral-200 pt-4 dark:border-white/[0.08]">
                                 <x-forms.listbox canGate="update" :canResource="$server" id="serverRole"
                                     :label="__('Server role')" onChange="requestServerRoleChange"
-                                    helper="Builds can use large amounts of CPU and memory. Deployments on the same server can become slow or unreachable during a build. GitHub Actions runners need the Builds only or the Deployments and builds role."
+                                    :helper="__('Builds can use large amounts of CPU and memory. Deployments on the same server can become slow or unreachable during a build. GitHub Actions runners need the Builds only or the Deployments and builds role.')"
                                     :disabled="$isValidating" :options="[
                                         ['value' => 'deployment', 'label' => 'Deployments only', 'description' => 'Runs your resources. Images are built on a build server.'],
                                         ['value' => 'build', 'label' => 'Builds only', 'description' => 'Builds images for other servers and runs GitHub Actions runners.'],

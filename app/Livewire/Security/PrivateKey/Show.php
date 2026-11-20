@@ -184,7 +184,7 @@ class Show extends Component
 
             if (! verifyPasswordConfirmation($password, $this)) {
                 auditLog('ui.private_key.reveal_failed', $auditContext, 'warning');
-                $this->dispatch('error', 'The provided password is incorrect.');
+                $this->dispatch('error', __('The provided password is incorrect.'));
 
                 return null;
             }

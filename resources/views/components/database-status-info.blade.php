@@ -25,7 +25,7 @@
         <x-forms.input :label="__(':label URL (public)', ['label' => $label])" disabled :value="__('Hidden (only admins can view)')" />
     @elseif ($isCredentialLocked)
         <x-forms.input :label="$label . ' URL (internal)'" disabled value="Locked (shown once)"
-            helper="The password variable is locked, so the URL that contains it is not shown." />
+            :helper="__('The password variable is locked, so the URL that contains it is not shown.')" />
     @else
         <x-forms.input :label="__(':label URL (internal)', ['label' => $label])" :helper="$urlHelper" type="password" readonly copyable
             wire:model="dbUrl" canGate="update" :canResource="$database" />

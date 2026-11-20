@@ -189,7 +189,7 @@ class Source extends Component
             );
             $this->application->update(['git_ssh_known_hosts' => implode("\n", $lines) ?: null]);
             $this->syncKnownHostsFromModel();
-            $this->dispatch('success', 'Host key removed.');
+            $this->dispatch('success', __('Host key removed.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -211,7 +211,7 @@ class Source extends Component
             $sshHost = $this->application->gitSshHost();
             $hosts = $this->application->gitSshHostsToScan();
             if ($sshHost === null && $hosts === []) {
-                $this->dispatch('error', 'The repository does not use SSH.');
+                $this->dispatch('error', __('The repository does not use SSH.'));
 
                 return;
             }
@@ -235,7 +235,7 @@ class Source extends Component
                 $names = implode(', ', array_map(fn (array $host) => "{$host['host']} (port {$host['port']})", $hosts));
                 $this->dispatch('error', "Could not read the host keys of {$names}. To add a key, click Edit manually and paste it.");
             } elseif ($this->fetchedHostKeys === []) {
-                $this->dispatch('success', 'The host sends the built-in published keys. Nothing to accept.');
+                $this->dispatch('success', __('The host sends the built-in published keys. Nothing to accept.'));
             }
         } catch (\Throwable $e) {
             handleError($e, $this);
@@ -253,7 +253,7 @@ class Source extends Component
             $this->application->update(['git_ssh_known_hosts' => implode("\n", $lines) ?: null]);
             $this->fetchedHostKeys = [];
             $this->syncKnownHostsFromModel();
-            $this->dispatch('success', 'Host keys saved. Later deployments accept only these keys.');
+            $this->dispatch('success', __('Host keys saved. Later deployments accept only these keys.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -376,7 +376,7 @@ class Source extends Component
                 'git_https_password' => null,
             ])->save();
             $this->syncData();
-            $this->dispatch('success', 'HTTPS credentials removed.');
+            $this->dispatch('success', __('HTTPS credentials removed.'));
             $this->dispatch('configurationChanged');
         } catch (\Throwable $e) {
             return handleError($e, $this);

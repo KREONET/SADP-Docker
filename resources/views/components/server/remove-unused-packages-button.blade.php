@@ -6,13 +6,13 @@
 @props(['packageManager' => null, 'buttonTitle' => 'Remove unused packages', 'triggerId' => null])
 
 @if (\App\Actions\Server\RemoveUnusedPackages::supports($packageManager))
-    <x-modal-confirmation title="Remove unused packages?" :buttonTitle="$buttonTitle"
+    <x-modal-confirmation :title="__('Remove unused packages?')" :buttonTitle="$buttonTitle"
         submitAction="removeUnusedPackages" :actions="[
             'Removes packages that nothing needs anymore, and old kernels.',
             'The running kernel and the newest kernel stay installed.',
         ]"
         warningMessage="Coolify cannot restore removed packages. Check the logs when it is done."
-        :confirmWithText="false" :confirmWithPassword="false" step2ButtonText="Remove">
+        :confirmWithText="false" :confirmWithPassword="false" :step2ButtonText="__('Remove')">
         @if ($triggerId)
             <x-slot:trigger>
                 <button id="{{ $triggerId }}" type="button">{{ $buttonTitle }}</button>

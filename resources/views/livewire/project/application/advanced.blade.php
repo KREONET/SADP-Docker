@@ -11,8 +11,8 @@
     @endphp
 
     <div class="flex flex-col gap-6">
-        <x-application.settings-section id="advanced-build-section" title="Build & deploy"
-            helper="How images are built, how deployments start, and how the repository is cloned.">
+        <x-application.settings-section id="advanced-build-section" :title="__('Build & deploy')"
+            :helper="__('How images are built, how deployments start, and how the repository is cloned.')">
             <div class="grid w-full gap-4 sm:grid-cols-2">
                 <x-forms.listbox id="disableBuildCache" :label="__('Build cache')" onChange="instantSave"
                     :helper="__('Disabling the cache forces a completely fresh Docker build on every deployment.')"
@@ -32,15 +32,15 @@
                         ['value' => false, 'label' => __('Runtime only (preserves cache)')],
                         ['value' => true, 'label' => __('Available during build')],
                     ]" :disabled="! $canUpdate" />
-                <x-forms.listbox id="includeNetworkHostsInBuild" label="Network hosts during build" onChange="instantSave"
-                    helper="When added, the build can reach the containers on the destination network by name. Each time a resource on the network is added or removed, the Docker build cache is invalidated. Preview deployments are never added, and no hosts are added on a build server."
+                <x-forms.listbox id="includeNetworkHostsInBuild" :label="__('Network hosts during build')" onChange="instantSave"
+                    :helper="__('When added, the build can reach the containers on the destination network by name. Each time a resource on the network is added or removed, the Docker build cache is invalidated. Preview deployments are never added, and no hosts are added on a build server.')"
                     :options="[
                         ['value' => true, 'label' => 'Add network containers as hosts'],
                         ['value' => false, 'label' => 'Do not add (preserves cache)'],
                     ]" :disabled="! $canUpdate" />
             </div>
             @if ($application->git_based())
-                <x-application.settings-subsection id="advanced-deployment-section" title="Deployment"
+                <x-application.settings-subsection id="advanced-deployment-section" :title="__('Deployment')"
                     :helper="__('Automatic deployments from Git webhooks.')">
                     <div class="grid w-full gap-4 sm:grid-cols-2">
                         <x-forms.listbox id="isAutoDeployEnabled" :label="__('Auto deploy')" onChange="instantSave"
@@ -49,16 +49,16 @@
                                 ['value' => true, 'label' => __('Deploy on push (webhooks)')],
                                 ['value' => false, 'label' => __('Manual deployments only')],
                             ]" :disabled="! $canUpdate" />
-                        <x-forms.listbox id="isAutoCancelQueuedDeploymentsEnabled" label="Queued webhook deployments"
+                        <x-forms.listbox id="isAutoCancelQueuedDeploymentsEnabled" :label="__('Queued webhook deployments')"
                             onChange="instantSave"
-                            helper="When a newer push arrives, cancel the older webhook deployments that still wait in the queue, so only the latest commit is built. Manual, API, restart, and rollback deployments are never cancelled."
+                            :helper="__('When a newer push arrives, cancel the older webhook deployments that still wait in the queue, so only the latest commit is built. Manual, API, restart, and rollback deployments are never cancelled.')"
                             :options="[
                                 ['value' => true, 'label' => 'Cancel when a newer push arrives'],
                                 ['value' => false, 'label' => 'Deploy every push'],
                             ]" :disabled="! $canUpdate || $isAutoCancelBuildingDeploymentsEnabled" />
-                        <x-forms.listbox id="isAutoCancelBuildingDeploymentsEnabled" label="Building webhook deployments"
+                        <x-forms.listbox id="isAutoCancelBuildingDeploymentsEnabled" :label="__('Building webhook deployments')"
                             onChange="instantSave"
-                            helper="When a newer push arrives, also stop the older webhook deployment that is still building. A deployment that already started to replace containers always finishes. This also cancels queued webhook deployments."
+                            :helper="__('When a newer push arrives, also stop the older webhook deployment that is still building. A deployment that already started to replace containers always finishes. This also cancels queued webhook deployments.')"
                             :options="[
                                 ['value' => false, 'label' => 'Let the build finish'],
                                 ['value' => true, 'label' => 'Stop the build when a newer push arrives'],
@@ -66,7 +66,7 @@
                     </div>
                 </x-application.settings-subsection>
 
-                <x-application.settings-subsection id="advanced-git-section" title="Git"
+                <x-application.settings-subsection id="advanced-git-section" :title="__('Git')"
                     :helper="__('Options applied while cloning the repository during builds.')">
                     <div class="grid w-full gap-4 sm:grid-cols-2">
                         <x-forms.listbox id="isGitSubmodulesEnabled" :label="__('Submodules')" onChange="instantSave"
@@ -91,7 +91,7 @@
                 </x-application.settings-subsection>
             @endif
             @if ($application->build_pack === 'dockercompose')
-                <x-application.settings-subsection id="advanced-compose-section" title="Docker compose"
+                <x-application.settings-subsection id="advanced-compose-section" :title="__('Docker compose')"
                     :helper="__('Advanced behavior for compose-based deployments.')">
                     <div class="grid w-full gap-4 sm:grid-cols-2">
                         <x-forms.listbox id="isRawComposeDeploymentEnabled" :label="__('Compose deployment')" onChange="instantSave"
@@ -112,7 +112,7 @@
         </x-application.settings-section>
 
         <x-application.settings-section id="advanced-container-section" :title="__('Container')"
-            helper="Naming, shutdown, logs, and GPU access for the deployed container.">
+            :helper="__('Naming, shutdown, logs, and GPU access for the deployed container.')">
             <div class="grid w-full gap-4 sm:grid-cols-2">
                 <x-forms.listbox id="isConsistentContainerNameEnabled" :label="__('Container naming')" onChange="instantSave"
                     :helper="__('With a consistent name the container is always called :uuid. <span class=\'font-bold dark:text-warning\'>You will lose the rolling update feature!</span>', ['uuid' => $application->uuid])"
@@ -138,7 +138,7 @@
                     </form>
                 @endif
             </div>
-            <x-application.settings-subsection id="advanced-operations-section" title="Operations"
+            <x-application.settings-subsection id="advanced-operations-section" :title="__('Operations')"
                 :helper="__('Shutdown and restart behavior for this application\'s containers.')">
                 <div class="grid w-full gap-4 lg:grid-cols-2">
                     <x-forms.input type="number" id="stopGracePeriod" :label="__('Stop grace period (seconds)')"
@@ -148,7 +148,7 @@
                         canGate="update" :canResource="$application" />
                     @if ($application->build_pack !== 'dockercompose')
                         <x-forms.input type="number" min="0" max="{{ MAX_ROLLING_UPDATE_DRAIN_SECONDS }}"
-                            id="rollingUpdateDrainSeconds" label="Rolling update drain time (seconds)"
+                            id="rollingUpdateDrainSeconds" :label="__('Rolling update drain time (seconds)')"
                             wire:change="saveRollingUpdateDrainSeconds"
                             helper="How long to wait after the new container is healthy before the old containers stop during a rolling update. The proxy needs this time to send traffic to the new container. Saved automatically. Default: {{ DEFAULT_ROLLING_UPDATE_DRAIN_SECONDS }} seconds. Range: 0-{{ MAX_ROLLING_UPDATE_DRAIN_SECONDS }} seconds. Set to 0 to turn off the wait."
                             canGate="update" :canResource="$application" />
@@ -159,7 +159,7 @@
                         canGate="update" :canResource="$application" />
                 </div>
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="advanced-logs-section" title="Logs"
+            <x-application.settings-subsection id="advanced-logs-section" :title="__('Logs')"
                 :helper="__('Forward container logs to an external endpoint.')">
                 <div class="grid w-full gap-4 sm:grid-cols-2">
                     <x-forms.listbox id="isLogDrainEnabled" :label="__('Log drain')" onChange="instantSave"
@@ -171,7 +171,7 @@
                 </div>
             </x-application.settings-subsection>
             @if ($application->build_pack !== 'dockercompose')
-                <x-application.settings-subsection id="advanced-gpu-section" title="GPU"
+                <x-application.settings-subsection id="advanced-gpu-section" :title="__('GPU')"
                     :helper="__('Give this application access to the host\'s GPUs. More info <a href=\'https://docs.docker.com/compose/gpu-support/\' class=\'underline dark:text-white\' target=\'_blank\'>here</a>.')">
                     <x-slot:actions>
                         @php($canRefreshGpus = $gpuServers->contains(fn ($gpuServer) => $gpuServer->isFunctional()))
@@ -179,10 +179,10 @@
                             :canResource="$gpuServers->first()" :disabled="! $canRefreshGpus"
                             :tooltip="$canRefreshGpus ? null : 'Validate the server connection first.'">
                             <x-reicon name="refresh" class="size-3.5" />
-                            Refresh GPUs
+                            {{ __('Refresh GPUs') }}
                         </x-forms.button>
                     </x-slot:actions>
-                    <x-callout type="info" title="Detected GPUs" class="mb-5">
+                    <x-callout type="info" :title="__('Detected GPUs')" class="mb-5">
                         @foreach ($gpuServers as $gpuServer)
                             <div wire:key="gpu-server-{{ $gpuServer->id }}" @class(['mt-2' => ! $loop->first])>
                                 <p class="font-medium text-neutral-700 dark:text-fg">
@@ -212,14 +212,14 @@
                                 targets="gpuDriver,gpuCount,gpuDeviceIds,gpuOptions" />
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <x-forms.input :label="__('GPU driver')" id="gpuDriver" canGate="update" :canResource="$application" />
-                                <x-forms.input label="GPU count" placeholder="Empty means use all GPUs" helper="A number, or all." id="gpuCount"
+                                <x-forms.input :label="__('GPU count')" :placeholder="__('Empty means use all GPUs')" :helper="__('A number, or all.')" id="gpuCount"
                                     canGate="update" :canResource="$application" />
                             </div>
                             <x-forms.input :label="__('GPU device ids')" placeholder="0,2"
                                 :helper="__('Comma separated list of device ids. More info <a href=\'https://docs.docker.com/compose/gpu-support/#access-specific-devices\' class=\'underline dark:text-white\' target=\'_blank\'>here</a>.')"
                                 id="gpuDeviceIds" canGate="update" :canResource="$application" />
-                            <x-forms.textarea rows="6" label="GPU options" id="gpuOptions" placeholder="key=value"
-                                helper="Driver options. Use one key=value pair per line, or a YAML mapping." canGate="update"
+                            <x-forms.textarea rows="6" :label="__('GPU options')" id="gpuOptions" placeholder="key=value"
+                                :helper="__('Driver options. Use one key=value pair per line, or a YAML mapping.')" canGate="update"
                                 :canResource="$application" />
                         </form>
                     @endif
@@ -244,9 +244,9 @@
                             ['value' => false, 'label' => __('Keep paths as-is')],
                         ]" :disabled="! $canUpdate" />
                     @if ($isTraefikProxy)
-                        <x-forms.listbox id="certificateResolverMode" label="Certificate resolver"
+                        <x-forms.listbox id="certificateResolverMode" :label="__('Certificate resolver')"
                             onChange="saveCertificateResolverMode"
-                            helper="Traefik certificate resolver for this application's HTTPS routes. Choose <span class='font-bold'>None</span> for domains that use certificates from Traefik's dynamic configuration (for example Cloudflare Origin CA certificates). Redeploy the application to apply the change."
+                            :helper="__('Traefik certificate resolver for this application\'s HTTPS routes. Choose <span class=\'font-bold\'>None</span> for domains that use certificates from Traefik\'s dynamic configuration (for example Cloudflare Origin CA certificates). Redeploy the application to apply the change.')"
                             :options="[
                                 ['value' => 'server', 'label' => 'Server setting ('.$serverCertificateResolver.')'],
                                 ['value' => 'none', 'label' => 'None (use your own certificates)'],
@@ -255,9 +255,9 @@
                         @if ($certificateResolverMode === 'custom')
                             <form wire:submit="saveCertificateResolver" class="w-full">
                                 <x-unsaved-bar action="saveCertificateResolver" targets="certificateResolverName" />
-                                <x-forms.input id="certificateResolverName" label="Resolver name" placeholder="cloudflare"
+                                <x-forms.input id="certificateResolverName" :label="__('Resolver name')" placeholder="cloudflare"
                                     required
-                                    helper="Name of a certificate resolver defined in your Traefik configuration. Letters, numbers, hyphens, and underscores only."
+                                    :helper="__('Name of a certificate resolver defined in your Traefik configuration. Letters, numbers, hyphens, and underscores only.')"
                                     canGate="update" :canResource="$application" />
                             </form>
                         @endif

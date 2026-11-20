@@ -441,7 +441,7 @@ class ImportForm extends Component
 
         if (! Storage::exists($this->stagedUploadPath())) {
             $this->fileSource = null;
-            $this->dispatch('error', 'The uploaded file was not found. Please upload it again.');
+            $this->dispatch('error', __('The uploaded file was not found. Please upload it again.'));
 
             return;
         }
@@ -578,13 +578,13 @@ class ImportForm extends Component
         $this->authorize('update', $this->resource);
 
         if (! $this->s3StorageId) {
-            $this->dispatch('error', 'Please select a storage.');
+            $this->dispatch('error', __('Please select a storage.'));
 
             return;
         }
 
         if (blank($this->s3Path)) {
-            $this->dispatch('error', 'Please provide a file path.');
+            $this->dispatch('error', __('Please provide a file path.'));
 
             return;
         }
@@ -594,7 +594,7 @@ class ImportForm extends Component
 
         // Validate the S3 path early to prevent command injection in subsequent operations
         if (! $this->validateS3Path($cleanPath)) {
-            $this->dispatch('error', 'Invalid file path. Path must contain only safe characters (alphanumerics, dots, dashes, underscores, slashes).');
+            $this->dispatch('error', __('Invalid file path. Path must contain only safe characters (alphanumerics, dots, dashes, underscores, slashes).'));
 
             return;
         }
@@ -621,7 +621,7 @@ class ImportForm extends Component
 
             // Check if file exists
             if (! $disk->exists($cleanPath)) {
-                $this->dispatch('error', 'File not found in the storage. Please check the path.');
+                $this->dispatch('error', __('File not found in the storage. Please check the path.'));
 
                 return;
             }
@@ -653,7 +653,7 @@ class ImportForm extends Component
         }
 
         if (! $this->s3StorageId || blank($this->s3Path)) {
-            $this->dispatch('error', 'Please select a storage and provide a path first.');
+            $this->dispatch('error', __('Please select a storage and provide a path first.'));
 
             return true;
         }
@@ -686,7 +686,7 @@ class ImportForm extends Component
                 'replace_existing' => $this->replaceExisting,
                 'storage_id' => $this->s3StorageId,
             ]);
-            $this->dispatch('info', 'Restoring database from the storage. Progress will be shown in the activity monitor...');
+            $this->dispatch('info', __('Restoring database from the storage. Progress will be shown in the activity monitor...'));
         } catch (DatabaseImportException $e) {
             $this->importRunning = false;
             $this->dispatch('error', $e->getMessage());

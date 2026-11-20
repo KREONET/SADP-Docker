@@ -105,7 +105,7 @@ class Index extends Component
             $this->reset('avatar');
             refreshSession();
             $this->dispatch('team-avatar-updated');
-            $this->dispatch('success', 'Team avatar updated.');
+            $this->dispatch('success', __('Team avatar updated.'));
 
             return true;
         } catch (\Throwable $e) {
@@ -122,7 +122,7 @@ class Index extends Component
             $avatarStorage->deleteTeam($this->team);
             refreshSession();
             $this->dispatch('team-avatar-updated');
-            $this->dispatch('success', 'Team avatar removed.');
+            $this->dispatch('success', __('Team avatar removed.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -140,7 +140,7 @@ class Index extends Component
             $this->authorize('update', $this->team);
             if ($this->is_two_factor_required && ! $this->team->is_two_factor_required && blank(auth()->user()->two_factor_confirmed_at)) {
                 $this->is_two_factor_required = false;
-                $this->dispatch('error', 'Enable two-factor authentication on your profile before you require it for the team.');
+                $this->dispatch('error', __('Enable two-factor authentication on your profile before you require it for the team.'));
 
                 return;
             }

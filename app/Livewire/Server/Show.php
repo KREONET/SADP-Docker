@@ -445,7 +445,7 @@ class Show extends Component
             'server_name' => $this->server->name,
         ]);
 
-        $this->dispatch('success', 'This Coolify instance now manages the server.');
+        $this->dispatch('success', __('This Coolify instance now manages the server.'));
     }
 
     public function checkLocalhostConnection()
@@ -518,7 +518,7 @@ class Show extends Component
 
             if ($newRole === ServerRole::DEPLOYMENT && $this->server->hasEnabledGithubRunners()) {
                 $this->serverRole = $currentRole->value;
-                $this->dispatch('error', 'Disable the GitHub runners before you set this server to deployments only.');
+                $this->dispatch('error', __('Disable the GitHub runners before you set this server to deployments only.'));
 
                 return;
             }
@@ -738,7 +738,7 @@ class Show extends Component
                 return null;
             }
             if (! $this->server->hostinger_virtual_machine_id || ! $this->server->cloudProviderToken) {
-                $this->dispatch('error', 'This server is not associated with a Hostinger VPS or token.');
+                $this->dispatch('error', __('This server is not associated with a Hostinger VPS or token.'));
 
                 return null;
             }
@@ -861,7 +861,7 @@ class Show extends Component
             $this->authorize('update', $this->server);
             $this->server->assertNotTransferredAway();
             if (! $this->server->hostinger_virtual_machine_id || ! $this->server->cloudProviderToken) {
-                $this->dispatch('error', 'This server is not associated with a Hostinger VPS or token.');
+                $this->dispatch('error', __('This server is not associated with a Hostinger VPS or token.'));
 
                 return null;
             }
@@ -871,7 +871,7 @@ class Show extends Component
 
             $this->hostingerVirtualMachineStatus = 'starting';
             $this->server->update(['hostinger_virtual_machine_status' => 'starting']);
-            $this->dispatch('success', 'Hostinger VPS is starting...');
+            $this->dispatch('success', __('Hostinger VPS is starting...'));
 
             return null;
         } catch (\Throwable $e) {
@@ -886,8 +886,8 @@ class Show extends Component
             $providerRefreshed = $this->refreshProviderStatus();
             if (! $this->server->isFunctional()) {
                 $providerRefreshed
-                    ? $this->dispatch('info', 'Provider status refreshed. Validate the server connection to fetch server details.')
-                    : $this->dispatch('error', 'Validate the server connection before fetching details.');
+                    ? $this->dispatch('info', __('Provider status refreshed. Validate the server connection to fetch server details.'))
+                    : $this->dispatch('error', __('Validate the server connection before fetching details.'));
 
                 return;
             }
@@ -1326,7 +1326,7 @@ class Show extends Component
     public function linkToHostinger(): mixed
     {
         if (! $this->matchedHostingerVirtualMachine) {
-            $this->dispatch('error', 'No Hostinger virtual machine selected.');
+            $this->dispatch('error', __('No Hostinger virtual machine selected.'));
 
             return null;
         }
@@ -1369,7 +1369,7 @@ class Show extends Component
             $this->hostingerNoMatchFound = false;
             $this->hostingerSearchError = null;
 
-            $this->dispatch('success', 'Server successfully linked to Hostinger!');
+            $this->dispatch('success', __('Server successfully linked to Hostinger!'));
             $this->dispatch('close-modal');
             $this->dispatch('refreshServerShow');
 

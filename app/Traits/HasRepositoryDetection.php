@@ -87,7 +87,7 @@ trait HasRepositoryDetection
 
         $destination = find_resource_destination_for_current_team(data_get($this->query, 'destination'));
         if (! $destination) {
-            $this->dispatch('error', 'Destination not found.');
+            $this->dispatch('error', __('Destination not found.'));
 
             return;
         }
@@ -103,7 +103,7 @@ trait HasRepositoryDetection
             // The exception can contain the clone command with a Git token, so do not log the message.
             Log::debug('Repository detection failed', ['exception' => $e::class]);
             $this->detectionFailed = true;
-            $this->dispatch('error', 'Smart Scan could not read the repository. Check the repository access and the branch.');
+            $this->dispatch('error', __('Smart Scan could not read the repository. Check the repository access and the branch.'));
         }
         $this->detectionRan = true;
     }

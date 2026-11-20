@@ -1,6 +1,6 @@
 <div>
     <x-slot:title>
-        Image Scanning | Coolify
+        {{ __('Image Scanning | Coolify') }}
     </x-slot>
 
     <x-settings.layout>

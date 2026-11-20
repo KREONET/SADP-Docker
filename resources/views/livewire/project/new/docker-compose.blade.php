@@ -3,7 +3,7 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>Docker Compose</h2>
+                    <h2>{{ __('Docker Compose') }}</h2>
                     <p>{{ __('Create a multi-container service directly from a Compose file.') }}</p>
                 </div>
                 <x-forms.button type="submit" wire:target="submit" isHighlighted>{{ __('Create service') }}</x-forms.button>

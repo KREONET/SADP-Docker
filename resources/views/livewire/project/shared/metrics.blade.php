@@ -58,12 +58,12 @@
                 ]" />
             </div>
             <p class="mt-3 text-xs leading-5 text-neutral-500 dark:text-fg-dim">
-                Ranges up to one hour refresh live every five seconds. Longer ranges load once; turn on live refresh to update them every minute.
+                {{ __('Ranges up to one hour refresh live every five seconds. Longer ranges load once; turn on live refresh to update them every minute.') }}
             </p>
         </x-application.settings-section>
 
         <x-application.settings-section id="cpu-metrics-section" :title="__('CPU usage')"
-            helper="CPU usage of the container, as in docker stats. 100% means one CPU core is fully busy, so a container that uses more than one core can go above 100%. The maximum is the number of cores × 100%.">
+            :helper="__('CPU usage of the container, as in docker stats. 100% means one CPU core is fully busy, so a container that uses more than one core can go above 100%. The maximum is the number of cores × 100%.')">
             <x-slot:actions>
                 <div wire:ignore id="{!! $chartId !!}-cpu-legend" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"></div>
             </x-slot:actions>

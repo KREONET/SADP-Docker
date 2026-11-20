@@ -3,7 +3,7 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>Forgejo</h2>
+                    <h2>{{ __('Forgejo') }}</h2>
                     <p>{{ __('Select a repository of a Git server your platform admins connected.') }}</p>
                 </div>
             </div>

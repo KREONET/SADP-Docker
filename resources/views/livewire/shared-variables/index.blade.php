@@ -59,7 +59,7 @@
             <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
                 {{-- Most used: links open the variable on its scope canvas. --}}
                 <section class="{{ $panel }}">
-                    <h2 class="{{ $panelTitle }}">Most used</h2>
+                    <h2 class="{{ $panelTitle }}">{{ __('Most used') }}</h2>
                     @forelse ($overview['used'] as $variable)
                         <a class="{{ $row }}" href="{{ $variable['link'] }}" {{ wireNavigate() }}>
                             <span class="min-w-0 flex-1">
@@ -71,12 +71,12 @@
                             </span>
                         </a>
                     @empty
-                        <p class="px-3 py-4 text-[12px] text-neutral-500 dark:text-fg-faint">No resource uses a shared variable yet.</p>
+                        <p class="px-3 py-4 text-[12px] text-neutral-500 dark:text-fg-faint">{{ __('No resource uses a shared variable yet.') }}</p>
                     @endforelse
                 </section>
 
                 <section class="{{ $panel }}">
-                    <h2 class="{{ $panelTitle }}">Recently changed</h2>
+                    <h2 class="{{ $panelTitle }}">{{ __('Recently changed') }}</h2>
                     @forelse ($overview['recent'] as $variable)
                         <a class="{{ $row }}" href="{{ $variable['link'] }}" {{ wireNavigate() }}>
                             <span class="min-w-0 flex-1">
@@ -86,14 +86,14 @@
                             <span class="shrink-0 text-[11px] text-neutral-500 dark:text-fg-dim">{{ $variable['updated_at']?->diffForHumans(short: true) }}</span>
                         </a>
                     @empty
-                        <p class="px-3 py-4 text-[12px] text-neutral-500 dark:text-fg-faint">No shared variables yet.</p>
+                        <p class="px-3 py-4 text-[12px] text-neutral-500 dark:text-fg-faint">{{ __('No shared variables yet.') }}</p>
                     @endforelse
                 </section>
 
                 {{-- Not referenced by any resource: candidates to use or to clean up. --}}
                 <section class="{{ $panel }}">
                     <h2 class="{{ $panelTitle }}">
-                        Not used
+                        {{ __('Not used') }}
                         <span class="text-[11px] font-normal text-neutral-400 tabular-nums dark:text-fg-faint">{{ $overview['unused']->count() }}</span>
                     </h2>
                     <div class="max-h-72 overflow-y-auto">
@@ -106,7 +106,7 @@
                                 <span class="{{ $scopeBadge }}">{{ str($variable['scope'])->headline() }}</span>
                             </a>
                         @empty
-                            <p class="px-3 py-4 text-[12px] text-neutral-500 dark:text-fg-faint">Every shared variable is in use.</p>
+                            <p class="px-3 py-4 text-[12px] text-neutral-500 dark:text-fg-faint">{{ __('Every shared variable is in use.') }}</p>
                         @endforelse
                     </div>
                 </section>

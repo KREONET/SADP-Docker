@@ -52,7 +52,7 @@
                             </div>
                             @can('update', $serviceDatabase)
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <x-modal-input title="Import backup" buttonTitle="Import backup">
+                                    <x-modal-input :title="__('Import backup')" :buttonTitle="__('Import backup')">
                                         <livewire:project.database.import :resource="$serviceDatabase"
                                             wire:key="service-database-import-{{ $serviceDatabase->uuid }}" />
                                     </x-modal-input>

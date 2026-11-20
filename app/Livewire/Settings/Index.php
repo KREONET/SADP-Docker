@@ -345,7 +345,7 @@ class Index extends Component
 
             $detected = detect_public_ips();
             if ($detected === []) {
-                $this->dispatch('error', 'Could not detect a public IP address.');
+                $this->dispatch('error', __('Could not detect a public IP address.'));
 
                 return;
             }

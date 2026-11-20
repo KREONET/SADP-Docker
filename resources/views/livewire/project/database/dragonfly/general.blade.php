@@ -3,7 +3,7 @@
         <x-unsaved-bar action="submit" />
 
         <x-application.settings-section id="database-details-section" :title="__('Database details')"
-            description="Manage the identity, container image, and credentials of this Dragonfly database.">
+            :description="__('Manage the identity, container image, and credentials of this Dragonfly database.')">
             <x-slot:actions>
                 <x-modal-input :title="__('Resource details')" :buttonTitle="__('Details')">
                     <livewire:project.shared.resource-details :resource="$database" />
@@ -16,7 +16,7 @@
                     <x-forms.input :label="__('Image')" id="image" required canGate="update" :canResource="$database" />
                 </div>
             </div>
-            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" helper="Keep these values aligned with the credentials configured inside Dragonfly.">
+            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" :helper="__('Keep these values aligned with the credentials configured inside Dragonfly.')">
                 @if ($database->started_at)
                     @if ($isPasswordHiddenForMember)
                         <x-forms.input :label="__('Password')" disabled :value="__('Hidden (only admins can view)')" />
@@ -40,8 +40,8 @@
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="access-section" title="Access"
-            description="How applications and clients connect to this database, and whether it is reachable from the internet.">
+        <x-application.settings-section id="access-section" :title="__('Access')"
+            :description="__('How applications and clients connect to this database, and whether it is reachable from the internet.')">
             <x-slot:actions>
                 @if ($isPublic)
                     <x-process-dialog closeWithX size="xl">
@@ -54,10 +54,10 @@
                     </x-process-dialog>
                 @endif
             </x-slot:actions>
-            <x-application.settings-subsection id="connection-section" title="Connection" helper="Use these URLs to connect to the database." first>
+            <x-application.settings-subsection id="connection-section" :title="__('Connection')" :helper="__('Use these URLs to connect to the database.')" first>
                 <livewire:project.database.dragonfly.status-info :database="$database" />
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="public-access-section" title="Public access" helper="Expose this database through the managed TCP proxy." class="relative">
+            <x-application.settings-subsection id="public-access-section" :title="__('Public access')" :helper="__('Expose this database through the managed TCP proxy.')" class="relative">
                 <x-table.loading target="instantSave" :text="__('Updating public access...')" />
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div wire:key="public-access-{{ $publicPort ?: 'unset' }}">
@@ -73,16 +73,16 @@
                         :label="__('Proxy timeout')" :helper="__('Timeout in seconds. The default is 3600.')"
                         canGate="update" :canResource="$database" />
                     <x-forms.input placeholder="3000:6379" id="portsMappings" :label="__('Port mappings')"
-                        helper="Comma-separated host-to-container mappings, for example 3000:6379."
+                        :helper="__('Comma-separated host-to-container mappings, for example 3000:6379.')"
                         canGate="update" :canResource="$database" />
                 </div>
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="container-section" title="Container"
-            description="Docker options and log forwarding for the database container.">
+        <x-application.settings-section id="container-section" :title="__('Container')"
+            :description="__('Docker options and log forwarding for the database container.')">
             @if ($isPasswordHiddenForMember)
-                <x-forms.input label="Custom Docker options" disabled value="Hidden (only admins can view)" />
+                <x-forms.input :label="__('Custom Docker options')" disabled value="Hidden (only admins can view)" />
             @else
                 <x-forms.input
                     :helper="__('Add supported docker run options used when the container starts. Unsupported options can interfere with Coolify automation.')"
@@ -90,7 +90,7 @@
                     id="customDockerRunOptions" :label="__('Custom Docker options')" canGate="update"
                     :canResource="$database" />
             @endif
-            <x-application.settings-subsection id="log-delivery-section" title="Log delivery" helper="Forward container logs to the drain configured on the server.">
+            <x-application.settings-subsection id="log-delivery-section" :title="__('Log delivery')" :helper="__('Forward container logs to the drain configured on the server.')">
                 <x-forms.listbox canGate="update" :canResource="$database" id="isLogDrainEnabled" :label="__('Log drain')" live onChange="instantSaveAdvanced"
                     :disabled="! auth()->user()->can('update', $database)" :options="[
                         ['value' => false, 'label' => __('Do not forward logs')],

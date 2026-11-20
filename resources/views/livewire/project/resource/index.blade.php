@@ -93,7 +93,7 @@
                                 <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.7"
                                     stroke-linecap="round" />
                             </svg>
-                            <span class="truncate" x-text="activeFilterCount > 0 ? filterButtonText : __('Filter')">Filter</span>
+                            <span class="truncate" x-text="activeFilterCount > 0 ? filterButtonText : __('Filter')">{{ __('Filter') }}</span>
                             <span x-show="activeFilterCount > 0" x-cloak
                                 class="shrink-0 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-white/[0.07] dark:text-fg-dim"
                                 x-text="activeFilterCount"></span>
@@ -169,11 +169,11 @@
                 class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
                 <div
                     class="environment-resource-grid border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-fg-faint">
-                    <x-table.sort-header label="Resource" asc="name-asc" desc="name-desc" then="page = 1" />
-                    <x-table.sort-header label="Type" asc="type-asc" desc="type-desc" then="page = 1" class="resource-type" />
-                    <x-table.sort-header label="Status" asc="status-asc" desc="status-desc" then="page = 1" />
-                    <x-table.sort-header label="Domain" asc="domain-asc" desc="domain-desc" then="page = 1" class="resource-domain" />
-                    <x-table.sort-header label="Server" asc="server-asc" desc="server-desc" then="page = 1" class="resource-server" />
+                    <x-table.sort-header :label="__('Resource')" asc="name-asc" desc="name-desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Type')" asc="type-asc" desc="type-desc" then="page = 1" class="resource-type" />
+                    <x-table.sort-header :label="__('Status')" asc="status-asc" desc="status-desc" then="page = 1" />
+                    <x-table.sort-header :label="__('Domain')" asc="domain-asc" desc="domain-desc" then="page = 1" class="resource-domain" />
+                    <x-table.sort-header :label="__('Server')" asc="server-asc" desc="server-desc" then="page = 1" class="resource-server" />
                     <div class="resource-tags">{{ __('Tags') }}</div>
                 </div>
 

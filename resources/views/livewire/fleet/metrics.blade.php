@@ -23,7 +23,7 @@ $serverListboxOptions = array_merge(
 ?>
 <div class="flex w-full min-w-0 flex-col gap-6">
     <x-slot:title>
-        Metrics | Coolify
+        {{ __('Metrics | Coolify') }}
     </x-slot>
 
     {{-- Header --}}
@@ -56,7 +56,7 @@ $serverListboxOptions = array_merge(
                             <x-loading compact aria-label="{{ __('Loading metrics') }}" />
                         </div>
                     </div>
-                    <x-live-toggle :active="$live" storageKey="metrics-live" :restoreLive="$range === '24h'" title="Turn live refresh on or off (updates every 60 seconds)" />
+                    <x-live-toggle :active="$live" storageKey="metrics-live" :restoreLive="$range === '24h'" :title="__('Turn live refresh on or off (updates every 60 seconds)')" />
                 </div>
             </div>
         @endif
@@ -230,7 +230,7 @@ $serverListboxOptions = array_merge(
 
         {{-- Servers table --}}
         <x-application.settings-section id="metrics-servers-section" title="{{ __('Servers') }}" flush
-            helper="Per-server resource pressure. Select a column header to sort.">
+            :helper="__('Per-server resource pressure. Select a column header to sort.')">
             <div class="data-table" x-data="trafficTable({ per: Number.MAX_SAFE_INTEGER, key: 'cpu' })">
                 <div class="data-table-header fleet-servers-table-grid border-b-0!">
                     @include('livewire.traffic._sort-header', ['column' => 'name', 'label' => 'Server', 'text' => true, 'class' => 'justify-self-start'])

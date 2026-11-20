@@ -3,7 +3,7 @@
         <x-unsaved-bar action="submit" />
 
         <x-application.settings-section id="database-details-section" :title="__('Database details')"
-            description="Manage the identity, container image, and credentials of this PostgreSQL database.">
+            :description="__('Manage the identity, container image, and credentials of this PostgreSQL database.')">
             <x-slot:actions>
                 <x-modal-input :title="__('Resource details')" :buttonTitle="__('Details')">
                     <livewire:project.shared.resource-details :resource="$database" />
@@ -17,15 +17,14 @@
                         :helper="__('Use a published :image image from Docker Hub.', ['image' => 'PostgreSQL'])" />
                 </div>
             </div>
-            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" helper="Keep these values aligned with the credentials configured inside PostgreSQL.">
+            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" :helper="__('Keep these values aligned with the credentials configured inside PostgreSQL.')">
                 @if ($database->started_at)
                     <x-callout type="warning" :title="__('Keep credentials synchronized')">
-                        Changing values here does not update PostgreSQL. Update PostgreSQL first, then synchronize the
-                        values here so backups and other automations continue working.
+                        {{ __('Changing values here does not update PostgreSQL. Update PostgreSQL first, then synchronize the values here so backups and other automations continue working.') }}
                     </x-callout>
                 @endif
                 <div class="{{ $database->started_at ? 'mt-4 ' : '' }}grid gap-4 lg:grid-cols-2">
-                    <x-forms.input label="Username" id="postgresUser" placeholder="If empty: postgres"
+                    <x-forms.input :label="__('Username')" id="postgresUser" :placeholder="__('If empty: postgres')"
                         canGate="update" :canResource="$database" />
                     @if ($isPasswordHiddenForMember)
                         <x-forms.input :label="__('Password')" disabled :value="__('Hidden (only admins can view)')" />
@@ -39,7 +38,7 @@
                         helper="{{ $database->started_at ? __('You can only change this in the database.') : null }}" />
                 </div>
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="initialization-section" title="Initialization" helper="Configure the options used when PostgreSQL creates its initial data directory.">
+            <x-application.settings-subsection id="initialization-section" :title="__('Initialization')" :helper="__('Configure the options used when PostgreSQL creates its initial data directory.')">
                 <div class="grid gap-4 lg:grid-cols-2">
                     <x-forms.input :label="__('Initial database arguments')" id="postgresInitdbArgs"
                         :placeholder="__('Leave empty to use the image default.')" canGate="update" :canResource="$database" />
@@ -49,8 +48,8 @@
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="access-section" title="Access"
-            description="How applications and clients connect to this database, and whether it is reachable from the internet.">
+        <x-application.settings-section id="access-section" :title="__('Access')"
+            :description="__('How applications and clients connect to this database, and whether it is reachable from the internet.')">
             <x-slot:actions>
                 @if ($isPublic)
                     <x-process-dialog closeWithX size="xl">
@@ -63,10 +62,10 @@
                     </x-process-dialog>
                 @endif
             </x-slot:actions>
-            <x-application.settings-subsection id="connection-section" title="Connection" helper="Use these URLs to connect to the database." first>
+            <x-application.settings-subsection id="connection-section" :title="__('Connection')" :helper="__('Use these URLs to connect to the database.')" first>
                 <livewire:project.database.postgresql.status-info :database="$database" />
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="public-access-section" title="Public access" helper="Expose this database through the managed TCP proxy." class="relative">
+            <x-application.settings-subsection id="public-access-section" :title="__('Public access')" :helper="__('Expose this database through the managed TCP proxy.')" class="relative">
                 <x-table.loading target="instantSave" :text="__('Updating public access...')" />
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div wire:key="public-access-{{ $publicPort ?: 'unset' }}">
@@ -82,16 +81,16 @@
                         :label="__('Proxy timeout')" :helper="__('Timeout in seconds. The default is 3600.')"
                         canGate="update" :canResource="$database" />
                     <x-forms.input placeholder="3000:5432" id="portsMappings" :label="__('Port mappings')"
-                        helper="Comma-separated host-to-container mappings, for example 3000:5432."
+                        :helper="__('Comma-separated host-to-container mappings, for example 3000:5432.')"
                         canGate="update" :canResource="$database" />
                 </div>
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="container-section" title="Container"
-            description="Docker options, configuration, and log forwarding for the database container.">
+        <x-application.settings-section id="container-section" :title="__('Container')"
+            :description="__('Docker options, configuration, and log forwarding for the database container.')">
             @if ($isPasswordHiddenForMember)
-                <x-forms.input label="Custom Docker options" disabled value="Hidden (only admins can view)" />
+                <x-forms.input :label="__('Custom Docker options')" disabled value="Hidden (only admins can view)" />
             @else
                 <x-forms.input
                     :helper="__('Add supported docker run options used when the container starts. Unsupported options can interfere with Coolify automation.')"
@@ -99,15 +98,15 @@
                     id="customDockerRunOptions" :label="__('Custom Docker options')" canGate="update"
                     :canResource="$database" />
             @endif
-            <x-application.settings-subsection id="configuration-section" :title="__('Configuration')" helper="Override the PostgreSQL configuration used by this container.">
+            <x-application.settings-subsection id="configuration-section" :title="__('Configuration')" :helper="__('Override the PostgreSQL configuration used by this container.')">
                 @if ($isPasswordHiddenForMember)
-                    <x-forms.input label="Custom PostgreSQL configuration" disabled value="Hidden (only admins can view)" />
+                    <x-forms.input :label="__('Custom PostgreSQL configuration')" disabled value="Hidden (only admins can view)" />
                 @else
-                    <x-forms.textarea label="Custom PostgreSQL configuration" rows="10" id="postgresConf"
+                    <x-forms.textarea :label="__('Custom PostgreSQL configuration')" rows="10" id="postgresConf"
                         canGate="update" :canResource="$database" />
                 @endif
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="log-delivery-section" :title="__('Log delivery')" helper="Forward container logs to the drain configured on the server.">
+            <x-application.settings-subsection id="log-delivery-section" :title="__('Log delivery')" :helper="__('Forward container logs to the drain configured on the server.')">
                 <x-forms.listbox canGate="update" :canResource="$database" id="isLogDrainEnabled" :label="__('Log drain')" live onChange="instantSaveAdvanced"
                     :disabled="! auth()->user()->can('update', $database)" :options="[
                         ['value' => false, 'label' => __('Do not forward logs')],
@@ -135,15 +134,15 @@
         </x-slot:actions>
         <div class="divide-y divide-neutral-200 dark:divide-border-subtle">
             @if ($isPasswordHiddenForMember)
-                <x-empty title="Hidden (only admins can view)"
-                    description="Initialization scripts can contain credentials." />
+                <x-empty :title="__('Hidden (only admins can view)')"
+                    :description="__('Initialization scripts can contain credentials.')" />
             @else
                 @forelse($initScripts ?? [] as $script)
                     <livewire:project.database.init-script :database="$database" :script="$script"
                         :wire:key="'init-script-'.md5($script['filename'])" />
                 @empty
                     <x-empty :title="__('No initialization scripts')"
-                        description="Add a SQL file to run during the first PostgreSQL initialization." />
+                        :description="__('Add a SQL file to run during the first PostgreSQL initialization.')" />
                 @endforelse
             @endif
         </div>

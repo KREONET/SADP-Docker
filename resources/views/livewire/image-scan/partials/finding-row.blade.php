@@ -78,11 +78,11 @@
             <p class="{{ $muted }}">Exploit likelihood: {{ $likelihood }}</p>
         @endif
         @if (filled($base))
-            <p class="{{ $muted }}">Comes from <span class="font-mono">{{ $base }}</span>.</p>
+            <p class="{{ $muted }}">{{ __('Comes from') }} <span class="font-mono">{{ $base }}</span>.</p>
         @endif
         @if ($aliases !== [])
             <p class="{{ $muted }}">
-                Also known as
+                {{ __('Also known as') }}
                 @foreach ($aliases as $alias)
                     @php $aliasUrl = \App\Services\ImageScan\ResourceScans::advisoryUrl($alias); @endphp
                     @if ($aliasUrl !== null)

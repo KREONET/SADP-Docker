@@ -117,7 +117,7 @@
                 x-data="{ open: false, search: '', servers: @js($serverSwitcherOptions) }"
                 @click.outside="open = false" @keydown.escape.window="open = false">
                 <div class="flex h-8 max-w-56 min-w-0 items-center rounded-md xl:max-w-72">
-                    <a href="{{ route('server.show', ['server_uuid' => $server->uuid]) }}" {{ wireNavigate() }} title="Go to server"
+                    <a href="{{ route('server.show', ['server_uuid' => $server->uuid]) }}" {{ wireNavigate() }} title="{{ __('Go to server') }}"
                         class="flex h-8 min-w-0 items-center rounded-l-md pr-1 pl-2 transition-colors hover:bg-neutral-100 dark:hover:bg-white/[0.05]">
                         <span class="min-w-0 truncate font-semibold text-black dark:text-fg">
                             {{ $server->name }}
@@ -177,7 +177,7 @@
                         <x-server.status-summary :server="$server" :proxy-status="$proxyStatus"
                             :show-sentinel-status="$showSentinelStatus" />
                         @if ($showProxyActions && $traefikDashboardAvailable)
-                            <a target="_blank" href="http://{{ formatHostForUrl((string) $serverIp) }}:8080" title="Open Traefik dashboard"
+                            <a target="_blank" href="http://{{ formatHostForUrl((string) $serverIp) }}:8080" title="{{ __('Open Traefik dashboard') }}"
                                 class="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-100 px-2 text-xs font-medium leading-none text-neutral-700 dark:border-white/[0.12] dark:bg-white/[0.07] dark:text-white">
                                 <x-reicon name="external-link" class="size-3" />
                                 Traefik

@@ -7,11 +7,11 @@
             @teleport('#resource-action-hud-slot')
                 <div class="order-first mr-1 hidden items-center gap-1 xl:flex">
                     @if ($enabled)
-                        <x-forms.button type="button" wire:click="toggleEnabled">Disable backup</x-forms.button>
+                        <x-forms.button type="button" wire:click="toggleEnabled">{{ __('Disable backup') }}</x-forms.button>
                     @else
-                        <x-forms.button type="button" wire:click="toggleEnabled" isHighlighted>Enable backup</x-forms.button>
+                        <x-forms.button type="button" wire:click="toggleEnabled" isHighlighted>{{ __('Enable backup') }}</x-forms.button>
                     @endif
-                    <x-forms.button type="button" wire:click="backupNow">Back up now</x-forms.button>
+                    <x-forms.button type="button" wire:click="backupNow">{{ __('Back up now') }}</x-forms.button>
                 </div>
             @endteleport
         @endcan

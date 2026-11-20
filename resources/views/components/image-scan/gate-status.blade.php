@@ -63,13 +63,13 @@
                     <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-4">
                         @if ($vulnerabilitiesUrl)
                             <a href="{{ $vulnerabilitiesUrl }}" {{ wireNavigate() }} class="{{ $linkClasses }}">
-                                Open Security
+                                {{ __('Open Security') }}
                                 <x-reicon name="arrow-right" class="size-2.5" />
                             </a>
                         @endif
                         @if ($deploymentUrl)
                             <a href="{{ $deploymentUrl }}" {{ wireNavigate() }} class="{{ $linkClasses }}">
-                                Open deployment
+                                {{ __('Open deployment') }}
                                 <x-reicon name="arrow-right" class="size-2.5" />
                             </a>
                         @endif

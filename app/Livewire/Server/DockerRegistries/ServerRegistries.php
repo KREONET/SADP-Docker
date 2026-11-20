@@ -87,7 +87,7 @@ class ServerRegistries extends Component
         $this->authorize('update', $this->server);
         $registry = DockerRegistryLogins::normalizeRegistry($registry);
         if (! preg_match(DockerRegistryLogins::REGISTRY_PATTERN, $registry)) {
-            $this->dispatch('error', 'Logout failed.', 'The registry name is not valid.');
+            $this->dispatch('error', __('Logout failed.'), 'The registry name is not valid.');
 
             return;
         }
@@ -95,7 +95,7 @@ class ServerRegistries extends Component
         try {
             DockerRegistryLogins::logout($this->server, $registry);
         } catch (Throwable $exception) {
-            $this->dispatch('error', 'Logout failed.', e($exception->getMessage()));
+            $this->dispatch('error', __('Logout failed.'), e($exception->getMessage()));
 
             return;
         }

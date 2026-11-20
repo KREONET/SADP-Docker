@@ -127,7 +127,7 @@ trait ManagesSmtpServers
             $this->smtpServerName = $this->settings->smtp_server_name = $this->renamedSmtpServerName;
             $this->renamedSmtpServerName = null;
             $this->saveEmailSettings();
-            $this->dispatch('success', 'SMTP server renamed.');
+            $this->dispatch('success', __('SMTP server renamed.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }

@@ -172,7 +172,7 @@
                         @endphp
                         @if ($cardPatchBadges !== [])
                             <div class="relative z-10 mt-auto flex cursor-pointer flex-wrap gap-1.5 pt-3"
-                                role="link" tabindex="0" aria-label="Open patches"
+                                role="link" tabindex="0" aria-label="{{ __('Open patches') }}"
                                 @click.prevent.stop="openPatches(@js($serverRow['patchesHref']))"
                                 @keydown.enter.prevent.stop="openPatches(@js($serverRow['patchesHref']))"
                                 data-tooltip="{{ $serverRow['patchCheckedAt'] }}">
@@ -194,7 +194,7 @@
                     <div>{{ __('Server') }}</div>
                     <div class="hidden md:block">{{ __('Resources') }}</div>
                     @if ($showPatches)
-                        <div class="hidden lg:block">Patches</div>
+                        <div class="hidden lg:block">{{ __('Patches') }}</div>
                     @endif
                     <div>{{ __('Status') }}</div>
                 </div>
@@ -230,7 +230,7 @@
                         </div>
                         @if ($showPatches)
                             <div class="hidden cursor-pointer flex-wrap gap-1 lg:flex" :data-tooltip="server.patchCheckedAt"
-                                role="link" tabindex="0" aria-label="Open patches"
+                                role="link" tabindex="0" aria-label="{{ __('Open patches') }}"
                                 @click.prevent.stop="openPatches(server.patchesHref)"
                                 @keydown.enter.prevent.stop="openPatches(server.patchesHref)">
                                 <template x-for="badge in server.patchBadges" :key="badge.label">

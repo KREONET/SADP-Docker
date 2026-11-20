@@ -3,7 +3,7 @@
         <section class="application-settings-section">
             <div class="application-settings-section-header">
                 <div>
-                    <h2>Dockerfile</h2>
+                    <h2>{{ __('Dockerfile') }}</h2>
                     <p>{{ __('Create an application directly from a Dockerfile without connecting a Git repository.') }}</p>
                 </div>
                 <x-forms.button type="submit" wire:target="submit" isHighlighted>{{ __('Create application') }}</x-forms.button>

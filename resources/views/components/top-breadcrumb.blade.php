@@ -135,7 +135,7 @@
     @endif
 
     @if ($currentStorage)
-        <x-breadcrumb-switcher title="Storage" :label="$currentStorage->name" :uuid="$currentStorage->uuid" :items="$storages->map(fn ($storage) => [
+        <x-breadcrumb-switcher :title="__('Storage')" :label="$currentStorage->name" :uuid="$currentStorage->uuid" :items="$storages->map(fn ($storage) => [
             'label' => $storage->name,
             'uuid' => $storage->uuid,
             'href' => route('storage.show', ['storage_uuid' => $storage->uuid]),
@@ -158,7 +158,7 @@
                 ? filled($currentSource->installation_id)
                 : filled($currentSource->access_token);
         @endphp
-        <x-breadcrumb-switcher title="Sources" :label="$currentSource->name ?: 'Source'" :uuid="$currentSource->uuid" :items="$sources->map(fn ($source) => [
+        <x-breadcrumb-switcher :title="__('Sources')" :label="$currentSource->name ?: 'Source'" :uuid="$currentSource->uuid" :items="$sources->map(fn ($source) => [
             'label' => $source->name ?: class_basename($source),
             'uuid' => $source->uuid,
             'href' => match (true) {
@@ -182,7 +182,7 @@
     @endif
 
     @if ($currentDestination)
-        <x-breadcrumb-switcher title="Destinations" :label="$currentDestination->name" :uuid="$currentDestination->uuid" :items="$destinations->map(fn ($destination) => [
+        <x-breadcrumb-switcher :title="__('Destinations')" :label="$currentDestination->name" :uuid="$currentDestination->uuid" :items="$destinations->map(fn ($destination) => [
             'label' => $destination->name,
             'uuid' => $destination->uuid,
             'href' => route('destination.show', ['destination_uuid' => $destination->uuid]),
@@ -218,7 +218,7 @@
         {{-- Project switcher --}}
         <div class="relative min-w-0 shrink" x-data="{ open: false }" @keydown.escape.window="open = false">
             <div class="flex h-8 min-w-0 items-center rounded-md opacity-70 transition-opacity hover:opacity-100">
-                <a href="{{ route($projectDestinationRoute, ['project_uuid' => $currentProject->uuid]) }}" {{ wireNavigate() }} title="Go to project"
+                <a href="{{ route($projectDestinationRoute, ['project_uuid' => $currentProject->uuid]) }}" {{ wireNavigate() }} title="{{ __('Go to project') }}"
                     class="flex h-8 min-w-0 items-center rounded-l-md pr-1 pl-2 transition-colors hover:bg-neutral-100 dark:hover:bg-white/[0.05]">
                     <span class="min-w-0 truncate font-semibold text-black dark:text-fg"
                         x-text="nameOf(@js($currentProject->uuid), @js($currentProject->name))">{{ $currentProject->name }}</span>
@@ -250,7 +250,7 @@
         {{-- Environment switcher --}}
         <div class="relative min-w-0 shrink" x-data="{ open: false }" @keydown.escape.window="open = false">
             <div class="flex h-8 min-w-0 items-center rounded-md opacity-70 transition-opacity hover:opacity-100">
-                <a href="{{ route('project.resource.index', ['project_uuid' => $currentProject->uuid, 'environment_uuid' => $currentEnvironment->uuid]) }}" {{ wireNavigate() }} title="Go to environment"
+                <a href="{{ route('project.resource.index', ['project_uuid' => $currentProject->uuid, 'environment_uuid' => $currentEnvironment->uuid]) }}" {{ wireNavigate() }} title="{{ __('Go to environment') }}"
                     class="flex h-8 min-w-0 items-center rounded-l-md pr-1 pl-2 transition-colors hover:bg-neutral-100 dark:hover:bg-white/[0.05]">
                     <span class="min-w-0 truncate font-semibold text-black dark:text-fg">{{ $currentEnvironment->name }}</span>
                 </a>
@@ -277,7 +277,7 @@
     @endif
 
     @if ($currentResource)
-        <x-breadcrumb-switcher title="Resources" :label="$currentResource->name" :uuid="$currentResource->uuid" :items="$resourceItems">
+        <x-breadcrumb-switcher :title="__('Resources')" :label="$currentResource->name" :uuid="$currentResource->uuid" :items="$resourceItems">
             <x-slot:meta>
                 {{-- Below xl, the page heading shows the status. --}}
                 <div class="hidden xl:flex">

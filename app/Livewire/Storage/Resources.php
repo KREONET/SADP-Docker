@@ -55,7 +55,7 @@ class Resources extends Component
         $this->auditDatabaseBackupUpdated($backup, $changedFields);
         unset($this->selectedStorages[$backupId]);
 
-        $this->dispatch('success', 'Storage removed.', $backup->save_s3
+        $this->dispatch('success', __('Storage removed.'), $backup->save_s3
             ? 'This storage was removed from the schedule destinations.'
             : 'S3 backup has been disabled for this schedule.');
     }
@@ -109,7 +109,7 @@ class Resources extends Component
         $this->auditVolumeBackupUpdated($backup, $changedFields);
         unset($this->selectedVolumeStorages[$backupId]);
 
-        $this->dispatch('success', 'Storage removed.', $backup->save_s3
+        $this->dispatch('success', __('Storage removed.'), $backup->save_s3
             ? 'This storage was removed from the schedule destinations.'
             : 'S3 backup has been disabled for this schedule.');
     }

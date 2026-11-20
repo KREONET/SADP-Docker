@@ -62,7 +62,7 @@
                                 id="logDrainAxiomDatasetName" :label="__('Dataset name')"
                                 :disabled="$server->isLogDrainEnabled()" />
                             <x-forms.input canGate="update" :canResource="$server" :required="$isLogDrainAxiomEnabled"
-                                id="logDrainAxiomDomain" label="Edge domain"
+                                id="logDrainAxiomDomain" :label="__('Edge domain')"
                                 placeholder="us-east-1.aws.edge.axiom.co"
                                 helper="Base domain of the edge deployment of your Axiom organization.<br><br>US: <code>us-east-1.aws.edge.axiom.co</code><br>EU: <code>eu-central-1.aws.edge.axiom.co</code>"
                                 :disabled="$server->isLogDrainEnabled()" />
@@ -71,7 +71,7 @@
                     <x-application.settings-section id="server-cloudwatch-drain-section" title="Amazon CloudWatch Logs"
                         helper="Send container logs directly to CloudWatch Logs using the Docker awslogs logging driver.<br><br>AWS credentials are read by the Docker daemon on this server, not by Coolify. Attach an IAM instance role, or configure <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> for the Docker service or in <code>/root/.aws/credentials</code>.<br><br>The credentials need <code>logs:CreateLogStream</code> and <code>logs:PutLogEvents</code>, plus <code>logs:CreateLogGroup</code> if the log group does not exist yet.<br><br>Delivery errors do not stop containers; they appear in the Docker daemon logs (<code>journalctl -u docker</code>). Redeploy or restart resources to apply the logging driver.">
                         <div class="mb-4 max-w-sm">
-                            <x-forms.listbox canGate="update" :canResource="$server" id="isLogDrainCloudwatchEnabled" label="Status"
+                            <x-forms.listbox canGate="update" :canResource="$server" id="isLogDrainCloudwatchEnabled" :label="__('Status')"
                                 onChange="instantSave" :options="[
                                     ['value' => false, 'label' => __('Disabled')],
                                     ['value' => true, 'label' => __('Enabled')],
@@ -80,14 +80,14 @@
                         </div>
                         <div class="grid gap-4 lg:grid-cols-3">
                             <x-forms.input canGate="update" :canResource="$server" :required="$isLogDrainCloudwatchEnabled"
-                                id="logDrainCloudwatchGroup" label="Log group" placeholder="/coolify/production"
+                                id="logDrainCloudwatchGroup" :label="__('Log group')" placeholder="/coolify/production"
                                 :disabled="$server->isLogDrainEnabled()" />
                             <x-forms.input canGate="update" :canResource="$server"
-                                id="logDrainCloudwatchStreamPrefix" label="Log stream prefix" placeholder="docker/"
-                                helper="Optional. Log streams are named after the container, prefixed with this value (e.g. docker/&lt;container name&gt;)."
+                                id="logDrainCloudwatchStreamPrefix" :label="__('Log stream prefix')" placeholder="docker/"
+                                :helper="__('Optional. Log streams are named after the container, prefixed with this value (e.g. docker/<container name>).')"
                                 :disabled="$server->isLogDrainEnabled()" />
                             <x-forms.input canGate="update" :canResource="$server" :required="$isLogDrainCloudwatchEnabled"
-                                id="logDrainCloudwatchRegion" label="Region" placeholder="us-east-1"
+                                id="logDrainCloudwatchRegion" :label="__('Region')" placeholder="us-east-1"
                                 :disabled="$server->isLogDrainEnabled()" />
                         </div>
                     </x-application.settings-section>

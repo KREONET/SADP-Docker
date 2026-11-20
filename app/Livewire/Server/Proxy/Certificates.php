@@ -84,13 +84,13 @@ class Certificates extends Component
                     'server_name' => $this->server->name,
                 ]);
                 $this->dispatch('refreshServerShow');
-                $this->dispatch('success', 'acme.json restored. The proxy is restarting to load the restored certificates.');
+                $this->dispatch('success', __('acme.json restored. The proxy is restarting to load the restored certificates.'));
 
                 return;
             }
 
             $this->dispatch('refreshServerShow');
-            $this->dispatch('success', 'acme.json restored. Restart the proxy to load the restored certificates.');
+            $this->dispatch('success', __('acme.json restored. Restart the proxy to load the restored certificates.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -108,7 +108,7 @@ class Certificates extends Component
                 'backup' => $backupName,
             ]);
             $this->loadTraefikAcmeBackups();
-            $this->dispatch('success', 'acme.json backup deleted.');
+            $this->dispatch('success', __('acme.json backup deleted.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -119,7 +119,7 @@ class Certificates extends Component
         try {
             $this->authorize('update', $this->server);
             $this->certificatesDeleted(DeleteTraefikCertificate::run($this->server, [$certificateId]));
-            $this->dispatch('success', 'TLS certificate deleted. Restart Traefik to remove it from the running proxy.');
+            $this->dispatch('success', __('TLS certificate deleted. Restart Traefik to remove it from the running proxy.'));
         } catch (\Throwable $e) {
             handleError($e, $this);
         }
@@ -136,7 +136,7 @@ class Certificates extends Component
                 ->all();
             if ($unusedIds === []) {
                 $this->traefikCertificates = GetTraefikCertificates::run($this->server);
-                $this->dispatch('info', 'No unused TLS certificates found.');
+                $this->dispatch('info', __('No unused TLS certificates found.'));
 
                 return;
             }

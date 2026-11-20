@@ -39,7 +39,7 @@
                         <x-callout type="warning" :title="__('Your configuration changed, please restart the proxy.')" />
                     @elseif ($server->hasPendingProxyConfiguration())
                         <x-callout type="warning" :title="__('Restart required')">
-                            Restart the proxy to apply TLS certificate changes.
+                            {{ __('Restart the proxy to apply TLS certificate changes.') }}
                         </x-callout>
                     @else
                         <div class="flex items-start gap-3">
@@ -69,7 +69,7 @@
                                 ['value' => true, 'label' => __('Labels for the active proxy only')],
                             ]" />
                         <x-forms.listbox id="redirectEnabled" :label="__('Unknown requests')"
-                            helper="Control the 503 response for unknown hosts and stopped services. Custom request handling shows an error page or redirects to a URL."
+                            :helper="__('Control the 503 response for unknown hosts and stopped services. Custom request handling shows an error page or redirects to a URL.')"
                             onChange="instantSaveRedirect" :options="[
                                 ['value' => false, 'label' => __('Return the default 503 response')],
                                 ['value' => true, 'label' => __('Use custom request handling')],
@@ -78,24 +78,23 @@
                             <x-forms.input canGate="update" :canResource="$server"
                                 placeholder="https://app.coolify.io" id="redirectUrl"
                                 :label="__('Redirect URL')"
-                                helper="Leave empty to return a 503 response instead of redirecting." />
+                                :helper="__('Leave empty to return a 503 response instead of redirecting.')" />
                         @endif
                         @if ($server->proxyType() === ProxyTypes::TRAEFIK->value)
                             <x-forms.input canGate="update" :canResource="$server" placeholder="letsencrypt"
-                                id="certificateResolver" label="Certificate resolver"
-                                helper="Traefik certificate resolver for generated HTTPS routes. Leave empty if Traefik uses your own certificates (for example Cloudflare Origin CA certificates in a dynamic configuration). Redeploy resources to apply the change." />
+                                id="certificateResolver" :label="__('Certificate resolver')"
+                                :helper="__('Traefik certificate resolver for generated HTTPS routes. Leave empty if Traefik uses your own certificates (for example Cloudflare Origin CA certificates in a dynamic configuration). Redeploy resources to apply the change.')" />
                         @endif
                     </div>
                     @if ($redirectEnabled && ! $server->isSwarm())
                         <div class="mt-4 flex flex-col gap-2">
                             <x-forms.textarea canGate="update" :canResource="$server" id="customErrorPage" rows="10"
-                                monospace label="Custom error page (HTML)"
-                                placeholder="Leave empty to use the Coolify default error page."
+                                monospace :label="__('Custom error page (HTML)')"
+                                :placeholder="__('Leave empty to use the Coolify default error page.')"
                                 helper="One self-contained HTML file (max {{ \App\Models\Server::PROXY_ERROR_PAGE_MAX_BYTES / 1024 }} KB) with inline CSS and images. Visitors see it with a 503 status for unknown domains and for stopped, deploying or unhealthy resources. A Redirect URL takes priority over this page." />
                             @can('update', $server)
                                 <div class="flex gap-2">
-                                    <x-forms.button type="button" wire:click="resetCustomErrorPage">Reset to
-                                        default</x-forms.button>
+                                    <x-forms.button type="button" wire:click="resetCustomErrorPage">{{ __('Reset to default') }}</x-forms.button>
                                 </div>
                             @endcan
                         </div>
@@ -143,7 +142,7 @@
                                         : __('Configured image v:current. The latest patch for this branch is :latest. Test the update before applying it to production servers.', ['current' => ltrim($this->traefikVersionForWarning, 'v'), 'latest' => $this->latestTraefikVersion]) }}
                                     <a class="font-medium underline"
                                         href="https://coolify.io/docs/core/networking/proxy/traefik/update"
-                                        target="_blank">Learn how to update Traefik.</a>
+                                        target="_blank">{{ __('Learn how to update Traefik.') }}</a>
                                 </x-callout>
                             @endif
                             @if ($this->newerTraefikBranchAvailable)
@@ -151,7 +150,7 @@
                                     {{ __(':branch is available (latest patch: :latest). Review the Traefik changelog for breaking changes before upgrading.', ['branch' => $this->newerTraefikBranchAvailable, 'latest' => $this->latestNewerTraefikVersion]) }}
                                     <a class="font-medium underline"
                                         href="https://coolify.io/docs/core/networking/proxy/traefik/update"
-                                        target="_blank">Learn how to update Traefik.</a>
+                                        target="_blank">{{ __('Learn how to update Traefik.') }}</a>
                                 </x-callout>
                             @endif
                         @elseif ($this->outdatedCaddyImage)
@@ -160,7 +159,7 @@
 
                         <div wire:loading.flex wire:target="loadProxyConfiguration" role="status"
                             class="mt-4 hidden flex-col gap-2">
-                            <span class="sr-only">Loading proxy configuration</span>
+                            <span class="sr-only">{{ __('Loading proxy configuration') }}</span>
                             <x-skeleton class="h-2.5 w-56 rounded-full" />
                             <x-skeleton class="h-96 w-full rounded-lg" />
                         </div>

@@ -4,7 +4,7 @@
 
 <div @class(['relative', 'w-full' => $fullWidth]) x-data="{ open: false }"
     x-effect="$dispatch('resource-actions-toggled', { open })" @keydown.escape.window="open = false">
-    <button type="button" x-ref="trigger" @click="open = !open" @click.outside="open = false" title="Open service links"
+    <button type="button" x-ref="trigger" @click="open = !open" @click.outside="open = false" title="{{ __('Open service links') }}"
         @class([
             'app-tab shrink-0 gap-1' => !$fullWidth && !$compact,
             'button w-full justify-between' => $fullWidth,

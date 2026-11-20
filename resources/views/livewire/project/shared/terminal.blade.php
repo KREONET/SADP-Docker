@@ -95,7 +95,7 @@
             <div x-show="consolePendingLines.length > 0" x-cloak
                 class="console-command-pending mb-1 flex items-center gap-2 pl-2 text-xs">
                 <span x-text="`${consolePendingLines.length} pasted lines ready to send`"></span>
-                <span class="opacity-60">· Enter to send · Esc to cancel</span>
+                <span class="opacity-60">{{ __('· Enter to send · Esc to cancel') }}</span>
             </div>
             <div class="console-command-row flex min-h-9 cursor-text items-center gap-3 rounded-md pr-1 pl-2"
                 @click="$refs.consoleInput?.focus()">
@@ -109,12 +109,12 @@
                     @keydown.arrow-down.prevent="recallConsoleCommand(1)"
                     @paste="pasteConsoleText($event)"
                     autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send"
-                    aria-label="Console command" placeholder="Send a command to the process…"
+                    aria-label="{{ __('Console command') }}" placeholder="{{ __('Send a command to the process…') }}"
                     class="console-command-field min-w-0 flex-1 border-0! bg-transparent! px-0! py-1.5! font-mono text-[16px]! shadow-none! ring-0! outline-none! focus:border-0! focus:shadow-none! focus:ring-0! focus:outline-none! sm:text-[13px]!" />
                 <button type="button" @click.stop="submitConsoleCommand()" :disabled="!canSubmitConsoleCommand()"
-                    title="Send (Enter) · Clear input (Esc) · Clear output (Ctrl+L)"
+                    title="{{ __('Send (Enter) · Clear input (Esc) · Clear output (Ctrl+L)') }}"
                     class="console-command-send inline-flex h-7 shrink-0 items-center gap-2 rounded px-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-40">
-                    Send
+                    {{ __('Send') }}
                     <span class="font-mono text-sm opacity-60" aria-hidden="true">↵</span>
                 </button>
             </div>

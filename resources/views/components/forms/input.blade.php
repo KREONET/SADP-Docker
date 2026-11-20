@@ -92,11 +92,11 @@
             @if ($autofocus) x-ref="autofocusInput" autofocus @endif>
         @if ($type === 'number')
                 <div class="number-stepper">
-                    <button type="button" tabindex="-1" aria-label="Decrease" x-on:click="step(-1)"
+                    <button type="button" tabindex="-1" aria-label="{{ __('Decrease') }}" x-on:click="step(-1)"
                         @disabled($disabled || $readonly)>
                         <x-reicon name="minus" class="size-3.5" />
                     </button>
-                    <button type="button" tabindex="-1" aria-label="Increase" x-on:click="step(1)"
+                    <button type="button" tabindex="-1" aria-label="{{ __('Increase') }}" x-on:click="step(1)"
                         @disabled($disabled || $readonly)>
                         <x-reicon name="plus" class="size-3.5" />
                     </button>

@@ -202,7 +202,7 @@
                                         </x-slot:content>
                                         <livewire:server.new.by-digital-ocean :limit_reached="false" :from_onboarding="true" />
                                     </x-modal-input>
-                                    <x-modal-input title="Connect a Hostinger Server" isFullWidth>
+                                    <x-modal-input :title="__('Connect a Hostinger Server')" isFullWidth>
                                         <x-slot:content>
                                             <div
                                                 class="group relative cursor-pointer flex h-full min-h-36 flex-col rounded-[10px] border border-neutral-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-px hover:border-neutral-300 hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.025] dark:hover:border-white/[0.14]">
@@ -211,7 +211,7 @@
                                                     <div class="min-h-0 flex-1">
                                                         <h3 class="mb-1 text-[14px] font-semibold">Hostinger</h3>
                                                         <p class="text-sm dark:text-neutral-400">
-                                                            Deploy servers directly from your Hostinger account.
+                                                            {{ __('Deploy servers directly from your Hostinger account.') }}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -400,8 +400,7 @@
                             <x-highlighted :text="__('Public Key Distribution:')" /> {!! __('Deploy the public key to :file on your target server for the specified user.', ['file' => '<code class="text-xs bg-coolgray-300 dark:bg-coolgray-400 px-1 py-0.5 rounded">~/.ssh/authorized_keys</code>']) !!}
                         </p>
                         <p>
-                            <x-highlighted text="Key Format:" /> Supports ED25519, ECDSA, and RSA (2048 bits or more) key types in OpenSSH
-                            format.
+                            <x-highlighted :text="__('Key Format:')" /> {{ __('Supports ED25519, ECDSA, and RSA (2048 bits or more) key types in OpenSSH format.') }}
                         </p>
                     </x-slot:explanation>
                 </x-boarding-step>

@@ -18,16 +18,14 @@
                         <p>
                         {{ __('The server will be removed from Coolify.') }}
                         @if ($server->isTransferredAway())
-                            This server was transferred to another Coolify instance. Only the records on this instance
-                            are deleted, also the records of its resources. The server, its containers, and its data
-                            stay as they are.
+                            {{ __('This server was transferred to another Coolify instance. Only the records on this instance are deleted, also the records of its resources. The server, its containers, and its data stay as they are.') }}
                         @elseif ($resourcesToDelete->isNotEmpty())
                             {{ __('It currently contains managed resources. Enable force deletion in the confirmation only if those resources should also be removed.') }}
                         @endif
                         </p>
                         @if (! $server->isTransferredAway() && $resourcesToDelete->isNotEmpty())
                             <div>
-                                <p>Deleted with "Delete all resources":</p>
+                                <p>{{ __('Deleted with "Delete all resources":') }}</p>
                                 <ul class="list-disc pl-5">
                                     @foreach ($resourcesToDelete as $resource)
                                         <li>{{ $resource->name }}</li>
@@ -37,7 +35,7 @@
                         @endif
                         @if ($detachedApplications->isNotEmpty())
                             <div>
-                                <p>Removed only from this server (not deleted):</p>
+                                <p>{{ __('Removed only from this server (not deleted):') }}</p>
                                 <ul class="list-disc pl-5">
                                     @foreach ($detachedApplications as $application)
                                         <li>{{ $application->name }} will keep running on {{ data_get($application, 'destination.server.name') }}</li>
@@ -47,9 +45,9 @@
                         @endif
                         @if ($server->hostinger_virtual_machine_id && ! $server->isTransferredAway())
                             <p>
-                            Hostinger deletes the VPS only at the end of its paid period, and only if you select this in the confirmation dialog.
+                            {{ __('Hostinger deletes the VPS only at the end of its paid period, and only if you select this in the confirmation dialog.') }}
                             <a class="underline" href="https://hpanel.hostinger.com/" target="_blank"
-                                rel="noopener noreferrer">Manage the VPS and billing in hPanel.</a>
+                                rel="noopener noreferrer">{{ __('Manage the VPS and billing in hPanel.') }}</a>
                             </p>
                         @endif
                         <p>{{ __('Type the server name in the confirmation dialog to continue.') }}</p>

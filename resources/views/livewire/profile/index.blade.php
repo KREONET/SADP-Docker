@@ -15,7 +15,7 @@
                 <div class="application-settings-section-header">
                     <div>
                         <h2>{{ __('Profile details') }}</h2>
-                        <p>Your avatar, display name, and verified sign-in address.</p>
+                        <p>{{ __('Your avatar, display name, and verified sign-in address.') }}</p>
                     </div>
                 </div>
                 <div class="application-settings-section-body grid gap-4 sm:grid-cols-2">
@@ -90,7 +90,7 @@
                             }
                         },
                     }">
-                        <div class="mb-2 text-sm font-medium leading-4">Avatar</div>
+                        <div class="mb-2 text-sm font-medium leading-4">{{ __('Avatar') }}</div>
                         <div class="flex items-center gap-4">
                             <div class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-200 text-2xl font-semibold text-neutral-700 dark:bg-white/[0.1] dark:text-fg">
                                 <img x-cloak x-show="preview" :src="preview" alt="{{ __('Profile picture preview') }}"
@@ -117,7 +117,7 @@
                                             isError>{{ __('Remove') }}</x-forms.button>
                                     @endif
                                 </div>
-                                <p class="text-xs text-neutral-500 dark:text-fg-dim">JPG, PNG, or WebP. Shown in the user menu and team member lists.</p>
+                                <p class="text-xs text-neutral-500 dark:text-fg-dim">{{ __('JPG, PNG, or WebP. Shown in the user menu and team member lists.') }}</p>
                                 <p x-cloak x-show="uploadError" x-text="uploadError" class="text-xs text-red-500"></p>
                                 @error('avatar')
                                     <p class="text-xs text-red-500">{{ $message }}</p>
@@ -219,7 +219,7 @@
                 <div class="application-settings-section-body grid gap-4 sm:grid-cols-2">
                     <x-forms.input class="sm:col-span-2" id="current_password" :label="__('Current password')"
                         required type="password" :copyable="false" />
-                    <x-forms.input id="new_password" label="New password" required type="password" :copyable="false" />
+                    <x-forms.input id="new_password" :label="__('New password')" required type="password" :copyable="false" />
                     <x-forms.input id="new_password_confirmation" :label="__('Confirm new password')" required
                         type="password" :copyable="false" />
                 </div>

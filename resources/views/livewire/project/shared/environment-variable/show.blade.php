@@ -38,7 +38,7 @@
             @endif
             @if ($composeInfo)
                 <span class="table-badge shrink-0"
-                    title="Used by Compose services: {{ implode(', ', $composeInfo['services']) }}">Used by Compose</span>
+                    title="Used by Compose services: {{ implode(', ', $composeInfo['services']) }}">{{ __('Used by Compose') }}</span>
             @endif
         </div>
         @if (! $isSharedVariable)
@@ -126,9 +126,9 @@
                                     class="input w-full italic !text-neutral-500 dark:!text-neutral-500" />
                             </div>
                         @elseif ($isLocked)
-                            <x-forms.input id="newLockedValue" type="password" label="Value" :copyable="false"
-                                placeholder="Hidden after locking. Enter a new value to replace it."
-                                helper="The locked value cannot be shown. Leave this empty to keep it."
+                            <x-forms.input id="newLockedValue" type="password" :label="__('Value')" :copyable="false"
+                                :placeholder="__('Hidden after locking. Enter a new value to replace it.')"
+                                :helper="__('The locked value cannot be shown. Leave this empty to keep it.')"
                                 :disabled="!$canUpdate || $isDisabled" />
                         @else
                             {{-- Multiline: same shell while loading/loaded to avoid layout jump. --}}
@@ -182,19 +182,15 @@
                         @if (!$isSharedVariable && !$isValueHidden && !$isLocked)
                             <div x-cloak x-show="!isMultiline" wire:key="env-show-value-tip-{{ $env->id }}"
                                 class="mt-1.5 text-xs text-neutral-500 dark:text-fg-faint">
-                                Tip: Type <span
-                                    class="font-mono text-coollabs dark:text-brand-light">{{ '{{' }}</span> to reference
-                                a shared environment variable
+                                {{ __('Tip: Type') }} <span
+                                    class="font-mono text-coollabs dark:text-brand-light">{{ '{{' }}</span> {{ __('to reference a shared environment variable') }}
                             </div>
                         @endif
                     </div>
 
                     @if ($legacyEscapingChangesValue)
-                        <x-callout type="warning" title="Old escaping">
-                            This variable was saved before Coolify passed exact values, so the container gets a
-                            changed value (for example, with extra backslashes or quotes). To pass the exact value,
-                            delete this variable and add it again, then restart. If a database already uses this
-                            value as a password, update the password in the database too.
+                        <x-callout type="warning" :title="__('Old escaping')">
+                            {{ __('This variable was saved before Coolify passed exact values, so the container gets a changed value (for example, with extra backslashes or quotes). To pass the exact value, delete this variable and add it again, then restart. If a database already uses this value as a password, update the password in the database too.') }}
                         </x-callout>
                     @endif
 
@@ -202,18 +198,18 @@
                         <x-forms.input disabled type="password" id="real_value" :label="__('Resolved value')" />
                     @endif
                     @if ($composeInfo)
-                        <x-callout type="info" title="Used by Docker Compose">
+                        <x-callout type="info" :title="__('Used by Docker Compose')">
                             Used by: {{ implode(', ', $composeInfo['services']) }}.
                             @if ($composeInfo['default'] !== null)
-                                Compose default: <span class="font-mono">{{ $composeInfo['default'] }}</span>.
+                                {{ __('Compose default:') }} <span class="font-mono">{{ $composeInfo['default'] }}</span>.
                             @endif
                             @if ($composeInfo['default'] !== null && !$composeInfo['required'] && $canEditValue && !$isLocked)
                                 <x-forms.button type="button" wire:click="useComposeDefault">
-                                    Use Compose default
+                                    {{ __('Use Compose default') }}
                                 </x-forms.button>
                             @endif
                             @if ($composeInfo['required'])
-                                Compose requires this variable to have a value.
+                                {{ __('Compose requires this variable to have a value.') }}
                             @endif
                         </x-callout>
                     @endif
@@ -276,17 +272,17 @@
                             </div>
                             <div class="ml-auto flex flex-wrap gap-2" data-environment-variable-update-actions>
                                 @if ($this->connectLink)
-                                    <a href="{{ $this->connectLink }}" class="button" title="Add this variable to resources, and see which resources use it">
+                                    <a href="{{ $this->connectLink }}" class="button" title="{{ __('Add this variable to resources, and see which resources use it') }}">
                                         <x-reicon name="link" class="size-3.5" />
-                                        Connect to resources
+                                        {{ __('Connect to resources') }}
                                     </a>
                                 @endif
                                 @if ($canUpdate && !$isLocked && !$isMagicVariable)
                                     <div wire:key="env-lock-action-{{ $env->id }}">
-                                        <x-modal-confirmation title="Lock Environment Variable?" buttonTitle="Lock"
+                                        <x-modal-confirmation :title="__('Lock Environment Variable?')" :buttonTitle="__('Lock')"
                                             submitAction="lock"
                                             :actions="['The value will be hidden. You cannot see or copy it again.', 'You can still replace the value with a new one, but you cannot unlock the variable.']"
-                                            :confirmWithText="false" :confirmWithPassword="false" step2ButtonText="Lock" />
+                                            :confirmWithText="false" :confirmWithPassword="false" :step2ButtonText="__('Lock')" />
                                     </div>
                                 @endif
                                 @if ($canUpdate && !$isDisabled)

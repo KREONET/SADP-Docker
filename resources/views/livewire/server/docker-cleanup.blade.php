@@ -56,7 +56,7 @@
                         </div>
                     @endif
                     <x-application.settings-subsection id="docker-cleanup-configuration-section"
-                        title="Schedule"
+                        :title="__('Schedule')"
                         :helper="__('Choose when cleanup runs and whether it should wait for a disk threshold.')">
                         <div class="grid gap-4 lg:grid-cols-3">
                             <x-forms.input canGate="update" :canResource="$server" placeholder="0 0 * * *"
@@ -75,11 +75,10 @@
                             @endif
                         </div>
                     </x-application.settings-subsection>
-                    <x-application.settings-subsection id="docker-cleanup-advanced-section" title="Advanced cleanup"
-                        helper="Control destructive cleanup behavior and application image retention.">
-                        <x-callout type="warning" title="These options can remove recoverable data">
-                            Unused volumes may contain data from stopped containers, while removing retained images
-                            disables rollback to older application versions.
+                    <x-application.settings-subsection id="docker-cleanup-advanced-section" :title="__('Advanced cleanup')"
+                        :helper="__('Control destructive cleanup behavior and application image retention.')">
+                        <x-callout type="warning" :title="__('These options can remove recoverable data')">
+                            {{ __('Unused volumes may contain data from stopped containers, while removing retained images disables rollback to older application versions.') }}
                         </x-callout>
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-3">

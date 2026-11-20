@@ -186,15 +186,15 @@
                                 </x-forms.button>
                             @endif
                         @else
-                            <x-table.row-actions label="Domain actions">
+                            <x-table.row-actions :label="__('Domain actions')">
                                 <x-table.row-action wire:click="checkDomainDns({{ $index }})"
                                     wire:loading.attr="disabled"
                                     wire:target="checkDomainDns({{ $index }}),checkAllDns">
-                                    Check DNS
+                                    {{ __('Check DNS') }}
                                 </x-table.row-action>
                                 <x-table.row-action aria-label="Edit {{ $publicUrl }}"
                                     x-on:click="openEditDomain({{ \Illuminate\Support\Js::from($index) }}, {{ \Illuminate\Support\Js::from($row['url']) }}, {{ \Illuminate\Support\Js::from($editingParts) }}, {{ \Illuminate\Support\Js::from((int) $row['service_application_id']) }}, {{ \Illuminate\Support\Js::from($serviceLabel) }}, {{ \Illuminate\Support\Js::from($isNoindexed ? 'noindex' : 'index') }}, {{ \Illuminate\Support\Js::from($rowDirection) }})">
-                                    Edit
+                                    {{ __('Edit') }}
                                 </x-table.row-action>
                                 <x-slot:danger>
                                     <x-modal-confirmation buttonFullWidth :title="__('Remove domain?')"
@@ -207,7 +207,7 @@
                                         :confirmWithPassword="false" :confirmWithText="false"
                                         :step2ButtonText="__('Remove domain')">
                                         <x-slot:trigger>
-                                            <x-table.row-action>Delete</x-table.row-action>
+                                            <x-table.row-action>{{ __('Delete') }}</x-table.row-action>
                                         </x-slot:trigger>
                                     </x-modal-confirmation>
                                 </x-slot:danger>

@@ -5,7 +5,7 @@
 
 {{-- Runtime log panel skeleton: header, toolbar, and log lines. --}}
 <div role="status" {{ $attributes->class(['runtime-log-shell overflow-hidden']) }}>
-    <span class="sr-only">Loading containers</span>
+    <span class="sr-only">{{ __('Loading containers') }}</span>
     <div class="flex min-h-11 items-center gap-2 px-3.5">
         <x-skeleton class="size-4 rounded" />
         <x-skeleton class="h-3 w-48 rounded-full" />

@@ -147,7 +147,7 @@ class ServerImageScanning extends Component
         try {
             SetServerImageScanning::run($this->server, true);
             $this->auditImageScanning('image_scanning_enabled');
-            $this->dispatch('success', 'Image scanning turned on. Coolify is getting the scanner.');
+            $this->dispatch('success', __('Image scanning turned on. Coolify is getting the scanner.'));
         } catch (ImageScanningRefused $e) {
             $this->dispatch('error', message: $e->getMessage());
         } catch (\Throwable $e) {
@@ -168,7 +168,7 @@ class ServerImageScanning extends Component
             }
 
             SetServerImageScanning::prepareScanner($this->server);
-            $this->dispatch('success', 'Coolify is getting the scanner.');
+            $this->dispatch('success', __('Coolify is getting the scanner.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -181,7 +181,7 @@ class ServerImageScanning extends Component
         try {
             SetServerImageScanning::run($this->server, false);
             $this->auditImageScanning('image_scanning_disabled');
-            $this->dispatch('success', 'Image scanning turned off.');
+            $this->dispatch('success', __('Image scanning turned off.'));
         } catch (\Throwable $e) {
             return handleError($e, $this);
         }
@@ -205,7 +205,7 @@ class ServerImageScanning extends Component
             // Records the server as empty, so the page can hide the delete action until the data comes back.
             Cache::put(PrepareImageScannerJob::diskUsedCacheKey($this->server), 0, now()->addDays(7));
             $this->auditImageScanning('image_scanner_data_deleted');
-            $this->dispatch('success', 'Scanner data deleted.');
+            $this->dispatch('success', __('Scanner data deleted.'));
         } catch (\Throwable $e) {
             return handleError($e, $this, 'Could not delete the scanner data.');
         } finally {

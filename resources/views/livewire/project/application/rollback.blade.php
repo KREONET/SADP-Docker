@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-6" x-init="$wire.loadImages">
-    <x-application.settings-section title="Rollback images"
-        helper="Keep previously built Docker images available for fast rollbacks. Rollback uses an existing image without rebuilding the application. Images in the Docker registry are pulled to the server first." flush>
+    <x-application.settings-section :title="__('Rollback images')"
+        :helper="__('Keep previously built Docker images available for fast rollbacks. Rollback uses an existing image without rebuilding the application. Images in the Docker registry are pulled to the server first.')" flush>
         <x-slot:actions>
             @can('view', $application)
                 <x-forms.button wire:click="loadImages(true)">
@@ -83,13 +83,13 @@
                 </div>
             @empty
                 <x-empty :title="__('No rollback images')"
-                    description="No previous application images are stored on this server or in the Docker registry."
+                    :description="__('No previous application images are stored on this server or in the Docker registry.')"
                     icon-name="layers" />
             @endforelse
         </div>
 
         <div class="w-full" wire:target="loadImages" wire:loading>
-            <x-skeleton.list :rows="3" label="Loading available images" />
+            <x-skeleton.list :rows="3" :label="__('Loading available images')" />
         </div>
     </x-application.settings-section>
 </div>

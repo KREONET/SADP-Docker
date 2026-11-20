@@ -1,6 +1,6 @@
 <div class="flex h-full flex-col">
     <x-slot:title>
-        Dashboard > Canvas | Coolify
+        {{ __('Dashboard > Canvas | Coolify') }}
     </x-slot>
     {{-- data-poll: deployments start without a broadcast event, so the canvas reloads while it is open. --}}
     <div data-environment-canvas data-endpoint="/dashboard/canvas" data-poll="5"

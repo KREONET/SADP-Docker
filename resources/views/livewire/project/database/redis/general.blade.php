@@ -3,7 +3,7 @@
         <x-unsaved-bar action="submit" />
 
         <x-application.settings-section id="database-details-section" :title="__('Database details')"
-            description="Manage the identity, container image, and credentials of this Redis / Valkey database.">
+            :description="__('Manage the identity, container image, and credentials of this Redis / Valkey database.')">
             <x-slot:actions>
                 <x-modal-input :title="__('Resource details')" :buttonTitle="__('Details')">
                     <livewire:project.shared.resource-details :resource="$database" />
@@ -14,14 +14,13 @@
                 <x-forms.input :label="__('Description')" id="description" canGate="update" :canResource="$database" />
                 <div class="lg:col-span-2">
                     <x-forms.input :label="__('Image')" id="image" required canGate="update" :canResource="$database"
-                        helper="Use a published Redis or Valkey image from Docker Hub, for example valkey/valkey:9-alpine or redis:8." />
+                        :helper="__('Use a published Redis or Valkey image from Docker Hub, for example valkey/valkey:9-alpine or redis:8.')" />
                 </div>
             </div>
-            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" helper="Keep these values aligned with the credentials configured inside Redis / Valkey.">
+            <x-application.settings-subsection id="credentials-section" :title="__('Credentials')" :helper="__('Keep these values aligned with the credentials configured inside Redis / Valkey.')">
                 <x-callout type="warning" title="{{ $database->started_at ? __('Keep credentials synchronized') : __('Verify the initial credentials') }}">
                     @if ($database->started_at)
-                        Changing values here does not update Redis. Update Redis first, then synchronize the values here so
-                        automations continue working.
+                        {{ __('Changing values here does not update Redis. Update Redis first, then synchronize the values here so automations continue working.') }}
                     @else
                         {{ __('These values can only be changed here before the first start.') }}
                     @endif
@@ -37,7 +36,7 @@
                         <x-forms.input :label="__('Password')" disabled :value="__('Hidden (only admins can view)')" />
                     @elseif ($isPasswordLocked)
                         <x-forms.input :label="__('Password')" disabled value="Locked (shown once)"
-                            helper="REDIS_PASSWORD is locked. Its value is never shown again." />
+                            :helper="__('REDIS_PASSWORD is locked. Its value is never shown again.')" />
                     @else
                         <x-forms.input :label="__('Password')" id="redisPassword" type="password"
                             :required="!$database->started_at"
@@ -49,8 +48,8 @@
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="access-section" title="Access"
-            description="How applications and clients connect to this database, and whether it is reachable from the internet.">
+        <x-application.settings-section id="access-section" :title="__('Access')"
+            :description="__('How applications and clients connect to this database, and whether it is reachable from the internet.')">
             <x-slot:actions>
                 @if ($isPublic)
                     <x-process-dialog closeWithX size="xl">
@@ -63,10 +62,10 @@
                     </x-process-dialog>
                 @endif
             </x-slot:actions>
-            <x-application.settings-subsection id="connection-section" title="Connection" helper="Use these URLs to connect to the database." first>
+            <x-application.settings-subsection id="connection-section" :title="__('Connection')" :helper="__('Use these URLs to connect to the database.')" first>
                 <livewire:project.database.redis.status-info :database="$database" />
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="public-access-section" title="Public access" helper="Expose this database through the managed TCP proxy." class="relative">
+            <x-application.settings-subsection id="public-access-section" :title="__('Public access')" :helper="__('Expose this database through the managed TCP proxy.')" class="relative">
                 <x-table.loading target="instantSave" :text="__('Updating public access...')" />
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div wire:key="public-access-{{ $publicPort ?: 'unset' }}">
@@ -82,16 +81,16 @@
                         :label="__('Proxy timeout')" :helper="__('Timeout in seconds. The default is 3600.')"
                         canGate="update" :canResource="$database" />
                     <x-forms.input placeholder="3000:6379" id="portsMappings" :label="__('Port mappings')"
-                        helper="Comma-separated host-to-container mappings, for example 3000:6379."
+                        :helper="__('Comma-separated host-to-container mappings, for example 3000:6379.')"
                         canGate="update" :canResource="$database" />
                 </div>
             </x-application.settings-subsection>
         </x-application.settings-section>
 
-        <x-application.settings-section id="container-section" title="Container"
-            description="Docker options, configuration, and log forwarding for the database container.">
+        <x-application.settings-section id="container-section" :title="__('Container')"
+            :description="__('Docker options, configuration, and log forwarding for the database container.')">
             @if ($isPasswordHiddenForMember)
-                <x-forms.input label="Custom Docker options" disabled value="Hidden (only admins can view)" />
+                <x-forms.input :label="__('Custom Docker options')" disabled value="Hidden (only admins can view)" />
             @else
                 <x-forms.input
                     :helper="__('Add supported docker run options used when the container starts. Unsupported options can interfere with Coolify automation.')"
@@ -99,19 +98,19 @@
                     id="customDockerRunOptions" :label="__('Custom Docker options')" canGate="update"
                     :canResource="$database" />
             @endif
-            <x-application.settings-subsection id="configuration-section" title="Configuration" helper="Override only the Redis / Valkey directives you need. All other defaults remain active.">
+            <x-application.settings-subsection id="configuration-section" :title="__('Configuration')" :helper="__('Override only the Redis / Valkey directives you need. All other defaults remain active.')">
                 @if ($isPasswordHiddenForMember)
-                    <x-forms.input label="Custom Redis / Valkey configuration" disabled value="Hidden (only admins can view)" />
+                    <x-forms.input :label="__('Custom Redis / Valkey configuration')" disabled value="Hidden (only admins can view)" />
                 @else
                     <x-forms.textarea placeholder="# maxmemory 256mb
     # maxmemory-policy allkeys-lru
     # timeout 300"
                         :helper="__('Coolify automatically applies requirepass using the password above. If you override requirepass here, keep both values identical.')"
-                        label="Custom Redis / Valkey configuration" rows="10" id="redisConf" canGate="update"
+                        :label="__('Custom Redis / Valkey configuration')" rows="10" id="redisConf" canGate="update"
                         :canResource="$database" />
                 @endif
             </x-application.settings-subsection>
-            <x-application.settings-subsection id="log-delivery-section" title="Log delivery" helper="Forward container logs to the drain configured on the server.">
+            <x-application.settings-subsection id="log-delivery-section" :title="__('Log delivery')" :helper="__('Forward container logs to the drain configured on the server.')">
                 <x-forms.listbox canGate="update" :canResource="$database" id="isLogDrainEnabled" :label="__('Log drain')" live onChange="instantSaveAdvanced"
                     :disabled="! auth()->user()->can('update', $database)" :options="[
                         ['value' => false, 'label' => __('Do not forward logs')],
