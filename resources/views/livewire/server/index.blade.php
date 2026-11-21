@@ -6,6 +6,13 @@
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="min-w-0 text-[24px]! leading-7! font-semibold! tracking-tight!">{{ __('Servers') }}</h1>
         <div class="flex flex-wrap items-center gap-2">
+            @if (\App\Livewire\Server\Index::sentinelInstallableServers()->isNotEmpty())
+                <x-forms.button type="button" wire:click="installSentinelOnAllServers"
+                    :title="__('Install Sentinel on every validated server where it is missing or outdated')">
+                    <x-reicon name="refresh" class="size-3.5" />
+                    {{ __('Install Sentinel on all servers') }}
+                </x-forms.button>
+            @endif
             @can('create', App\Models\Server::class)
                 <a href="{{ route('server.create') }}" {{ wireNavigate() }}
                     class="button w-fit shrink-0 whitespace-nowrap button-highlighted">
@@ -56,9 +63,13 @@
                 }
             }
 
+            $network = $server->networkZone();
+
             return [
                 'uuid' => $server->uuid,
                 'name' => $server->name,
+                'network' => $network,
+                'networkLabel' => $network === 'internal' ? __('Internal network') : __('External network'),
                 'description' => $server->description,
                 'href' => route('server.show', ['server_uuid' => $server->uuid]),
                 'patchesHref' => route('server.security.patches', ['server_uuid' => $server->uuid]),
@@ -82,15 +93,20 @@
 
     <div x-data="{
         search: '',
+        network: 'all',
         viewMode: @js($this->listView('servers', 'table')),
         servers: @js($serverRows),
         get filteredServers() {
             const query = this.search.trim().toLowerCase();
-            if (!query) return this.servers;
-            return this.servers.filter(server =>
-                [server.name, server.description, server.status, ...server.patchBadges.map(badge => badge.label)]
+            const servers = this.network === 'all' ? this.servers : this.servers.filter(server => server.network === this.network);
+            if (!query) return servers;
+            return servers.filter(server =>
+                [server.name, server.description, server.status, server.networkLabel, ...server.patchBadges.map(badge => badge.label)]
                     .some(value => String(value || '').toLowerCase().includes(query))
             );
+        },
+        networkCount(network) {
+            return network === 'all' ? this.servers.length : this.servers.filter(server => server.network === network).length;
         },
         openPatches(url) {
             window.Livewire.navigate(url);
@@ -119,6 +135,18 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3 sm:justify-end">
+                    <div role="group" aria-label="{{ __('Network') }}" data-network-filter
+                        class="inline-flex h-8 items-center rounded-lg border border-neutral-200 bg-white p-0.5 text-[12px] dark:border-white/[0.08] dark:bg-white/[0.035]">
+                        @foreach (['all' => __('All'), 'internal' => __('Internal network'), 'external' => __('External network')] as $networkValue => $networkName)
+                            <button type="button" x-on:click="network = @js($networkValue)"
+                                :aria-pressed="network === @js($networkValue)"
+                                :class="network === @js($networkValue) ? 'bg-neutral-100 text-black dark:bg-white/[0.09] dark:text-fg' : 'text-neutral-500 hover:text-black dark:text-fg-faint dark:hover:text-fg'"
+                                class="flex h-full items-center gap-1.5 rounded-md px-2.5 font-medium transition-colors">
+                                {{ $networkName }}
+                                <span class="text-[11px] text-neutral-400 dark:text-fg-faint" x-text="networkCount(@js($networkValue))"></span>
+                            </button>
+                        @endforeach
+                    </div>
                     <x-canvas-view-toggle :list-url="route('server.index')"
                         :canvas-url="route('server.canvas.index')" />
                 </div>
@@ -153,6 +181,11 @@
                                         {{ $serverRow['description'] }}
                                     </p>
                                 @endif
+                                <span data-network-badge="{{ $serverRow['network'] }}" @class([
+                                    'mt-1 inline-flex rounded px-1.5 py-px text-[10px] font-medium',
+                                    'bg-sky-500/10 text-sky-700 dark:text-sky-300' => $serverRow['network'] === 'internal',
+                                    'bg-violet-500/10 text-violet-700 dark:text-violet-300' => $serverRow['network'] === 'external',
+                                ])>{{ $serverRow['networkLabel'] }}</span>
                             </div>
                             @if ($serverRow['statusType'] !== 'success')
                                 <span data-tooltip="{{ $serverRow['status'] }}"
@@ -210,8 +243,13 @@
                                 <x-reicon name="servers" class="size-4" />
                             </div>
                             <div class="min-w-0">
-                                <p class="truncate text-[13px] font-semibold text-black dark:text-fg"
-                                    x-text="server.name"></p>
+                                <p class="flex min-w-0 items-center gap-1.5">
+                                    <span class="truncate text-[13px] font-semibold text-black dark:text-fg"
+                                        x-text="server.name"></span>
+                                    <span class="inline-flex shrink-0 rounded px-1.5 py-px text-[10px] font-medium"
+                                        :class="server.network === 'internal' ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'bg-violet-500/10 text-violet-700 dark:text-violet-300'"
+                                        x-text="server.networkLabel"></span>
+                                </p>
                                 <p class="truncate text-[11px] text-neutral-500 dark:text-fg-faint"
                                     x-text="server.description"></p>
                             </div>

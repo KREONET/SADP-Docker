@@ -21,12 +21,15 @@
     $showDocker = (bool) ($uptime && $supported_os_type && $prerequisites_installed);
     $showCompose = $showDocker;
     $showVersion = (bool) ($showDocker && $docker_compose_installed);
-    $validationComplete = (bool) ($uptime
+    $dockerValidated = (bool) ($uptime
         && $supported_os_type
         && $prerequisites_installed
         && $docker_installed
         && $docker_compose_installed
         && $docker_version);
+    $showSentinel = $dockerValidated && $sentinel_installed !== null;
+    $sentinelInstalling = $showSentinel && $sentinel_installed === false && blank($sentinel_error);
+    $validationComplete = $dockerValidated && ($sentinel_installed === null || $sentinel_installed === true);
 
     $checkpoints = [
         [
@@ -70,6 +73,15 @@
             'visible' => $showVersion,
         ],
     ];
+
+    if ($showSentinel) {
+        $checkpoints[] = [
+            'title' => __('Sentinel is installed'),
+            'description' => __('Install the Sentinel monitoring agent on the server'),
+            'status' => $resolveStatus($sentinel_installed, true, filled($sentinel_error)),
+            'visible' => true,
+        ];
+    }
 @endphp
 
 <div class="flex h-full min-h-0 flex-col gap-4 overflow-y-auto scrollbar">
@@ -83,6 +95,7 @@
         </x-forms.button>
     @else
         <div data-validation-checkpoints
+            @if ($sentinelInstalling) wire:poll.5s="checkSentinelInstallation" @endif
             class="shrink-0 overflow-hidden rounded-[10px] border border-neutral-200 dark:border-white/[0.08]">
             <div class="border-b border-neutral-200 px-4 py-2.5 dark:border-white/[0.08]">
                 <h3 class="text-[13px] font-medium text-neutral-600 dark:text-fg-dim">{{ __('Validation checkpoints') }}</h3>
@@ -127,5 +140,20 @@
                 {{ __('Retry validation') }}
             </x-forms.button>
         @endisset
+
+        @if ($showSentinel && filled($sentinel_error) && blank($error))
+            <div
+                class="rounded-[10px] border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-[13px] leading-5 text-red-700 dark:text-red-300">
+                <div class="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em]">
+                    <x-reicon name="alert-circle" class="size-3.5 shrink-0" />
+                    {{ __('Sentinel installation failed') }}
+                </div>
+                <div class="font-mono text-[12px] leading-5 whitespace-pre-line">{{ $sentinel_error }}</div>
+            </div>
+            <x-forms.button canGate="update" :canResource="$server" wire:click="retrySentinelInstallation">
+                <x-reicon name="refresh" class="size-3.5" />
+                {{ __('Retry Sentinel installation') }}
+            </x-forms.button>
+        @endif
     @endif
 </div>
