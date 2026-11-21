@@ -56,6 +56,7 @@ use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 use Spatie\SchemalessAttributes\SchemalessAttributesTrait;
 use Spatie\Url\Url;
 use Stevebauman\Purify\Facades\Purify;
+use Symfony\Component\HttpFoundation\IpUtils;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -1532,6 +1533,92 @@ $siteAddress {
     public function isLocalhost()
     {
         return $this->ip === 'host.docker.internal' || $this->id === 0;
+    }
+
+    /**
+     * Address ranges of internal networks: RFC 1918, carrier-grade NAT (which VPNs such as Tailscale also use),
+     * loopback, link-local and IPv6 unique local addresses.
+     */
+    public const INTERNAL_NETWORK_RANGES = [
+        '10.0.0.0/8',
+        '172.16.0.0/12',
+        '192.168.0.0/16',
+        '100.64.0.0/10',
+        '127.0.0.0/8',
+        '169.254.0.0/16',
+        '::1/128',
+        'fc00::/7',
+        'fe80::/10',
+    ];
+
+    /** Host name suffixes that only resolve on a private network. */
+    public const INTERNAL_HOST_SUFFIXES = ['.local', '.lan', '.internal', '.intranet', '.localdomain', '.home.arpa', '.corp', '.home'];
+
+    /**
+     * The server is on the internal network when its address is private (RFC 1918, CGNAT, IPv6 unique local
+     * or link-local), or inside the internal network ranges of the instance settings. Other servers are
+     * on the external network. The Coolify host itself is internal.
+     */
+    public function isInternalNetwork(): bool
+    {
+        if ($this->isLocalhost()) {
+            return true;
+        }
+
+        return self::isInternalAddress((string) $this->ip);
+    }
+
+    /**
+     * @return 'internal'|'external'
+     */
+    public function networkZone(): string
+    {
+        return $this->isInternalNetwork() ? 'internal' : 'external';
+    }
+
+    public static function isInternalAddress(string $host): bool
+    {
+        $host = strtolower(trim($host, " \t\n\r\0\x0B[]"));
+        if ($host === '') {
+            return false;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            $addresses = [$host];
+        } else {
+            if (! str_contains($host, '.') || str_ends_with($host, '.localhost') || $host === 'localhost') {
+                return true;
+            }
+            foreach (self::INTERNAL_HOST_SUFFIXES as $suffix) {
+                if (str_ends_with($host, $suffix)) {
+                    return true;
+                }
+            }
+            $addresses = self::resolveHostAddresses($host);
+        }
+
+        $ranges = [...self::INTERNAL_NETWORK_RANGES, ...internalNetworkRanges()];
+        foreach ($addresses as $address) {
+            if (IpUtils::checkIp($address, $ranges)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * IPv4 addresses of a host name. The answer is cached, so a list of servers does not resolve every name on each view.
+     *
+     * @return array<int, string>
+     */
+    private static function resolveHostAddresses(string $host): array
+    {
+        return Cache::remember('server-network-zone:'.sha1($host), now()->addHour(), function () use ($host) {
+            $addresses = @gethostbynamel($host);
+
+            return is_array($addresses) ? array_values($addresses) : [];
+        });
     }
 
     /**

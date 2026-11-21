@@ -45,6 +45,16 @@ class ValidateAndInstall extends Component
 
     public bool $isInstalling = false;
 
+    /** null: not started, false: installing, true: Sentinel container is running. */
+    public $sentinel_installed = null;
+
+    public $sentinel_error = null;
+
+    public int $sentinel_status_checks = 0;
+
+    /** Sentinel status is checked every 5 seconds, so this waits about 5 minutes for the image pull and start. */
+    public const SENTINEL_MAX_STATUS_CHECKS = 60;
+
     protected $listeners = [
         'init',
         'validateConnection',
@@ -82,6 +92,7 @@ class ValidateAndInstall extends Component
         $this->docker_version = null;
         $this->docker_compose_installed = null;
         $this->error = null;
+        $this->resetSentinelInstallation();
         $this->number_of_tries = $data;
         if (! $this->ask) {
             $this->dispatch('validateConnection');
@@ -105,6 +116,7 @@ class ValidateAndInstall extends Component
             $this->docker_compose_installed = null;
             $this->docker_version = null;
             $this->error = null;
+            $this->resetSentinelInstallation();
             $this->number_of_tries = 0;
             $this->init();
         } catch (\Throwable $e) {
@@ -330,9 +342,7 @@ class ValidateAndInstall extends Component
                 $this->dispatch('refreshServerShow');
                 $this->dispatch('refreshBoardingIndex');
                 ServerValidated::dispatch($this->server->team_id, $this->server->uuid);
-                if ($this->server->isSentinelEnabled()) {
-                    CheckAndStartSentinelJob::dispatch($this->server);
-                }
+                $this->installSentinel();
                 if (! $this->server->isProxyShouldRun()) {
                     $this->dispatch('success', __('Server validated.'));
 
@@ -360,6 +370,87 @@ class ValidateAndInstall extends Component
         if ($this->server->isBuildServer()) {
             return;
         }
+    }
+
+    /**
+     * Install Sentinel on the validated server. The container is started by a queued job,
+     * and checkSentinelInstallation() follows it until the container runs.
+     */
+    public function installSentinel(): void
+    {
+        $this->authorize('update', $this->server);
+
+        $this->resetSentinelInstallation();
+        $this->server->unsetRelation('settings');
+        if (! $this->server->isSentinelEnabled()) {
+            return;
+        }
+
+        try {
+            // A queued job has no web request, so it cannot derive the Coolify URL from the request host.
+            // Resolve and save the push URL here, while the request of the browser is available.
+            $this->server->settings->ensureSentinelUrl();
+            $this->server->settings->ensureValidSentinelToken();
+        } catch (\Throwable $e) {
+            $this->sentinel_installed = false;
+            $this->sentinel_error = $e->getMessage();
+            $this->server->rememberSentinelPushProblem($this->sentinel_error);
+
+            return;
+        }
+
+        $this->sentinel_installed = false;
+        CheckAndStartSentinelJob::dispatch($this->server);
+    }
+
+    public function retrySentinelInstallation(): void
+    {
+        try {
+            $this->installSentinel();
+        } catch (\Throwable $e) {
+            handleError($e, $this);
+        }
+    }
+
+    /**
+     * Polled by the view while Sentinel is installing.
+     */
+    public function checkSentinelInstallation(): void
+    {
+        $this->authorize('update', $this->server);
+
+        if ($this->sentinel_installed !== false || filled($this->sentinel_error)) {
+            return;
+        }
+
+        $this->sentinel_status_checks++;
+        try {
+            $state = instant_remote_process_with_timeout(
+                ["docker ps --filter 'name=^coolify-sentinel$' --format '{{.State}}'"],
+                $this->server,
+                false
+            );
+        } catch (\Throwable) {
+            $state = null;
+        }
+
+        if (str_starts_with(trim((string) $state), 'running')) {
+            $this->sentinel_installed = true;
+            $this->dispatch('success', __('Sentinel is installed.'));
+
+            return;
+        }
+
+        if ($this->sentinel_status_checks >= self::SENTINEL_MAX_STATUS_CHECKS) {
+            $this->sentinel_error = __('Sentinel did not start in time. Check the queue worker and the server logs, then retry the Sentinel installation.');
+        }
+    }
+
+    private function resetSentinelInstallation(): void
+    {
+        $this->sentinel_installed = null;
+        $this->sentinel_error = null;
+        $this->sentinel_status_checks = 0;
     }
 
     public function render()

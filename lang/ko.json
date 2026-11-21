@@ -7164,5 +7164,19 @@
     "No existing SSL certificate found for this database.": "이 데이터베이스의 기존 SSL 인증서가 없습니다.",
     "No CA certificate found for this database. Please generate a CA certificate for this server in the server/advanced page.": "이 데이터베이스의 CA 인증서가 없습니다. 서버/고급 페이지에서 이 서버의 CA 인증서를 생성하세요.",
     "SSL certificates regenerated. Restart database to apply changes.": "SSL 인증서를 다시 생성했습니다. 변경 사항을 적용하려면 데이터베이스를 재시작하세요.",
-    "Smart Scan could not read the repository. Check the repository access and the branch.": "Smart Scan이 저장소를 읽지 못했습니다. 저장소 접근 권한과 브랜치를 확인하세요."
+    "Smart Scan could not read the repository. Check the repository access and the branch.": "Smart Scan이 저장소를 읽지 못했습니다. 저장소 접근 권한과 브랜치를 확인하세요.",
+    "Sentinel is installed.": "Sentinel이 설치되었습니다.",
+    "Sentinel is installed": "Sentinel 설치됨",
+    "Install the Sentinel monitoring agent on the server": "서버에 Sentinel 모니터링 에이전트를 설치합니다",
+    "Sentinel installation failed": "Sentinel 설치 실패",
+    "Retry Sentinel installation": "Sentinel 설치 다시 시도",
+    "Sentinel did not start in time. Check the queue worker and the server logs, then retry the Sentinel installation.": "Sentinel이 제한 시간 내에 시작되지 않았습니다. 큐 워커와 서버 로그를 확인한 후 Sentinel 설치를 다시 시도하세요.",
+    "No validated server needs a Sentinel installation.": "Sentinel을 설치할 검증된 서버가 없습니다.",
+    "Sentinel installation started on :count servers.": "서버 :count대에서 Sentinel 설치를 시작했습니다.",
+    "Sentinel could not be installed on :servers.": ":servers 서버에 Sentinel을 설치하지 못했습니다.",
+    "Install Sentinel on every validated server where it is missing or outdated": "Sentinel이 없거나 오래된 모든 검증된 서버에 Sentinel을 설치합니다",
+    "Install Sentinel on all servers": "모든 서버에 Sentinel 설치",
+    "External network": "외부망",
+    "Internal network URL": "내부망 URL",
+    "Sentinel on internal network servers reports to this URL. Servers with a private IP address (10.x, 172.16-31.x, 192.168.x, 100.64-127.x, IPv6 unique local) or an address in the ranges above are internal; all other servers are external and report to the instance domain or public IP. Leave empty to use the instance domain for every server.": "내부망 서버의 Sentinel은 이 URL로 보고합니다. 사설 IP(10.x, 172.16-31.x, 192.168.x, 100.64-127.x, IPv6 고유 로컬 주소)이거나 위 대역에 속한 서버는 내부망, 나머지 서버는 외부망으로 보고 인스턴스 도메인이나 공인 IP로 보고합니다. 비워 두면 모든 서버가 인스턴스 도메인을 사용합니다."
 }

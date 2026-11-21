@@ -67,6 +67,8 @@ class Index extends Component
     /** IP addresses and CIDR ranges allowed to open "internal network only" applications; saved by saveInternalNetworks(). */
     public ?string $internal_network_cidrs = null;
 
+    public ?string $internal_url = null;
+
     public array $domainConflicts = [];
 
     public bool $showDomainConflictModal = false;
@@ -112,6 +114,7 @@ class Index extends Component
         $this->dev_helper_version = $this->settings->dev_helper_version;
         $this->brand_name = $this->settings->brand_name;
         $this->internal_network_cidrs = $this->settings->internal_network_cidrs;
+        $this->internal_url = $this->settings->internal_url;
     }
 
     public function updateCloudflareTunnelSupport(): void
@@ -139,7 +142,11 @@ class Index extends Component
     public function saveInternalNetworks(): void
     {
         $this->authorize('update', $this->settings);
-        $this->validate(['internal_network_cidrs' => ['nullable', 'string', 'max:5000']]);
+        $this->internal_url = filled($this->internal_url) ? rtrim(trim($this->internal_url), '/') : null;
+        $this->validate([
+            'internal_network_cidrs' => ['nullable', 'string', 'max:5000'],
+            'internal_url' => ['nullable', 'string', 'max:255', 'url:http,https'],
+        ]);
 
         $ranges = parseNetworkRanges($this->internal_network_cidrs);
         $invalid = array_values(array_filter($ranges, fn (string $range) => ! isValidIpOrCidr($range)));
@@ -150,9 +157,11 @@ class Index extends Component
         }
 
         $this->settings->internal_network_cidrs = $ranges === [] ? null : implode("\n", $ranges);
+        $this->settings->internal_url = $this->internal_url;
         InstanceSettingsAudit::save($this->settings);
         $this->internal_network_cidrs = $this->settings->internal_network_cidrs;
-        auditLog('ui.instance.internal_network_ranges_updated', ['ranges' => $ranges]);
+        $this->internal_url = $this->settings->internal_url;
+        auditLog('ui.instance.internal_network_ranges_updated', ['ranges' => $ranges, 'internal_url' => $this->internal_url]);
         $this->dispatch('success', __('Internal network ranges saved. Restart internal network only applications to apply them.'));
     }
 

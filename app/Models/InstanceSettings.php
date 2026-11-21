@@ -62,6 +62,7 @@ class InstanceSettings extends Model
         'brand_name',
         'brand_logo_path',
         'internal_network_cidrs',
+        'internal_url',
         'is_api_enabled',
         'allowed_ips',
         'auto_update_frequency',
@@ -218,6 +219,14 @@ class InstanceSettings extends Model
             if ($settings->wasChanged(['fqdn', 'public_ipv4', 'public_ipv6'])) {
                 ServerSetting::followInstanceUrlChange(
                     ServerSetting::instanceSentinelUrl($settings->getOriginal('fqdn'), $settings->getOriginal('public_ipv4'), $settings->getOriginal('public_ipv6')),
+                    ServerSetting::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6),
+                );
+            }
+
+            if ($settings->wasChanged('internal_url')) {
+                ServerSetting::followInternalUrlChange(
+                    $settings->getOriginal('internal_url'),
+                    $settings->internal_url,
                     ServerSetting::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6),
                 );
             }

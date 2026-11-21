@@ -477,6 +477,32 @@ class ServerSetting extends Model
             });
     }
 
+    /**
+     * Move internal network servers to the new internal Coolify URL. Servers that use the old internal URL
+     * or the generated external URL follow it; an empty internal URL moves them back to the external URL.
+     * Saving the new URL restarts their Sentinel. External servers and servers with a custom URL keep theirs.
+     */
+    public static function followInternalUrlChange(?string $oldUrl, ?string $newUrl, ?string $externalUrl): void
+    {
+        $target = filled($newUrl) ? $newUrl : $externalUrl;
+        $from = array_values(array_unique(array_filter([$oldUrl, $externalUrl], 'filled')));
+        if (blank($target) || $from === []) {
+            return;
+        }
+
+        self::query()
+            ->whereIn('sentinel_custom_url', $from)
+            ->where('server_id', '!=', 0)
+            ->with('server')
+            ->each(function (ServerSetting $setting) use ($target) {
+                if ($setting->sentinel_custom_url === $target || ! $setting->server?->isInternalNetwork()) {
+                    return;
+                }
+                $setting->sentinel_custom_url = $target;
+                $setting->save();
+            });
+    }
+
     public function restoreDefaultSentinelConfiguration(): void
     {
         $this->generateSentinelUrl(save: false, ignoreEvent: true);
@@ -492,6 +518,9 @@ class ServerSetting extends Model
         $settings = InstanceSettings::get();
         if ($this->server->isLocalhost()) {
             $domain = 'http://coolify:8080';
+        } elseif (filled($settings->internal_url) && $this->server->isInternalNetwork()) {
+            // Internal network servers report over the internal network, which works without public DNS or NAT.
+            $domain = $settings->internal_url;
         } else {
             $domain = self::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6)
                 ?? $this->sentinelUrlFromCurrentRequest();
