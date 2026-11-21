@@ -153,6 +153,9 @@
                     :label="__('Allowed IP addresses and ranges')" rows="4"
                     placeholder="10.0.0.0/8&#10;192.168.0.0/16&#10;2001:db8::/32"
                     :helper="__('One IP address or CIDR range per line (commas also work). When the list is empty, nobody can open internal network only applications.')" />
+                <x-forms.input canGate="update" :canResource="$settings" id="internal_url"
+                    :label="__('Internal network URL')" placeholder="http://192.168.0.10:8000"
+                    :helper="__('Sentinel on internal network servers reports to this URL. Servers with a private IP address (10.x, 172.16-31.x, 192.168.x, 100.64-127.x, IPv6 unique local) or an address in the ranges above are internal; all other servers are external and report to the instance domain or public IP. Leave empty to use the instance domain for every server.')" />
             </x-application.settings-section>
         </form>
 
