@@ -105,6 +105,8 @@ it('validates a server without a proxy and does not start a proxy', function () 
 
 it('validates a server without a proxy in the background job', function () {
     Queue::fake();
+    // The job installs Sentinel after the validation, which runs commands on the server.
+    fakeRemoteProcesses(['*' => Process::result()]);
     $this->server->proxy->set('type', ProxyTypes::NONE->value);
     $this->server->save();
     $this->server->settings->update(['is_reachable' => true, 'is_usable' => true]);

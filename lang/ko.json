@@ -6974,5 +6974,11 @@
     "No existing SSL certificate found for this database.": "이 데이터베이스의 기존 SSL 인증서가 없습니다.",
     "No CA certificate found for this database. Please generate a CA certificate for this server in the server/advanced page.": "이 데이터베이스의 CA 인증서가 없습니다. 서버/고급 페이지에서 이 서버의 CA 인증서를 생성하세요.",
     "SSL certificates regenerated. Restart database to apply changes.": "SSL 인증서를 다시 생성했습니다. 변경 사항을 적용하려면 데이터베이스를 재시작하세요.",
-    "Smart Scan could not read the repository. Check the repository access and the branch.": "Smart Scan이 저장소를 읽지 못했습니다. 저장소 접근 권한과 브랜치를 확인하세요."
+    "Smart Scan could not read the repository. Check the repository access and the branch.": "Smart Scan이 저장소를 읽지 못했습니다. 저장소 접근 권한과 브랜치를 확인하세요.",
+    "Sentinel is installed.": "Sentinel이 설치되었습니다.",
+    "Sentinel is installed": "Sentinel 설치됨",
+    "Install the Sentinel monitoring agent on the server": "서버에 Sentinel 모니터링 에이전트를 설치합니다",
+    "Sentinel installation failed": "Sentinel 설치 실패",
+    "Retry Sentinel installation": "Sentinel 설치 다시 시도",
+    "Sentinel did not start in time. Check the queue worker and the server logs, then retry the Sentinel installation.": "Sentinel이 제한 시간 내에 시작되지 않았습니다. 큐 워커와 서버 로그를 확인한 후 Sentinel 설치를 다시 시도하세요."
 }

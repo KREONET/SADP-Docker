@@ -202,9 +202,7 @@ class ValidateAndInstallServerJob implements ShouldBeEncrypted, ShouldQueue
             // Broadcast events to update UI
             ServerValidated::dispatch($this->server->team_id, $this->server->uuid);
             ServerReachabilityChanged::dispatch($this->server);
-            if ($this->server->isSentinelEnabled()) {
-                CheckAndStartSentinelJob::dispatch($this->server);
-            }
+            $this->installSentinel();
 
         } catch (\Throwable $e) {
             Log::error('ValidateAndInstallServer: Exception occurred', [
@@ -216,6 +214,32 @@ class ValidateAndInstallServerJob implements ShouldBeEncrypted, ShouldQueue
             $this->server->update([
                 'validation_logs' => 'An error occurred during validation: '.htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
                 'is_validating' => false,
+            ]);
+        }
+    }
+
+    /**
+     * Install Sentinel as the last installation step. It runs in this job, so a new server gets
+     * Sentinel right after validation instead of waiting for the next scheduled Sentinel check.
+     * A failure does not undo the validation; the scheduled check retries the start later.
+     */
+    private function installSentinel(): void
+    {
+        $this->server->unsetRelation('settings');
+        if (! $this->server->isSentinelEnabled()) {
+            return;
+        }
+
+        try {
+            Log::info('ValidateAndInstallServer: Installing Sentinel', [
+                'server_id' => $this->server->id,
+            ]);
+            (new CheckAndStartSentinelJob($this->server))->handle();
+        } catch (\Throwable $e) {
+            $this->server->rememberSentinelPushProblem('Sentinel could not be installed: '.$e->getMessage());
+            Log::warning('ValidateAndInstallServer: Sentinel installation failed', [
+                'server_id' => $this->server->id,
+                'error' => $e->getMessage(),
             ]);
         }
     }
