@@ -7,6 +7,7 @@ use App\Models\PersonalAccessToken;
 use App\Models\User;
 use App\Services\Access\AccessResolver;
 use App\Services\Access\Grant;
+use App\Services\ServerTransfer\TransferBackToken;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
@@ -32,6 +33,10 @@ class EnsureTokenBelongsToCurrentTeamMember
 
         if (! $team) {
             return response()->json(['message' => 'Invalid token.'], 401);
+        }
+
+        if (! TransferBackToken::allows($request, $token)) {
+            return response()->json(['message' => 'This return token is limited to the original server archive and SSH endpoint.'], 403);
         }
 
         if (! self::tokenWithinCreatorAccess($user, $token, (int) $teamId)) {

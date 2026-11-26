@@ -59,8 +59,6 @@ class Index extends Component
             $failed = [];
             foreach ($servers as $server) {
                 try {
-                    // A queued job has no web request, so it cannot derive the Coolify URL from the request host.
-                    // Resolve and save the push URL here, while the request of the browser is available.
                     $server->settings->ensureSentinelUrl();
                     $server->settings->ensureValidSentinelToken();
                     CheckAndStartSentinelJob::dispatch($server);

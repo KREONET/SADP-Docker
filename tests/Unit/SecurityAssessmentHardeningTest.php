@@ -40,11 +40,11 @@ it('proxies only the Pusher client path and the terminal socket through the pane
     'development' => ['docker/development/etc/nginx/site-opts.d/http.conf'],
 ]);
 
-it('publishes Reverb and the terminal on loopback by default and lets 8000 be closed (F-03 / F-06)', function (string $composeFile) {
+it('publishes the panel, Reverb and the terminal on loopback by default (F-03 / F-06)', function (string $composeFile) {
     $ports = Yaml::parseFile(dirname(__DIR__, 2).'/'.$composeFile)['services']['coolify']['ports'];
 
     expect($ports)
-        ->toContain('${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}${APP_PORT:-8000}:8080')
+        ->toContain('${COOLIFY_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8000}:8080')
         ->toContain('${COOLIFY_REALTIME_BIND_ADDRESS:-127.0.0.1}:${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001')
         ->toContain('${COOLIFY_REALTIME_BIND_ADDRESS:-127.0.0.1}:6002:6002');
 })->with([
@@ -58,13 +58,17 @@ it('connects the terminal through the page port instead of a hard-coded 6002', f
         ->not->toContain('port: ":6002"');
 });
 
-it('keeps direct realtime ports for installs that point the browser at them', function (string $script) {
-    expect(file_get_contents(dirname(__DIR__, 2).'/'.$script))
-        ->toContain("grep -qE '^(PUSHER_PORT=6001|TERMINAL_PORT=6002)$' \"\$ENV_FILE\"")
-        ->toContain('set_env_var "COOLIFY_REALTIME_BIND_ADDRESS" "0.0.0.0"');
+it('keeps the checkout port policy through the first container start', function (string $install, string $upgrade) {
+    $root = dirname(__DIR__, 2);
+    expect(file_get_contents("$root/$install"))
+        ->toContain('cp "$PANEL_COMPOSE" /data/coolify/source/docker-compose.prod.yml')
+        ->toContain('cp "$SCRIPT_DIR/upgrade.sh" /data/coolify/source/upgrade.sh');
+    expect(file_get_contents("$root/$upgrade"))
+        ->not->toContain('$CDN/docker-compose.prod.yml', 'fetch_config_file docker-compose.prod.yml')
+        ->not->toContain('set_env_var "COOLIFY_REALTIME_BIND_ADDRESS" "0.0.0.0"');
 })->with([
-    'upgrade script' => ['scripts/upgrade.sh'],
-    'nightly upgrade script' => ['other/nightly/upgrade.sh'],
+    'stable' => ['scripts/install.sh', 'scripts/upgrade.sh'],
+    'nightly' => ['other/nightly/install.sh', 'other/nightly/upgrade.sh'],
 ]);
 
 it('validates the bind address variables during install', function (string $script) {

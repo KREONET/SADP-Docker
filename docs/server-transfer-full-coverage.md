@@ -12,6 +12,14 @@ Legend: ✅ `scripts/transfer-test/seed.sh`, `seed-extras.php`, or `seed-full.ph
 The models come from `ServerTransferCoverage::TRANSFERRED` (`app/Services/ServerTransfer/ServerTransferCoverage.php`).
 When you add a model or a setting to the transfer, add it to this file too.
 
+## Transfer and take-back permissions
+
+The source operator must be a platform administrator and an owner of the server's team. An ordinary target token needs both write and deploy permissions for import. Use test credentials when verifying a transfer because the bundle includes server secrets.
+
+For a take back, the original instance issues a one-hour credential for its archived server. Verify that the returning server matches the archived UUID, SSH address, and port. The credential permits the preflight check, import into that archive, and a status check for that server. After import, status remains available until expiry so the sender can reconcile a lost response. If the SSH address or port changed, use an owner-authorized transfer with the updated destination details.
+
+Ordinary server detail responses expose transfer progress. To see transfer logs and errors, query the transfer status endpoint with server update permission and a team-wide token with `read:sensitive` or `root`.
+
 ## 1. Server (Server → General / Proxy)
 
 | ✓ | What | Value to set |

@@ -203,7 +203,7 @@ class InstanceSettings extends Model
 
             if ($settings->wasChanged(['fqdn', 'public_ipv4', 'public_ipv6'])) {
                 ServerSetting::followInstanceUrlChange(
-                    ServerSetting::instanceSentinelUrl($settings->getOriginal('fqdn'), $settings->getOriginal('public_ipv4'), $settings->getOriginal('public_ipv6')),
+                    ServerSetting::instanceSentinelUrls($settings->getOriginal('fqdn'), $settings->getOriginal('public_ipv4'), $settings->getOriginal('public_ipv6')),
                     ServerSetting::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6),
                 );
             }
@@ -212,7 +212,7 @@ class InstanceSettings extends Model
                 ServerSetting::followInternalUrlChange(
                     $settings->getOriginal('internal_url'),
                     $settings->internal_url,
-                    ServerSetting::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6),
+                    ServerSetting::instanceSentinelUrls($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6),
                 );
             }
         });

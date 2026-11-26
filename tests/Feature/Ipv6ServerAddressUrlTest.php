@@ -20,14 +20,14 @@ uses(RefreshDatabase::class);
 
 describe('instance sentinel url', function () {
     it('brackets an IPv6 public address', function (string $ipv6) {
-        expect(ServerSetting::instanceSentinelUrl(null, null, $ipv6))->toBe('http://[2a01:4f8::1]:8000');
+        expect(ServerSetting::instanceSentinelUrl(null, null, $ipv6))->toBe('https://[2a01:4f8::1]');
     })->with([
         'raw' => '2a01:4f8::1',
         'bracketed' => '[2a01:4f8::1]',
     ]);
 
     it('keeps an IPv4 public address unchanged', function () {
-        expect(ServerSetting::instanceSentinelUrl(null, '203.0.113.10', '2a01:4f8::1'))->toBe('http://203.0.113.10:8000');
+        expect(ServerSetting::instanceSentinelUrl(null, '203.0.113.10', '2a01:4f8::1'))->toBe('https://203.0.113.10');
     });
 });
 
@@ -54,22 +54,18 @@ describe('sentinel url from the current request', function () {
         'long loopback' => 'http://[0:0:0:0:0:0:0:1]:8000/',
     ]);
 
-    it('keeps a public IPv6 request host', function () {
-        expect(sentinelUrlForRequestHost('http://[2a01:4f8::1]:8000/'))->toBe('http://[2a01:4f8::1]:8000');
-    });
-
-    it('still ignores IPv4 loopback and keeps public IPv4 hosts', function () {
-        expect(sentinelUrlForRequestHost('http://127.0.0.1:8000/'))->toBeNull()
-            ->and(sentinelUrlForRequestHost('http://203.0.113.10:8000/'))->toBe('http://203.0.113.10:8000');
-    });
+    it('ignores unconfigured public and loopback request hosts', function (string $url) {
+        expect(sentinelUrlForRequestHost($url))->toBeNull();
+    })->with([
+        'public IPv6' => 'http://[2001:db8::1]:8000/',
+        'IPv4 loopback' => 'http://127.0.0.1:8000/',
+        'public IPv4' => 'http://203.0.113.10:8000/',
+    ]);
 });
 
 describe('public database urls', function () {
     function publicDatabaseUrl(string $modelClass, array $attributes, string $serverIp): ?string
     {
-        if ($modelClass === StandaloneMongodb::class) {
-            $attributes['mongo_initdb_root_password'] = encrypt($attributes['mongo_initdb_root_password']);
-        }
         $database = new $modelClass;
         $database->forceFill(array_merge(['is_public' => true, 'public_port' => 15432], $attributes));
         $database->setRelation('destination', (object) ['server' => (object) ['getIp' => $serverIp]]);

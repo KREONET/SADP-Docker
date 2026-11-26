@@ -511,9 +511,10 @@ describe('GET /api/v1/servers/{uuid}/transfer for a member', function () {
         $member = User::factory()->create();
         $this->team->members()->attach($member->id, ['role' => 'member']);
         $memberToken = $member->createToken('member-read', ['read'], teamId: $this->team->id)->plainTextToken;
-        $this->server->forceFill(['server_metadata' => ['migration' => [
+        $this->server->forceFill(['server_metadata' => ['cpus' => 4, 'transfer' => ['status' => 'claimed', 'claim' => ['claim_id' => 'internal-marker']], 'migration' => [
             'status' => 'failed',
             'target_url' => 'https://8.8.8.8',
+            'warnings' => ['private diagnostic'],
             'error' => 'secret error',
             'log' => [['at' => now()->toIso8601String(), 'level' => 'error', 'message' => 'secret log']],
         ]]])->save();
@@ -523,7 +524,20 @@ describe('GET /api/v1/servers/{uuid}/transfer for a member', function () {
             ->assertOk()
             ->assertJsonPath('migration.status', 'failed')
             ->assertJsonMissingPath('migration.log')
-            ->assertJsonMissingPath('migration.error');
+            ->assertJsonMissingPath('migration.error')
+            ->assertJsonMissingPath('migration.warnings');
+
+        $this->withHeaders(transferHeaders($memberToken))->getJson("/api/v1/servers/{$this->server->uuid}")
+            ->assertOk()->assertJsonPath('server_metadata.cpus', 4)
+            ->assertJsonPath('server_metadata.transfer.status', 'claimed')
+            ->assertJsonPath('server_metadata.migration.status', 'failed')
+            ->assertJsonMissingPath('server_metadata.transfer.claim')
+            ->assertJsonMissingPath('server_metadata.migration.log')
+            ->assertJsonMissingPath('server_metadata.migration.error');
+
+        app('auth')->forgetGuards();
+        $this->withHeaders(transferHeaders($this->readToken))->getJson("/api/v1/servers/{$this->server->uuid}/transfer")
+            ->assertOk()->assertJsonMissingPath('migration.log')->assertJsonMissingPath('migration.error');
 
         app('auth')->forgetGuards();
         $this->withHeaders(transferHeaders($this->sensitiveToken))

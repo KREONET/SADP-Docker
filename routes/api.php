@@ -220,9 +220,9 @@ Route::group([
     Route::post('/servers/{uuid}/proxy/restart', [ServerProxyController::class, 'restart'])->middleware(['api.ability:deploy']);
 
     Route::post('/servers', [ServersController::class, 'create_server'])->middleware(['api.ability:write']);
-    Route::get('/servers/import/check', [ServerTransferController::class, 'check'])->middleware(['api.ability:write', 'api.ability:deploy']);
-    Route::post('/servers/import', [ServerTransferController::class, 'import'])->middleware(['api.ability:write', 'api.ability:deploy']);
-    Route::get('/servers/{uuid}/transfer', [ServerTransferController::class, 'status'])->middleware(['api.ability:read,write']);
+    Route::get('/servers/import/check', [ServerTransferController::class, 'check'])->name('api.server-transfer.check')->middleware(['api.ability:write,server:return', 'api.ability:deploy,server:return']);
+    Route::post('/servers/import', [ServerTransferController::class, 'import'])->name('api.server-transfer.import')->middleware(['api.ability:write,server:return', 'api.ability:deploy,server:return']);
+    Route::get('/servers/{uuid}/transfer', [ServerTransferController::class, 'status'])->name('api.server-transfer.status')->middleware(['api.ability:read,write,server:return']);
     Route::post('/servers/{uuid}/transfer/complete', [ServerTransferController::class, 'complete'])->middleware(['api.ability:write']);
     Route::post('/servers/{uuid}/migrate', [ServerTransferController::class, 'migrate'])->middleware(['api.ability:write']);
     Route::patch('/servers/{uuid}', [ServersController::class, 'update_server'])->middleware(['api.ability:write']);

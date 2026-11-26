@@ -229,35 +229,26 @@ describe('ServerSetting::ensureSentinelUrl', function () {
         expect($url)->toBe('https://coolify.example.com');
     });
 
-    it('uses the current private instance URL when no public address is configured', function () {
+    it('requires a configured destination for a remote Sentinel', function (string $requestUrl) {
         InstanceSettings::query()->whereKey(0)->update([
             'fqdn' => null,
+            'internal_url' => null,
             'public_ipv4' => null,
             'public_ipv6' => null,
         ]);
         Once::flush();
-        DB::table('server_settings')->where('id', $this->server->settings->id)->update(['sentinel_custom_url' => null]);
-        app()->instance('request', Request::create('http://192.168.1.50:8000/server'));
+        $settings = $this->server->settings;
+        $settings->forceFill(['sentinel_custom_url' => null])->saveQuietly();
+        app()->instance('request', Request::create($requestUrl));
 
-        $url = $this->server->settings->fresh()->ensureSentinelUrl();
-
-        expect($url)->toBe('http://192.168.1.50:8000')
-            ->and($this->server->settings->fresh()->sentinel_custom_url)->toBe($url);
-    });
-
-    it('does not use a loopback request URL for a remote server', function () {
-        InstanceSettings::query()->whereKey(0)->update([
-            'fqdn' => null,
-            'public_ipv4' => null,
-            'public_ipv6' => null,
-        ]);
-        Once::flush();
-        DB::table('server_settings')->where('id', $this->server->settings->id)->update(['sentinel_custom_url' => null]);
-        app()->instance('request', Request::create('http://localhost:8000/server'));
-
-        expect(fn () => $this->server->settings->fresh()->ensureSentinelUrl())
+        expect(fn () => $settings->ensureSentinelUrl())
             ->toThrow(RuntimeException::class, 'Set an instance FQDN, public IP, or reachable Coolify URL before enabling Sentinel.');
-    });
+        expect($settings->fresh()->sentinel_custom_url)->toBeNull();
+    })->with([
+        'private address' => 'http://192.168.1.50:8000',
+        'loopback' => 'http://localhost:8000',
+        'public hostname' => 'https://panel.example.org',
+    ]);
 });
 
 describe('generated sentinel tokens are valid', function () {

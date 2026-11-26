@@ -451,26 +451,43 @@ class ServerSetting extends Model
     {
         return match (true) {
             filled($fqdn) => $fqdn,
-            filled($publicIpv4) => 'http://'.$publicIpv4.':8000',
-            filled($publicIpv6) => 'http://'.formatHostForUrl($publicIpv6).':8000',
+            filled($publicIpv4) => 'https://'.$publicIpv4,
+            filled($publicIpv6) => 'https://'.formatHostForUrl($publicIpv6),
             default => null,
         };
     }
 
     /**
-     * Move remote servers that use the generated Sentinel URL to the new instance URL. Saving the
-     * new URL restarts their Sentinel. Servers with a custom URL keep it.
+     * The preferred instance URL and any default stored by an older installation.
+     *
+     * @return list<string>
      */
-    public static function followInstanceUrlChange(?string $oldUrl, ?string $newUrl): void
+    public static function instanceSentinelUrls(?string $fqdn, ?string $publicIpv4, ?string $publicIpv6): array
     {
-        if (blank($oldUrl) || blank($newUrl) || $oldUrl === $newUrl) {
+        $url = self::instanceSentinelUrl($fqdn, $publicIpv4, $publicIpv6);
+        if ($url === null) {
+            return [];
+        }
+
+        return filled($fqdn) ? [$url] : [$url, 'http://'.parse_url($url, PHP_URL_HOST).':8000'];
+    }
+
+    /**
+     * Move remote servers that use a generated endpoint to the new instance URL.
+     *
+     * @param  list<string>  $previousUrls
+     */
+    public static function followInstanceUrlChange(array $previousUrls, ?string $newUrl): void
+    {
+        if ($previousUrls === [] || blank($newUrl)) {
             return;
         }
 
         self::query()
-            ->where('sentinel_custom_url', $oldUrl)
+            ->whereIn('sentinel_custom_url', $previousUrls)
+            ->where('sentinel_custom_url', '!=', $newUrl)
             ->where('server_id', '!=', 0)
-            ->each(function (ServerSetting $setting) use ($newUrl) {
+            ->eachById(function (ServerSetting $setting) use ($newUrl) {
                 $setting->sentinel_custom_url = $newUrl;
                 $setting->save();
             });
@@ -480,11 +497,13 @@ class ServerSetting extends Model
      * Move internal network servers to the new internal Coolify URL. Servers that use the old internal URL
      * or the generated external URL follow it; an empty internal URL moves them back to the external URL.
      * Saving the new URL restarts their Sentinel. External servers and servers with a custom URL keep theirs.
+     *
+     * @param  list<string>  $externalUrls
      */
-    public static function followInternalUrlChange(?string $oldUrl, ?string $newUrl, ?string $externalUrl): void
+    public static function followInternalUrlChange(?string $oldUrl, ?string $newUrl, array $externalUrls): void
     {
-        $target = filled($newUrl) ? $newUrl : $externalUrl;
-        $from = array_values(array_unique(array_filter([$oldUrl, $externalUrl], 'filled')));
+        $target = filled($newUrl) ? $newUrl : ($externalUrls[0] ?? null);
+        $from = array_values(array_unique(array_filter([$oldUrl, ...$externalUrls], 'filled')));
         if (blank($target) || $from === []) {
             return;
         }
@@ -493,7 +512,7 @@ class ServerSetting extends Model
             ->whereIn('sentinel_custom_url', $from)
             ->where('server_id', '!=', 0)
             ->with('server')
-            ->each(function (ServerSetting $setting) use ($target) {
+            ->eachById(function (ServerSetting $setting) use ($target) {
                 if ($setting->sentinel_custom_url === $target || ! $setting->server?->isInternalNetwork()) {
                     return;
                 }
@@ -521,8 +540,7 @@ class ServerSetting extends Model
             // Internal network servers report over the internal network, which works without public DNS or NAT.
             $domain = $settings->internal_url;
         } else {
-            $domain = self::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6)
-                ?? $this->sentinelUrlFromCurrentRequest();
+            $domain = self::instanceSentinelUrl($settings->fqdn, $settings->public_ipv4, $settings->public_ipv6);
         }
         $this->sentinel_custom_url = $domain;
         if ($save) {
@@ -534,29 +552,6 @@ class ServerSetting extends Model
         }
 
         return $domain;
-    }
-
-    private function sentinelUrlFromCurrentRequest(): ?string
-    {
-        if (! app()->bound('request')) {
-            return null;
-        }
-
-        $request = request();
-        $host = normalizeIpAddress(strtolower($request->getHost()));
-
-        if (
-            $host === 'localhost' ||
-            str_ends_with($host, '.localhost') ||
-            $host === '::1' ||
-            $host === '::' ||
-            $host === '0.0.0.0' ||
-            str_starts_with($host, '127.')
-        ) {
-            return null;
-        }
-
-        return $request->getSchemeAndHttpHost();
     }
 
     public function server()

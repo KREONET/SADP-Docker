@@ -56,10 +56,6 @@ echo "============================================================" >>"$LOGFILE"
 log_section "Step 1/6: Downloading configuration files"
 write_status "1" "Downloading configuration files"
 echo "1/6 Downloading latest configuration files..."
-log "Downloading docker-compose.yml from ${CDN}/docker-compose.yml"
-curl -fsSL -L $CDN/docker-compose.yml -o /data/coolify/source/docker-compose.yml
-log "Downloading docker-compose.prod.yml from ${CDN}/docker-compose.prod.yml"
-curl -fsSL -L $CDN/docker-compose.prod.yml -o /data/coolify/source/docker-compose.prod.yml
 log "Downloading .env.production from ${CDN}/.env.production"
 curl -fsSL -L $CDN/.env.production -o /data/coolify/source/.env.production
 log "Downloading upgrade-postgres.sh from ${CDN}/upgrade-postgres.sh"
@@ -155,12 +151,6 @@ update_env_var "PUSHER_BACKEND_PORT" "6001"
 # The realtime container no longer exists; point older installs at the bundled Reverb server
 if grep -q '^PUSHER_BACKEND_HOST=coolify-realtime$' "$ENV_FILE"; then
     set_env_var "PUSHER_BACKEND_HOST" "127.0.0.1"
-fi
-# 6001/6002 are now loopback-only by default (the panel port proxies /app/ and /terminal/ws).
-# Installs whose browsers were pointed at the direct ports keep them published on all addresses.
-if ! grep -q '^COOLIFY_REALTIME_BIND_ADDRESS=' "$ENV_FILE" && grep -qE '^(PUSHER_PORT=6001|TERMINAL_PORT=6002)$' "$ENV_FILE"; then
-    set_env_var "COOLIFY_REALTIME_BIND_ADDRESS" "0.0.0.0"
-    log "Kept 6001/6002 published because PUSHER_PORT/TERMINAL_PORT point the browser at them"
 fi
 log "Environment variables check complete"
 echo "     Done."

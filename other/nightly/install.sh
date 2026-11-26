@@ -10,7 +10,7 @@
 ## DOCKER_POOL_FORCE_OVERRIDE - Force override Docker address pool configuration (default: false)
 ## AUTOUPDATE - Set to "false" to disable auto-updates
 ## REGISTRY_URL - Custom registry URL for Docker images (default: docker.io)
-## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, e.g. 127.0.0.1 to reach the panel only through the proxy domain or an SSH tunnel (default: all addresses)
+## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, default: 127.0.0.1 for access through the proxy domain or an SSH tunnel
 ## COOLIFY_REALTIME_BIND_ADDRESS - IPv4 address for the direct Reverb/terminal ports 6001/6002 (default: 127.0.0.1; the panel port proxies /app/ and /terminal/ws)
 
 set -e # Exit immediately if a command exits with a non-zero status
@@ -28,6 +28,15 @@ CURRENT_USER=$USER
 
 if [ $EUID != 0 ]; then
     echo "Please run this script as root or with sudo"
+    exit 1
+fi
+
+# Bootstrap with the checkout's port mappings before the SADP-Docker image is built.
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
+PANEL_COMPOSE="$SCRIPT_DIR/docker-compose.prod.yml"
+if [ ! -f "$REPO_DIR/docker-compose.yml" ] || [ ! -f "$PANEL_COMPOSE" ] || [ ! -f "$SCRIPT_DIR/upgrade.sh" ]; then
+    echo "Run this installer from the SADP-Docker checkout to use its production port bindings." >&2
     exit 1
 fi
 
@@ -952,21 +961,18 @@ step_done
 step_start "Downloading required files from CDN"
 log "Downloading configuration files in parallel..."
 
-# Download files in parallel for faster installation
-curl -fsSL -L $CDN/docker-compose.yml -o /data/coolify/source/docker-compose.yml &
-PID1=$!
-curl -fsSL -L $CDN/docker-compose.prod.yml -o /data/coolify/source/docker-compose.prod.yml &
-PID2=$!
+cp "$REPO_DIR/docker-compose.yml" /data/coolify/source/docker-compose.yml
+cp "$PANEL_COMPOSE" /data/coolify/source/docker-compose.prod.yml
+cp "$SCRIPT_DIR/upgrade.sh" /data/coolify/source/upgrade.sh
+
 curl -fsSL -L $CDN/.env.production -o /data/coolify/source/.env.production &
-PID3=$!
-curl -fsSL -L $CDN/upgrade.sh -o /data/coolify/source/upgrade.sh &
-PID4=$!
+PID1=$!
 curl -fsSL -L $CDN/upgrade-postgres.sh -o /data/coolify/source/upgrade-postgres.sh &
-PID5=$!
+PID2=$!
 
 # Wait for all downloads to complete and check for errors
 DOWNLOAD_FAILED=false
-for PID in $PID1 $PID2 $PID3 $PID4 $PID5; do
+for PID in $PID1 $PID2; do
     if ! wait $PID; then
         DOWNLOAD_FAILED=true
     fi
@@ -1051,8 +1057,7 @@ set_env_var() {
     fi
 }
 
-# Direct ports: 8000 (plain-HTTP panel) is published on all addresses unless COOLIFY_BIND_ADDRESS is set;
-# 6001/6002 are loopback-only unless COOLIFY_REALTIME_BIND_ADDRESS is set, because the panel port proxies them.
+# Direct ports (8000, 6001, 6002) use loopback unless an operator specifies an address.
 for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     BIND_VALUE="${!BIND_VAR:-}"
     if [ -n "$BIND_VALUE" ]; then
@@ -1064,6 +1069,7 @@ for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     fi
 done
 COOLIFY_BIND_ADDRESS=$(grep "^COOLIFY_BIND_ADDRESS=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+COOLIFY_BIND_ADDRESS=${COOLIFY_BIND_ADDRESS:-127.0.0.1}
 
 if [ "$DOCKER_POOL_BASE_PROVIDED" = true ]; then
     update_env_var "DOCKER_ADDRESS_POOL_BASE" "$DOCKER_ADDRESS_POOL_BASE"
@@ -1202,6 +1208,41 @@ if [ "$HEALTH" != "healthy" ]; then
     echo " - ERROR: Coolify container is not healthy after ${HEALTH_WAIT}s. Status: $HEALTH"
     echo " - Please check: docker logs coolify"
     exit 1
+fi
+
+# The root user is created from ROOT_USER_PASSWORD on the first start (RootUserSeeder reads it from the
+# container environment, which keeps it). Once the user exists, the plaintext password is not kept on disk.
+root_user_exists() {
+    local db_user db_name
+    db_user=$(grep "^DB_USERNAME=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+    db_name=$(grep "^DB_DATABASE=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+    [ "$(docker exec coolify-db psql -U "${db_user:-coolify}" -d "${db_name:-coolify}" -tAc 'select count(*) from users where id = 0' 2>/dev/null | tr -d '[:space:]')" = "1" ]
+}
+
+remove_root_password_from_env() {
+    local env_copy
+    for env_copy in "$ENV_FILE" "$ENV_FILE-$DATE"; do
+        if [ -f "$env_copy" ] && grep -q '^ROOT_USER_PASSWORD=.' "$env_copy"; then
+            sed -i 's|^ROOT_USER_PASSWORD=.*|ROOT_USER_PASSWORD=|' "$env_copy"
+            echo " - Removed ROOT_USER_PASSWORD from $env_copy"
+        fi
+    done
+}
+
+if grep -q '^ROOT_USER_PASSWORD=.' "$ENV_FILE"; then
+    ROOT_USER_CREATED=false
+    for _ in $(seq 1 15); do
+        if root_user_exists; then
+            ROOT_USER_CREATED=true
+            break
+        fi
+        sleep 2
+    done
+    if [ "$ROOT_USER_CREATED" = true ]; then
+        remove_root_password_from_env
+    else
+        warn "The root user was not created yet, so ROOT_USER_PASSWORD is still in $ENV_FILE. Remove it after the first sign-in."
+    fi
 fi
 step_done
 
