@@ -31,13 +31,10 @@ services:
       - PUSHER_BACKEND_PORT=${PUSHER_BACKEND_PORT:-6001}
     env_file:
       - /data/coolify/source/.env
-    # COOLIFY_BIND_ADDRESS=127.0.0.1 publishes the plain-HTTP panel port on loopback only (access through
-    # the proxy domain or an SSH tunnel). Unset keeps Docker's default of all IPv4 and IPv6 addresses.
-    # Reverb (6001) and the terminal (6002) are proxied by the panel's nginx (/app/, /terminal/ws), so
-    # their direct ports are loopback-only unless COOLIFY_REALTIME_BIND_ADDRESS says otherwise
-    # (security assessment F-03 / F-06).
+    # The panel proxies Reverb and terminal traffic. Reach it through the TLS proxy or an SSH tunnel.
+    # Set a host address explicitly to publish a direct port on another interface.
     ports:
-      - "${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}${APP_PORT:-8000}:8080"
+      - "${COOLIFY_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8000}:8080"
       - "${COOLIFY_REALTIME_BIND_ADDRESS:-127.0.0.1}:${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001"
       - "${COOLIFY_REALTIME_BIND_ADDRESS:-127.0.0.1}:6002:6002"
     expose:

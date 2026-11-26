@@ -653,6 +653,7 @@ test('transfer back asks the managing instance to transfer the archive here with
     $user = User::factory()->create();
     $this->team->members()->attach($user->id, ['role' => 'owner']);
     makePlatformAdmin($user);
+    $bundle = app(ServerTransferExporter::class)->export($this->server);
     app(ServerTransferClaimer::class)->markTransferred($this->server, targetInstanceUrl: 'https://8.8.8.8');
     Http::fake(['https://8.8.8.8/api/v1/servers/*/migrate' => Http::response(['migration' => ['status' => 'running']], 202)]);
 
@@ -671,10 +672,42 @@ test('transfer back asks the managing instance to transfer the archive here with
             && $request['target_url'] === 'https://coolify-a.test'
             && str_starts_with($importToken, $token->id.'|');
     });
-    // The other instance runs the import checks and the import with this token. An empty bundle fails only the validation.
+    // The managing instance can read the return status and submit the original server for import.
+    $headers = ['Authorization' => "Bearer {$importToken}", 'Accept' => 'application/json'];
+    $this->withHeaders($headers)->getJson("/api/v1/servers/{$this->server->uuid}/transfer")
+        ->assertOk()->assertJsonPath('transfer.status', 'transferred')->assertJsonMissingPath('migration');
+    $this->withHeaders($headers)->getJson('/api/v1/servers/another-server/transfer')->assertForbidden();
+    $this->withHeaders($headers)->getJson('/api/v1/servers/import/check?server_uuid=another-server')->assertForbidden();
+    $this->withHeaders($headers)->postJson('/api/v1/projects', ['name' => 'outside-transfer'])->assertForbidden();
+    $this->withHeaders($headers)->postJson('/api/v1/servers/import', ['bundle' => ['server' => ['uuid' => 'another-server']]])->assertForbidden();
+    $server = ['uuid' => $this->server->uuid, 'ip' => $this->server->ip, 'port' => $this->server->port];
+    $this->withHeaders($headers)->postJson('/api/v1/servers/import', ['bundle' => ['server' => $server], 'preserve_uuids' => false])->assertForbidden();
+    $this->withHeaders($headers)->postJson('/api/v1/servers/import', ['bundle' => ['encrypted' => true, 'server' => $server]])->assertForbidden();
+    $this->withHeaders($headers)->getJson('/api/v1/servers/import/check?'.http_build_query([
+        'server_uuid' => $this->server->uuid, 'ip' => 'other-host.test', 'port' => 22,
+    ]))->assertForbidden();
+    // A matching archive reaches ordinary validation. This incomplete bundle has no resources or credentials.
     $this->withHeaders(['Authorization' => "Bearer {$importToken}", 'Accept' => 'application/json'])
-        ->postJson('/api/v1/servers/import', ['bundle' => []])
+        ->postJson('/api/v1/servers/import', ['bundle' => ['server' => $server]])
         ->assertStatus(422);
+
+    Queue::fake();
+    $this->withHeaders($headers)->postJson('/api/v1/servers/import', ['bundle' => $bundle])
+        ->assertCreated()->assertJsonPath('claimed', true);
+    $this->withHeaders($headers)->getJson("/api/v1/servers/{$this->server->uuid}/transfer")
+        ->assertOk()->assertJsonPath('transfer.export_id', $bundle['export_id'])->assertJsonPath('transfer.status', 'claimed');
+    $this->withHeaders($headers)->postJson('/api/v1/servers/import', ['bundle' => $bundle])->assertForbidden();
+});
+
+test('an in-flight return token issued before the upgrade keeps only access to its archive', function () {
+    $user = User::factory()->create();
+    $this->team->members()->attach($user->id, ['role' => 'owner']);
+    makePlatformAdmin($user);
+    app(ServerTransferClaimer::class)->markTransferred($this->server);
+    $token = $user->createToken("transfer back {$this->server->uuid}", ['write', 'deploy'], now()->addHour(), $this->team->id);
+    $this->withToken($token->plainTextToken)->getJson("/api/v1/servers/{$this->server->uuid}/transfer")
+        ->assertOk()->assertJsonPath('transfer.status', 'transferred')->assertJsonMissingPath('migration');
+    $this->withToken($token->plainTextToken)->postJson('/api/v1/projects', ['name' => 'outside-transfer'])->assertForbidden();
 });
 
 test('a refused transfer back deletes the token and shows the reason of the other instance', function () {
@@ -724,7 +757,8 @@ test('a transfer back token has only the import abilities, expires within an hou
     app(ServerTransferMigrator::class)->requestTransferBack($this->server->fresh(), $user, 'https://8.8.8.8', 'token-of-b', 'https://coolify-a.test');
 
     $token = $user->tokens()->sole();
-    expect($token->abilities)->toBe(['write', 'deploy'])
+    expect($token->can('write'))->toBeFalse()
+        ->and($token->can('deploy'))->toBeFalse()
         ->and($token->expires_at->lte(now()->addHour()))->toBeTrue();
 
     // The other instance still checks the import status with the token after the import claims the server.

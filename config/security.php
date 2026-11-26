@@ -90,7 +90,7 @@ return [
         // known_hosts file for git hosts. Git runs on the build server (or in its helper
         // container), so this path lives in the Coolify data directory on that server.
         'git_known_hosts_file' => env('SECURITY_SSH_GIT_KNOWN_HOSTS_FILE', '/data/coolify/ssh/git/known_hosts'),
-        // FIPS 140-3 approved algorithms. Comma-separated OpenSSH lists; an empty value keeps the OpenSSH default.
+        // OpenSSH algorithm policy. An empty list keeps the OpenSSH default. Module validation is deployment-specific.
         'ciphers' => env('SECURITY_SSH_CIPHERS', 'aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr'),
         'kex_algorithms' => env('SECURITY_SSH_KEX_ALGORITHMS', 'ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group16-sha512,diffie-hellman-group14-sha256'),
         'macs' => env('SECURITY_SSH_MACS', 'hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-256'),

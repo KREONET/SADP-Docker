@@ -20,7 +20,7 @@ class ApiTokenExpiringNotification extends CustomEmailNotification
     {
         $this->onQueue('high');
         $this->tokenName = $token->name;
-        $this->expiresAt = $token->expires_at?->format('Y-m-d H:i:s') ?? '';
+        $this->expiresAt = $token->effectiveExpiresAt()?->format('Y-m-d H:i:s') ?? '';
         $this->manageUrl = base_url().'/security/api-tokens';
     }
 

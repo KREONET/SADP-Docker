@@ -200,8 +200,6 @@ fetch_config_file() {
     fi
 }
 
-fetch_config_file docker-compose.yml
-fetch_config_file docker-compose.prod.yml
 fetch_config_file .env.production
 fetch_config_file upgrade-postgres.sh
 chmod +x /data/coolify/source/upgrade-postgres.sh
@@ -338,12 +336,6 @@ update_env_var "PUSHER_BACKEND_PORT" "6001"
 # The realtime container no longer exists; point older installs at the bundled Reverb server
 if grep -q '^PUSHER_BACKEND_HOST=coolify-realtime$' "$ENV_FILE"; then
     set_env_var "PUSHER_BACKEND_HOST" "127.0.0.1"
-fi
-# 6001/6002 are now loopback-only by default (the panel port proxies /app/ and /terminal/ws).
-# Installs whose browsers were pointed at the direct ports keep them published on all addresses.
-if ! grep -q '^COOLIFY_REALTIME_BIND_ADDRESS=' "$ENV_FILE" && grep -qE '^(PUSHER_PORT=6001|TERMINAL_PORT=6002)$' "$ENV_FILE"; then
-    set_env_var "COOLIFY_REALTIME_BIND_ADDRESS" "0.0.0.0"
-    log "Kept 6001/6002 published because PUSHER_PORT/TERMINAL_PORT point the browser at them"
 fi
 log "Environment variables check complete"
 echo "     Done."

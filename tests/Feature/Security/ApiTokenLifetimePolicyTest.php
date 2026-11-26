@@ -100,7 +100,9 @@ test('existing tokens that outlive the policy are flagged but kept', function ()
 
     $component = Livewire::test(ApiTokens::class)
         ->assertSee('Exceeds policy')
-        ->assertSee('2 issued token(s) never expire or outlive the maximum token lifetime.', false);
+        ->assertSee('2 token(s) were issued without an expiry or with a lifetime longer than the current maximum.', false)
+        ->assertSee(now()->addDays(90)->format('Y-m-d'))
+        ->assertDontSee(now()->addYear()->format('Y-m-d'));
 
     $instance = $component->instance();
     expect($instance->exceedsLifetimePolicy($never->accessToken->fresh()))->toBeTrue()

@@ -175,7 +175,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         Sanctum::authenticateAccessTokensUsing(
-            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && ! $token->isPaused()
+            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && ! $token->isPaused() && ! $token->isExpired()
         );
     }
 

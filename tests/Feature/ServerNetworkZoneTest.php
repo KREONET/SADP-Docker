@@ -91,6 +91,17 @@ it('moves internal servers to a new internal URL and back', function () {
     expect($internal->settings->fresh()->sentinel_custom_url)->toBe('https://sadp.example.com');
 });
 
+it('moves an internal server from the legacy public IP URL to its configured internal URL', function () {
+    $settings = InstanceSettings::get();
+    $settings->update(['fqdn' => null, 'public_ipv4' => '203.0.113.10']);
+    $internal = networkTestServer($this->team, $this->privateKey, '10.0.0.5');
+    $internal->settings->forceFill(['sentinel_custom_url' => 'http://203.0.113.10:8000', 'is_sentinel_enabled' => false])->saveQuietly();
+
+    $settings->update(['internal_url' => 'https://panel.internal.example']);
+
+    expect($internal->settings->fresh()->sentinel_custom_url)->toBe('https://panel.internal.example');
+});
+
 it('saves the internal URL in the settings', function () {
     $rootTeam = Team::find(0) ?? Team::factory()->create(['id' => 0]);
     Server::factory()->create(['id' => 0, 'team_id' => $rootTeam->id, 'ip' => 'host.docker.internal']);

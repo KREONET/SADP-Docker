@@ -557,9 +557,8 @@ class ServerTransferMigrator
             throw new RuntimeException('Enter the URL at which the other instance reaches this instance.');
         }
 
-        // The import checks, the import, and the status probes need only write and deploy. The claim after the
-        // import deletes the token, and the expiry covers a failed import: the transfer job runs at most 25 minutes.
-        $importToken = $user->createToken(self::transferBackTokenName($archive->uuid), ['write', 'deploy'], now()->addSeconds(self::TRANSFER_BACK_TOKEN_SECONDS), $archive->team_id);
+        // The manager may still need to confirm the import after the callback times out.
+        $importToken = $user->createToken(self::transferBackTokenName($archive->uuid), TransferBackToken::abilities($archive), now()->addSeconds(self::TRANSFER_BACK_TOKEN_SECONDS), $archive->team_id);
         $migrateUrl = $managerUrl.'/api/v1/servers/'.rawurlencode($archive->uuid).'/migrate';
 
         try {
@@ -568,6 +567,9 @@ class ServerTransferMigrator
         } catch (ConnectionException $e) {
             $importToken->accessToken->delete();
             throw new RuntimeException('This instance cannot reach '.remove_iip($managerUrl).': '.remove_iip($e->getMessage()), previous: $e);
+        } catch (Throwable $e) {
+            $importToken->accessToken->delete();
+            throw $e;
         }
 
         if ($response->status() !== 202) {

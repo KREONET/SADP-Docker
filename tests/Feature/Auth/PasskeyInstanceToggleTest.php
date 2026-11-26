@@ -2,6 +2,7 @@
 
 use App\Livewire\Settings\Advanced;
 use App\Models\InstanceSettings;
+use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +19,7 @@ beforeEach(function () {
 
 it('lets an instance admin turn passkeys off and keeps stored passkeys', function () {
     $rootTeam = Team::factory()->create(['id' => 0]);
+    Server::factory()->create(['id' => 0, 'team_id' => $rootTeam->id]);
     $admin = User::factory()->create();
     $rootTeam->members()->attach($admin->id, ['role' => 'owner']);
     $admin->passkeys()->create([
@@ -29,10 +31,14 @@ it('lets an instance admin turn passkeys off and keeps stored passkeys', functio
     $this->actingAs($admin);
     session(['currentTeam' => $rootTeam]);
 
-    Livewire::test(Advanced::class)
+    $component = Livewire::test(Advanced::class)
         ->assertSet('is_passkey_enabled', true)
         ->set('is_passkey_enabled', false)
-        ->call('instantSave');
+        ->call('submit')
+        ->assertDispatched('confirm-security-settings');
+    expect(InstanceSettings::findOrFail(0)->is_passkey_enabled)->toBeTrue();
+
+    $component->call('submit', 'password')->assertDispatched('success');
 
     expect(InstanceSettings::findOrFail(0)->is_passkey_enabled)->toBeFalse()
         ->and($admin->passkeys()->count())->toBe(1);

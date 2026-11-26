@@ -5396,7 +5396,7 @@
     "1 year": "1년",
     "60 days": "60일",
     "90 days": "90일",
-    ":count issued token(s) never expire or outlive the maximum token lifetime. Create replacement tokens that expire and revoke the old ones.": "발급된 토큰 :count개가 만료되지 않거나 최대 토큰 수명을 넘습니다. 만료되는 토큰을 새로 만들고 기존 토큰은 폐기하세요.",
+    ":count token(s) were issued without an expiry or with a lifetime longer than the current maximum. Check the effective expiry below and replace these tokens.": "토큰 :count개는 만료일 없이 발급됐거나 발급 당시 수명이 현재 상한보다 깁니다. 아래의 실제 만료일을 확인하고 토큰을 교체하세요.",
     ":days days": ":days일",
     "Account :email deactivated.": ":email 계정을 비활성화했습니다.",
     "Account :email reactivated.": ":email 계정을 다시 활성화했습니다.",

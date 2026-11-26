@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
 
@@ -33,6 +34,28 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
     public function isPaused(): bool
     {
         return $this->paused_at !== null;
+    }
+
+    public static function maxLifetimeDays(): int
+    {
+        return max(0, (int) config('security.api_tokens.max_lifetime_days'));
+    }
+
+    public function effectiveExpiresAt(): ?Carbon
+    {
+        $maxDays = self::maxLifetimeDays();
+        if ($maxDays === 0 || $this->created_at === null) {
+            return $this->expires_at;
+        }
+
+        $deadline = $this->created_at->copy()->addDays($maxDays);
+
+        return $this->expires_at === null ? $deadline : $deadline->min($this->expires_at);
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->created_at === null || $this->effectiveExpiresAt()?->lte(now()) === true;
     }
 
     public static function generateSecret(): string

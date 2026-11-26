@@ -76,6 +76,20 @@ describe('token creation with expiration', function () {
 });
 
 describe('expired token rejected on API', function () {
+    test('authentication enforces the configured lifetime from the original issue date', function (?int $expiryDays, int $ageDays, int $maxDays, int $status) {
+        $this->freezeSecond();
+        config()->set('security.api_tokens.max_lifetime_days', $maxDays);
+        $token = $this->user->createToken('automation', ['read'], $expiryDays === null ? null : now()->addDays($expiryDays));
+        $token->accessToken->forceFill(['created_at' => now()->subDays($ageDays)])->save();
+
+        $this->withToken($token->plainTextToken)->getJson('/api/v1/projects')->assertStatus($status);
+    })->with([
+        'legacy token on its last valid day' => [null, 44, 45, 200],
+        'legacy token at the maximum age' => [null, 45, 45, 401],
+        'later explicit expiry cannot extend the maximum age' => [90, 46, 45, 401],
+        'a disabled maximum preserves a finite explicit lifetime' => [7, 120, 0, 200],
+    ]);
+
     test('request with expired token returns 401', function () {
         $token = $this->user->createToken('expired', ['read'], now()->subDay());
 

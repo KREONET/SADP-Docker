@@ -1,5 +1,23 @@
-#  보안 패치 사항
-현재 해당 프로젝트는 국가기관 출연연에서도 쓰기전에 보안 심살를 쉽게 하기 위해서 아래와 같은 지침서 및 문서를 보고 아래와 같이 수정 했습니다.
+# 보안 설계와 적용 현황
+
+## 운영 시 확인할 기본값 (2026-11-25)
+
+| 항목 | 강화판의 동작 | 운영자가 확인할 사항 |
+|---|---|---|
+| 초기 관리자 | 설치기에서 `INTERNAL_SIGNUP=false`를 지정하면 루트 계정을 준비하고 가입을 닫습니다. 대화형 설치에서 기본 선택은 가입 허용입니다. 루트가 없고 가입이 허용된 경우 최초 가입 창은 10분입니다. | [운영 설치 절차](README.md)에 따라 초기 관리자를 먼저 만들고 HTTPS 관리 경로를 확인합니다. |
+| 관리자 인증 | 로컬 비밀번호를 쓰는 관리자 등은 계정 생성 후 기본 24시간이 지나면 브라우저에서 2FA를 설정해야 합니다. | SSO 전용 계정에는 IdP에서 MFA를 적용합니다. |
+| API 토큰 | REST와 MCP는 발급일과 정책 상한으로 계산한 만료일, 토큰 자체 만료일 중 더 이른 시각을 적용합니다. 기존 토큰도 적용 대상입니다. `SECURITY_API_TOKEN_MAX_DAYS` 기본값은 90이며, 0이면 정책 상한을 해제합니다. | 배포 전에 상한을 넘긴 자동화용 토큰을 교체합니다. |
+| 세션 | 유휴 30분, 절대 수명 12시간이 기본입니다. 세션 만료 후 저장 행은 정리 작업 대상입니다. HTTPS 요청이나 HTTPS `APP_URL`을 사용하면 기본적으로 Secure 쿠키를 발행하며 명시한 설정이 우선합니다. | HTTPS 운영 도메인과 `SESSION_SECURE_COOKIE=true`를 확인합니다. |
+| 관리 포트와 Sentinel | 기본 운영 Compose는 8000·6001·6002를 루프백에 묶습니다. 원격 Sentinel은 설정된 주소를 사용하고 공인 IP로 자동 생성하는 주소는 HTTPS입니다. | 배포 전에 기존 포트 바인딩과 Sentinel 전송 주소를 확인합니다. [Sentinel 운영 안내](docs/ko/07-내부망-서버와-터널.md#원격-sentinel의-전송-주소) |
+| SSH 호스트 키 | 관리 서버의 첫 접속에서 관측한 키를 저장합니다(TOFU). SSH 기본 암호 목록에는 AES-GCM과 AES-CTR이 있으며, 호환성을 위해 Ed25519 호스트 키도 허용합니다. | 최초 지문을 별도의 신뢰 경로로 대조하고 기관 정책에 필요한 알고리즘을 설정합니다. |
+| 감사 로그 | 감사 이벤트는 항상 수집하며 보관 하한은 365일입니다. 해시 체인과 모델 단위 수정·삭제 제한이 있습니다. DB 기록에 실패하면 오류·알림 처리를 시도하고 원래 작업은 계속됩니다. | 독립 보관이 필요하면 Loki 주소와 전송을 설정하고 수신을 확인합니다. 외부 전송은 기본 꺼짐입니다. |
+
+구현 근거는 [보안 기본값](config/security.php), [세션 설정](config/session.php), [Sanctum 토큰 모델](app/Models/PersonalAccessToken.php), [감사 이벤트](app/Models/AuditEvent.php)에서 확인할 수 있습니다.
+
+## 설계 검토에 참조한 자료
+
+아래 1~6절은 도입 전 상태와 당시의 설계 목표를 기록합니다. 배포 환경에 실제로 적용되는 설정은 위 표와 운영 구성에서 확인하세요.
+
 - FIPS 140-3 <br/>
 https://csrc.nist.gov/pubs/fips/140-3/final
 - 국가 사이버보안 기본지침 <br/>
@@ -9,7 +27,7 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 
 ## 1. 암호 (FIPS / KCMVP)
 
-| 항목 | 현재 | 수정 |
+| 항목 | 도입 전 | 설계 목표 |
 |--|---|---|
 | 서버 이전 번들 암호화 | 암호를 솔트 없는 SHA-256 한 번으로 키로 만들고, 암호화 키와 MAC 키를 같이 씀 ([ServerTransferBundle.php](app/Services/ServerTransfer/ServerTransferBundle.php)) | PBKDF2-HMAC-SHA256(솔트, 60만 회 이상)으로 키를 만들고, 암호화 키와 MAC 키를 분리 |
 | SSH 호스트 키 검증 | 모든 SSH 접속에서 `StrictHostKeyChecking=no`, `UserKnownHostsFile=/dev/null` (중간자 공격에 취약) | 서버를 처음 등록할 때 호스트 키를 저장하고, 이후 접속은 검증 |
@@ -25,12 +43,11 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 | 초대 링크 | 링크 토큰 안에 평문 비밀번호를 암호화해서 넣음 | 일회용 랜덤 토큰으로 바꾸고, 비밀번호는 첫 로그인 때 설정 |
 | 2FA(TOTP) | HMAC-SHA1 | KCMVP 권고를 따른다면 SHA-256 TOTP 지원 |
 
-> ### 안내사항
- 암호모듈 인증은 코드만으로 해결되지 않습니다. 지금은 PHP OpenSSL, phpseclib, Node, OpenSSH 기본값을 그대로 씁니다. 그래서 알고리즘이 적합하더라도 FIPS 검증 모듈이나 KCMVP 검증필 모듈을 쓰는 상태는 아닙니다. 검증필 라이브러리(OpenSSL FIPS provider, KCMVP 인증 제품 등)를 도입하고 그 모듈을 거치도록 바꿔야 합니다. 
+> FIPS 140-3·KCMVP 검증은 실제 사용한 암호 모듈, 버전, 구성에 적용됩니다. 기관 심사에는 해당 배포 환경에서 사용한 모듈의 인증 범위와 설정 근거가 필요합니다.
 
 ## 2. 인증·계정
 
-| 우선 | 항목 | 현재 | 수정 |
+| 우선 | 항목 | 도입 전 | 설계 목표 |
 |---|---|---|---|
 | 로그인 실패 잠금 | 1분에 5회로 제한만 하고 잠금은 없음 | 5회 실패하면 계정 잠금(30분 또는 관리자 해제), 감사 로그와 알림 |
 | 관리자 2FA | 선택 사항 | 플랫폼 관리자는 2FA 필수(미설정 시 설정 화면으로 강제 이동), 전체 사용자 필수 옵션 추가 |
@@ -48,9 +65,9 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 
 ## 3. 세션
 
-| 우선 | 항목 | 현재 | 수정 |
+| 우선 | 항목 | 도입 전 | 설계 목표 |
 |---|---|---|---|
-| 션 유지 시간 | 7일(10080분), 유휴 시간 제한 없음 | 유휴 30분 이하 + 절대 시간 8~12시간 (유휴 감지 미들웨어 추가) |
+| 세션 유지 시간 | 7일(10080분), 유휴 시간 제한 없음 | 유휴 30분 이하 + 절대 시간 8~12시간 (유휴 감지 미들웨어 추가) |
 | 쿠키 Secure 속성 | 기본값 없음 | 운영 환경에서는 항상 켬 |
 | 자동 로그인 | 화면에는 없지만 `remember=1`을 직접 보내면 동작 | 자동 로그인 비활성화 |
 | 동시 접속 | 제한 없음 | 1인 1세션 옵션, "다른 기기 로그아웃" 기능 |
@@ -58,7 +75,7 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 
 ## 4. 전송 구간·웹 보안
 
-| 우선 | 항목 | 현재 | 수정 |
+| 우선 | 항목 | 도입 전 | 설계 목표 |
 |---|---|---|---|
 | 대시보드 평문 접속 | 8000, 6001, 6002 포트를 모든 인터페이스에 HTTP로 공개, 설치 안내도 `http://ip:8000` | 127.0.0.1로만 묶고 프록시를 통한 HTTPS 접속만 허용, 방화벽 규칙 추가 (Docker는 UFW를 우회하므로 DOCKER-USER 체인에 추가) |
 | TLS 설정 | Traefik/Caddy 기본값 (TLS 1.2 + CHACHA20 허용) | `minVersion` TLS 1.2, AES-GCM·ECDHE만 허용 (가능하면 TLS 1.3), P-256/384 곡선 |
@@ -68,13 +85,13 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 | Traefik 8080 포트 | 외부에 공개 | 공개 해제 |
 | 강제 HTTPS 해제 | 앱별로 끌 수 있음 | 관리자만 바꿀 수 있게 하거나 해제 기능 제거 |
 | 기본 키 | Reverb/Pusher 키 기본값이 `coolify` | 기본값을 없애고, 값이 없으면 시작 실패 |
-| 신뢰 프록시 | `TrustProxies`가 모두(`*`) 신뢰 | AGENTS.md가 이 설정 변경을 금지하므로 바꾸지 않음. 대신 Secure 쿠키 강제로 보완 |
+| 신뢰 프록시 | `TrustProxies`가 모두(`*`) 신뢰 | 프록시 체인이 클라이언트가 보낸 전달 헤더를 덮어쓰도록 구성하고, 관리 포트의 직접 접근을 제한 |
 | CORS | `*` 허용 | 허용 도메인 목록으로 제한 |
 | HTTP/3 | 켜져 있음 | 필요 없으면 끔 |
 
 ## 5. 감사 로그 (국가정보보안기본지침, 개인정보 안전성 확보조치)
 
-| 우선 | 항목 | 현재 | 수정 |
+| 우선 | 항목 | 도입 전 | 설계 목표 |
 |---|---|---|---|
 | 보관 기간 | 감사 로그 90일 고정, 시스템 로그 기본 7일 | 감사 로그 1년 이상(설정 가능, 최소값 강제), 시스템 로그 최소 6개월 |
 | 2FA 이벤트 | 설정·해제·실패가 기록되지 않음 | 기록 추가 |
@@ -93,7 +110,7 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 
 ## 6. 입력 검증·SW 개발보안 (행안부 47개 항목 관련)
 
-| 우선 | 항목 | 현재 | 수정 |
+| 우선 | 항목 | 도입 전 | 설계 목표 |
 |---|---|---|---|
 | 오류 정보 노출 | 500·400 오류 페이지와 `handleError()` 알림에 원본 예외 메시지(SQL, 경로, SSH 오류)가 그대로 나옴 | 운영 환경에서는 일반 메시지와 추적 ID만 보여 주고 원문은 로그로 |
 | 변경 로그 XSS | 외부 CDN에서 받은 마크다운을 HTML 허용 상태로 `x-html`에 출력 | HTML 비허용 렌더링과 sanitize, 또는 변경 로그 기능 끄기 |
@@ -117,16 +134,17 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 |---|---|---|
 | F-01 / F-07 | `/build/manifest.json` 공개 | nginx에서 404로 응답 (`@vite`는 디스크에서 읽으므로 영향 없음). `/build/assets/`에 `immutable` 캐시와 `nosniff` 적용 |
 | F-02 | 보안 응답 헤더 부재 | 이 브랜치에는 `SecurityHeaders` 미들웨어가 이미 있음. 같은 미들웨어를 main·Perisonal에도 적용 |
-| F-03 / F-06 | 6001·6002·8000 외부 노출 | 패널 nginx(8080)가 `/app/`(Reverb의 Pusher 경로만, `/apps` HTTP API 제외)와 `/terminal/ws`를 내부로 프록시하고, 브라우저는 페이지와 같은 포트로 접속. 6001/6002는 기본으로 `127.0.0.1`에만 바인딩(`COOLIFY_REALTIME_BIND_ADDRESS`로 변경). 8000은 `COOLIFY_BIND_ADDRESS=127.0.0.1`로 닫음 |
+| F-03 / F-06 | 6001·6002·8000 외부 노출 | 패널 nginx(8080)가 `/app/`(Reverb의 Pusher 경로만, `/apps` HTTP API 제외)와 `/terminal/ws`를 내부로 프록시하고, 브라우저는 페이지와 같은 포트로 접속. 세 포트 모두 기본으로 `127.0.0.1`에 바인딩하며 명시한 바인딩 값이 우선 |
 | F-04 / F-08 / F-10 | 트랜잭션 메일 미구성 | 인스턴스 설정(설정 → 이메일)에서 SMTP/Resend 구성. 코드 변경 없음 |
 | F-05 / F-09 | 대안 인증 경로 부재 | 인증 경계는 정상. 메일 구성과 OIDC 연동으로 복구 경로 확보, 루트 비밀번호는 `docker exec -it coolify php artisan root:reset-password`로 재설정 |
 
-업그레이드할 때 `.env`에 `PUSHER_PORT=6001` 또는 `TERMINAL_PORT=6002`가 있으면 브라우저가 직접 포트를 쓰는 설치로 보고 `COOLIFY_REALTIME_BIND_ADDRESS=0.0.0.0`을 기록해 기존처럼 공개합니다. 프록시 경유로 바꾸려면 두 값을 지우고 `COOLIFY_REALTIME_BIND_ADDRESS`도 지웁니다.
+업그레이드 후에도 명시한 `COOLIFY_BIND_ADDRESS`와 `COOLIFY_REALTIME_BIND_ADDRESS`는 유지됩니다. 구형 브라우저용 포트 설정을 보고 포트를 자동 공개하는 동작은 제거했습니다. 프록시를 이용할 때는 `PUSHER_PORT=6001`과 `TERMINAL_PORT=6002`를 지우고 컨테이너를 다시 배포합니다.
 
 ## 8. 의존성 CVE (2026-11)
 
 | 구성 요소 | 이전 | 이후 | 대응 권고 |
 |---|---|---|---|
+| web-auth/webauthn-lib | 5.3.9 | 5.3.13 | 패스키 의존성의 보안 권고 6건을 반영. [유지관리자 보안 공지](https://github.com/web-auth/webauthn-framework/security/advisories) |
 | laravel/framework | 12.69.3 | 12.72.0 | CVE-2026-128083 |
 | symfony/* (7.4 계열) | 7.4.15 ~ 7.4.20 | 7.4.21 ~ 7.4.23 | CVE-2026-109413(High, YAML 재귀 DoS), CVE-2026-45070(메일 헤더 인젝션), CVE-2026-121619(신뢰 프록시 `private_ranges` 우회), CVE-2026-118514/118515/118516, CVE-2026-121623/122053/121971/123119/123339/123792 외 |
 | phpseclib | 3.0.57 | 3.0.58 | GHSA-w3p9-g4p2-h3rr (PBKDF 반복 횟수 DoS) |
@@ -143,3 +161,7 @@ https://www.ncsc.go.kr/ko/main/PageLink.html?token=MDEyMzQ1Njc4OWFiY2RlZrBvBnCd4
 - 보안 패치 브랜치의 SSH 호스트 키 확인, 재인증, API 토큰 만료 정책, 감사 로그 해시 체인, 백업 암호화와 nginx·포트 바인딩·cloudflared 검증을 유지했습니다. SSH 호스트 키는 기존 값을 새 설정에도 옮기며, 종전의 암호화된 서버 이전 번들은 가져오기에서 계속 읽을 수 있습니다.
 - 서버 이전은 업스트림의 인증된 인스턴스 간 전송을 따릅니다. 이전 GET 내보내기 및 메일함 엔드포인트는 새 흐름에서 제거됐습니다.
 - 사용자 계정이 삭제되어도 보존기한 안의 감사 이벤트는 해시 체인의 무결성을 위해 원래 기록을 유지합니다.
+
+## 서버 반환 권한
+
+인스턴스 간 서버 이전은 운영에서도 사용할 수 있습니다. 서버를 되가져올 때 자동 발급하는 1시간 토큰은 원래 팀의 해당 서버 아카이브에 묶입니다. 가져오기가 끝나도 발급 기한까지 그 서버의 최소 상태를 조회해 반환 완료를 확인할 수 있습니다. 운영 권한과 검증 항목은 [서버 이전 안내](docs/server-transfer-full-coverage.md#transfer-and-take-back-permissions)에 있습니다.

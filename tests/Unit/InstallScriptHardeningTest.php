@@ -73,7 +73,7 @@ it('keeps the defaults and ignores invalid values', function (string $path) {
         .'echo "bind=$COOLIFY_BIND_ADDRESS"';
 
     [$output, $envFile] = runInstallerFragment($fragment, "APP_ID=x\nSESSION_SECURE_COOKIE=false\n");
-    expect($output)->toContain('bind=')
+    expect($output)->toContain('bind=127.0.0.1')
         ->and($envFile)->toBe("APP_ID=x\nSESSION_SECURE_COOKIE=false\n");
 
     [$output, $envFile] = runInstallerFragment($fragment, "APP_ID=x\n", [
@@ -120,7 +120,7 @@ it('binds the panel port to COOLIFY_BIND_ADDRESS and the realtime ports to loopb
     $compose = Yaml::parseFile(dirname(__DIR__, 2).'/'.$composeFile);
 
     expect($compose['services']['coolify']['ports'])->toBe([
-        '${COOLIFY_BIND_ADDRESS:+${COOLIFY_BIND_ADDRESS}:}${APP_PORT:-8000}:8080',
+        '${COOLIFY_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8000}:8080',
         '${COOLIFY_REALTIME_BIND_ADDRESS:-127.0.0.1}:${REVERB_PORT:-${SOKETI_PORT:-6001}}:6001',
         '${COOLIFY_REALTIME_BIND_ADDRESS:-127.0.0.1}:6002:6002',
     ]);

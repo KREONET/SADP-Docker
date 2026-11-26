@@ -9,6 +9,7 @@ use App\Notifications\ApiTokenExpiringNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -26,15 +27,22 @@ class ApiTokenExpirationWarningJob implements ShouldBeEncrypted, ShouldQueue, Si
 
     public function handle(): void
     {
+        $now = now();
+        $until = $now->copy()->addDays(self::WARNING_DAYS);
+        $maxDays = PersonalAccessToken::maxLifetimeDays();
+
         PersonalAccessToken::query()
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '>', now())
-            ->where('expires_at', '<=', now()->addDays(self::WARNING_DAYS))
+            ->where(function (Builder $query) use ($now, $until, $maxDays) {
+                $query->whereBetween('expires_at', [$now, $until]);
+                if ($maxDays > 0) {
+                    $query->orWhereBetween('created_at', [$now->copy()->subDays($maxDays), $until->copy()->subDays($maxDays)]);
+                }
+            })
             ->whereNull('api_token_expiration_warning_sent_at')
             ->where('tokenable_type', User::class)
             ->chunkById(100, function ($tokens) {
                 foreach ($tokens as $token) {
-                    if (! $token->team_id || ! $this->isDue($token)) {
+                    if ($token->team_id === null || ! $this->isDue($token)) {
                         continue;
                     }
 
@@ -53,9 +61,8 @@ class ApiTokenExpirationWarningJob implements ShouldBeEncrypted, ShouldQueue, Si
 
                     $markedAsSent = PersonalAccessToken::query()
                         ->whereKey($token->getKey())
-                        ->whereNotNull('expires_at')
-                        ->where('expires_at', '>', now())
-                        ->where('expires_at', '<=', now()->addDays(self::WARNING_DAYS))
+                        ->where('expires_at', $token->expires_at)
+                        ->where('created_at', $token->created_at)
                         ->whereNull('api_token_expiration_warning_sent_at')
                         ->update(['api_token_expiration_warning_sent_at' => $warningSentAt]);
 
@@ -74,10 +81,13 @@ class ApiTokenExpirationWarningJob implements ShouldBeEncrypted, ShouldQueue, Si
      */
     private function isDue(PersonalAccessToken $token): bool
     {
-        if ($token->created_at->diffInDays($token->expires_at) > self::WARNING_DAYS) {
-            return true;
+        $expiry = $token->effectiveExpiresAt();
+        if ($token->created_at === null || $expiry === null || ! $expiry->isFuture()) {
+            return false;
         }
 
-        return $token->expires_at->lte(now()->addDay());
+        $warningDays = $token->created_at->diffInDays($expiry) > self::WARNING_DAYS ? self::WARNING_DAYS : 1;
+
+        return $expiry->lte(now()->addDays($warningDays));
     }
 }

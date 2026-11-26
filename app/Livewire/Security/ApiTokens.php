@@ -6,6 +6,7 @@ use App\Enums\AccessLevel;
 use App\Enums\AccessScope;
 use App\Livewire\Forms\ApiTokenForm;
 use App\Models\Environment;
+use App\Models\PersonalAccessToken;
 use App\Models\Project;
 use App\Services\Access\AccessResolver;
 use App\Services\Access\Grant;
@@ -16,7 +17,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -176,7 +176,7 @@ class ApiTokens extends Component
      */
     public static function maxLifetimeDays(): int
     {
-        return max(0, (int) config('security.api_tokens.max_lifetime_days'));
+        return PersonalAccessToken::maxLifetimeDays();
     }
 
     /**

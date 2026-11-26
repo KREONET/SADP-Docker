@@ -44,6 +44,19 @@ function createTokenExpiring(User $user, Team $team, ?Carbon $expiresAt, ?Carbon
 }
 
 describe('ApiTokenExpirationWarningJob', function () {
+    test('warns about a legacy token on the date imposed by the current maximum', function () {
+        $this->freezeSecond();
+        config()->set('security.api_tokens.max_lifetime_days', 45);
+        $token = createTokenExpiring($this->user, $this->team, null);
+        $token->forceFill(['created_at' => now()->subDays(40)])->save();
+
+        (new ApiTokenExpirationWarningJob)->handle();
+
+        Notification::assertSentTo($this->team, ApiTokenExpiringNotification::class,
+            fn ($notification) => $notification->toWebhook()['expires_at'] === now()->addDays(5)->format('Y-m-d H:i:s'));
+        expect($token->fresh()->api_token_expiration_warning_sent_at)->not->toBeNull();
+    });
+
     test('notifies team when token expires within 24h', function () {
         $token = createTokenExpiring($this->user, $this->team, Carbon::now()->addHours(23));
 

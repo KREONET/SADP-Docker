@@ -42,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -416,6 +417,43 @@ class Server extends BaseModel
     ];
 
     use HasSafeStringAttribute;
+
+    public function attributesToArray(): array
+    {
+        $attributes = parent::attributesToArray();
+        if (is_array($attributes['server_metadata'] ?? null)) {
+            $attributes['server_metadata'] = $this->publicServerMetadata();
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * The transfer status endpoint authorizes diagnostics separately. Keep ordinary server
+     * responses, including models nested in other resources, limited to progress information.
+     *
+     * @return array<string, mixed>
+     */
+    public function publicServerMetadata(): array
+    {
+        $metadata = $this->server_metadata ?? [];
+        $publicFields = [
+            'transfer' => ['status', 'export_id', 'imported_at', 'claimed_at', 'transferred_at', 'target_instance_url'],
+            'migration' => ['status', 'phase', 'export_id', 'started_at', 'finished_at', 'target_url', 'target_server_url'],
+        ];
+        foreach ($publicFields as $section => $fields) {
+            if (isset($metadata[$section])) {
+                $metadata[$section] = Arr::only((array) $metadata[$section], $fields);
+                foreach (['target_url', 'target_server_url', 'target_instance_url'] as $field) {
+                    if (isset($metadata[$section][$field])) {
+                        $metadata[$section][$field] = auditUrl($metadata[$section][$field]);
+                    }
+                }
+            }
+        }
+
+        return $metadata;
+    }
 
     public function setValidationLogsAttribute($value): void
     {

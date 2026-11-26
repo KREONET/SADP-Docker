@@ -10,7 +10,7 @@
 ## DOCKER_POOL_FORCE_OVERRIDE - Force override Docker address pool configuration (default: false)
 ## AUTOUPDATE - Set to "false" to disable auto-updates
 ## REGISTRY_URL - Custom registry URL for Docker images (default: docker.io)
-## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, e.g. 127.0.0.1 to reach the panel only through the proxy domain or an SSH tunnel (default: all addresses)
+## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, default: 127.0.0.1 for access through the proxy domain or an SSH tunnel
 ## COOLIFY_REALTIME_BIND_ADDRESS - IPv4 address for the direct Reverb/terminal ports 6001/6002 (default: 127.0.0.1; the panel port proxies /app/ and /terminal/ws)
 ## APP_URL - Panel URL, e.g. https://coolify.example.com (an https URL also enables Secure session cookies)
 ## COOLIFY_REQUIRE_CHECKSUMS - Set to "true" to refuse downloaded files without a published SHA-256 checksum
@@ -31,6 +31,15 @@ CURRENT_USER=$USER
 
 if [ $EUID != 0 ]; then
     echo "Please run this script as root or with sudo"
+    exit 1
+fi
+
+# Bootstrap with the checkout's port mappings before the SADP-Docker image is built.
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
+PANEL_COMPOSE="$SCRIPT_DIR/docker-compose.prod.yml"
+if [ ! -f "$REPO_DIR/docker-compose.yml" ] || [ ! -f "$PANEL_COMPOSE" ] || [ ! -f "$SCRIPT_DIR/upgrade.sh" ]; then
+    echo "Run this installer from the SADP-Docker checkout to use its production port bindings." >&2
     exit 1
 fi
 
@@ -1019,21 +1028,18 @@ step_start "Downloading required files from CDN"
 log "Downloading configuration files in parallel..."
 CHECKSUM_WARNINGS_FILE=$(mktemp)
 
-# Download files in parallel for faster installation
-download_verified "$CDN/docker-compose.yml" /data/coolify/source/docker-compose.yml &
-PID1=$!
-download_verified "$CDN/docker-compose.prod.yml" /data/coolify/source/docker-compose.prod.yml &
-PID2=$!
+cp "$REPO_DIR/docker-compose.yml" /data/coolify/source/docker-compose.yml
+cp "$PANEL_COMPOSE" /data/coolify/source/docker-compose.prod.yml
+cp "$SCRIPT_DIR/upgrade.sh" /data/coolify/source/upgrade.sh
+
 download_verified "$CDN/.env.production" /data/coolify/source/.env.production &
-PID3=$!
-download_verified "$CDN/upgrade.sh" /data/coolify/source/upgrade.sh &
-PID4=$!
+PID1=$!
 download_verified "$CDN/upgrade-postgres.sh" /data/coolify/source/upgrade-postgres.sh &
-PID5=$!
+PID2=$!
 
 # Wait for all downloads to complete and check for errors
 DOWNLOAD_FAILED=false
-for PID in $PID1 $PID2 $PID3 $PID4 $PID5; do
+for PID in $PID1 $PID2; do
     if ! wait $PID; then
         DOWNLOAD_FAILED=true
     fi
@@ -1127,10 +1133,7 @@ if [ "$AUTOUPDATE" = "false" ]; then
     update_env_var "AUTOUPDATE" "false"
 fi
 
-# Direct ports (8000, 6001, 6002): 8000 (plain-HTTP panel) is published on all addresses unless
-# COOLIFY_BIND_ADDRESS is set, e.g. 127.0.0.1 so the panel is reachable only through the proxy domain
-# (or an SSH tunnel). 6001/6002 are loopback-only unless COOLIFY_REALTIME_BIND_ADDRESS is set, because
-# the panel port proxies /app/ and /terminal/ws.
+# Direct ports (8000, 6001, 6002) use loopback unless an operator specifies an address.
 for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     BIND_VALUE="${!BIND_VAR:-}"
     if [ -n "$BIND_VALUE" ]; then
@@ -1142,6 +1145,7 @@ for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     fi
 done
 COOLIFY_BIND_ADDRESS=$(grep "^COOLIFY_BIND_ADDRESS=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+COOLIFY_BIND_ADDRESS=${COOLIFY_BIND_ADDRESS:-127.0.0.1}
 
 # An https panel URL means the panel is served over TLS: mark the session cookie Secure
 if [ -n "${APP_URL:-}" ]; then

@@ -30,7 +30,7 @@
 
             @if ($tokensOverPolicy->isNotEmpty())
                 <x-callout type="warning" :title="__('Tokens exceed the lifetime policy')">
-                    {{ __(':count issued token(s) never expire or outlive the maximum token lifetime. Create replacement tokens that expire and revoke the old ones.', ['count' => $tokensOverPolicy->count()]) }}
+                    {{ __(':count token(s) were issued without an expiry or with a lifetime longer than the current maximum. Check the effective expiry below and replace these tokens.', ['count' => $tokensOverPolicy->count()]) }}
                 </x-callout>
             @endif
 
@@ -175,20 +175,18 @@
                                         {{ $token->last_used_at?->diffForHumans() ?? __('Never') }}
                                     </div>
                                     <div class="text-[11px] text-neutral-500 dark:text-fg-dim">
-                                        {{ $token->created_at->format('Y-m-d') }}
+                                        {{ $token->created_at?->format('Y-m-d') }}
                                     </div>
                                     <div class="text-[11px] text-neutral-500 dark:text-fg-dim">
-                                        @if ($this->exceedsLifetimePolicy($token))
+                                        @if ($token->isExpired())
+                                            <x-status-badge label="{{ __('Expired') }}" type="error" size="sm" />
+                                        @elseif ($this->exceedsLifetimePolicy($token))
                                             <span class="flex flex-wrap items-center gap-1.5">
-                                                {{ $token->expires_at?->format('Y-m-d') ?? __('Never') }}
+                                                {{ $token->effectiveExpiresAt()?->format('Y-m-d') ?? __('Never') }}
                                                 <x-status-badge :label="__('Exceeds policy')" type="warning" />
                                             </span>
-                                        @elseif (!$token->expires_at)
-                                            {{ __('Never') }}
-                                        @elseif ($token->expires_at->isPast())
-                                            <x-status-badge label="{{ __('Expired') }}" type="error" size="sm" />
                                         @else
-                                            {{ $token->expires_at->format('Y-m-d') }}
+                                            {{ $token->effectiveExpiresAt()?->format('Y-m-d') ?? __('Never') }}
                                         @endif
                                     </div>
                                     <div class="flex items-center justify-end gap-1">

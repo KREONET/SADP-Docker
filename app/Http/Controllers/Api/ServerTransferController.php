@@ -44,7 +44,7 @@ class ServerTransferController extends Controller
                 required: ['target_url', 'target_token'],
                 properties: [
                     new OA\Property(property: 'target_url', type: 'string', example: 'https://coolify-b.example.com'),
-                    new OA\Property(property: 'target_token', type: 'string', description: 'API token on the target instance (root or write)'),
+                    new OA\Property(property: 'target_token', type: 'string', description: 'API token on the target instance (root or write and deploy), or the temporary token issued automatically for a transfer back.'),
                 ]
             )
         ),
@@ -124,7 +124,7 @@ class ServerTransferController extends Controller
 
     #[OA\Get(
         summary: 'Get server transfer status',
-        description: 'Show the transfer state of a server on this instance: the import/claim state (transfer) and the state of a running or finished transfer to another instance (migration).',
+        description: 'Show transfer and migration progress. Detailed migration diagnostics require server update permission and a team-wide token with read:sensitive or root. A temporary server return token receives only server_uuid and the transfer status and export_id for its server.',
         path: '/servers/{uuid}/transfer',
         operationId: 'get-server-transfer-status',
         security: [['bearerAuth' => []]],
@@ -152,24 +152,28 @@ class ServerTransferController extends Controller
 
         $this->authorize('view', $server);
 
-        // The log and the error of a transfer can name hosts and credentials problems, so members see only the state.
-        $migration = data_get($server->server_metadata, 'migration');
-        if (is_array($migration) && ! $request->user()->can('update', $server)) {
-            $migration = collect($migration)->except(['log', 'error'])->all();
+        if ($request->attributes->get('transfer_back_status')) {
+            return response()->json([
+                'server_uuid' => $server->uuid,
+                'transfer' => collect((array) data_get($server->server_metadata, 'transfer', []))->only(['export_id', 'status'])->all(),
+            ]);
         }
+
+        $metadata = $server->publicServerMetadata();
+        $canReadDiagnostics = canReadServerSecretsFromApi() && $request->user()->can('update', $server);
 
         return response()->json([
             'server_uuid' => $server->uuid,
-            'transfer' => collect((array) data_get($server->server_metadata, 'transfer', []))
-                ->only(['status', 'export_id', 'imported_at', 'claimed_at', 'transferred_at', 'target_instance_url'])
-                ->all(),
-            'migration' => $migration,
+            'transfer' => $metadata['transfer'] ?? [],
+            'migration' => $canReadDiagnostics
+                ? data_get($server->server_metadata, 'migration')
+                : ($metadata['migration'] ?? null),
         ]);
     }
 
     #[OA\Get(
         summary: 'Check server import',
-        description: 'Check that this instance can import a server, before the source instance starts the transfer. It checks the token, the bundle version, the server limit, servers with the same UUID or IP, and that this instance can reach the SSH port of the server.',
+        description: 'Check that this instance can import a server, before the source instance starts the transfer. It checks the token, the bundle version, the server limit, servers with the same UUID or IP, and SSH reachability. A temporary server return token can check only its original archive and SSH endpoint.',
         path: '/servers/import/check',
         operationId: 'check-server-import',
         security: [['bearerAuth' => []]],
@@ -276,7 +280,7 @@ class ServerTransferController extends Controller
 
     #[OA\Post(
         summary: 'Import server transfer bundle',
-        description: 'Import a server transfer bundle into this Coolify instance (adopt mode by default). This instance then manages the server, and Sentinel reports to it. Needs a token with the write and deploy permissions.',
+        description: 'Import a server transfer bundle into this Coolify instance (adopt mode by default). This instance then manages the server, and Sentinel reports to it. Requires write and deploy, root, or a temporary token issued for returning this archive to its original SSH endpoint with its UUID preserved in adopt mode.',
         path: '/servers/import',
         operationId: 'import-server-transfer-bundle',
         security: [['bearerAuth' => []]],
@@ -297,7 +301,7 @@ class ServerTransferController extends Controller
             new OA\Response(response: 200, description: 'Dry-run result'),
             new OA\Response(response: 201, description: 'Imported'),
             new OA\Response(response: 401, ref: '#/components/responses/401'),
-            new OA\Response(response: 403, description: 'The token needs the write and deploy permissions.'),
+            new OA\Response(response: 403, description: 'The token does not authorize this import.'),
             new OA\Response(response: 422, description: 'Validation failed'),
         ]
     )]
@@ -352,6 +356,7 @@ class ServerTransferController extends Controller
                 dryRun: $request->boolean('dry_run', false),
                 preserveUuids: $request->boolean('preserve_uuids', true),
                 adoptMode: $request->boolean('adopt_mode', true),
+                requiredArchiveId: $request->attributes->get('transfer_back_archive_id'),
             );
         } catch (ThrottleRequestsException $e) {
             throw $e;

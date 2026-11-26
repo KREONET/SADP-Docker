@@ -117,6 +117,15 @@ test('MCP endpoint rejects unauthenticated requests', function () {
     $response->assertStatus(401);
 });
 
+test('MCP endpoint returns 401 when a legacy token reaches the lifetime limit', function () {
+    $this->freezeSecond();
+    config()->set('security.api_tokens.max_lifetime_days', 30);
+    $token = $this->user->createToken('automation', ['read']);
+    $token->accessToken->forceFill(['created_at' => now()->subDays(30)])->save();
+
+    mcpListTools($token->plainTextToken)->assertUnauthorized();
+});
+
 test('MCP endpoint works when the REST API is disabled', function () {
     InstanceSettings::query()->where('id', 0)->update(['is_api_enabled' => false]);
     Once::flush();

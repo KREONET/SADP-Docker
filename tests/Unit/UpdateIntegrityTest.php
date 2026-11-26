@@ -157,8 +157,7 @@ it('aborts the upgrade when a configuration file fails its checksum', function (
     $script = file_get_contents(dirname(__DIR__, 2).'/'.$path);
 
     expect($script)
-        ->toContain('fetch_config_file docker-compose.yml')
-        ->toContain('fetch_config_file docker-compose.prod.yml')
+        ->toContain('fetch_config_file upgrade-postgres.sh')
         ->toContain('fetch_config_file .env.production')
         ->toContain('write_status "error" "Checksum verification failed for ${name}"');
 })->with([

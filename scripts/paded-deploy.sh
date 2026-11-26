@@ -38,6 +38,11 @@ set_env_var() {
     fi
 }
 
+echo "The panel's HTTP port uses loopback by default. Prepare HTTPS proxy or SSH tunnel access before deployment."
+if ! grep -qE '^COOLIFY_REALTIME_BIND_ADDRESS=.+' "$ENV_FILE" && grep -qE '^(PUSHER_PORT=6001|TERMINAL_PORT=6002)$' "$ENV_FILE"; then
+    echo "Legacy direct browser ports are configured. Remove those port settings to use the panel proxy, or set COOLIFY_REALTIME_BIND_ADDRESS for your network."
+fi
+
 if [ "${SKIP_BUILD:-false}" != "true" ]; then
     echo "1/3 Building ${IMAGE} from ${REPO_DIR}..."
     docker build -f "$REPO_DIR/docker/production/Dockerfile" -t "$IMAGE" "$REPO_DIR"

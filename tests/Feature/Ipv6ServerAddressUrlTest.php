@@ -6,6 +6,7 @@ use App\Models\ServerSetting;
 use App\Models\Service;
 use App\Models\ServiceDatabase;
 use App\Models\StandaloneClickhouse;
+use App\Models\StandaloneDocker;
 use App\Models\StandaloneDragonfly;
 use App\Models\StandaloneKeydb;
 use App\Models\StandaloneMariadb;
@@ -20,14 +21,14 @@ uses(RefreshDatabase::class);
 
 describe('instance sentinel url', function () {
     it('brackets an IPv6 public address', function (string $ipv6) {
-        expect(ServerSetting::instanceSentinelUrl(null, null, $ipv6))->toBe('http://[2a01:4f8::1]:8000');
+        expect(ServerSetting::instanceSentinelUrl(null, null, $ipv6))->toBe('https://[2a01:4f8::1]');
     })->with([
         'raw' => '2a01:4f8::1',
         'bracketed' => '[2a01:4f8::1]',
     ]);
 
     it('keeps an IPv4 public address unchanged', function () {
-        expect(ServerSetting::instanceSentinelUrl(null, '203.0.113.10', '2a01:4f8::1'))->toBe('http://203.0.113.10:8000');
+        expect(ServerSetting::instanceSentinelUrl(null, '203.0.113.10', '2a01:4f8::1'))->toBe('https://203.0.113.10');
     });
 });
 
@@ -54,25 +55,29 @@ describe('sentinel url from the current request', function () {
         'long loopback' => 'http://[0:0:0:0:0:0:0:1]:8000/',
     ]);
 
-    it('keeps a public IPv6 request host', function () {
-        expect(sentinelUrlForRequestHost('http://[2a01:4f8::1]:8000/'))->toBe('http://[2a01:4f8::1]:8000');
-    });
-
-    it('still ignores IPv4 loopback and keeps public IPv4 hosts', function () {
-        expect(sentinelUrlForRequestHost('http://127.0.0.1:8000/'))->toBeNull()
-            ->and(sentinelUrlForRequestHost('http://203.0.113.10:8000/'))->toBe('http://203.0.113.10:8000');
-    });
+    it('ignores unconfigured public and loopback request hosts', function (string $url) {
+        expect(sentinelUrlForRequestHost($url))->toBeNull();
+    })->with([
+        'public IPv6' => 'http://[2001:db8::1]:8000/',
+        'IPv4 loopback' => 'http://127.0.0.1:8000/',
+        'public IPv4' => 'http://203.0.113.10:8000/',
+    ]);
 });
 
 describe('public database urls', function () {
+    beforeEach(function () {
+        InstanceSettings::forceCreate(['id' => 0, 'public_domain' => null]);
+    });
+
     function publicDatabaseUrl(string $modelClass, array $attributes, string $serverIp): ?string
     {
-        if ($modelClass === StandaloneMongodb::class) {
-            $attributes['mongo_initdb_root_password'] = encrypt($attributes['mongo_initdb_root_password']);
-        }
+        $server = new Server(['ip' => $serverIp]);
+        $server->setRelation('settings', new ServerSetting);
+        $destination = new StandaloneDocker;
+        $destination->setRelation('server', $server);
         $database = new $modelClass;
-        $database->forceFill(array_merge(['is_public' => true, 'public_port' => 15432], $attributes));
-        $database->setRelation('destination', (object) ['server' => (object) ['getIp' => $serverIp]]);
+        $database->forceFill(array_merge(['uuid' => 'testdb', 'is_public' => true, 'public_port' => 15432], $attributes));
+        $database->setRelation('destination', $destination);
 
         return $database->external_db_url;
     }
@@ -88,13 +93,14 @@ describe('public database urls', function () {
         'clickhouse' => [StandaloneClickhouse::class, ['clickhouse_admin_user' => 'user', 'clickhouse_admin_password' => 'pass', 'clickhouse_db' => 'app'], 'clickhouse://user:pass@%s:15432/app'],
     ];
 
-    it('brackets an IPv6 server address', function (string $modelClass, array $attributes, string $expected) {
-        expect(publicDatabaseUrl($modelClass, $attributes, '2a01:4f8::1'))->toBe(sprintf($expected, '[2a01:4f8::1]'))
-            ->and(publicDatabaseUrl($modelClass, $attributes, '[2a01:4f8::1]'))->toBe(sprintf($expected, '[2a01:4f8::1]'));
+    it('uses the same database domain for raw and bracketed IPv6 server addresses', function (string $modelClass, array $attributes, string $expected) {
+        $expectedUrl = sprintf($expected, 'testdb.2a01-4f8--1.sslip.io');
+        expect(publicDatabaseUrl($modelClass, $attributes, '2a01:4f8::1'))->toBe($expectedUrl)
+            ->and(publicDatabaseUrl($modelClass, $attributes, '[2a01:4f8::1]'))->toBe($expectedUrl);
     })->with($databases);
 
-    it('keeps an IPv4 server address unchanged', function (string $modelClass, array $attributes, string $expected) {
-        expect(publicDatabaseUrl($modelClass, $attributes, '203.0.113.10'))->toBe(sprintf($expected, '203.0.113.10'));
+    it('uses the database domain derived from the IPv4 server address', function (string $modelClass, array $attributes, string $expected) {
+        expect(publicDatabaseUrl($modelClass, $attributes, '203.0.113.10'))->toBe(sprintf($expected, 'testdb.203.0.113.10.sslip.io'));
     })->with($databases);
 });
 

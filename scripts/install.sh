@@ -12,7 +12,7 @@
 ## CONFIGURE_FIREWALL - Set to "false" to skip allowing SSH from the Coolify Docker network through UFW/firewalld
 ## INTERNAL_SIGNUP - "true" keeps the built-in sign-up, "false" creates only a random root account for OIDC sign-in (asked interactively when unset)
 ## REGISTRY_URL - Custom registry URL for Docker images (default: docker.io)
-## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, e.g. 127.0.0.1 to reach the panel only through the proxy domain or an SSH tunnel (default: all addresses)
+## COOLIFY_BIND_ADDRESS - IPv4 address for the plain-HTTP panel port 8000, default: 127.0.0.1 for access through the proxy domain or an SSH tunnel
 ## COOLIFY_REALTIME_BIND_ADDRESS - IPv4 address for the direct Reverb/terminal ports 6001/6002 (default: 127.0.0.1; the panel port proxies /app/ and /terminal/ws)
 ## APP_URL - Panel URL, e.g. https://coolify.example.com (an https URL also enables Secure session cookies)
 ## COOLIFY_REQUIRE_CHECKSUMS - Set to "true" to refuse downloaded files without a published SHA-256 checksum
@@ -44,6 +44,15 @@ CURRENT_USER=$USER
 
 if [ $EUID != 0 ]; then
     echo "Please run this script as root or with sudo"
+    exit 1
+fi
+
+# Bootstrap with the checkout's port mappings before the SADP-Docker image is built.
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
+PANEL_COMPOSE="$REPO_DIR/docker-compose.prod.yml"
+if [ ! -f "$REPO_DIR/docker-compose.yml" ] || [ ! -f "$PANEL_COMPOSE" ] || [ ! -f "$SCRIPT_DIR/upgrade.sh" ]; then
+    echo "Run this installer from the SADP-Docker checkout to use its production port bindings." >&2
     exit 1
 fi
 
@@ -988,21 +997,18 @@ step_start "Downloading required files from CDN"
 log "Downloading configuration files in parallel..."
 CHECKSUM_WARNINGS_FILE=$(mktemp)
 
-# Download files in parallel for faster installation
-download_verified "$CDN/docker-compose.yml" /data/coolify/source/docker-compose.yml &
-PID1=$!
-download_verified "$CDN/docker-compose.prod.yml" /data/coolify/source/docker-compose.prod.yml &
-PID2=$!
+cp "$REPO_DIR/docker-compose.yml" /data/coolify/source/docker-compose.yml
+cp "$PANEL_COMPOSE" /data/coolify/source/docker-compose.prod.yml
+cp "$SCRIPT_DIR/upgrade.sh" /data/coolify/source/upgrade.sh
+
 download_verified "$CDN/.env.production" /data/coolify/source/.env.production &
-PID3=$!
-download_verified "$CDN/upgrade.sh" /data/coolify/source/upgrade.sh &
-PID4=$!
+PID1=$!
 download_verified "$CDN/upgrade-postgres.sh" /data/coolify/source/upgrade-postgres.sh &
-PID5=$!
+PID2=$!
 
 # Wait for all downloads to complete and check for errors
 DOWNLOAD_FAILED=false
-for PID in $PID1 $PID2 $PID3 $PID4 $PID5; do
+for PID in $PID1 $PID2; do
     if ! wait $PID; then
         DOWNLOAD_FAILED=true
     fi
@@ -1098,19 +1104,21 @@ update_env_var "PUSHER_APP_SECRET" "$(openssl rand -hex 32)"
 update_env_var "PUSHER_BACKEND_PORT" "6001"
 
 # Random root password (openssl is installed by now): always upper, lower, digit and symbol, no sed-special characters
-if [ "$INTERNAL_SIGNUP" = "false" ] && [ -z "$ROOT_USER_PASSWORD" ]; then
+if [ "$INTERNAL_SIGNUP" = "false" ] && [ -z "$ROOT_USER_PASSWORD" ] && ! grep -qs '^ROOT_USER_PASSWORD=.' "$ENV_FILE"; then
     ROOT_USER_PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 20)Aa1_"
     GENERATED_ROOT_PASSWORD=true
 fi
 
 # Add default root user credentials from environment variables (ROOT_USERNAME is optional)
-if [ -n "$ROOT_USER_EMAIL" ] && [ -n "$ROOT_USER_PASSWORD" ]; then
+if [ -n "$ROOT_USER_EMAIL" ] && { [ -n "$ROOT_USER_PASSWORD" ] || grep -q '^ROOT_USER_PASSWORD=.' "$ENV_FILE"; }; then
     echo " - Setting predefined root user credentials from environment"
     if [ -n "$ROOT_USERNAME" ]; then
         update_env_var "ROOT_USERNAME" "$(quote_env_value "$ROOT_USERNAME")"
     fi
     update_env_var "ROOT_USER_EMAIL" "$(quote_env_value "$ROOT_USER_EMAIL")"
-    update_env_var "ROOT_USER_PASSWORD" "$(quote_env_value "$ROOT_USER_PASSWORD")"
+    if [ -n "$ROOT_USER_PASSWORD" ]; then
+        update_env_var "ROOT_USER_PASSWORD" "$(quote_env_value "$ROOT_USER_PASSWORD")"
+    fi
 elif [ -n "$ROOT_USERNAME" ] || [ -n "$ROOT_USER_EMAIL" ] || [ -n "$ROOT_USER_PASSWORD" ]; then
     warn "Predefined root user skipped: set both ROOT_USER_EMAIL and ROOT_USER_PASSWORD."
 fi
@@ -1124,10 +1132,7 @@ if [ "$AUTOUPDATE" = "false" ]; then
     update_env_var "AUTOUPDATE" "false"
 fi
 
-# Direct ports (8000, 6001, 6002): 8000 (plain-HTTP panel) is published on all addresses unless
-# COOLIFY_BIND_ADDRESS is set, e.g. 127.0.0.1 so the panel is reachable only through the proxy domain
-# (or an SSH tunnel). 6001/6002 are loopback-only unless COOLIFY_REALTIME_BIND_ADDRESS is set, because
-# the panel port proxies /app/ and /terminal/ws.
+# Direct ports (8000, 6001, 6002) use loopback unless an operator specifies an address.
 for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     BIND_VALUE="${!BIND_VAR:-}"
     if [ -n "$BIND_VALUE" ]; then
@@ -1139,6 +1144,7 @@ for BIND_VAR in COOLIFY_BIND_ADDRESS COOLIFY_REALTIME_BIND_ADDRESS; do
     fi
 done
 COOLIFY_BIND_ADDRESS=$(grep "^COOLIFY_BIND_ADDRESS=" "$ENV_FILE" | cut -d '=' -f2- | head -n1 || true)
+COOLIFY_BIND_ADDRESS=${COOLIFY_BIND_ADDRESS:-127.0.0.1}
 
 # An https panel URL means the panel is served over TLS: mark the session cookie Secure
 if [ -n "${APP_URL:-}" ]; then

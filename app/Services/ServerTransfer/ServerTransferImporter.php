@@ -188,6 +188,7 @@ class ServerTransferImporter
         bool $dryRun = false,
         bool $preserveUuids = true,
         bool $adoptMode = true,
+        ?int $requiredArchiveId = null,
     ): array {
         // Checks every id, list size, and imported value before anything is written.
         $validation = ServerTransferBundle::validate($bundle);
@@ -295,7 +296,13 @@ class ServerTransferImporter
             ];
         }
 
-        $result = DB::transaction(function () use ($bundle, $teamId, $preserveUuids, $adoptMode, $warnings, $archive, &$created) {
+        $result = DB::transaction(function () use ($bundle, $teamId, $preserveUuids, $adoptMode, $warnings, $archive, $requiredArchiveId, &$created) {
+            if ($requiredArchiveId !== null) {
+                $archive = Server::whereTeamId($teamId)->whereUuid(data_get($bundle, 'server.uuid'))->lockForUpdate()->find($requiredArchiveId);
+                if (! $archive?->isTransferredAway()) {
+                    throw ValidationException::withMessages(['bundle' => 'The server archive is no longer available for this return.']);
+                }
+            }
             // Removed in the same transaction as the import, so a failed import keeps the archive.
             if ($archive) {
                 app(ServerTransferClaimer::class)->deleteArchive($archive);

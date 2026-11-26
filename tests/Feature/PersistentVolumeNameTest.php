@@ -2,6 +2,7 @@
 
 use App\Models\Application;
 use App\Models\Environment;
+use App\Models\InstanceSettings;
 use App\Models\LocalPersistentVolume;
 use App\Models\Project;
 use App\Models\Server;
@@ -146,6 +147,7 @@ describe('public database address', function () {
     });
 
     it('uses sslip without a wildcard domain', function () {
+        InstanceSettings::forceCreate(['id' => 0]);
         $this->server->forceFill(['ip' => '203.0.113.7'])->saveQuietly();
         $this->server->settings()->update(['wildcard_domain' => null]);
 

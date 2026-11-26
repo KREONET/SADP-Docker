@@ -387,8 +387,6 @@ class ValidateAndInstall extends Component
         }
 
         try {
-            // A queued job has no web request, so it cannot derive the Coolify URL from the request host.
-            // Resolve and save the push URL here, while the request of the browser is available.
             $this->server->settings->ensureSentinelUrl();
             $this->server->settings->ensureValidSentinelToken();
         } catch (\Throwable $e) {

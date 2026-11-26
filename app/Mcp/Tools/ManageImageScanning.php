@@ -2,9 +2,11 @@
 
 namespace App\Mcp\Tools;
 
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly(false)]
+#[IsDestructive]
 class ManageImageScanning extends RestActionTool
 {
     protected string $name = 'manage_image_scanning';
