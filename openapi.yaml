@@ -12961,7 +12961,7 @@ paths:
                   type: string
                   example: 'https://coolify-b.example.com'
                 target_token:
-                  description: 'API token on the target instance (root or write)'
+                  description: 'API token on the target instance (root or write and deploy), or the temporary token issued automatically for a transfer back.'
                   type: string
               type: object
       responses:
@@ -12981,7 +12981,7 @@ paths:
       tags:
         - Servers
       summary: 'Get server transfer status'
-      description: 'Show the transfer state of a server on this instance: the import/claim state (transfer) and the state of a running or finished transfer to another instance (migration).'
+      description: 'Show transfer and migration progress. Detailed migration diagnostics require server update permission and a team-wide token with read:sensitive or root. A temporary server return token receives only server_uuid and the transfer status and export_id for its server.'
       operationId: get-server-transfer-status
       parameters:
         -
@@ -13005,7 +13005,7 @@ paths:
       tags:
         - Servers
       summary: 'Check server import'
-      description: 'Check that this instance can import a server, before the source instance starts the transfer. It checks the token, the bundle version, the server limit, servers with the same UUID or IP, and that this instance can reach the SSH port of the server.'
+      description: 'Check that this instance can import a server, before the source instance starts the transfer. It checks the token, the bundle version, the server limit, servers with the same UUID or IP, and SSH reachability. A temporary server return token can check only its original archive and SSH endpoint.'
       operationId: check-server-import
       parameters:
         -
@@ -13066,7 +13066,7 @@ paths:
       tags:
         - Servers
       summary: 'Import server transfer bundle'
-      description: 'Import a server transfer bundle into this Coolify instance (adopt mode by default). This instance then manages the server, and Sentinel reports to it. Needs a token with the write and deploy permissions.'
+      description: 'Import a server transfer bundle into this Coolify instance (adopt mode by default). This instance then manages the server, and Sentinel reports to it. Requires write and deploy, root, or a temporary token issued for returning this archive to its original SSH endpoint with its UUID preserved in adopt mode.'
       operationId: import-server-transfer-bundle
       requestBody:
         required: true
@@ -13096,7 +13096,7 @@ paths:
         '401':
           $ref: '#/components/responses/401'
         '403':
-          description: 'The token needs the write and deploy permissions.'
+          description: 'The token does not authorize this import.'
         '422':
           description: 'Validation failed'
       security:

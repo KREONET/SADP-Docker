@@ -54,3 +54,15 @@ it('keeps operator supplied root credentials when the built-in sign-up is off', 
 
     expect($output)->toBe('signup=false user=admin email=admin@example.org password=Given-Passw0rd');
 });
+
+it('keeps the saved bootstrap credential when retrying an unfinished install', function () {
+    $file = tempnam(sys_get_temp_dir(), 'sadp-signup-');
+    file_put_contents($file, "ROOT_USER_PASSWORD=saved-fixture\n");
+
+    try {
+        expect(runInternalSignupSetup(['INTERNAL_SIGNUP' => 'false', 'ENV_FILE' => $file]))
+            ->toBe('signup=false user=root email=root@paded.local password=');
+    } finally {
+        unlink($file);
+    }
+});

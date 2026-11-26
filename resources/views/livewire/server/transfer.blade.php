@@ -62,7 +62,7 @@
                             <div>
                                 @php
                                     // A static string: x-text shows the typed host as text, also after the modal was rendered.
-                                    $transferBackWarning = 'This instance sends a new API token of your team to '
+                                    $transferBackWarning = 'This instance sends a one-hour token for returning this archive to '
                                         .'<strong data-testid="transfer-back-host" x-text="(() => { try { return new URL($wire.managerUrl).host } catch (e) { return \'an invalid URL\' } })()"></strong>. '
                                         .'Continue only if you trust that instance.';
                                 @endphp

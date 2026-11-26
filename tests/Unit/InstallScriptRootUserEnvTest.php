@@ -1,6 +1,7 @@
 <?php
 
 use Dotenv\Dotenv;
+use Symfony\Component\Process\Process;
 
 /**
  * Runs the install script's update_env_var and quote_env_value helpers for the root user
@@ -67,3 +68,40 @@ it('keeps root user credentials that are already set', function (string $scriptP
 
     expect($env)->toBe(['ROOT_USERNAME' => 'Old Name']);
 })->with($installScripts);
+
+it('clears only the bootstrap credential files for this install after confirming root exists', function (string $path, string $count) {
+    $script = file_get_contents(dirname(__DIR__, 2).'/'.$path);
+    preg_match('/^# The root user is created from ROOT_USER_PASSWORD.*?^fi$/ms', $script, $cleanup);
+    expect($cleanup)->not->toBeEmpty();
+
+    $directory = sys_get_temp_dir().'/sadp-root-env-'.bin2hex(random_bytes(8));
+    mkdir($directory, 0700);
+    $file = "$directory/.env";
+    $current = "APP_ID=instance\nROOT_USER_PASSWORD='bootstrap fixture'\nDB_USERNAME=coolify\n";
+    $backup = "ROOT_USER_PASSWORD=previous-fixture\nAPP_ID=old\n";
+    file_put_contents($file, $current);
+    file_put_contents($file.'-current', $backup);
+    file_put_contents($file.'-older', $backup);
+
+    try {
+        $shell = "set -e -o pipefail\nsleep() { :; }\nwarn() { echo \"\$*\"; }\ndocker() { echo \"\$ROOT_COUNT\"; }\n".$cleanup[0];
+        $process = new Process(['bash', '-c', $shell], $directory, [
+            'ENV_FILE' => $file, 'DATE' => 'current', 'ROOT_COUNT' => $count,
+        ]);
+        $process->mustRun();
+
+        expect(file_get_contents($file))->toBe($count === '1' ? "APP_ID=instance\nROOT_USER_PASSWORD=\nDB_USERNAME=coolify\n" : $current)
+            ->and(file_get_contents($file.'-current'))->toBe($count === '1' ? "ROOT_USER_PASSWORD=\nAPP_ID=old\n" : $backup)
+            ->and(file_get_contents($file.'-older'))->toBe($backup)
+            ->and($process->getOutput())->not->toContain('bootstrap fixture', 'previous-fixture');
+    } finally {
+        unlink($file);
+        unlink($file.'-current');
+        unlink($file.'-older');
+        rmdir($directory);
+    }
+})->with(['scripts/install.sh', 'other/nightly/install.sh'])->with([
+    'root exists' => '1',
+    'root not created yet' => '0',
+    'database unavailable' => '',
+]);

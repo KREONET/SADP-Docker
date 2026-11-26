@@ -65,6 +65,16 @@ it('moves Sentinel to the new instance URL when the instance URL changes', funct
     StartSentinel::assertPushed(fn (StartSentinel $action, array $arguments) => $arguments[0]->is($this->server));
 });
 
+it('moves a legacy public IP endpoint to the configured HTTPS domain', function () {
+    $settings = InstanceSettings::get();
+    $settings->update(['fqdn' => null, 'public_ipv4' => '203.0.113.10']);
+    $this->server->settings->update(['sentinel_custom_url' => 'http://203.0.113.10:8000']);
+
+    $settings->update(['fqdn' => 'https://new.example.com']);
+
+    expect($this->server->settings->fresh()->sentinel_custom_url)->toBe('https://new.example.com');
+});
+
 it('keeps a custom Sentinel URL when the instance URL changes', function () {
     $this->server->settings->update(['sentinel_custom_url' => 'https://custom.example.com']);
 
